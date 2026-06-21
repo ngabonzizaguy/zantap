@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; }
+  body{ background:#17110c; font-family:'Manrope',system-ui,sans-serif; }
+  ::-webkit-scrollbar{ width:0; height:0; }
+  .zk-scroll{ scrollbar-width:none; }
+  .zk-scroll::-webkit-scrollbar{ display:none; }
+  @keyframes zkpulse{ 0%,100%{ opacity:1; transform:scale(1);} 50%{ opacity:.35; transform:scale(.78);} }
+</style>
+</helmet>
+
+<div style="min-height:100vh; width:100%; background:#17110c; color:#faf4ee;">
+  <div class="zk-scroll" style="position:relative; width:100%; max-width:560px; margin:0 auto; min-height:100vh; background:#17110c; border-left:1px solid #2a201a; border-right:1px solid #2a201a; padding-bottom:40px; overflow:hidden;">
+
+    <!-- warm atmospheric glow -->
+    <div style="position:absolute; top:-120px; left:-60px; width:320px; height:320px; border-radius:50%; background:radial-gradient(circle at 40% 40%, rgba(245,148,95,0.5), rgba(245,148,95,0)); filter:blur(40px); pointer-events:none; z-index:0;"></div>
+    <div style="position:absolute; top:-90px; right:-70px; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle at 50% 40%, rgba(167,143,224,0.4), rgba(167,143,224,0)); filter:blur(44px); pointer-events:none; z-index:0;"></div>
+
+    <!-- ===== METRICS BANNER ===== -->
+    <div style="position:sticky; top:0; z-index:30; background:rgba(26,19,13,0.86); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1.5px solid #34281f;">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 18px 14px;">
+        <div style="display:flex; align-items:center; gap:11px;">
+          <div style="width:40px; height:40px; border-radius:12px; background:linear-gradient(145deg,#FFC24C,#F5945F); display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px rgba(245,148,95,0.35);">
+            <svg width="22" height="22" viewBox="0 0 48 48" fill="none" stroke="#2a1606" stroke-width="2.4" stroke-linejoin="round"><path d="M24 6l13 7.5v15L24 36 11 28.5v-15L24 6z"/><path d="M24 14l7 4v8l-7 4-7-4v-8l7-4z"/></svg>
+          </div>
+          <div>
+            <div style="font-size:16px; font-weight:800; letter-spacing:-0.2px; color:#faf4ee;">ZanTap Kitchen</div>
+            <div style="font-size:12px; font-weight:600; color:#9a8676;">Inka Steakhouse · Live</div>
+          </div>
+        </div>
+        <!-- kitchen status toggle -->
+        <button onClick="{{ onToggleKitchen }}" style="{{ kBtnStyle }}">
+          <span style="{{ kDotStyle }}"></span>
+          <span style="font-size:14px; font-weight:800; letter-spacing:0.5px;">{{ kStatusLabel }}</span>
+        </button>
+      </div>
+
+      <!-- metric tiles -->
+      <div style="display:flex; gap:10px; padding:0 18px 15px;">
+        <div style="flex:1; background:#221913; border:1.5px solid #3a2c20; border-left:4px solid #F5A623; border-radius:14px; padding:13px 15px;">
+          <div style="display:flex; align-items:center; gap:7px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F5A623" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.8px; color:#9a8676; text-transform:uppercase;">Today's gross</div>
+          </div>
+          <div style="font-size:22px; font-weight:800; color:#faf4ee; margin-top:5px; letter-spacing:-0.5px;">148,000 <span style="font-size:13px; color:#b9a89b;">RWF</span></div>
+        </div>
+        <div style="flex:none; width:128px; background:#221913; border:1.5px solid #3a2c20; border-left:4px solid #F5945F; border-radius:14px; padding:13px 15px;">
+          <div style="display:flex; align-items:center; gap:7px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F5945F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v4H4zM5 9v10h14V9"/></svg>
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.8px; color:#9a8676; text-transform:uppercase;">Active</div>
+          </div>
+          <div style="display:flex; align-items:baseline; gap:7px; margin-top:5px;">
+            <div style="font-size:22px; font-weight:800; color:#F5945F; letter-spacing:-0.5px;">{{ activeCount }}</div>
+            <div style="font-size:12px; font-weight:600; color:#b9a89b;">orders</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TABS ===== -->
+    <div style="position:relative; z-index:1; display:flex; gap:10px; padding:16px 18px 4px;">
+      <button onClick="{{ onOrders }}" style="{{ tabOrdersStyle }}">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v4H4zM5 9v10h14V9"/><path d="M9 13h6"/></svg>
+        Orders
+      </button>
+      <button onClick="{{ onInventory }}" style="{{ tabInvStyle }}">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg>
+        Inventory
+      </button>
+    </div>
+
+    <!-- ===== ORDERS TAB ===== -->
+    <sc-if value="{{ showOrders }}" hint-placeholder-val="{{ true }}">
+      <div style="position:relative; z-index:1; padding:14px 18px 0;">
+
+        <sc-if value="{{ hasActive }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; flex-direction:column; gap:14px;">
+            <sc-for list="{{ orders }}" as="o" hint-placeholder-count="3">
+              <div style="{{ o.containerStyle }}">
+                <!-- ticket header -->
+                <button onClick="{{ o.onToggle }}" style="width:100%; min-height:60px; display:flex; align-items:center; gap:13px; padding:14px 16px; background:transparent; border:none; cursor:pointer; text-align:left;">
+                  <div style="{{ o.plateStyle }}">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ o.accent }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12a7 7 0 0 1 14 0"/><path d="M3 12h18"/><path d="M5 16h14"/></svg>
+                  </div>
+                  <div style="flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
+                      <span style="font-size:25px; font-weight:800; color:#faf4ee; letter-spacing:-0.5px;">{{ o.idLabel }}</span>
+                      <span style="display:inline-flex; align-items:center; gap:6px; height:25px; padding:0 10px; border-radius:9999px; background:rgba(34,197,94,0.14); border:1px solid rgba(34,197,94,0.5); box-shadow:0 0 14px rgba(34,197,94,0.3);">
+                        <span style="width:7px; height:7px; border-radius:50%; background:#34d058; animation:zkpulse 1.6s ease-in-out infinite;"></span>
+                        <span style="font-size:11px; font-weight:800; letter-spacing:0.4px; color:#4ade80;">PAID via MoMo</span>
+                      </span>
+                      <sc-if value="{{ o.dispatched }}" hint-placeholder-val="{{ false }}">
+                        <span style="display:inline-flex; align-items:center; gap:6px; height:25px; padding:0 10px; border-radius:9999px; background:rgba(245,166,35,0.16); border:1px solid rgba(245,166,35,0.55); box-shadow:0 0 14px rgba(245,166,35,0.3);">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F5A623" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M8 17h6l-1-6H4"/><path d="M14 11h3l2.5 3.5V17h-1.5"/></svg>
+                          <span style="font-size:11px; font-weight:800; letter-spacing:0.4px; color:#F5A623;">DISPATCHED</span>
+                        </span>
+                      </sc-if>
+                    </div>
+                    <div style="font-size:13px; font-weight:600; color:#9a8676; margin-top:5px;">{{ o.itemCount }} · {{ o.timeLabel }}</div>
+                  </div>
+                  <div style="text-align:right; flex:none;">
+                    <div style="font-size:17px; font-weight:800; color:#F5A623; letter-spacing:-0.3px;">{{ o.totalLabel }}</div>
+                    <div style="font-size:11px; font-weight:700; color:#6f5d4f; margin-top:3px;">{{ o.expandHint }}</div>
+                  </div>
+                </button>
+
+                <!-- ticket body -->
+                <sc-if value="{{ o.expanded }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:2px 16px 16px;">
+                    <div style="border-top:1.5px dashed #3a2c20; padding-top:14px; display:flex; flex-direction:column; gap:9px;">
+                      <sc-for list="{{ o.items }}" as="it" hint-placeholder-count="2">
+                        <div style="display:flex; align-items:baseline; gap:10px;">
+                          <span style="font-size:20px; font-weight:800; color:#F5A623; min-width:42px;">{{ it.qtyLabel }}</span>
+                          <span style="font-size:19px; font-weight:700; color:#faf4ee;">{{ it.name }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <div style="display:flex; align-items:flex-start; gap:9px; margin-top:15px; padding:13px 14px; background:#1b130d; border:1.5px solid #34281f; border-radius:13px;">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f5945f" stroke-width="2.1" style="flex:none; margin-top:1px;"><path d="M12 21s-7-4.6-7-10a7 7 0 0 1 14 0c0 5.4-7 10-7 10z"/><circle cx="12" cy="11" r="2.4"/></svg>
+                      <div style="font-size:15px; font-weight:700; color:#ede2d9; line-height:1.35;">{{ o.deliveryLabel }}</div>
+                    </div>
+                    <sc-if value="{{ o.notDispatched }}" hint-placeholder-val="{{ true }}">
+                      <button onClick="{{ o.onDispatch }}" style="width:100%; height:60px; margin-top:14px; border:none; border-radius:14px; background:linear-gradient(135deg,#FFC24C,#F5945F); color:#2a1606; display:flex; align-items:center; justify-content:center; gap:10px; font-size:16px; font-weight:800; letter-spacing:0.6px; cursor:pointer; box-shadow:0 10px 26px rgba(245,148,95,0.32);">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2a1606" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="2.5"/><circle cx="17" cy="17" r="2.5"/><path d="M8.5 17H14l-1.5-7H4"/><path d="M14 11h4l2.5 4v2h-2"/></svg>
+                        DISPATCH MOTO DRIVER
+                      </button>
+                    </sc-if>
+                    <sc-if value="{{ o.dispatched }}" hint-placeholder-val="{{ false }}">
+                      <button onClick="{{ o.onDispatch }}" style="width:100%; height:56px; margin-top:14px; border:1.5px solid #3a2c20; border-radius:14px; background:#1f1812; color:#9a8676; display:flex; align-items:center; justify-content:center; gap:9px; font-size:15px; font-weight:800; letter-spacing:0.4px; cursor:pointer;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d058" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+                        Driver dispatched · Re-share slip
+                      </button>
+                    </sc-if>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ noActive }}" hint-placeholder-val="{{ false }}">
+          <div style="text-align:center; padding:70px 20px;">
+            <div style="width:72px; height:72px; margin:0 auto 18px; border-radius:9999px; background:#221913; border:1.5px solid #3a2c20; display:flex; align-items:center; justify-content:center;">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#34d058" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <div style="font-size:20px; font-weight:800; color:#faf4ee;">All caught up</div>
+            <div style="font-size:14px; font-weight:600; color:#9a8676; margin-top:6px;">No active orders in the queue.</div>
+          </div>
+        </sc-if>
+
+      </div>
+    </sc-if>
+
+    <!-- ===== INVENTORY TAB ===== -->
+    <sc-if value="{{ showInventory }}" hint-placeholder-val="{{ false }}">
+      <div style="position:relative; z-index:1; padding:14px 18px 0;">
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:15px;">
+          <div>
+            <div style="font-size:12px; font-weight:700; letter-spacing:0.7px; color:#9a8676; text-transform:uppercase;">Menu availability</div>
+            <div style="font-size:16px; font-weight:800; color:#faf4ee; margin-top:4px;">{{ invSummary }}</div>
+          </div>
+          <button onClick="{{ onAllAvailable }}" style="display:flex; align-items:center; gap:7px; height:42px; padding:0 15px; border-radius:9999px; background:#221913; border:1.5px solid #3a2c20; color:#ede2d9; font-size:13px; font-weight:700; cursor:pointer;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34d058" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4"/></svg>
+            Reset all
+          </button>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <sc-for list="{{ inventory }}" as="m" hint-placeholder-count="6">
+            <div style="{{ m.cardStyle }}">
+              <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
+                <div style="{{ m.plateStyle }}">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ m.iconStroke }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12a7 7 0 0 1 14 0"/><path d="M3 12h18"/><path d="M5 16h14"/></svg>
+                </div>
+                <div style="{{ m.catStyle }}">{{ m.cat }}</div>
+              </div>
+              <div style="{{ m.nameStyle }}">{{ m.name }}</div>
+              <div style="{{ m.priceStyle }}">{{ m.priceLabel }}</div>
+              <button onClick="{{ m.onToggle }}" aria-label="Toggle availability" style="{{ m.toggleRowStyle }}">
+                <span style="{{ m.statusStyle }}">{{ m.statusLabel }}</span>
+                <span style="{{ m.switchStyle }}"><span style="{{ m.knobStyle }}"></span></span>
+              </button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+
+  <!-- ===== DISPATCH MODAL ===== -->
+  <div onClick="{{ onCloseDispatch }}" style="{{ overlayStyle }}">
+    <div onClick="{{ stop }}" class="zk-scroll" style="{{ sheetStyle }}">
+      <div style="display:flex; justify-content:center; padding-top:12px;"><div style="width:42px; height:5px; border-radius:9999px; background:#4a3526;"></div></div>
+      <div style="padding:14px 20px 26px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div>
+            <div style="font-size:24px; font-weight:800; color:#faf4ee; letter-spacing:-0.4px;">Dispatch {{ dispatchIdLabel }}</div>
+            <div style="font-size:14px; font-weight:600; color:#b9a89b; margin-top:3px;">{{ dispatchDelivery }}</div>
+          </div>
+          <button onClick="{{ onCloseDispatch }}" style="width:42px; height:42px; flex:none; border:1.5px solid #3a2c20; border-radius:9999px; background:#221913; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b9a89b" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+
+        <!-- customer contact -->
+        <div style="font-size:12px; font-weight:700; letter-spacing:0.7px; color:#9a8676; text-transform:uppercase; margin:22px 0 11px;">Customer contact</div>
+        <a href="{{ dispatchCustomerTel }}" style="display:flex; align-items:center; gap:13px; min-height:60px; padding:12px 14px; background:#221913; border:1.5px solid #3a2c20; border-radius:14px; text-decoration:none;">
+          <div style="width:42px; height:42px; flex:none; border-radius:12px; background:rgba(245,166,35,0.15); border:1.5px solid rgba(245,166,35,0.45); display:flex; align-items:center; justify-content:center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F5A623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:16px; font-weight:800; color:#faf4ee;">Order customer</div>
+            <div style="font-size:14px; font-weight:600; color:#b9a89b; font-family:'JetBrains Mono',monospace;">{{ dispatchCustomerPhone }}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:7px; height:42px; padding:0 15px; border-radius:9999px; background:#34d058; color:#052e16; font-size:14px; font-weight:800;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#052e16" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-3 2a12 12 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>
+            Call
+          </div>
+        </a>
+
+        <!-- drivers -->
+        <div style="font-size:12px; font-weight:700; letter-spacing:0.7px; color:#9a8676; text-transform:uppercase; margin:22px 0 11px;">Available drivers</div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <sc-for list="{{ drivers }}" as="d" hint-placeholder-count="3">
+            <a href="{{ d.tel }}" style="display:flex; align-items:center; gap:13px; min-height:60px; padding:12px 14px; background:#221913; border:1.5px solid #3a2c20; border-radius:14px; text-decoration:none;">
+              <div style="{{ d.plateStyle }}">{{ d.initials }}</div>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:16px; font-weight:800; color:#faf4ee;">{{ d.name }}</div>
+                <div style="font-size:14px; font-weight:600; color:#b9a89b; font-family:'JetBrains Mono',monospace;">{{ d.phone }}</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:7px; height:42px; padding:0 15px; border-radius:9999px; background:#34d058; color:#052e16; font-size:14px; font-weight:800;">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#052e16" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-3 2a12 12 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>
+                Call
+              </div>
+            </a>
+          </sc-for>
+        </div>
+
+        <!-- delivery slip -->
+        <div style="display:flex; align-items:center; justify-content:space-between; margin:22px 0 11px;">
+          <div style="font-size:12px; font-weight:700; letter-spacing:0.7px; color:#9a8676; text-transform:uppercase;">Delivery slip</div>
+          <button onClick="{{ onCopySlip }}" style="display:flex; align-items:center; gap:6px; height:34px; padding:0 13px; border-radius:9999px; background:#221913; border:1.5px solid #3a2c20; color:#ede2d9; font-size:13px; font-weight:700; cursor:pointer;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+            {{ copyLabel }}
+          </button>
+        </div>
+        <pre style="margin:0; padding:16px; background:#100b07; border:1.5px solid #34281f; border-radius:13px; font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:500; line-height:1.6; color:#d8c9bd; white-space:pre-wrap; overflow-x:auto;">{{ slipText }}</pre>
+
+        <button onClick="{{ onShareWhatsApp }}" style="width:100%; height:60px; margin-top:18px; border:none; border-radius:14px; background:#25D366; color:#04361f; display:flex; align-items:center; justify-content:center; gap:11px; font-size:16px; font-weight:800; letter-spacing:0.4px; cursor:pointer; box-shadow:0 10px 26px rgba(37,211,102,0.32);">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="#04361f"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.86 9.86 0 0 0 12.04 2zm5.8 14.13c-.24.68-1.42 1.31-1.95 1.36-.5.05-1.13.27-3.82-.8-3.21-1.27-5.26-4.54-5.42-4.75-.16-.21-1.3-1.73-1.3-3.3 0-1.57.82-2.34 1.12-2.66.3-.32.65-.4.86-.4.21 0 .43 0 .61.01.2.01.46-.07.72.55.27.64.92 2.21 1 2.37.08.16.13.35.03.56-.1.21-.16.34-.31.53-.16.18-.33.41-.47.55-.16.16-.32.33-.14.64.18.32.8 1.32 1.72 2.14 1.18 1.05 2.18 1.38 2.49 1.54.31.16.49.13.67-.08.18-.21.77-.9.98-1.21.21-.32.42-.26.71-.16.29.11 1.85.87 2.17 1.03.32.16.53.24.61.37.08.14.08.78-.16 1.46z"/></svg>
+          Copy &amp; Share to WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:560,&quot;height&quot;:900},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#fcff47&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = {
+    kitchenOpen:true, tab:'orders', expanded:'1204', dispatchId:null, copied:false,
+    orders:[
+      { id:'1204', mins:4, dispatched:false, sector:'Kicukiro', landmark:'Opp. Simba Supermarket', phone:'0788 410 552',
+        items:[{qty:2,name:'Beef Brochettes',price:7500},{qty:1,name:'Loaded Fries',price:4000}] },
+      { id:'1205', mins:7, dispatched:false, sector:'Remera', landmark:'Near Amahoro Stadium gate 3', phone:'0722 318 904',
+        items:[{qty:1,name:'Ribeye Steak',price:12500},{qty:1,name:'Grilled Tilapia',price:9500}] },
+      { id:'1206', mins:11, dispatched:false, sector:'Kimihurura', landmark:'Opp. Bank of Kigali', phone:'0733 760 221',
+        items:[{qty:3,name:'Peri-Peri Chicken',price:8000},{qty:2,name:'Smash Burger',price:6500}] },
+    ],
+    inv:{ ribeye:true, broch:true, peri:true, tilapia:false, burger:true, fries:true },
+  };
+
+  menu = [
+    { id:'ribeye',  name:'Ribeye Steak',     hue:'#F5945F', cat:'Grills',  price:12500 },
+    { id:'broch',   name:'Beef Brochettes',  hue:'#E87FA3', cat:'Grills',  price:7500  },
+    { id:'peri',    name:'Peri-Peri Chicken',hue:'#F0B33C', cat:'Grills',  price:8000  },
+    { id:'tilapia', name:'Grilled Tilapia',  hue:'#79B7E0', cat:'Grills',  price:9500  },
+    { id:'burger',  name:'Smash Burger',     hue:'#A78FE0', cat:'Burgers', price:6500  },
+    { id:'fries',   name:'Loaded Fries',     hue:'#83CBA2', cat:'Sides',   price:4000  },
+  ];
+  hues = ['#F5945F','#E87FA3','#A78FE0','#79B7E0'];
+  drivers = [
+    { name:'Jean Bosco', phone:'0788 214 905', initials:'JB', hue:'#F5945F' },
+    { name:'Eric Mugisha', phone:'0722 640 118', initials:'EM', hue:'#A78FE0' },
+    { name:'Patrick K.', phone:'0733 905 612', initials:'PK', hue:'#79B7E0' },
+  ];
+
+  fmt(n){ return n.toLocaleString('en-US') + ' RWF'; }
+  total(o){ return o.items.reduce((a,i)=>a+i.qty*i.price,0); }
+  rgba(hex,a){ const n=parseInt(hex.slice(1),16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
+  slipFor(o){
+    if(!o) return '';
+    const L = ['ZANTAP  ·  DELIVERY SLIP','Order #'+o.id,'------------------------'];
+    o.items.forEach(i=>L.push(i.qty+'x '+i.name));
+    L.push('------------------------');
+    L.push('TO: '+o.sector); L.push(o.landmark); L.push('Customer: '+o.phone);
+    L.push('------------------------');
+    L.push('PAID · MoMo · '+this.fmt(this.total(o)));
+    return L.join('\n');
+  }
+
+  renderVals(){
+    const P=this.props, S=this.state;
+    const accent = P.accent ?? '#F5A623';
+    const active = S.orders.filter(o=>!o.dispatched);
+
+    const kOpen = S.kitchenOpen;
+    const kBtnStyle = {
+      display:'flex', alignItems:'center', gap:9, height:'44px', padding:'0 16px', borderRadius:'9999px', cursor:'pointer',
+      border:`1.5px solid ${kOpen?'rgba(52,208,88,0.55)':'rgba(239,68,68,0.5)'}`,
+      background: kOpen?'rgba(52,208,88,0.14)':'rgba(239,68,68,0.12)',
+      color: kOpen?'#4ade80':'#f87171', fontFamily:"'Manrope',sans-serif",
+    };
+    const kDotStyle = { width:'9px', height:'9px', borderRadius:'50%', background:kOpen?'#34d058':'#ef4444', boxShadow:`0 0 10px ${kOpen?'#34d058':'#ef4444'}` };
+
+    const tab = (on) => ({
+      flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:8, height:'56px', borderRadius:'14px', cursor:'pointer',
+      fontFamily:"'Manrope',sans-serif", fontSize:'16px', fontWeight:800,
+      border: on?'1.5px solid transparent':'1.5px solid #34281f',
+      background: on?'linear-gradient(135deg,#FFC24C,#F5945F)':'#221913',
+      color: on?'#2a1606':'#b9a89b',
+      boxShadow: on?'0 8px 20px rgba(245,148,95,0.28)':'none',
+    });
+
+    const displayOrders = [...S.orders].sort((a,b)=>(a.dispatched?1:0)-(b.dispatched?1:0));
+    const orders = displayOrders.map((o,idx)=>{
+      const disp = o.dispatched;
+      const hue = disp ? '#8a766a' : this.hues[idx % this.hues.length];
+      return {
+        idLabel:'#'+o.id, totalLabel:this.fmt(this.total(o)),
+        itemCount:(o.items.reduce((a,i)=>a+i.qty,0))+' items',
+        timeLabel:o.mins+' min ago',
+        expanded:S.expanded===o.id, expandHint:S.expanded===o.id?'Hide':'Tap to open',
+        items:o.items.map(i=>({ qtyLabel:i.qty+'x', name:i.name })),
+        deliveryLabel:o.sector+' — '+o.landmark,
+        accent:hue, dispatched:disp, notDispatched:!disp,
+        containerStyle: disp
+          ? { background:'#1b1510', border:'1.5px solid #2f261d', borderLeft:'4px solid #6f5d4f', borderRadius:'18px', overflow:'hidden', opacity:0.8, boxShadow:'0 6px 18px rgba(0,0,0,0.3)' }
+          : { background:'#221913', border:'1.5px solid #3a2c20', borderLeft:`4px solid ${hue}`, borderRadius:'18px', overflow:'hidden', boxShadow:`0 10px 28px rgba(0,0,0,0.42), 0 0 0 1px ${this.rgba(hue,0.06)}` },
+        plateStyle:{ width:'52px', height:'52px', flex:'none', borderRadius:'15px', background:this.rgba(hue,0.15), border:`1.5px solid ${this.rgba(hue,0.45)}`, display:'flex', alignItems:'center', justifyContent:'center' },
+        onToggle:()=>this.setState(s=>({ expanded:s.expanded===o.id?null:o.id })),
+        onDispatch:()=>this.setState({ dispatchId:o.id, copied:false }),
+      };
+    });
+
+    const availCount = this.menu.filter(m=>S.inv[m.id]).length;
+    const inventory = this.menu.map(m=>{
+      const av=S.inv[m.id]; const hue=m.hue;
+      return {
+        name:m.name, cat:m.cat, priceLabel:this.fmt(m.price), iconStroke: av?hue:'#7a6a5d',
+        cardStyle:{ position:'relative', display:'flex', flexDirection:'column', minHeight:'176px', padding:'14px', borderRadius:'18px', overflow:'hidden',
+          border:'1.5px solid '+(av?'#3a2c20':'rgba(239,68,68,0.32)'),
+          background: av?'#221913':'#1f1310',
+          boxShadow: av?`0 8px 22px rgba(0,0,0,0.4), inset 0 0 0 1px ${this.rgba(hue,0.05)}`:'0 8px 22px rgba(0,0,0,0.4)' },
+        plateStyle:{ width:'46px', height:'46px', flex:'none', borderRadius:'13px', background:av?this.rgba(hue,0.16):'#2a1a16', border:'1.5px solid '+(av?this.rgba(hue,0.45):'rgba(239,68,68,0.28)'), display:'flex', alignItems:'center', justifyContent:'center', opacity:av?1:0.72 },
+        catStyle:{ fontSize:'10px', fontWeight:800, letterSpacing:'0.6px', textTransform:'uppercase', color:av?hue:'#8a6a60', background:av?this.rgba(hue,0.12):'rgba(239,68,68,0.1)', border:'1px solid '+(av?this.rgba(hue,0.3):'rgba(239,68,68,0.22)'), padding:'4px 9px', borderRadius:'9999px', whiteSpace:'nowrap' },
+        nameStyle:{ fontSize:'17px', fontWeight:800, color:av?'#faf4ee':'#9a8676', marginTop:'13px', lineHeight:1.15 },
+        priceStyle:{ fontSize:'14px', fontWeight:800, color:av?'#F5A623':'#7a6a5d', marginTop:'5px' },
+        statusLabel:av?'AVAILABLE':'SOLD OUT',
+        statusStyle:{ fontSize:'12px', fontWeight:800, letterSpacing:'0.5px', color:av?'#4ade80':'#f87171' },
+        toggleRowStyle:{ marginTop:'auto', display:'flex', alignItems:'center', justifyContent:'space-between', height:'52px', padding:'0 10px 0 14px', borderRadius:'13px', border:'1.5px solid '+(av?'rgba(52,208,88,0.3)':'#3a2c20'), background:av?'rgba(52,208,88,0.1)':'#241712', cursor:'pointer' },
+        switchStyle:{ position:'relative', width:'56px', height:'32px', flex:'none', borderRadius:'9999px', background:av?'#34d058':'#463528', transition:'background .2s ease' },
+        knobStyle:{ position:'absolute', top:'4px', left:av?'28px':'4px', width:'24px', height:'24px', borderRadius:'50%', background:'#faf4ee', transition:'left .2s cubic-bezier(.22,1,.36,1)', boxShadow:'0 2px 6px rgba(0,0,0,0.4)' },
+        onToggle:()=>this.setState(s=>({ inv:{...s.inv, [m.id]:!s.inv[m.id]} })),
+      };
+    });
+
+    const dOrder = S.orders.find(o=>o.id===S.dispatchId) || null;
+    const dOpen = !!dOrder;
+    const overlayStyle = {
+      position:'fixed', inset:0, zIndex:60, display:'flex', alignItems:'flex-end', justifyContent:'center',
+      background: dOpen?'rgba(0,0,0,0.62)':'rgba(0,0,0,0)',
+      pointerEvents: dOpen?'auto':'none', transition:'background .3s ease',
+    };
+    const sheetStyle = {
+      width:'100%', maxWidth:'560px', maxHeight:'92vh', overflowY:'auto',
+      background:'#1a130d', borderTopLeftRadius:'26px', borderTopRightRadius:'26px',
+      border:'1.5px solid #34281f', borderBottom:'none',
+      transform: dOpen?'translateY(0)':'translateY(101%)', transition:'transform .4s cubic-bezier(.22,1,.36,1)',
+    };
+
+    return {
+      activeCount:active.length,
+      onToggleKitchen:()=>this.setState(s=>({ kitchenOpen:!s.kitchenOpen })),
+      kStatusLabel:kOpen?'OPEN':'CLOSED', kBtnStyle, kDotStyle,
+      onOrders:()=>this.setState({ tab:'orders' }), onInventory:()=>this.setState({ tab:'inventory' }),
+      tabOrdersStyle:tab(S.tab==='orders'), tabInvStyle:tab(S.tab==='inventory'),
+      showOrders:S.tab==='orders', showInventory:S.tab==='inventory',
+      orders, hasActive:S.orders.length>0, noActive:false,
+      inventory, invSummary:`${availCount} of ${this.menu.length} items live`,
+      onAllAvailable:()=>this.setState({ inv:{ ribeye:true, broch:true, peri:true, tilapia:true, burger:true, fries:true } }),
+      overlayStyle, sheetStyle, stop:(e)=>e.stopPropagation(),
+      dispatchIdLabel: dOrder?'#'+dOrder.id:'', dispatchDelivery: dOrder?(dOrder.sector+' — '+dOrder.landmark):'',
+      dispatchCustomerPhone: dOrder?dOrder.phone:'', dispatchCustomerTel: dOrder?('tel:'+dOrder.phone.replace(/\s/g,'')):'#',
+      drivers:this.drivers.map(d=>({ ...d, tel:'tel:'+d.phone.replace(/\s/g,''),
+        plateStyle:{ width:'42px', height:'42px', flex:'none', borderRadius:'12px', background:this.rgba(d.hue,0.15), border:`1.5px solid ${this.rgba(d.hue,0.45)}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px', fontWeight:800, color:d.hue } })),
+      slipText:this.slipFor(dOrder),
+      copyLabel:S.copied?'Copied':'Copy',
+      onCopySlip:()=>{ try{ const r=navigator.clipboard&&navigator.clipboard.writeText(this.slipFor(dOrder)); if(r&&r.catch) r.catch(()=>{}); }catch(e){} this.setState({ copied:true }); },
+      onCloseDispatch:()=>this.setState({ dispatchId:null }),
+      onShareWhatsApp:()=>{
+        const txt = this.slipFor(dOrder);
+        try{ const r=navigator.clipboard&&navigator.clipboard.writeText(txt); if(r&&r.catch) r.catch(()=>{}); }catch(e){}
+        try{ window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank'); }catch(e){}
+        this.setState(s=>({ orders:s.orders.map(o=>o.id===s.dispatchId?{...o,dispatched:true}:o), dispatchId:null, expanded:null, copied:false }));
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>

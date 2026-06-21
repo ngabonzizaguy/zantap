@@ -1,31 +1,84 @@
-# zantap
-An ultra-lightweight, mobile-first social commerce checkout platform and micro-POS designed explicitly for informal food vendors, ghost kitchens, and street food hubs across Africa.
+# ZanTap
 
-## 📖 The Problem & The Mission
+An ultra-lightweight, mobile-first social commerce checkout platform and micro-POS designed explicitly for informal food vendors, ghost kitchens, and street food hubs across Africa — starting in Kigali, Rwanda.
 
-In booming African culinary hubs like Kigali, social media (Instagram Reels & TikTok) has completely revolutionized food discovery. However, the conversion loop is deeply broken:
-1. **High Aggregator Cuts:** Food delivery apps charge small kitchens up to 25–30% commission, wiping out their margins.
-2. **DM/WhatsApp Leakage:** Forcing a hungry customer to manually copy a phone number, text a vendor, wait for prices, and manually calculate totals causes massive cart abandonment.
-3. **The Ledger Deficit:** Informal vendors manage operations in paper notebooks, missing out on clean sales data needed to unlock local micro-loans.
+## Quick start
 
-**ZanTap** (derived from *Zan*—the Hebrew root for divine nourishment—and *Tap*) bridges this gap. It provides an automated, one-page storefront link for social media bios, executing a complete **15-second customer checkout using native Mobile Money (MoMo) rails**, while operating as an automated backend cash book for the kitchen.
+```bash
+npm install
+npm run dev
+```
 
----
+Open:
 
-## ⚡ Key Features
+- Customer storefront: [http://localhost:3000/inka-steakhouse](http://localhost:3000/inka-steakhouse)
+- Vendor KDS: [http://localhost:3000/vendor/inka-steakhouse](http://localhost:3000/vendor/inka-steakhouse)
+- Driver slip stub: [http://localhost:3000/slip/1204](http://localhost:3000/slip/1204)
 
-### For Customers (Frictionless Web-App)
-* 🚀 **Zero App Downloads:** Loads instantly inside Instagram/TikTok native webview wrappers.
-* 💳 **MoMo-First Checkout:** Integrates direct STK Push functionality (MTN MoMo & Airtel Money) to prompt native PIN entry right on the user's handset screen.
-* 📍 **Localized Geolocation:** Simple 3-field forms (Phone, Sector Dropdown, and Local Landmark) optimized for African address infrastructure.
+## Sandbox MoMo PIN
 
-### For Vendors (Pocket Micro-POS)
-* 🛑 **Instant Inventory Toggles:** One-tap switch to mark ingredients or entire meals as "Sold Out" across all active social bio links instantly.
-* 💬 **Automated WhatsApp Dispatch:** Converts successful payments into structured text packets sent straight to the chef, ready to hand off to local *Moto* delivery drivers.
-* 📊 **Zero-Entry Accounting Ledger:** Aggregates live transaction flows into daily, weekly, and monthly financial summaries, completely replacing physical paperwork.
+During checkout, use PIN **`12345`** to simulate a successful STK push.
 
----
+## Architecture
 
-## 🛠️ Architecture & Tech Stack
+This repo is frontend-first with a swappable data layer:
 
-This project is built using an advanced AI-assisted engineering pipeline, enforcing strict separation between premium UI design token layers and robust server architecture.
+```
+UI (customer + KDS)
+  → lib/data/*        typed async functions (mock-backed today)
+  → lib/momo/simulate simulated STK push via /api/momo/stk
+  → prisma/schema.prisma authored for future Supabase/Postgres wiring
+```
+
+### Routes
+
+| Route | Purpose |
+|---|---|
+| `/[slug]` | Glassmorphic customer storefront (max 450px) |
+| `/vendor/[slug]` | Dark vendor KDS dashboard (max 560px) |
+| `/slip/[orderId]` | Standalone driver delivery slip |
+| `/api/momo/stk` | Simulated MoMo STK push + PIN confirmation |
+
+### Key directories
+
+- `components/customer/` — storefront UI (menu, cart, checkout, USSD modal, receipt)
+- `components/vendor/` — KDS UI (orders, inventory, dispatch modal)
+- `lib/data/` — mock store + typed data access (swap internals for Prisma later)
+- `lib/momo/` — MoMo simulation logic
+- `prisma/schema.prisma` — database schema (not migrated yet)
+
+## Environment
+
+Copy `.env.example` to `.env` when wiring Supabase:
+
+```bash
+cp .env.example .env
+```
+
+- `DATABASE_URL` — pooled Postgres connection (Supabase transaction pooler)
+- `DIRECT_URL` — direct Postgres connection (Prisma migrations)
+
+## Scripts
+
+```bash
+npm run dev          # Start dev server
+npm run build        # Production build
+npm run lint         # ESLint
+npm run db:generate  # Generate Prisma client (after DATABASE_URL is set)
+```
+
+## Reference assets
+
+Design prototypes and product specs are kept in the repo root:
+
+- `ZanTap.dc.html` — customer UI reference
+- `ZanTap Vendor KDS.dc.html` — vendor KDS reference
+- `zantap.txt` — product spec
+- `zantap-brand-identity.txt` — brand notes
+
+## Deferred (Phase 2)
+
+- Supabase provisioning + Prisma migrations
+- Vendor authentication
+- Real MoMo sandbox integration
+- Realtime order subscriptions

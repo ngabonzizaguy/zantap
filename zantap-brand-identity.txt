@@ -1,0 +1,4 @@
+# 🏷️ Brand Identity: ZanTap
+* **The Root:** "Zan" (Hebrew: To nourish, sustain, and provide food) + "Tap" (The frictionless mobile action).
+* **The Domain Layout:** `zantap.menu/vendor-slug` or `zantap.link/vendor-slug`
+* **Brand Essence:** God's provision made simple, converting visual cravings into instant physical nourishment with a single tap.

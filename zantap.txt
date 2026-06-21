@@ -1,0 +1,124 @@
+# 🇷🇼 Project MoMo-Menu (Kigali MVP)
+> **A low-friction, social-commerce checkout and micro-POS platform for informal food vendors, ghost kitchens, and street food hubs in Rwanda.**
+
+---
+
+## 📌 Project Overview
+Project MoMo-Menu solves a major financial bottleneck in Kigali's food industry: **the high cost and friction of converting Instagram/TikTok traffic into paid orders.** 
+
+Instead of paying a 25–30% commission to heavy delivery aggregators or losing sales in chaotic WhatsApp DMs, vendors drop their custom `momo.menu/vendor-slug` link directly into their social media bios. Customers can view a lightweight, visual menu and pay securely via MTN MoMo or Airtel Money in under 30 seconds without downloading an app.
+
+### The Value Proposition
+* **For Customers:** A lightning-fast, 15-second visual checkout with zero app-download friction.
+* **For Vendors:** An automated "Micro-POS in a pocket" that replaces paper notebooks, instantly handles order validation, and tracks daily cash flow.
+
+---
+
+## 🛠️ Tech Stack & Workflow Strategy
+This project is built using a highly efficient, AI-assisted development workflow:
+
+Use code with caution.VISUAL DESIGN                       BACKEND & PLUMBING                  MARKETING ASSETS┌─────────────────────────┐         ┌─────────────────────────┐         ┌─────────────────────────┐│       CLAUDE AI         │────────>│       CURSOR IDE        │         │       HIGGSFIELD        ││ Generates modern,       │         │ Indexes code, builds    │         │ Uses remaining credits  ││ mobile-first Tailwind   │         │ schemas, and wires text │         │ to generate video proofs││ frontend code interfaces│         │ & MoMo API logic layers │         │ for local Kigali ads    │└─────────────────────────┘         └─────────────────────────┘         └─────────────────────────┘
+* **Frontend:** Next.js (App Router), Tailwind CSS (Styled strictly for mobile screens under 450px).
+* **Backend:** Node.js / Next.js Server Actions, Prisma ORM, PostgreSQL.
+* **Payment Rails:** Direct simulation wrapper mimicking MTN MoMo / Airtel Money STK Push.
+* **Notifications:** Automated deep-linked WhatsApp notification scripts.
+
+---
+
+## 📊 Core Data Architecture (Prisma Schema)
+
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Vendor {
+  id           String     @id @default(cuid())
+  name         String
+  slug         String     @unique // e.g., "kigali-burger" for momo.menu/kigali-burger
+  phoneNumber  String     // For receiving WhatsApp updates
+  momoCode     String     // Merchant MoMo ID
+  isActive     Boolean    @default(true)
+  menuItems    MenuItem[]
+  orders       Order[]
+  createdAt    DateTime   @default(now())
+}
+
+model MenuItem {
+  id          String   @id @default(cuid())
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  priceRwf    Int
+  imageUrl    String?
+  isAvailable Boolean  @default(true)
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  vendorId       String
+  vendor         Vendor      @relation(fields: [vendorId], references: [id])
+  customerPhone  String
+  deliverySector String      // drop-down values matching Kigali neighborhoods
+  landmark       String      // e.g., "Opposite Simba Supermarket"
+  totalAmount    Int
+  status         OrderStatus @default(PENDING)
+  orderItems     OrderItem[]
+  createdAt      DateTime    @default(now())
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity   Int
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  DISPATCHED
+  COMPLETED
+}
+```
+
+---
+
+## 🏃‍♂️ User Journeys (The Functional Scripts)
+
+### 1. The Customer's 30-Second Path
+1. **Discovery:** Customer watches a viral TikTok of a local food platter and taps the bio link (`momo.menu/biryogurestaurant`).
+2. **Selection:** The menu loads instantly on mobile. The user adds items to their cart and clicks **[ Checkout ]**.
+3. **Details:** User enters their phone number, selects their sector (e.g., *Remera*), and types a nearby landmark.
+4. **Payment Prompt:** User clicks **[ Pay Securely with MoMo ]**. The web interface triggers an STK Push. A native network prompt pops up on their screen: *"Enter PIN to pay X,XXX RWF to Vendor Name."*
+5. **Success:** User enters their PIN, and the screen transforms into a clear, minimal green receipt page.
+
+### 2. The Vendor's Operational Path
+1. **Morning Routine:** Vendor logs in via smartphone to check active menus. They can toggle any out-of-stock item to **[ Sold Out ]** with one tap.
+2. **Instant Notification:** The moment a customer pays, a formatted message drops into the vendor's business WhatsApp:
+   ```text
+   🍔 NEW PAID ORDER (#1204)
+   • Items: 1x Akabenz Platter
+   • Total: 12,000 RWF (Verified via MoMo)
+   • Deliver to: Gikondo (Near Horizon Express)
+   • Driver Slip: momo.menu/slip/1204
+   ```
+3. **Fulfillment:** Kitchen prepares the food, taps the `Driver Slip` link, and hands the clean, ad-free mobile delivery slip to a local moto driver.
+4. **Evening Ledger:** At closing time, the vendor opens their mobile dashboard to view automated daily earnings totals, item velocity statistics, and exportable financial ledgers.
+
+---
+
+## 🏁 Phase 1 Execution Plan
+* [ ] **Milestone 1:** Paste Master Design Prompt into Claude to output the standalone mobile-first frontend code.
+* [ ] **Milestone 2:** Initialize the project directory in Cursor, sync the Prisma schema, and host frontend views.
+* [ ] **Milestone 3:** Program the simulated MoMo STK mock endpoint and the WhatsApp deep-link generation logic.
+* [ ] **Milestone 4:** Run live beta testing with 3 local Kigali merchants, utilizing target Higgsfield video proofs for promotion.

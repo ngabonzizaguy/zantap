@@ -1,0 +1,204 @@
+import type { Driver, MenuItem, Order, Vendor } from "@/lib/types";
+
+export const DEMO_VENDOR_SLUG = "inka-steakhouse";
+
+export const mockVendor: Vendor = {
+  id: "vendor_inka",
+  name: "Inka Steakhouse",
+  slug: DEMO_VENDOR_SLUG,
+  phoneNumber: "0788123456",
+  momoCode: "INKA001",
+  isActive: true,
+  tagline: "Premium grills",
+  location: "Kigali, Rwanda",
+  deliveryTime: "30–40 min",
+  rating: 4.8,
+  createdAt: new Date("2025-01-01"),
+};
+
+export const mockMenuItems: MenuItem[] = [
+  {
+    id: "ribeye",
+    vendorId: mockVendor.id,
+    name: "Ribeye Steak",
+    description: "Grilled to perfection, chimichurri",
+    priceRwf: 12500,
+    category: "Grills",
+    isAvailable: true,
+    thumbFrom: "#ffd2b0",
+    thumbTo: "#f5945f",
+  },
+  {
+    id: "broch",
+    vendorId: mockVendor.id,
+    name: "Beef Brochettes",
+    description: "Char-grilled skewers & plantain",
+    priceRwf: 7500,
+    category: "Grills",
+    isAvailable: true,
+    thumbFrom: "#f7c2cf",
+    thumbTo: "#e87fa3",
+  },
+  {
+    id: "peri",
+    vendorId: mockVendor.id,
+    name: "Peri-Peri Chicken",
+    description: "Half chicken, house peri sauce",
+    priceRwf: 8000,
+    category: "Grills",
+    isAvailable: true,
+    thumbFrom: "#ffe3a6",
+    thumbTo: "#f0b33c",
+  },
+  {
+    id: "tilapia",
+    vendorId: mockVendor.id,
+    name: "Grilled Tilapia",
+    description: "Whole fish, lemon butter",
+    priceRwf: 9500,
+    category: "Grills",
+    isAvailable: false,
+    thumbFrom: "#bfe0f2",
+    thumbTo: "#79b7e0",
+  },
+  {
+    id: "burger",
+    vendorId: mockVendor.id,
+    name: "Smash Burger",
+    description: "Double patty & crispy fries",
+    priceRwf: 6500,
+    category: "Burgers",
+    isAvailable: true,
+    thumbFrom: "#dcd0f5",
+    thumbTo: "#a78fe0",
+  },
+  {
+    id: "fries",
+    vendorId: mockVendor.id,
+    name: "Loaded Fries",
+    description: "Cheese, beef & scallions",
+    priceRwf: 4000,
+    category: "Sides",
+    isAvailable: true,
+    thumbFrom: "#c9ecd6",
+    thumbTo: "#83cba2",
+  },
+];
+
+export const mockDrivers: Driver[] = [
+  {
+    id: "drv_jb",
+    vendorId: mockVendor.id,
+    name: "Jean Bosco",
+    phone: "0788214905",
+    initials: "JB",
+    hue: "#F5945F",
+  },
+  {
+    id: "drv_em",
+    vendorId: mockVendor.id,
+    name: "Eric Mugisha",
+    phone: "0722640118",
+    initials: "EM",
+    hue: "#A78FE0",
+  },
+  {
+    id: "drv_pk",
+    vendorId: mockVendor.id,
+    name: "Patrick K.",
+    phone: "0733905612",
+    initials: "PK",
+    hue: "#79B7E0",
+  },
+];
+
+const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000);
+
+export const mockOrders: Order[] = [
+  {
+    id: "1204",
+    vendorId: mockVendor.id,
+    customerPhone: "0788410552",
+    deliverySector: "Kicukiro",
+    landmark: "Opp. Simba Supermarket",
+    totalAmount: 19000,
+    status: "PAID",
+    createdAt: minutesAgo(4),
+    orderItems: [
+      {
+        id: "oi_1",
+        orderId: "1204",
+        menuItemId: "broch",
+        menuItem: mockMenuItems[1],
+        quantity: 2,
+        unitPriceRwf: 7500,
+      },
+      {
+        id: "oi_2",
+        orderId: "1204",
+        menuItemId: "fries",
+        menuItem: mockMenuItems[5],
+        quantity: 1,
+        unitPriceRwf: 4000,
+      },
+    ],
+  },
+  {
+    id: "1205",
+    vendorId: mockVendor.id,
+    customerPhone: "0722318904",
+    deliverySector: "Remera",
+    landmark: "Near Amahoro Stadium gate 3",
+    totalAmount: 22000,
+    status: "PAID",
+    createdAt: minutesAgo(7),
+    orderItems: [
+      {
+        id: "oi_3",
+        orderId: "1205",
+        menuItemId: "ribeye",
+        menuItem: mockMenuItems[0],
+        quantity: 1,
+        unitPriceRwf: 12500,
+      },
+      {
+        id: "oi_4",
+        orderId: "1205",
+        menuItemId: "tilapia",
+        menuItem: mockMenuItems[3],
+        quantity: 1,
+        unitPriceRwf: 9500,
+      },
+    ],
+  },
+  {
+    id: "1206",
+    vendorId: mockVendor.id,
+    customerPhone: "0733760221",
+    deliverySector: "Kimihurura",
+    landmark: "Opp. Bank of Kigali",
+    totalAmount: 37000,
+    status: "PAID",
+    createdAt: minutesAgo(11),
+    orderItems: [
+      {
+        id: "oi_5",
+        orderId: "1206",
+        menuItemId: "peri",
+        menuItem: mockMenuItems[2],
+        quantity: 3,
+        unitPriceRwf: 8000,
+      },
+      {
+        id: "oi_6",
+        orderId: "1206",
+        menuItemId: "burger",
+        menuItem: mockMenuItems[4],
+        quantity: 2,
+        unitPriceRwf: 6500,
+      },
+    ],
+  },
+];
+
+export const mockCategories = ["All", "Grills", "Burgers", "Sides"];
