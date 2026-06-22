@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createInMemoryStore } from "@/lib/store/in-memory";
+import { createPrismaStore } from "@/lib/store/prisma";
 import type { Store } from "@/lib/store/types";
 
 export type { Store } from "@/lib/store/types";
@@ -14,13 +15,17 @@ const globalForStore = globalThis as unknown as {
 
 /**
  * The single entry point to the Store. Callers (Server Actions and RSC) ask
- * for the Store here; they never construct an adapter themselves. Issue 03
- * extends this factory to pick the Prisma adapter when a database is
- * configured — for now it always returns the in-memory adapter.
+ * for the Store here; they never construct an adapter themselves. The Prisma
+ * adapter is chosen automatically when a database is configured
+ * (`DATABASE_URL`), and the in-memory adapter otherwise — so local dev and CI
+ * need no extra wiring. Tests force a specific adapter by constructing it
+ * directly rather than going through this factory.
  */
 export function getStore(): Store {
   if (!globalForStore.__zantapStore) {
-    globalForStore.__zantapStore = createInMemoryStore();
+    globalForStore.__zantapStore = process.env.DATABASE_URL
+      ? createPrismaStore()
+      : createInMemoryStore();
   }
   return globalForStore.__zantapStore;
 }

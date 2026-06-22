@@ -15,6 +15,7 @@ model Vendor {
   phoneNumber String
   momoCode    String
   isActive    Boolean    @default(true)
+  kitchenOpen Boolean    @default(true)
   tagline     String?
   location    String?
   deliveryTime String?

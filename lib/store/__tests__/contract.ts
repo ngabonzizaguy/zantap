@@ -16,9 +16,9 @@ export function runStoreContract(
     let store: ResettableStore;
     const slug = DEMO_VENDOR_SLUG;
 
-    beforeEach(() => {
+    beforeEach(async () => {
       store = createStore();
-      store.reset();
+      await store.reset();
     });
 
     async function placeOrderFromMenu() {
@@ -201,7 +201,7 @@ export function runStoreContract(
         await placeOrderFromMenu();
         expect((await store.listOrders(slug)).length).toBe(before + 1);
 
-        store.reset();
+        await store.reset();
         expect((await store.listOrders(slug)).length).toBe(before);
       });
     });

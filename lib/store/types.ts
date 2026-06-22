@@ -49,9 +49,10 @@ export interface Store {
 }
 
 /**
- * Adapters used in tests and local dev expose a reset hook so each test starts
- * from the same seed. Durable adapters (Prisma) need not implement it.
+ * Adapters used in tests expose a reset hook so each test starts from the same
+ * seed. The in-memory adapter resets synchronously; the Prisma adapter reseeds
+ * a disposable database, so reset may also be asynchronous.
  */
 export interface ResettableStore extends Store {
-  reset(): void;
+  reset(): void | Promise<void>;
 }
