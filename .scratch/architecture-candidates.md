@@ -41,7 +41,7 @@ If a session ends without doing both, the handoff is incomplete.
 |---|-----------|---------------|-------|--------|-----|
 | 1 | Collapse the data layer behind a server-only seam | Strong | — | ✅ Done & deployed | `.scratch/data-layer-server-seam/PRD.md` |
 | 2 | Deepen payments into a Payment module | Strong | server | ✅ Done | `.scratch/payment-module-idempotent-momo/PRD.md` |
-| 3 | Extract a Checkout module from the Storefront UI | Worth exploring | in-process (client) | ⏳ Backlog | — |
+| 3 | Extract a Checkout module from the Storefront UI | Worth exploring | in-process (client) | ✅ Done | `.scratch/checkout-module/PRD.md` |
 | 4 | Give the KDS a real orders interface | Worth exploring | ports & adapters | ◑ Partially superseded by #1 | — |
 | 5 | Make Prisma the type source; Zod at the seam | Speculative | — | ⏳ Backlog | — |
 
@@ -82,32 +82,27 @@ tests green).
 
 ---
 
-## #3 · Extract a Checkout module from the Storefront UI — ⏳ BACKLOG
+## #3 · Extract a Checkout module from the Storefront UI — ✅ DONE
 
 Rating: Worth exploring · Scope: in-process (client-side refactor).
 
-**Files:** `components/customer/Storefront.tsx`,
-`components/customer/CartContext.tsx`,
-`components/customer/CheckoutSheet.tsx` (`canProceedToPay`).
+**Issue 01 shipped 2026-06-22** — `lib/checkout/` pure domain (validation + totals +
+14 unit tests); `canProceedToPay` removed from `CheckoutSheet`; `CONTEXT.md`
+adds Checkout term. 67/67 tests green.
 
-**Problem (verified 2026-06-22 — still accurate):** checkout logic is scattered
-across three layers:
-- `CheckoutSheet.tsx` defines `canProceedToPay(...)` — validation living in a
-  presentation component, imported into `Storefront`.
-- `CartContext.tsx` owns stage strings (`CheckoutStage`), cart totals
-  (`getTotal`, `getLines`), and all checkout fields (phone/sector/landmark/pin/
-  orderId/stkToken).
-- `Storefront.tsx` (`handlePay` / `handleConfirmPin`) inline-orchestrates order
-  creation (`placeOrder`), the `/api/momo/stk` calls, error handling, and every
-  stage transition (`loading → ussd → success`, failure → `cart`).
+**Issue 02 shipped 2026-06-22** — stage machine (`stages.ts`), injectable MoMo client
+(`momo-client.ts`), orchestration helpers (`orchestration.ts`), `useCheckout` hook;
+17 new unit tests (stages + orchestration). 84/84 tests green.
 
-**Proposed deepening:** consolidate into **one Checkout module** with a single
-interface (validation + totals + stage machine + place-order/pay orchestration),
-so the storefront UI renders against it instead of orchestrating inline.
+**Issue 03 shipped 2026-06-22** — slimmed `CartContext` to cart-only (`cart`,
+`addItem`, `removeItem`, `resetCart`); `StorefrontInner` wires UI through
+`useCheckout(vendor, menu)`; deleted inline `handlePay` / `handleConfirmPin`;
+`sectorOpen` is local UI state in Storefront. 84/84 tests green. Manual dev smoke
+(menu → cart → MoMo → success → reset) recommended before commit.
 
-**Sequencing note:** sits more cleanly **after #2** — the Checkout module's "pay"
-step should call the new idempotent payment surface rather than today's inline
-`fetch('/api/momo/stk')`.
+- PRD: `.scratch/checkout-module/PRD.md`
+- Issues: `01-checkout-pure-domain`, `02-checkout-orchestration-hook`,
+  `03-wire-storefront-slim-cart`
 
 ---
 

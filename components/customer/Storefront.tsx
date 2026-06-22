@@ -2,18 +2,14 @@
 
 import { useMemo, useState } from "react";
 import type { MenuItem, Vendor } from "@/lib/types";
-import { placeOrder } from "@/lib/actions/customer";
-import { normalizePhone } from "@/lib/format";
 import { Orbs } from "@/components/ui/Orbs";
 import { TopBar } from "@/components/customer/TopBar";
 import { Hero } from "@/components/customer/Hero";
 import { CategoryChips } from "@/components/customer/CategoryChips";
 import { MenuList } from "@/components/customer/MenuItemCard";
 import { StickyCartBar } from "@/components/customer/StickyCartBar";
-import {
-  canProceedToPay,
-  CheckoutSheet,
-} from "@/components/customer/CheckoutSheet";
+import { CheckoutSheet } from "@/components/customer/CheckoutSheet";
+import { useCheckout } from "@/lib/checkout/useCheckout";
 import { UssdModal } from "@/components/customer/UssdModal";
 import { SuccessReceipt } from "@/components/customer/SuccessReceipt";
 import { CartProvider, useCart } from "@/components/customer/CartContext";
@@ -26,7 +22,9 @@ interface StorefrontProps {
 
 function StorefrontInner({ vendor, menu, categories }: StorefrontProps) {
   const [activeCategory, setActiveCategory] = useState("All");
-  const cart = useCart();
+  const [sectorOpen, setSectorOpen] = useState(false);
+  const { cart, addItem, removeItem, resetCart } = useCart();
+  const checkout = useCheckout(vendor, menu);
 
   const availableMenu = useMemo(
     () => menu.filter((item) => item.isAvailable),
@@ -41,72 +39,9 @@ function StorefrontInner({ vendor, menu, categories }: StorefrontProps) {
     [availableMenu, activeCategory]
   );
 
-  const count = cart.getCount();
-  const total = cart.getTotal(availableMenu);
-  const lines = cart.getLines(availableMenu);
-  const canPay = canProceedToPay(count, cart.phone, cart.sector, cart.landmark);
-
-  const handlePay = async () => {
-    if (!canPay) return;
-
-    cart.setStage("loading");
-    cart.setSectorOpen(false);
-
-    try {
-      const order = await placeOrder({
-        vendorSlug: vendor.slug,
-        customerPhone: normalizePhone(cart.phone),
-        deliverySector: cart.sector,
-        landmark: cart.landmark,
-        items: lines.map((line) => ({
-          menuItemId: line.menuItemId,
-          quantity: line.qty,
-        })),
-      });
-
-      cart.setOrderId(order.id);
-
-      const response = await fetch("/api/momo/stk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId: order.id,
-          phone: normalizePhone(cart.phone),
-          amount: order.totalAmount,
-          vendorName: vendor.name,
-        }),
-      });
-
-      const data = await response.json();
-      if (data.status === "FAILED") {
-        cart.setStage("cart");
-        return;
-      }
-
-      cart.setStkToken(data.token);
-      cart.setStage("ussd");
-    } catch {
-      cart.setStage("cart");
-    }
-  };
-
-  const handleConfirmPin = async () => {
-    if (cart.pin.length < 5) return;
-
-    const response = await fetch("/api/momo/stk", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "confirm",
-        token: cart.stkToken,
-        pin: cart.pin,
-      }),
-    });
-
-    const data = await response.json();
-    if (data.status === "SUCCESS") {
-      cart.setStage("success");
-    }
+  const handleReset = () => {
+    checkout.reset();
+    resetCart();
   };
 
   return (
@@ -142,63 +77,66 @@ function StorefrontInner({ vendor, menu, categories }: StorefrontProps) {
           <div className="mt-5">
             <MenuList
               items={filteredMenu}
-              cart={cart.cart}
-              onAdd={cart.addItem}
+              cart={cart}
+              onAdd={addItem}
             />
           </div>
         </div>
       </div>
 
       <StickyCartBar
-        count={count}
-        total={total}
-        onOpen={() => cart.setStage("cart")}
+        count={checkout.count}
+        total={checkout.total}
+        onOpen={() => checkout.applyStage("open_cart")}
       />
 
       <CheckoutSheet
-        open={cart.stage === "cart"}
-        showLoading={cart.stage === "loading"}
-        lines={lines}
-        total={total}
-        phone={cart.phone}
-        sector={cart.sector}
-        landmark={cart.landmark}
-        sectorOpen={cart.sectorOpen}
-        canPay={canPay}
-        onClose={() => cart.setStage("menu")}
-        onPhoneChange={cart.setPhone}
-        onSectorToggle={() => cart.setSectorOpen(!cart.sectorOpen)}
+        open={checkout.stage === "cart"}
+        showLoading={checkout.stage === "loading"}
+        lines={checkout.lines}
+        total={checkout.total}
+        phone={checkout.phone}
+        sector={checkout.sector}
+        landmark={checkout.landmark}
+        sectorOpen={sectorOpen}
+        canPay={checkout.canPay}
+        onClose={() => checkout.applyStage("close_cart")}
+        onPhoneChange={checkout.setPhone}
+        onSectorToggle={() => setSectorOpen(!sectorOpen)}
         onSectorPick={(sector) => {
-          cart.setSector(sector);
-          cart.setSectorOpen(false);
+          checkout.setSector(sector);
+          setSectorOpen(false);
         }}
-        onLandmarkChange={cart.setLandmark}
-        onPay={handlePay}
-        onInc={cart.addItem}
-        onDec={cart.removeItem}
+        onLandmarkChange={checkout.setLandmark}
+        onPay={() => {
+          setSectorOpen(false);
+          checkout.pay();
+        }}
+        onInc={addItem}
+        onDec={removeItem}
       />
 
       <UssdModal
-        open={cart.stage === "ussd"}
-        amount={total}
+        open={checkout.stage === "ussd"}
+        amount={checkout.total}
         vendorName={vendor.name}
-        pin={cart.pin}
-        onPinChange={cart.setPin}
+        pin={checkout.pin}
+        onPinChange={checkout.setPin}
         onCancel={() => {
-          cart.setPin("");
-          cart.setStage("cart");
+          checkout.setPin("");
+          checkout.applyStage("cancel_ussd");
         }}
-        onSend={handleConfirmPin}
+        onSend={checkout.confirmPin}
       />
 
       <SuccessReceipt
-        open={cart.stage === "success"}
-        amount={total}
-        orderId={cart.orderId}
-        sector={cart.sector}
-        landmark={cart.landmark}
+        open={checkout.stage === "success"}
+        amount={checkout.total}
+        orderId={checkout.orderId}
+        sector={checkout.sector}
+        landmark={checkout.landmark}
         restaurantName={vendor.name}
-        onReset={cart.reset}
+        onReset={handleReset}
       />
     </div>
   );

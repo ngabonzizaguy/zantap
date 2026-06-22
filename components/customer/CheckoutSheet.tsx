@@ -1,16 +1,10 @@
 "use client";
 
 import { KIGALI_SECTORS } from "@/lib/types";
-import { formatRwf, normalizePhone } from "@/lib/format";
+import { formatRwf } from "@/lib/format";
+import type { CheckoutLine } from "@/lib/checkout/types";
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
-
-interface CheckoutLine {
-  menuItemId: string;
-  name: string;
-  qty: number;
-  lineTotal: number;
-}
 
 interface CheckoutSheetProps {
   open: boolean;
@@ -230,19 +224,5 @@ export function CheckoutSheet({
         )}
       </div>
     </div>
-  );
-}
-
-export function canProceedToPay(
-  count: number,
-  phone: string,
-  sector: string,
-  landmark: string
-): boolean {
-  return (
-    count > 0 &&
-    normalizePhone(phone).length >= 10 &&
-    !!sector &&
-    !!landmark.trim()
   );
 }

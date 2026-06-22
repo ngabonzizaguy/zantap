@@ -36,6 +36,10 @@ _Avoid_: data layer, repository, db, service
 A durable record of money moving for an Order, keyed by a stable `transactionRef` (the STK token in sandbox mode). Moves through `PENDING → SUCCESS` on valid PIN confirm (which also marks the Order `PAID`), or stays `PENDING` on a wrong PIN. `FAILED` is terminal abandonment only — not a typoed PIN.
 _Avoid_: transaction, charge, txn
 
+**Checkout**:
+The client-side module (`lib/checkout/`) that owns checkout validation, cart line/total computation, the stage machine, and place-order / MoMo orchestration for the Customer view. Distinct from an Order (which is the server-side commitment) and from the menu **cart** (item quantities only).
+_Avoid_: basket, payment flow (when you mean the whole checkout module)
+
 **Adapter**:
 A concrete implementation satisfying the Store interface at its seam. Two exist: an in-memory adapter (tests/local dev) and a Prisma/Postgres adapter (production).
 _Avoid_: backend, driver, provider
