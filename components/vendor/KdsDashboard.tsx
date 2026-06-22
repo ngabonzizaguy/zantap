@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import type { Driver, MenuItem, Order, Vendor } from "@/lib/types";
 import {
   advanceOrderStatus,
@@ -9,6 +9,8 @@ import {
   setKitchen,
   toggleItem,
 } from "@/lib/actions/vendor";
+import { useKdsLiveSnapshot } from "@/lib/kds/useKdsLiveSnapshot";
+import type { KdsSnapshot } from "@/lib/kds/types";
 import { buildDeliverySlip } from "@/lib/whatsapp";
 import { MetricsBanner } from "@/components/vendor/MetricsBanner";
 import { Tabs } from "@/components/vendor/Tabs";
@@ -45,18 +47,19 @@ export function KdsDashboard({
   const [dispatchId, setDispatchId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const applySnapshot = useCallback((snapshot: KdsSnapshot) => {
+      setOrders(snapshot.orders);
+      setMenu(snapshot.menu);
+      setTodayGross(snapshot.todayGross);
+      setKitchenOpenState(snapshot.kitchenOpen);
+  }, []);
+
+  useKdsLiveSnapshot(vendor.slug, applySnapshot);
+
   const refresh = useCallback(async () => {
     const snapshot = await loadKdsSnapshot(vendor.slug);
-    setOrders(snapshot.orders);
-    setMenu(snapshot.menu);
-    setTodayGross(snapshot.todayGross);
-    setKitchenOpenState(snapshot.kitchenOpen);
-  }, [vendor.slug]);
-
-  useEffect(() => {
-    const interval = setInterval(refresh, 5000);
-    return () => clearInterval(interval);
-  }, [refresh]);
+    applySnapshot(snapshot);
+  }, [vendor.slug, applySnapshot]);
 
   const activeCount = orders.filter(
     (o) => o.status === "PAID" || o.status === "DISPATCHED"

@@ -1,28 +1,20 @@
 "use server";
 
+import {
+  fetchKdsSnapshot,
+  type KdsSnapshot,
+} from "@/lib/kds/snapshot";
 import { getStore } from "@/lib/store";
 import type { MenuItem, Order, OrderStatus } from "@/lib/types";
 
-export interface KdsSnapshot {
-  orders: Order[];
-  menu: MenuItem[];
-  todayGross: number;
-  kitchenOpen: boolean;
-}
+export type { KdsSnapshot };
 
 /**
- * The KDS poll reads through the server seam instead of its own browser copy of
+ * The KDS reads through the server seam instead of its own browser copy of
  * the data, so it observes the real Store.
  */
 export async function loadKdsSnapshot(vendorSlug: string): Promise<KdsSnapshot> {
-  const store = getStore();
-  const [orders, menu, todayGross, kitchenOpen] = await Promise.all([
-    store.listOrders(vendorSlug),
-    store.getMenu(vendorSlug),
-    store.getTodayGross(vendorSlug),
-    store.isKitchenOpen(vendorSlug),
-  ]);
-  return { orders, menu, todayGross, kitchenOpen };
+  return fetchKdsSnapshot(vendorSlug);
 }
 
 export async function toggleItem(
