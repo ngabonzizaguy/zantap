@@ -45,3 +45,7 @@ next-env.d.ts
 /.cursorrules
 /AGENTS.md
 /CONTEXT.md
+
+# env files (keep the example template tracked)
+.env*
+!.env.example
