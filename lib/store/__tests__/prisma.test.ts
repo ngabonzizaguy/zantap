@@ -1,9 +1,10 @@
 import { execSync } from "node:child_process";
-import { afterAll, beforeAll, describe } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@prisma/client";
 
 import { createPrismaStore } from "@/lib/store/prisma";
 import type { ResettableStore } from "@/lib/store/types";
+import { DEMO_VENDOR_SLUG } from "@/lib/store/seed-data";
 import { seedDatabase } from "@/prisma/seed";
 import { runStoreContract } from "@/lib/store/__tests__/contract";
 
@@ -19,19 +20,20 @@ import { runStoreContract } from "@/lib/store/__tests__/contract";
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 
 let client: PrismaClient;
+let testUrl: string;
 
 describe.skipIf(!TEST_DATABASE_URL)("Prisma adapter (integration)", () => {
   beforeAll(() => {
-    const url = TEST_DATABASE_URL as string;
+    testUrl = TEST_DATABASE_URL as string;
 
     // Bring the disposable database up to the current schema. --accept-data-loss
     // is safe here precisely because the target is a throwaway test database.
     execSync("npx prisma db push --skip-generate --accept-data-loss", {
-      env: { ...process.env, DATABASE_URL: url, DIRECT_URL: url },
+      env: { ...process.env, DATABASE_URL: testUrl, DIRECT_URL: testUrl },
       stdio: "inherit",
     });
 
-    client = new PrismaClient({ datasources: { db: { url } } });
+    client = new PrismaClient({ datasources: { db: { url: testUrl } } });
   });
 
   afterAll(async () => {
@@ -41,5 +43,48 @@ describe.skipIf(!TEST_DATABASE_URL)("Prisma adapter (integration)", () => {
   runStoreContract("prisma adapter", (): ResettableStore => {
     const base = createPrismaStore(client);
     return { ...base, reset: () => seedDatabase(client) };
+  });
+
+  // The whole point of the Prisma adapter: data outlives the process. A module-
+  // scoped in-memory Store would lose this Order on restart (and, on Vercel,
+  // between serverless invocations) — the exact split-brain bug this slice
+  // exists to kill. We prove durability by writing through one client, then
+  // reading through a brand-new client that shares no in-process state.
+  describe("durability across a server restart", () => {
+    it("a paid Order placed by one instance is visible to a fresh instance (KDS)", async () => {
+      await seedDatabase(client);
+
+      // Instance A: a Customer places and pays for an Order.
+      const storeA = createPrismaStore(client);
+      const available = await storeA.getAvailableMenu(DEMO_VENDOR_SLUG);
+      expect(available.length).toBeGreaterThan(0);
+      const placed = await storeA.createOrder({
+        vendorSlug: DEMO_VENDOR_SLUG,
+        customerPhone: "0788123123",
+        deliverySector: "Kicukiro",
+        landmark: "Survives restart",
+        items: [{ menuItemId: available[0].id, quantity: 1 }],
+      });
+      await storeA.updateOrderStatus(placed.id, "PAID");
+
+      // Simulate a server restart / new serverless instance: a brand-new client
+      // with no carried-over state, talking to the same Postgres.
+      const freshClient = new PrismaClient({
+        datasources: { db: { url: testUrl } },
+      });
+      try {
+        const storeB = createPrismaStore(freshClient);
+
+        const fetched = await storeB.getOrder(placed.id);
+        expect(fetched?.id).toBe(placed.id);
+        expect(fetched?.status).toBe("PAID");
+
+        // And it shows up on the KDS's active-orders feed.
+        const active = await storeB.listActiveOrders(DEMO_VENDOR_SLUG);
+        expect(active.find((o) => o.id === placed.id)).toBeDefined();
+      } finally {
+        await freshClient.$disconnect();
+      }
+    });
   });
 });
