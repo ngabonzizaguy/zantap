@@ -3,16 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Driver, MenuItem, Order, Vendor } from "@/lib/types";
 import {
-  getDrivers,
-  getMenu,
-  getTodayGross,
-  isKitchenOpen,
-  listOrders,
-  setAllItemsAvailable,
-  setKitchenOpen,
-  toggleItemAvailability,
-  updateOrderStatus,
-} from "@/lib/data";
+  advanceOrderStatus,
+  loadKdsSnapshot,
+  resetMenu,
+  setKitchen,
+  toggleItem,
+} from "@/lib/actions/vendor";
 import { buildDeliverySlip } from "@/lib/whatsapp";
 import { MetricsBanner } from "@/components/vendor/MetricsBanner";
 import { Tabs } from "@/components/vendor/Tabs";
@@ -50,16 +46,11 @@ export function KdsDashboard({
   const [copied, setCopied] = useState(false);
 
   const refresh = useCallback(async () => {
-    const [nextOrders, nextMenu, nextGross, nextOpen] = await Promise.all([
-      listOrders(vendor.slug),
-      getMenu(vendor.slug),
-      getTodayGross(vendor.slug),
-      isKitchenOpen(vendor.slug),
-    ]);
-    setOrders(nextOrders);
-    setMenu(nextMenu);
-    setTodayGross(nextGross);
-    setKitchenOpenState(nextOpen);
+    const snapshot = await loadKdsSnapshot(vendor.slug);
+    setOrders(snapshot.orders);
+    setMenu(snapshot.menu);
+    setTodayGross(snapshot.todayGross);
+    setKitchenOpenState(snapshot.kitchenOpen);
   }, [vendor.slug]);
 
   useEffect(() => {
@@ -74,17 +65,17 @@ export function KdsDashboard({
   const dispatchOrder = orders.find((o) => o.id === dispatchId) ?? null;
 
   const handleToggleKitchen = async () => {
-    await setKitchenOpen(vendor.slug, !kitchenOpen);
+    await setKitchen(vendor.slug, !kitchenOpen);
     await refresh();
   };
 
   const handleToggleItem = async (itemId: string) => {
-    await toggleItemAvailability(vendor.slug, itemId);
+    await toggleItem(vendor.slug, itemId);
     await refresh();
   };
 
   const handleResetAll = async () => {
-    await setAllItemsAvailable(vendor.slug);
+    await resetMenu(vendor.slug);
     await refresh();
   };
 
@@ -96,7 +87,7 @@ export function KdsDashboard({
     } catch {
       // ignore clipboard failures in unsupported browsers
     }
-    await updateOrderStatus(dispatchOrder.id, "DISPATCHED");
+    await advanceOrderStatus(dispatchOrder.id, "DISPATCHED");
     setDispatchId(null);
     setExpandedId(null);
     setCopied(false);

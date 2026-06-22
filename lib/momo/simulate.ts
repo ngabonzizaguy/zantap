@@ -1,5 +1,7 @@
 import type { ConfirmPinRequest, StkPushRequest, StkPushResponse } from "@/lib/types";
-import { updateOrderStatus } from "@/lib/data";
+import { getStore } from "@/lib/store";
+
+export { MOMO_SIM_PIN_HINT } from "@/lib/momo/constants";
 
 interface PendingTransaction {
   orderId: string;
@@ -64,7 +66,7 @@ export async function confirmStkPin(
   }
 
   tx.status = "SUCCESS";
-  await updateOrderStatus(tx.orderId, "PAID");
+  await getStore().updateOrderStatus(tx.orderId, "PAID");
 
   return {
     token: request.token,
@@ -76,5 +78,3 @@ export async function confirmStkPin(
 export function getTransaction(token: string): PendingTransaction | undefined {
   return pendingTransactions.get(token);
 }
-
-export const MOMO_SIM_PIN_HINT = "Use PIN 12345 in sandbox mode.";

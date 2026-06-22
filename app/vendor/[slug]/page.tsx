@@ -1,12 +1,5 @@
 import { notFound } from "next/navigation";
-import {
-  getDrivers,
-  getMenu,
-  getTodayGross,
-  getVendorBySlug,
-  isKitchenOpen,
-  listOrders,
-} from "@/lib/data";
+import { getStore } from "@/lib/store";
 import { KdsDashboard } from "@/components/vendor/KdsDashboard";
 
 interface PageProps {
@@ -15,15 +8,16 @@ interface PageProps {
 
 export default async function VendorKdsPage({ params }: PageProps) {
   const { slug } = await params;
-  const vendor = await getVendorBySlug(slug);
+  const store = getStore();
+  const vendor = await store.getVendorBySlug(slug);
   if (!vendor) notFound();
 
   const [orders, menu, drivers, todayGross, kitchenOpen] = await Promise.all([
-    listOrders(slug),
-    getMenu(slug),
-    getDrivers(slug),
-    getTodayGross(slug),
-    isKitchenOpen(slug),
+    store.listOrders(slug),
+    store.getMenu(slug),
+    store.getDrivers(slug),
+    store.getTodayGross(slug),
+    store.isKitchenOpen(slug),
   ]);
 
   return (

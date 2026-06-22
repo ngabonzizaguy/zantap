@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { MenuItem, Vendor } from "@/lib/types";
-import { createOrder } from "@/lib/data";
+import { placeOrder } from "@/lib/actions/customer";
 import { normalizePhone } from "@/lib/format";
 import { Orbs } from "@/components/ui/Orbs";
 import { TopBar } from "@/components/customer/TopBar";
@@ -53,7 +53,7 @@ function StorefrontInner({ vendor, menu, categories }: StorefrontProps) {
     cart.setSectorOpen(false);
 
     try {
-      const order = await createOrder({
+      const order = await placeOrder({
         vendorSlug: vendor.slug,
         customerPhone: normalizePhone(cart.phone),
         deliverySector: cart.sector,

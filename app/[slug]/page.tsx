@@ -1,9 +1,5 @@
 import { notFound } from "next/navigation";
-import {
-  getAvailableMenu,
-  getCategories,
-  getVendorBySlug,
-} from "@/lib/data";
+import { getStore } from "@/lib/store";
 import { Storefront } from "@/components/customer/Storefront";
 
 interface PageProps {
@@ -12,12 +8,13 @@ interface PageProps {
 
 export default async function CustomerStorefrontPage({ params }: PageProps) {
   const { slug } = await params;
-  const vendor = await getVendorBySlug(slug);
+  const store = getStore();
+  const vendor = await store.getVendorBySlug(slug);
   if (!vendor) notFound();
 
   const [menu, categories] = await Promise.all([
-    getAvailableMenu(slug),
-    getCategories(slug),
+    store.getAvailableMenu(slug),
+    store.getCategories(slug),
   ]);
 
   return (

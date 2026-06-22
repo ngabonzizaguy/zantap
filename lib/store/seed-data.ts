@@ -2,7 +2,9 @@ import type { Driver, MenuItem, Order, Vendor } from "@/lib/types";
 
 export const DEMO_VENDOR_SLUG = "inka-steakhouse";
 
-export const mockVendor: Vendor = {
+export const seedCategories = ["All", "Grills", "Burgers", "Sides"];
+
+export const seedVendor: Vendor = {
   id: "vendor_inka",
   name: "Inka Steakhouse",
   slug: DEMO_VENDOR_SLUG,
@@ -16,10 +18,10 @@ export const mockVendor: Vendor = {
   createdAt: new Date("2025-01-01"),
 };
 
-export const mockMenuItems: MenuItem[] = [
+export const seedMenuItems: MenuItem[] = [
   {
     id: "ribeye",
-    vendorId: mockVendor.id,
+    vendorId: seedVendor.id,
     name: "Ribeye Steak",
     description: "Grilled to perfection, chimichurri",
     priceRwf: 12500,
@@ -30,7 +32,7 @@ export const mockMenuItems: MenuItem[] = [
   },
   {
     id: "broch",
-    vendorId: mockVendor.id,
+    vendorId: seedVendor.id,
     name: "Beef Brochettes",
     description: "Char-grilled skewers & plantain",
     priceRwf: 7500,
@@ -41,7 +43,7 @@ export const mockMenuItems: MenuItem[] = [
   },
   {
     id: "peri",
-    vendorId: mockVendor.id,
+    vendorId: seedVendor.id,
     name: "Peri-Peri Chicken",
     description: "Half chicken, house peri sauce",
     priceRwf: 8000,
@@ -52,7 +54,7 @@ export const mockMenuItems: MenuItem[] = [
   },
   {
     id: "tilapia",
-    vendorId: mockVendor.id,
+    vendorId: seedVendor.id,
     name: "Grilled Tilapia",
     description: "Whole fish, lemon butter",
     priceRwf: 9500,
@@ -63,7 +65,7 @@ export const mockMenuItems: MenuItem[] = [
   },
   {
     id: "burger",
-    vendorId: mockVendor.id,
+    vendorId: seedVendor.id,
     name: "Smash Burger",
     description: "Double patty & crispy fries",
     priceRwf: 6500,
@@ -74,7 +76,7 @@ export const mockMenuItems: MenuItem[] = [
   },
   {
     id: "fries",
-    vendorId: mockVendor.id,
+    vendorId: seedVendor.id,
     name: "Loaded Fries",
     description: "Cheese, beef & scallions",
     priceRwf: 4000,
@@ -85,10 +87,10 @@ export const mockMenuItems: MenuItem[] = [
   },
 ];
 
-export const mockDrivers: Driver[] = [
+export const seedDrivers: Driver[] = [
   {
     id: "drv_jb",
-    vendorId: mockVendor.id,
+    vendorId: seedVendor.id,
     name: "Jean Bosco",
     phone: "0788214905",
     initials: "JB",
@@ -96,7 +98,7 @@ export const mockDrivers: Driver[] = [
   },
   {
     id: "drv_em",
-    vendorId: mockVendor.id,
+    vendorId: seedVendor.id,
     name: "Eric Mugisha",
     phone: "0722640118",
     initials: "EM",
@@ -104,7 +106,7 @@ export const mockDrivers: Driver[] = [
   },
   {
     id: "drv_pk",
-    vendorId: mockVendor.id,
+    vendorId: seedVendor.id,
     name: "Patrick K.",
     phone: "0733905612",
     initials: "PK",
@@ -114,10 +116,10 @@ export const mockDrivers: Driver[] = [
 
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000);
 
-export const mockOrders: Order[] = [
+export const seedOrders: Order[] = [
   {
     id: "1204",
-    vendorId: mockVendor.id,
+    vendorId: seedVendor.id,
     customerPhone: "0788410552",
     deliverySector: "Kicukiro",
     landmark: "Opp. Simba Supermarket",
@@ -129,7 +131,7 @@ export const mockOrders: Order[] = [
         id: "oi_1",
         orderId: "1204",
         menuItemId: "broch",
-        menuItem: mockMenuItems[1],
+        menuItem: seedMenuItems[1],
         quantity: 2,
         unitPriceRwf: 7500,
       },
@@ -137,7 +139,7 @@ export const mockOrders: Order[] = [
         id: "oi_2",
         orderId: "1204",
         menuItemId: "fries",
-        menuItem: mockMenuItems[5],
+        menuItem: seedMenuItems[5],
         quantity: 1,
         unitPriceRwf: 4000,
       },
@@ -145,7 +147,7 @@ export const mockOrders: Order[] = [
   },
   {
     id: "1205",
-    vendorId: mockVendor.id,
+    vendorId: seedVendor.id,
     customerPhone: "0722318904",
     deliverySector: "Remera",
     landmark: "Near Amahoro Stadium gate 3",
@@ -157,7 +159,7 @@ export const mockOrders: Order[] = [
         id: "oi_3",
         orderId: "1205",
         menuItemId: "ribeye",
-        menuItem: mockMenuItems[0],
+        menuItem: seedMenuItems[0],
         quantity: 1,
         unitPriceRwf: 12500,
       },
@@ -165,7 +167,7 @@ export const mockOrders: Order[] = [
         id: "oi_4",
         orderId: "1205",
         menuItemId: "tilapia",
-        menuItem: mockMenuItems[3],
+        menuItem: seedMenuItems[3],
         quantity: 1,
         unitPriceRwf: 9500,
       },
@@ -173,7 +175,7 @@ export const mockOrders: Order[] = [
   },
   {
     id: "1206",
-    vendorId: mockVendor.id,
+    vendorId: seedVendor.id,
     customerPhone: "0733760221",
     deliverySector: "Kimihurura",
     landmark: "Opp. Bank of Kigali",
@@ -185,7 +187,7 @@ export const mockOrders: Order[] = [
         id: "oi_5",
         orderId: "1206",
         menuItemId: "peri",
-        menuItem: mockMenuItems[2],
+        menuItem: seedMenuItems[2],
         quantity: 3,
         unitPriceRwf: 8000,
       },
@@ -193,12 +195,10 @@ export const mockOrders: Order[] = [
         id: "oi_6",
         orderId: "1206",
         menuItemId: "burger",
-        menuItem: mockMenuItems[4],
+        menuItem: seedMenuItems[4],
         quantity: 2,
         unitPriceRwf: 6500,
       },
     ],
   },
 ];
-
-export const mockCategories = ["All", "Grills", "Burgers", "Sides"];

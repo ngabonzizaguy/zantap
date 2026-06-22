@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { getOrder, getVendorBySlug } from "@/lib/data";
+import { getStore } from "@/lib/store";
+import { DEMO_VENDOR_SLUG } from "@/lib/store/seed-data";
 import { buildDeliverySlip } from "@/lib/whatsapp";
 import { formatRwf, orderDisplayId } from "@/lib/format";
 
@@ -9,10 +10,11 @@ interface PageProps {
 
 export default async function DriverSlipPage({ params }: PageProps) {
   const { orderId } = await params;
-  const order = await getOrder(orderId);
+  const store = getStore();
+  const order = await store.getOrder(orderId);
   if (!order) notFound();
 
-  const vendor = await getVendorBySlug("inka-steakhouse");
+  const vendor = await store.getVendorBySlug(DEMO_VENDOR_SLUG);
   const slipText = buildDeliverySlip(order, vendor?.name ?? "Vendor");
 
   return (

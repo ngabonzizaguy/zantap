@@ -3,7 +3,7 @@
 import { formatRwf } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
-import { MOMO_SIM_PIN_HINT } from "@/lib/momo/simulate";
+import { MOMO_SIM_PIN_HINT } from "@/lib/momo/constants";
 
 interface UssdModalProps {
   open: boolean;
