@@ -42,8 +42,8 @@ If a session ends without doing both, the handoff is incomplete.
 | 1 | Collapse the data layer behind a server-only seam | Strong | — | ✅ Done & deployed | `.scratch/data-layer-server-seam/PRD.md` |
 | 2 | Deepen payments into a Payment module | Strong | server | ✅ Done | `.scratch/payment-module-idempotent-momo/PRD.md` |
 | 3 | Extract a Checkout module from the Storefront UI | Worth exploring | in-process (client) | ✅ Done | `.scratch/checkout-module/PRD.md` |
-| 4 | Give the KDS a real orders interface | Worth exploring | ports & adapters | ◑ Partially superseded by #1 | — |
-| 5 | Make Prisma the type source; Zod at the seam | Speculative | — | ⏳ Backlog | — |
+| 4 | Give the KDS a real orders interface | Worth exploring | ports & adapters | ✅ Done | `.scratch/kds-live-push/PRD.md` |
+| 5 | Make Prisma the type source; Zod at the seam | Speculative | — | ◑ Audited — deferred | `.scratch/prisma-type-source/PRD.md` |
 
 There are exactly **5** candidates. No hidden #6+.
 
@@ -106,37 +106,38 @@ adds Checkout term. 67/67 tests green.
 
 ---
 
-## #4 · Give the KDS a real orders interface — ◑ PARTIALLY SUPERSEDED by #1
+## #4 · Give the KDS a real orders interface — ✅ DONE
 
 Rating: Worth exploring · Scope: ports & adapters.
 
-**Files:** `components/vendor/KdsDashboard.tsx` (5s poll).
+**Shipped 2026-06-22** — replaced client 5s polling with SSE live push. Server
+reads through `fetchKdsSnapshot` (Store seam); fingerprint skips redundant
+frames; `useKdsLiveSnapshot` hook in `KdsDashboard`. ADR-0002. 88/88 tests
+green. Manual smoke: customer checkout in one tab → PAID order on KDS within ~1s.
 
-**Original problem:** the KDS polled its own browser `lib/data` store every 5s
-and never saw server-side orders (split-brain gap).
-
-**Verified 2026-06-22:** that gap is **already closed by #1**. `KdsDashboard`
-still polls every 5s, but `refresh()` now calls the `loadKdsSnapshot` **server
-action** (`lib/actions/vendor.ts`), reading the durable Store. The report's
-"after — server is sole writer" state is already true.
-
-**What actually remains:** the *transport* only — replace the 5s poll with live
-push (SSE/WebSocket) so the KDS updates in real time. (This matches the #1 PRD
-note: "KDS live push (SSE/WebSocket) — candidate #4 builds on this seam; polling
-stays for now but reads through the server seam.") Lower urgency: correctness is
-done; this is a UX/latency improvement.
+- PRD: `.scratch/kds-live-push/PRD.md`
+- Issues: `01-sse-stream-replace-polling`
+- ADR: `docs/adr/0002-kds-live-push-sse.md`
 
 ---
 
-## #5 · Make Prisma the type source; Zod at the seam — ⏳ BACKLOG
+## #5 · Make Prisma the type source; Zod at the seam — ◑ AUDITED (deferred)
 
 Rating: Speculative.
 
 Replace the hand-written domain types in `lib/types.ts` with Prisma-generated
 types, and validate data crossing the Store seam (and API boundaries) with Zod
 DTOs. Removes the dual maintenance of `lib/types.ts` vs. `prisma/schema.prisma`.
-Speculative — do only if type drift between the two becomes a real maintenance
-cost.
+
+**Audit 2026-06-22** — drift is real but latent (enums duplicated but in sync;
+entity omissions like `kitchenOpen` / `updatedAt` are intentional domain shaping;
+no production bugs). **Implementation deferred** until a PRD trigger fires.
+ADR-0003. Issue 01 queued (enums + Zod on `CreateOrderInput`).
+
+- Audit: `.scratch/prisma-type-source/AUDIT.md`
+- PRD: `.scratch/prisma-type-source/PRD.md`
+- Issues: `01-enum-source-zod-create-order` (blocked on trigger)
+- ADR: `docs/adr/0003-prisma-type-source-audit.md`
 
 ---
 
