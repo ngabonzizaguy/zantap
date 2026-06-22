@@ -39,3 +39,12 @@ next-env.d.ts
 
 # private working folder (do not commit)
 /.kcart-artis (don't-open-touch-unless-i-approve)/
+
+# agentic engineering harness (kept local, not committed)
+/.agents/
+/.scratch/
+/docs/agents/
+/skills-lock.json
+/.cursorrules
+/AGENTS.md
+/CONTEXT.md
