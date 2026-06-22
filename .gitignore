@@ -34,9 +34,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# prisma
-/prisma/migrations
-
 # private working folder (do not commit)
 /.kcart-artis (don't-open-touch-unless-i-approve)/
 
