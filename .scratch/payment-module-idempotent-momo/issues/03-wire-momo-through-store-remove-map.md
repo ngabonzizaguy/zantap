@@ -1,6 +1,6 @@
 # Route MoMo through the Store and delete the pendingTransactions Map
 
-Status: ready-for-agent
+Status: done
 
 ## Parent
 
@@ -25,17 +25,17 @@ the payment split-brain's last home.
 
 ## Acceptance criteria
 
-- [ ] `pendingTransactions` (and any other module-scoped payment state) is gone.
-- [ ] STK push and PIN confirm work across separate invocations/instances
+- [x] `pendingTransactions` (and any other module-scoped payment state) is gone.
+- [x] STK push and PIN confirm work across separate invocations/instances
       (no in-process carryover) — covered by a cross-restart payment test like
       the Order durability test.
-- [ ] Confirming through the route is idempotent end-to-end: a replayed confirm
+- [x] Confirming through the route is idempotent end-to-end: a replayed confirm
       returns `SUCCESS` without double-counting today's gross.
-- [ ] `/api/momo/stk` request/response shape is unchanged; the client checkout
+- [x] `/api/momo/stk` request/response shape is unchanged; the client checkout
       flow needs no edits.
-- [ ] `npm test` green (in-memory + Prisma contract suites, including the new
+- [x] `npm test` green (in-memory + Prisma contract suites, including the new
       payment durability/idempotency tests).
-- [ ] No `"use client"` module imports the Store or `simulate.ts` server code.
+- [x] No `"use client"` module imports the Store or `simulate.ts` server code.
 
 ## Blocked by
 
@@ -43,6 +43,12 @@ the payment split-brain's last home.
 
 ## Decisions (settled)
 
-_TBD in the candidate #2 grilling session. Once grilled, this block is replaced
-with the settled decisions and a link to the ADR under `docs/adr/`. Until then,
-treat the PRD's "Open questions for grilling" as unresolved — do not implement._
+See [ADR-0001: Payment module — idempotent MoMo state machine](../../../docs/adr/0001-payment-module-idempotent-momo.md).
+
+- **Keep `/api/momo/stk` route** — both push and confirm; no Server Action migration;
+  client request/response shape unchanged.
+- **`initiateStkPush`:** call `createPayment`; reuse existing ref on duplicate push
+  (ADR-0001 status branches).
+- **`confirmStkPin`:** call `confirmPayment(token, pin)`; wrong PIN returns `FAILED`
+  response but Payment stays `PENDING` for retry.
+- **Error copy:** unknown ref → "Payment not found" (no "expired" wording this slice).

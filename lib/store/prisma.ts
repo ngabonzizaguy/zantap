@@ -5,19 +5,25 @@ import type {
   MenuItem as PrismaMenuItem,
   Order as PrismaOrder,
   OrderItem as PrismaOrderItem,
+  Payment as PrismaPayment,
   Prisma,
   PrismaClient,
   Vendor as PrismaVendor,
 } from "@prisma/client";
 
+import { MOMO_SIM_VALID_PIN } from "@/lib/momo/constants";
 import { prisma as defaultPrisma } from "@/lib/prisma";
 import type { Store } from "@/lib/store/types";
 import type {
+  ConfirmPaymentResult,
   CreateOrderInput,
+  CreatePaymentInput,
+  CreatePaymentResult,
   Driver,
   MenuItem,
   Order,
   OrderStatus,
+  Payment,
   Vendor,
 } from "@/lib/types";
 
@@ -71,6 +77,18 @@ function mapDriver(driver: PrismaDriver): Driver {
   };
 }
 
+function mapPayment(payment: PrismaPayment): Payment {
+  return {
+    id: payment.id,
+    orderId: payment.orderId,
+    amount: payment.amount,
+    provider: payment.provider as Payment["provider"],
+    transactionRef: payment.transactionRef,
+    status: payment.status as Payment["status"],
+    createdAt: payment.createdAt,
+  };
+}
+
 function mapOrder(order: PrismaOrderWithItems): Order {
   return {
     id: order.id,
@@ -102,6 +120,15 @@ function isNotFoundError(error: unknown): boolean {
     error !== null &&
     "code" in error &&
     (error as { code?: string }).code === "P2025"
+  );
+}
+
+function isUniqueConstraintError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: string }).code === "P2002"
   );
 }
 
@@ -324,6 +351,118 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     }
   }
 
+  async function createPayment(
+    input: CreatePaymentInput
+  ): Promise<CreatePaymentResult> {
+    const order = await client.order.findUnique({
+      where: { id: input.orderId },
+      select: { id: true },
+    });
+    if (!order) {
+      return { ok: false, code: "ORDER_NOT_FOUND" };
+    }
+
+    const existing = await client.payment.findUnique({
+      where: { orderId: input.orderId },
+    });
+    if (existing) {
+      if (existing.status === "PENDING" || existing.status === "SUCCESS") {
+        return { ok: true, payment: mapPayment(existing) };
+      }
+      return { ok: false, code: "PAYMENT_TERMINALLY_FAILED" };
+    }
+
+    try {
+      const created = await client.payment.create({
+        data: {
+          orderId: input.orderId,
+          amount: input.amount,
+          provider: input.provider ?? "MTN_MOMO",
+          transactionRef: input.transactionRef,
+          status: "PENDING",
+        },
+      });
+      return { ok: true, payment: mapPayment(created) };
+    } catch (error) {
+      if (!isUniqueConstraintError(error)) throw error;
+
+      const raced = await client.payment.findUnique({
+        where: { orderId: input.orderId },
+      });
+      if (!raced) throw error;
+
+      if (raced.status === "PENDING" || raced.status === "SUCCESS") {
+        return { ok: true, payment: mapPayment(raced) };
+      }
+      return { ok: false, code: "PAYMENT_TERMINALLY_FAILED" };
+    }
+  }
+
+  async function getPaymentByRef(ref: string): Promise<Payment | null> {
+    const payment = await client.payment.findUnique({
+      where: { transactionRef: ref },
+    });
+    return payment ? mapPayment(payment) : null;
+  }
+
+  async function confirmPayment(
+    ref: string,
+    pin: string
+  ): Promise<ConfirmPaymentResult> {
+    const payment = await client.payment.findUnique({
+      where: { transactionRef: ref },
+    });
+    if (!payment) {
+      return { ok: false, code: "NOT_FOUND" };
+    }
+
+    if (payment.status === "SUCCESS") {
+      return { ok: true, payment: mapPayment(payment) };
+    }
+
+    if (payment.status === "FAILED") {
+      return {
+        ok: false,
+        code: "PAYMENT_TERMINALLY_FAILED",
+        payment: mapPayment(payment),
+      };
+    }
+
+    if (pin !== MOMO_SIM_VALID_PIN) {
+      return {
+        ok: false,
+        code: "INVALID_PIN",
+        payment: mapPayment(payment),
+      };
+    }
+
+    const updated = await client.$transaction(async (tx) => {
+      const current = await tx.payment.findUnique({
+        where: { transactionRef: ref },
+      });
+      if (!current) {
+        throw new Error("Payment not found during confirm transaction");
+      }
+      if (current.status === "SUCCESS") {
+        return current;
+      }
+
+      const [paymentRow] = await Promise.all([
+        tx.payment.update({
+          where: { id: current.id },
+          data: { status: "SUCCESS" },
+        }),
+        tx.order.update({
+          where: { id: current.orderId },
+          data: { status: "PAID" },
+        }),
+      ]);
+      return paymentRow;
+    });
+
+    return { ok: true, payment: mapPayment(updated) };
+  }
+
   return {
     getVendorBySlug,
     getMenu,
@@ -340,5 +479,8 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     getTodayGross,
     isKitchenOpen,
     setKitchenOpen,
+    createPayment,
+    getPaymentByRef,
+    confirmPayment,
   };
 }

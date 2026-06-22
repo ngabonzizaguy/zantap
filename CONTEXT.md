@@ -29,8 +29,12 @@ The prompt sent to a Customer's phone to authorize a MoMo payment, confirmed wit
 _Avoid_: push notification, payment prompt
 
 **Store**:
-The server-only data module that owns all persistent reads and mutations (Vendors, Menu, Orders, Drivers, kitchen state) behind a single interface. The browser never imports it; it is reached through Server Actions or RSC.
+The server-only data module that owns all persistent reads and mutations (Vendors, Menu, Orders, Payments, Drivers, kitchen state) behind a single interface. The browser never imports it; it is reached through Server Actions or RSC.
 _Avoid_: data layer, repository, db, service
+
+**Payment**:
+A durable record of money moving for an Order, keyed by a stable `transactionRef` (the STK token in sandbox mode). Moves through `PENDING → SUCCESS` on valid PIN confirm (which also marks the Order `PAID`), or stays `PENDING` on a wrong PIN. `FAILED` is terminal abandonment only — not a typoed PIN.
+_Avoid_: transaction, charge, txn
 
 **Adapter**:
 A concrete implementation satisfying the Store interface at its seam. Two exist: an in-memory adapter (tests/local dev) and a Prisma/Postgres adapter (production).

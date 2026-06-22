@@ -1,12 +1,17 @@
 import type {
+  ConfirmPaymentResult,
   CreateOrderInput,
+  CreatePaymentInput,
+  CreatePaymentResult,
   Driver,
   MenuItem,
   Order,
   OrderStatus,
+  Payment,
   Vendor,
 } from "@/lib/types";
 import type { ResettableStore } from "@/lib/store/types";
+import { MOMO_SIM_VALID_PIN } from "@/lib/momo/constants";
 import {
   seedCategories,
   seedDrivers,
@@ -26,6 +31,10 @@ function cloneOrder(order: Order): Order {
   };
 }
 
+function clonePayment(payment: Payment): Payment {
+  return { ...payment, createdAt: new Date(payment.createdAt) };
+}
+
 /**
  * In-memory adapter: the demo dataset promoted to a real Store implementation.
  * State lives in this closure (one instance per process) so a single dev
@@ -35,16 +44,20 @@ function cloneOrder(order: Order): Order {
 export function createInMemoryStore(): ResettableStore {
   let menuItems: MenuItem[] = [];
   let orders: Order[] = [];
+  let payments: Payment[] = [];
   let kitchenOpen = true;
   let orderCounter = 0;
   let orderItemCounter = 0;
+  let paymentCounter = 0;
 
   function load(): void {
     menuItems = seedMenuItems.map((item) => ({ ...item }));
     orders = seedOrders.map(cloneOrder);
+    payments = [];
     kitchenOpen = true;
     orderCounter = 0;
     orderItemCounter = 0;
+    paymentCounter = 0;
   }
 
   load();
@@ -217,6 +230,78 @@ export function createInMemoryStore(): ResettableStore {
     return kitchenOpen;
   }
 
+  async function createPayment(
+    input: CreatePaymentInput
+  ): Promise<CreatePaymentResult> {
+    const order = orders.find((o) => o.id === input.orderId);
+    if (!order) {
+      return { ok: false, code: "ORDER_NOT_FOUND" };
+    }
+
+    const existing = payments.find((p) => p.orderId === input.orderId);
+    if (existing) {
+      if (existing.status === "PENDING" || existing.status === "SUCCESS") {
+        return { ok: true, payment: clonePayment(existing) };
+      }
+      return { ok: false, code: "PAYMENT_TERMINALLY_FAILED" };
+    }
+
+    const payment: Payment = {
+      id: `pay_${++paymentCounter}_${Date.now()}`,
+      orderId: input.orderId,
+      amount: input.amount,
+      provider: input.provider ?? "MTN_MOMO",
+      transactionRef: input.transactionRef,
+      status: "PENDING",
+      createdAt: new Date(),
+    };
+
+    payments = [...payments, payment];
+    return { ok: true, payment: clonePayment(payment) };
+  }
+
+  async function getPaymentByRef(ref: string): Promise<Payment | null> {
+    const payment = payments.find((p) => p.transactionRef === ref);
+    return payment ? clonePayment(payment) : null;
+  }
+
+  async function confirmPayment(
+    ref: string,
+    pin: string
+  ): Promise<ConfirmPaymentResult> {
+    const index = payments.findIndex((p) => p.transactionRef === ref);
+    if (index === -1) {
+      return { ok: false, code: "NOT_FOUND" };
+    }
+
+    const payment = payments[index];
+
+    if (payment.status === "SUCCESS") {
+      return { ok: true, payment: clonePayment(payment) };
+    }
+
+    if (payment.status === "FAILED") {
+      return {
+        ok: false,
+        code: "PAYMENT_TERMINALLY_FAILED",
+        payment: clonePayment(payment),
+      };
+    }
+
+    if (pin !== MOMO_SIM_VALID_PIN) {
+      return {
+        ok: false,
+        code: "INVALID_PIN",
+        payment: clonePayment(payment),
+      };
+    }
+
+    payments[index] = { ...payment, status: "SUCCESS" };
+    await updateOrderStatus(payment.orderId, "PAID");
+
+    return { ok: true, payment: clonePayment(payments[index]) };
+  }
+
   function reset(): void {
     load();
   }
@@ -237,6 +322,9 @@ export function createInMemoryStore(): ResettableStore {
     getTodayGross,
     isKitchenOpen,
     setKitchenOpen,
+    createPayment,
+    getPaymentByRef,
+    confirmPayment,
     reset,
   };
 }

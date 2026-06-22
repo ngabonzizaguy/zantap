@@ -55,4 +55,4 @@ Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agent
 - The Supabase DB password was exposed in chat once and should be rotated (Settings → Database → Reset password), then update `.env` and the Vercel synced var.
 
 ### Status
-- Issue 01 (Store seam, in-memory) and Issue 02 (Prisma adapter, migration, seed) are committed and verified (30/30 contract tests green against real Supabase Postgres). Issue 03 (factory auto-selection + dual-adapter contract suite) is largely already implemented inside 02; running it is mostly confirmation.
+- Issue 01 (Store seam, in-memory) and Issue 02 (Prisma adapter, migration, seed) are committed and verified (30/30 contract tests green against real Supabase Postgres). Issue 03 (wire MoMo through Store, delete Map) is done — 53/53 tests green including simulate integration tests.

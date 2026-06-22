@@ -1,9 +1,13 @@
 import type {
+  ConfirmPaymentResult,
   CreateOrderInput,
+  CreatePaymentInput,
+  CreatePaymentResult,
   Driver,
   MenuItem,
   Order,
   OrderStatus,
+  Payment,
   Vendor,
 } from "@/lib/types";
 
@@ -46,6 +50,11 @@ export interface Store {
   // Kitchen open/close
   isKitchenOpen(vendorSlug: string): Promise<boolean>;
   setKitchenOpen(vendorSlug: string, open: boolean): Promise<boolean>;
+
+  // Payment (idempotent MoMo state machine — ADR-0001)
+  createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult>;
+  getPaymentByRef(ref: string): Promise<Payment | null>;
+  confirmPayment(ref: string, pin: string): Promise<ConfirmPaymentResult>;
 }
 
 /**

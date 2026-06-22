@@ -40,7 +40,7 @@ If a session ends without doing both, the handoff is incomplete.
 | # | Candidate | Review rating | Scope | Status | PRD |
 |---|-----------|---------------|-------|--------|-----|
 | 1 | Collapse the data layer behind a server-only seam | Strong | — | ✅ Done & deployed | `.scratch/data-layer-server-seam/PRD.md` |
-| 2 | Deepen payments into a Payment module | Strong | server | 📋 Queued | `.scratch/payment-module-idempotent-momo/PRD.md` |
+| 2 | Deepen payments into a Payment module | Strong | server | ✅ Done | `.scratch/payment-module-idempotent-momo/PRD.md` |
 | 3 | Extract a Checkout module from the Storefront UI | Worth exploring | in-process (client) | ⏳ Backlog | — |
 | 4 | Give the KDS a real orders interface | Worth exploring | ports & adapters | ◑ Partially superseded by #1 | — |
 | 5 | Make Prisma the type source; Zod at the seam | Speculative | — | ⏳ Backlog | — |
@@ -61,12 +61,19 @@ Everything below assumes this single-writer foundation.
 
 ---
 
-## #2 · Deepen payments into a Payment module — 📋 QUEUED
+## #2 · Deepen payments into a Payment module — ✅ DONE
 
 Persist `Payment` rows and make MoMo confirmation an idempotent state machine
 behind the Store, killing the module-scoped `pendingTransactions` Map in
 `lib/momo/simulate.ts` (the same realm/serverless split-brain #1 fixed, but for
-money). PRD + 3 issues written. **Stops at the PRD; awaiting go-ahead to grill.**
+money). PRD + 3 issues written. **Grilled 2026-06-22** — decisions in
+`docs/adr/0001-payment-module-idempotent-momo.md`. **Issue 01 shipped 2026-06-22**
+(Store payment verbs + in-memory adapter + payment contract suite).
+**Issue 02 shipped 2026-06-22** (Prisma adapter payment verbs + transactional
+confirm + payment contract on disposable DB + cross-instance durability test).
+**Issue 03 shipped 2026-06-22** (rewired `lib/momo/simulate.ts` through Store,
+deleted `pendingTransactions` Map, added simulate integration tests — 53/53
+tests green).
 
 - PRD: `.scratch/payment-module-idempotent-momo/PRD.md`
 - Issues: `01-payment-in-store-idempotent-transition`,

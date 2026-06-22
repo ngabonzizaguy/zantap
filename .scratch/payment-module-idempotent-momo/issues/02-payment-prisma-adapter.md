@@ -1,6 +1,6 @@
 # Implement the Payment verbs in the Prisma adapter (durable, transactional)
 
-Status: ready-for-agent
+Status: done (2026-06-22)
 
 ## Parent
 
@@ -26,15 +26,15 @@ already exists in `prisma/schema.prisma` (`orderId @unique`, `transactionRef
 
 ## Acceptance criteria
 
-- [ ] Prisma adapter implements the full payment surface from issue 01.
-- [ ] The confirm transition (Payment `SUCCESS` + Order `PAID`) is one DB
+- [x] Prisma adapter implements the full payment surface from issue 01.
+- [x] The confirm transition (Payment `SUCCESS` + Order `PAID`) is one DB
       transaction; partial application is impossible.
-- [ ] Idempotent under at-least-once delivery: repeated confirm of a ref does
+- [x] Idempotent under at-least-once delivery: repeated confirm of a ref does
       not double-apply the Order side effect.
-- [ ] If a schema change is required, a single migration is included.
-- [ ] The extended Store contract suite (from issue 01) passes against the
+- [x] If a schema change is required, a single migration is included. (N/A — no schema change per ADR-0001.)
+- [x] The extended Store contract suite (from issue 01) passes against the
       Prisma adapter on the disposable test database.
-- [ ] No code depends on a specific ref/id format.
+- [x] No code depends on a specific ref/id format.
 
 ## Blocked by
 
@@ -42,6 +42,13 @@ already exists in `prisma/schema.prisma` (`orderId @unique`, `transactionRef
 
 ## Decisions (settled)
 
-_TBD in the candidate #2 grilling session. Once grilled, this block is replaced
-with the settled decisions and a link to the ADR under `docs/adr/`. Until then,
-treat the PRD's "Open questions for grilling" as unresolved — do not implement._
+See [ADR-0001: Payment module — idempotent MoMo state machine](../../../docs/adr/0001-payment-module-idempotent-momo.md).
+
+- **No schema migration** — overload existing `Payment.transactionRef @unique` with
+  the `stk_…` token; no `idempotencyKey` column.
+- **`createPayment` on duplicate `orderId`:** fetch and return existing row per
+  status branches in ADR-0001 (reuse `PENDING`/`SUCCESS`, reject `FAILED`); handle
+  unique constraint accordingly, do not error on conflict.
+- **`confirmPayment`:** wrong PIN leaves row `PENDING`; `SUCCESS` + Order `PAID` in
+  one Prisma transaction; repeat confirm is idempotent no-op.
+- **No expiry logic** in the adapter.

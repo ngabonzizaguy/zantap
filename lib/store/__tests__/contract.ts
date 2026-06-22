@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { ResettableStore } from "@/lib/store/types";
 import { DEMO_VENDOR_SLUG } from "@/lib/store/seed-data";
+import { MOMO_SIM_VALID_PIN } from "@/lib/momo/constants";
 
 /**
  * The single behavioral contract every Store adapter must satisfy. Tests cross
@@ -203,6 +204,180 @@ export function runStoreContract(
 
         await store.reset();
         expect((await store.listOrders(slug)).length).toBe(before);
+      });
+    });
+  });
+}
+
+/**
+ * Payment/idempotency contract — issue 01 runs this against the in-memory adapter
+ * only; issue 02 wires the same suite into the Prisma integration tests.
+ */
+export function runPaymentContract(
+  name: string,
+  createStore: () => ResettableStore
+): void {
+  describe(`Payment contract: ${name}`, () => {
+    let store: ResettableStore;
+    const slug = DEMO_VENDOR_SLUG;
+
+    beforeEach(async () => {
+      store = createStore();
+      await store.reset();
+    });
+
+    async function placeOrderFromMenu() {
+      const available = await store.getAvailableMenu(slug);
+      expect(available.length).toBeGreaterThan(0);
+      const item = available[0];
+      return store.createOrder({
+        vendorSlug: slug,
+        customerPhone: "0788000111",
+        deliverySector: "Kicukiro",
+        landmark: "Test landmark",
+        items: [{ menuItemId: item.id, quantity: 2 }],
+      });
+    }
+
+    function uniqueRef() {
+      return `ref_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    }
+
+    describe("createPayment", () => {
+      it("creates a PENDING Payment retrievable by ref", async () => {
+        const order = await placeOrderFromMenu();
+        const ref = uniqueRef();
+
+        const created = await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: ref,
+        });
+
+        expect(created.ok).toBe(true);
+        if (!created.ok) return;
+
+        expect(created.payment.status).toBe("PENDING");
+        expect(created.payment.transactionRef).toBe(ref);
+        expect(created.payment.orderId).toBe(order.id);
+
+        const fetched = await store.getPaymentByRef(ref);
+        expect(fetched?.transactionRef).toBe(ref);
+        expect(fetched?.status).toBe("PENDING");
+      });
+
+      it("reuses an existing PENDING Payment for the same order (idempotent STK push)", async () => {
+        const order = await placeOrderFromMenu();
+        const firstRef = uniqueRef();
+
+        const first = await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: firstRef,
+        });
+        expect(first.ok).toBe(true);
+        if (!first.ok) return;
+
+        const secondRef = uniqueRef();
+        const second = await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: secondRef,
+        });
+
+        expect(second.ok).toBe(true);
+        if (!second.ok) return;
+        expect(second.payment.transactionRef).toBe(first.payment.transactionRef);
+        expect(second.payment.id).toBe(first.payment.id);
+      });
+
+      it("reuses an existing SUCCESS Payment for the same order (idempotent STK push after pay)", async () => {
+        const order = await placeOrderFromMenu();
+        const ref = uniqueRef();
+
+        const first = await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: ref,
+        });
+        expect(first.ok).toBe(true);
+        if (!first.ok) return;
+
+        await store.confirmPayment(ref, MOMO_SIM_VALID_PIN);
+
+        const secondRef = uniqueRef();
+        const second = await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: secondRef,
+        });
+
+        expect(second.ok).toBe(true);
+        if (!second.ok) return;
+        expect(second.payment.status).toBe("SUCCESS");
+        expect(second.payment.transactionRef).toBe(first.payment.transactionRef);
+      });
+    });
+
+    describe("confirmPayment idempotency", () => {
+      it("marks the Order PAID once and leaves today's gross unchanged on repeat confirm", async () => {
+        const baseline = await store.getTodayGross(slug);
+        const order = await placeOrderFromMenu();
+        const ref = uniqueRef();
+
+        const created = await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: ref,
+        });
+        expect(created.ok).toBe(true);
+        if (!created.ok) return;
+
+        const first = await store.confirmPayment(ref, MOMO_SIM_VALID_PIN);
+        expect(first.ok).toBe(true);
+        if (!first.ok) return;
+        expect(first.payment.status).toBe("SUCCESS");
+
+        const paid = await store.getOrder(order.id);
+        expect(paid?.status).toBe("PAID");
+        expect(await store.getTodayGross(slug)).toBe(
+          baseline + order.totalAmount
+        );
+
+        const second = await store.confirmPayment(ref, MOMO_SIM_VALID_PIN);
+        expect(second.ok).toBe(true);
+        if (!second.ok) return;
+        expect(second.payment.status).toBe("SUCCESS");
+        expect(await store.getTodayGross(slug)).toBe(
+          baseline + order.totalAmount
+        );
+      });
+
+      it("keeps Payment PENDING on invalid PIN and does not mark the Order PAID", async () => {
+        const order = await placeOrderFromMenu();
+        const ref = uniqueRef();
+
+        await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: ref,
+        });
+
+        const result = await store.confirmPayment(ref, "wrong-pin");
+        expect(result.ok).toBe(false);
+        if (result.ok) return;
+        expect(result.code).toBe("INVALID_PIN");
+        expect(result.payment?.status).toBe("PENDING");
+
+        const unpaid = await store.getOrder(order.id);
+        expect(unpaid?.status).toBe("PENDING");
+      });
+
+      it("fails cleanly for an unknown ref without throwing", async () => {
+        const result = await store.confirmPayment(uniqueRef(), MOMO_SIM_VALID_PIN);
+        expect(result.ok).toBe(false);
+        if (result.ok) return;
+        expect(result.code).toBe("NOT_FOUND");
       });
     });
   });

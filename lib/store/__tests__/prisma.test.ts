@@ -6,7 +6,11 @@ import { createPrismaStore } from "@/lib/store/prisma";
 import type { ResettableStore } from "@/lib/store/types";
 import { DEMO_VENDOR_SLUG } from "@/lib/store/seed-data";
 import { seedDatabase } from "@/prisma/seed";
-import { runStoreContract } from "@/lib/store/__tests__/contract";
+import {
+  runPaymentContract,
+  runStoreContract,
+} from "@/lib/store/__tests__/contract";
+import { MOMO_SIM_VALID_PIN } from "@/lib/momo/constants";
 
 /**
  * The same Store contract suite, run against the Prisma adapter on a disposable
@@ -41,6 +45,11 @@ describe.skipIf(!TEST_DATABASE_URL)("Prisma adapter (integration)", () => {
   });
 
   runStoreContract("prisma adapter", (): ResettableStore => {
+    const base = createPrismaStore(client);
+    return { ...base, reset: () => seedDatabase(client) };
+  });
+
+  runPaymentContract("prisma adapter", (): ResettableStore => {
     const base = createPrismaStore(client);
     return { ...base, reset: () => seedDatabase(client) };
   });
@@ -82,6 +91,55 @@ describe.skipIf(!TEST_DATABASE_URL)("Prisma adapter (integration)", () => {
         // And it shows up on the KDS's active-orders feed.
         const active = await storeB.listActiveOrders(DEMO_VENDOR_SLUG);
         expect(active.find((o) => o.id === placed.id)).toBeDefined();
+      } finally {
+        await freshClient.$disconnect();
+      }
+    });
+
+    it("a Payment confirmed by one instance is visible and idempotent on a fresh instance", async () => {
+      await seedDatabase(client);
+
+      const storeA = createPrismaStore(client);
+      const available = await storeA.getAvailableMenu(DEMO_VENDOR_SLUG);
+      expect(available.length).toBeGreaterThan(0);
+      const placed = await storeA.createOrder({
+        vendorSlug: DEMO_VENDOR_SLUG,
+        customerPhone: "0788999888",
+        deliverySector: "Kicukiro",
+        landmark: "Payment survives restart",
+        items: [{ menuItemId: available[0].id, quantity: 1 }],
+      });
+
+      const ref = `ref_restart_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      const created = await storeA.createPayment({
+        orderId: placed.id,
+        amount: placed.totalAmount,
+        transactionRef: ref,
+      });
+      expect(created.ok).toBe(true);
+      if (!created.ok) return;
+
+      const confirmed = await storeA.confirmPayment(ref, MOMO_SIM_VALID_PIN);
+      expect(confirmed.ok).toBe(true);
+
+      const freshClient = new PrismaClient({
+        datasources: { db: { url: testUrl } },
+      });
+      try {
+        const storeB = createPrismaStore(freshClient);
+
+        const fetched = await storeB.getPaymentByRef(ref);
+        expect(fetched?.transactionRef).toBe(ref);
+        expect(fetched?.status).toBe("SUCCESS");
+
+        const order = await storeB.getOrder(placed.id);
+        expect(order?.status).toBe("PAID");
+
+        const repeat = await storeB.confirmPayment(ref, MOMO_SIM_VALID_PIN);
+        expect(repeat.ok).toBe(true);
+        if (!repeat.ok) return;
+        expect(repeat.payment.status).toBe("SUCCESS");
+        expect((await storeB.getOrder(placed.id))?.status).toBe("PAID");
       } finally {
         await freshClient.$disconnect();
       }

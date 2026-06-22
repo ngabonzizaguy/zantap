@@ -75,6 +75,25 @@ export interface CreateOrderInput {
   items: { menuItemId: string; quantity: number }[];
 }
 
+export interface CreatePaymentInput {
+  orderId: string;
+  amount: number;
+  transactionRef: string;
+  provider?: Payment["provider"];
+}
+
+export type CreatePaymentResult =
+  | { ok: true; payment: Payment }
+  | { ok: false; code: "ORDER_NOT_FOUND" | "PAYMENT_TERMINALLY_FAILED" };
+
+export type ConfirmPaymentResult =
+  | { ok: true; payment: Payment }
+  | {
+      ok: false;
+      code: "NOT_FOUND" | "INVALID_PIN" | "PAYMENT_TERMINALLY_FAILED";
+      payment?: Payment;
+    };
+
 export interface StkPushRequest {
   orderId: string;
   phone: string;
