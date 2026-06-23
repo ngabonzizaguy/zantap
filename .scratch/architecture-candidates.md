@@ -125,9 +125,21 @@ reads through `fetchKdsSnapshot` (Store seam); fingerprint skips redundant
 frames; `useKdsLiveSnapshot` hook in `KdsDashboard`. ADR-0002. 88/88 tests
 green. Manual smoke: customer checkout in one tab → PAID order on KDS within ~1s.
 
+**Production-hardened 2026-06-23** — the long-lived SSE route was killed at
+Vercel's ~300s max duration, flooding logs with "Vercel Runtime Timeout Error:
+Task timed out" (known-issue 0002 Symptom C). Fixed transport-only: the route
+self-closes at `MAX_STREAM_MS = 250_000` via one idempotent `teardown()` with
+`export const maxDuration = 300`, and `useKdsLiveSnapshot` now owns reconnect
+with exponential backoff (1s→15s, reset on `onopen`). Deployed to prod
+2026-06-23 (`dpl_CcKFimVQaQg87wc9rQmhSdkF48S1`). Verified: prod SSE returns the
+correct PAID-gated snapshot; held connections self-close cleanly (curl exit 0,
+no kill); CLI runtime logs show only `200`/`info` on `kds-stream`, zero "Task
+timed out". ADR-0004. Candidate #4 is now closed out (feature + prod hardening).
+
 - PRD: `.scratch/kds-live-push/PRD.md`
 - Issues: `01-sse-stream-replace-polling`
-- ADR: `docs/adr/0002-kds-live-push-sse.md`
+- ADRs: `docs/adr/0002-kds-live-push-sse.md`, `docs/adr/0004-kds-sse-self-close-and-reconnect-backoff.md`
+- Known issue: `docs/known-issues/0002` (Symptom C)
 
 ---
 

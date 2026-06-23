@@ -58,10 +58,33 @@ Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agent
 - **KDS order visibility is status-gated.** Only `PAID`/`DISPATCHED`/`COMPLETED` orders reach the kitchen; a `PENDING` order exists between the customer tapping "Pay" and authorizing the MoMo PIN. Never render a payment badge ("PAID via MoMo") independent of `order.status`, and filter the KDS read seam (`fetchKdsSnapshot`), not just the UI.
 - **Keep these operational notes current.** A stale "not yet resolved" note above contributed to a wrong first hypothesis. When reality changes, update the note in the same session.
 
+### Tooling notes (host = Windows PowerShell; known command gotchas + manual fallbacks)
+When a command errors, the agent should stop, report the failure + cause, and suggest a manual
+path rather than retrying blindly (saves tokens). Recurring gotchas seen on this machine:
+- **Vercel MCP is scoped to the wrong project.** `get_runtime_logs` / `list_projects` via the
+  Vercel MCP return only project `digsol` and **403 Forbidden** for `zantap`. Until the MCP
+  connection's project access includes `zantap` (re-authorize the Vercel MCP and pick "All
+  Projects", or add `zantap` under Vercel → team → Authorized Apps/Integrations), use the
+  authenticated CLI instead: `npx vercel logs <prod-url> --json`. You (the human) fix the scope
+  in the Vercel dashboard; the agent cannot.
+- **PowerShell, not bash.** `&&` is not a statement separator (use `;` or chain with
+  `-and`/separate calls). Heredocs (`$(cat <<'EOF')`) do **not** work — write the text to a temp
+  file and use `git commit -F <file>`. `Select-String -SimpleMatch` treats regex metachars
+  literally (e.g. `data: \{` won't match `data: {`); drop `-SimpleMatch` for regex.
+- **Headless prod Server Action calls are unreliable.** Driving `placeOrder` over HTTP with a
+  `Next-Action: <id>` header fails with `X-Nextjs-Action-Not-Found` because the deployed build's
+  action ID differs from the local `.next` manifest. For a real customer→KDS prod smoke, drive the
+  browser UI (two tabs) — the agent can capture timing with a streaming `curl` against
+  `/api/vendor/<slug>/kds-stream` while the human taps Pay (MoMo sim PIN `12345`).
+- **SSE prod check.** `curl.exe -s -N --max-time <sec> <kds-stream-url>` holds the stream; a clean
+  exit 0 around ~250s is the self-close working (not a kill). The 250s server timer can also fire
+  earlier on a transient poll error via the same idempotent `teardown()` — still a clean close.
+
 ### Security
 - The Supabase DB password was exposed in chat once and should be rotated (Settings → Database → Reset password), then update `.env` and the Vercel synced var.
 
 ### Status
 - Issue 01 (Store seam, in-memory) and Issue 02 (Prisma adapter, migration, seed) are committed and verified (30/30 contract tests green against real Supabase Postgres). Issue 03 (wire MoMo through Store, delete Map) is done — 53/53 tests green including simulate integration tests.
 - Known-issue 0002 fixed & deployed 2026-06-23: KDS action buttons 500 in prod (a `"use server"` type re-export — see Lessons learned) and orders showing "PAID via MoMo" before payment.
-- Known-issue 0002 Symptom C fixed 2026-06-23 (committed; **pending deploy/verify in prod**): the KDS SSE stream timed out every ~5min on Vercel. Fix = the route self-closes at `MAX_STREAM_MS = 250_000` (clean `controller.close()` so the function returns ~50s before Vercel's kill → no "Task timed out" logged) with `export const maxDuration = 300`, plus client reconnect backoff in `lib/kds/useKdsLiveSnapshot.ts`. Transport-only, behind the Store seam. See `docs/adr/0004-kds-sse-self-close-and-reconnect-backoff.md` and `docs/known-issues/0002`.
+- Known-issue 0002 Symptom C **fixed, deployed & verified in prod 2026-06-23**: the KDS SSE stream timed out every ~5min on Vercel. Fix = the route self-closes at `MAX_STREAM_MS = 250_000` (clean `controller.close()` so the function returns ~50s before Vercel's kill → no "Task timed out" logged) with `export const maxDuration = 300`, plus client reconnect backoff in `lib/kds/useKdsLiveSnapshot.ts`. Transport-only, behind the Store seam. Prod verification: held connections self-closed cleanly at ~252–257s (curl exit 0) across two reconnect cycles; `vercel logs` shows only `200`/`info` on `kds-stream` (zero "Task timed out"); two-tab smoke passed (paid order #4513 appeared on KDS, gated to PAID). This **closes out candidate #4** (feature + prod hardening). See `docs/adr/0004-kds-sse-self-close-and-reconnect-backoff.md` and `docs/known-issues/0002`.
+- Polish: `app/error.tsx` added (styled blush retry boundary) so a future client error degrades gracefully instead of the raw browser page (carried from known-issue 0001).

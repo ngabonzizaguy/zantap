@@ -1,6 +1,6 @@
 # Known issue 0002 — KDS action buttons 500 in prod + orders show "PAID via MoMo" before payment
 
-Status: **Fixed 2026-06-23 (pending deploy/verify)** · Reported: 2026-06-23 (production, `zantap-psi.vercel.app`)
+Status: **Fixed, deployed & verified in prod 2026-06-23** · Reported: 2026-06-23 (production, `zantap-psi.vercel.app`)
 Related: candidate #4 (KDS live push / SSE). See `.scratch/architecture-candidates.md` and `docs/known-issues/0001`.
 
 Two separate symptoms reported together; both fixed. A third (SSE timeout) surfaced by the
@@ -81,13 +81,21 @@ The function was being *killed* rather than *finishing*. The fix makes it finish
 
 Stays fully behind the Store seam — pure transport change, `fetchKdsSnapshot` untouched.
 
-### Verified (2026-06-23)
+### Verified (2026-06-23) — deployed & confirmed in prod
 - `npm run build` green (prod compile of the route + client hook; dev-green ≠ prod-green).
-- Live against prod Postgres on the dev server: SSE emits the correct status-gated
-  snapshot (all `PAID`, no `PENDING`); flipping a fingerprint field mid-stream pushed a
-  fresh frame within ~1s (`kitchenOpen:true` → `kitchenOpen:false`), proving the live-push
-  path a new paid order travels. (Full 250s self-close window not waited out locally; the
-  timer is trivial and the build is the prod-trust gate.)
+- Deployed to prod 2026-06-23 (`dpl_CcKFimVQaQg87wc9rQmhSdkF48S1`, alias `zantap-psi.vercel.app`).
+- **Self-close confirmed in prod:** held SSE connections via curl self-closed cleanly at
+  ~252–257s (curl exit 0 = server `controller.close()`, not a kill) across two back-to-back
+  reconnect cycles (~8.5 min total), exactly the `MAX_STREAM_MS=250_000` design.
+- **No timeout flood:** `vercel logs zantap-psi.vercel.app --json` over the whole window shows
+  every `/api/vendor/inka-steakhouse/kds-stream` request as `level:"info"` /
+  `responseStatusCode:200` — zero "Task timed out", zero errors/500s.
+- **Status-gating intact:** prod SSE initial frame is all `PAID` (no `PENDING`); 15s heartbeats present.
+- **Two-tab smoke passed:** customer paid via MoMo (PIN sim) → order **#4513** (9,500 RWF) appeared
+  on the KDS badged "PAID via MoMo"; snapshot PAID count went 8 → 9, `PENDING=0`.
+- Note: the MCP `get_runtime_logs` could not be used (the Vercel MCP token is scoped to a
+  different project — `digsol`, not `zantap` — returning 403); the authenticated `vercel logs`
+  CLI was used instead. See AGENTS.md "Tooling notes".
 
 Ties into candidate #4 / known-issue 0001.
 
