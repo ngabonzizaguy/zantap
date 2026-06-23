@@ -48,11 +48,19 @@ Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agent
 - Prisma CLI auto-loads `.env`. **vitest does NOT** — `vitest.config.ts` loads it via `loadEnv` and sets `hookTimeout: 90000` / `testTimeout: 30000` because the remote DB suite is slow (~155s). Keep those timeouts.
 - Verify: `npm run db:deploy` → `npm run db:seed` → `npm test`. The Prisma contract suite auto-skips when `TEST_DATABASE_URL` is unset.
 
-### Deploy gotcha (not yet resolved)
-- Vercel **Production** env has only `POSTGRES_*` names (from the Supabase integration), but the app reads `DATABASE_URL`/`DIRECT_URL`. Before the deployed app can connect, either add `DATABASE_URL`/`DIRECT_URL` in Vercel (map from `POSTGRES_PRISMA_URL` / `POSTGRES_URL_NON_POOLING`) or point the schema/factory at the `POSTGRES_*` names.
+### Deploy gotcha (RESOLVED 2026-06-23)
+- Vercel **Production** env originally had only `POSTGRES_*` names (from the Supabase integration), while the app reads `DATABASE_URL`/`DIRECT_URL`. This is now fixed: `DATABASE_URL` and `DIRECT_URL` are set in Production (confirmed via `vercel env ls production`), so the deployed app connects through the Prisma adapter and reads/writes persist. Leave this note as resolved — do **not** re-theorize prod DB failures as a missing env var without re-checking `vercel env ls`.
+
+### Lessons learned (read before debugging prod / touching server actions)
+- **`"use server"` files export ONLY async server actions.** Never `export type`, re-export, or export a non-async value from `lib/actions/*`. Next.js registers every export as a server reference; a type re-export compiles to an **undefined runtime identifier in the production build** → `ReferenceError` on module load → **every** action in that file 500s. Import types from their source module (e.g. `@/lib/kds/types`) instead. (Root cause of known-issue 0002.)
+- **Dev-green ≠ prod-green.** Turbopack dev tolerates things that `next build` / the production runtime reject (the above bug reproduced only in prod). After editing a `"use server"` file or anything bundler-sensitive, run `npm run build` before trusting it — a passing dev server is not proof.
+- **Diagnose prod failures with prod evidence first.** For a production-only error, pull the real message before theorizing about infrastructure: `vercel ls` → copy the Production deployment URL → `vercel logs <url>`, or use the Vercel MCP `get_runtime_logs` when the integration is scoped to this project. One log line (`ReferenceError: KdsSnapshot is not defined`) ended a long, wrong pgbouncer/DB hypothesis here.
+- **KDS order visibility is status-gated.** Only `PAID`/`DISPATCHED`/`COMPLETED` orders reach the kitchen; a `PENDING` order exists between the customer tapping "Pay" and authorizing the MoMo PIN. Never render a payment badge ("PAID via MoMo") independent of `order.status`, and filter the KDS read seam (`fetchKdsSnapshot`), not just the UI.
+- **Keep these operational notes current.** A stale "not yet resolved" note above contributed to a wrong first hypothesis. When reality changes, update the note in the same session.
 
 ### Security
 - The Supabase DB password was exposed in chat once and should be rotated (Settings → Database → Reset password), then update `.env` and the Vercel synced var.
 
 ### Status
 - Issue 01 (Store seam, in-memory) and Issue 02 (Prisma adapter, migration, seed) are committed and verified (30/30 contract tests green against real Supabase Postgres). Issue 03 (wire MoMo through Store, delete Map) is done — 53/53 tests green including simulate integration tests.
+- Known-issue 0002 fixed & deployed 2026-06-23: KDS action buttons 500 in prod (a `"use server"` type re-export — see Lessons learned) and orders showing "PAID via MoMo" before payment. Open follow-up: the KDS SSE stream times out every ~5min on Vercel (`docs/known-issues/0002`).
