@@ -14,6 +14,16 @@ export interface Vendor {
   createdAt: Date;
 }
 
+export interface MenuImage {
+  id: string;
+  menuItemId: string;
+  url: string;
+  blobPath?: string;
+  sortOrder: number;
+  isPrimary: boolean;
+  createdAt: Date;
+}
+
 export interface MenuItem {
   id: string;
   vendorId: string;
@@ -25,6 +35,26 @@ export interface MenuItem {
   isAvailable: boolean;
   thumbFrom?: string;
   thumbTo?: string;
+  archivedAt?: Date;
+  images?: MenuImage[];
+}
+
+export interface AddMenuImageInput {
+  url: string;
+}
+
+export interface CreateMenuItemInput {
+  name: string;
+  priceRwf: number;
+  description?: string;
+  category?: string;
+}
+
+export interface UpdateMenuItemInput {
+  name?: string;
+  priceRwf?: number;
+  description?: string;
+  category?: string;
 }
 
 export interface OrderItem {
@@ -65,6 +95,32 @@ export interface Payment {
   transactionRef: string;
   status: "PENDING" | "SUCCESS" | "FAILED";
   createdAt: Date;
+}
+
+export interface OrderHistoryFilters {
+  datePreset?: "today" | "yesterday" | "last7" | "last30" | "custom";
+  dateFrom?: Date;
+  dateTo?: Date;
+  status?: OrderStatus | "ALL";
+  paymentStatus?: Payment["status"] | "ALL";
+  search?: string;
+}
+
+export interface Pagination {
+  page: number;
+  pageSize: number;
+}
+
+export interface OrderHistoryItem {
+  order: Order;
+  paymentStatus: Payment["status"] | null;
+}
+
+export interface PaginatedOrders {
+  orders: OrderHistoryItem[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface CreateOrderInput {

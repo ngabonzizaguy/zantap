@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { ResettableStore } from "@/lib/store/types";
 import { DEMO_VENDOR_SLUG } from "@/lib/store/seed-data";
 import { MOMO_SIM_VALID_PIN } from "@/lib/momo/constants";
+import { DEFAULT_ORDER_HISTORY_PAGE_SIZE } from "@/lib/orders/history-filters";
 
 /**
  * The single behavioral contract every Store adapter must satisfy. Tests cross
@@ -82,6 +83,207 @@ export function runStoreContract(
         await store.setAllItemsAvailable(slug);
         const after = await store.getMenu(slug);
         expect(after.every((i) => i.isAvailable)).toBe(true);
+      });
+    });
+
+    describe("menu CRUD", () => {
+      it("creates, updates, archives, and restores an item", async () => {
+        const created = await store.createMenuItem(slug, {
+          name: "Test Bowl",
+          priceRwf: 4200,
+          description: "Fresh test dish",
+          category: "Sides",
+        });
+
+        expect(created.name).toBe("Test Bowl");
+        expect(created.priceRwf).toBe(4200);
+        expect(created.category).toBe("Sides");
+        expect(created.archivedAt).toBeUndefined();
+
+        const onMenu = await store.getMenu(slug);
+        expect(onMenu.find((i) => i.id === created.id)).toBeDefined();
+
+        const updated = await store.updateMenuItem(slug, created.id, {
+          priceRwf: 4500,
+        });
+        expect(updated?.priceRwf).toBe(4500);
+
+        const archived = await store.archiveMenuItem(slug, created.id);
+        expect(archived?.archivedAt).toBeInstanceOf(Date);
+
+        const activeAfterArchive = await store.getMenu(slug);
+        expect(activeAfterArchive.find((i) => i.id === created.id)).toBeUndefined();
+
+        const availableAfterArchive = await store.getAvailableMenu(slug);
+        expect(
+          availableAfterArchive.find((i) => i.id === created.id)
+        ).toBeUndefined();
+
+        const archivedList = await store.getArchivedMenu(slug);
+        expect(archivedList.find((i) => i.id === created.id)).toBeDefined();
+
+        const restored = await store.restoreMenuItem(slug, created.id);
+        expect(restored?.archivedAt).toBeUndefined();
+        expect((await store.getMenu(slug)).find((i) => i.id === created.id)).toBeDefined();
+      });
+
+      it("rejects invalid create input", async () => {
+        await expect(
+          store.createMenuItem(slug, { name: "", priceRwf: 100 })
+        ).rejects.toThrow();
+        await expect(
+          store.createMenuItem(slug, { name: "Bad price", priceRwf: 0 })
+        ).rejects.toThrow();
+      });
+
+      it("getMenuItem returns a single row", async () => {
+        const menu = await store.getMenu(slug);
+        const item = menu[0];
+        const fetched = await store.getMenuItem(slug, item.id);
+        expect(fetched?.id).toBe(item.id);
+        expect(await store.getMenuItem(slug, "missing-id")).toBeNull();
+      });
+
+      it("renameCategory bulk-updates active items", async () => {
+        const created = await store.createMenuItem(slug, {
+          name: "Rename Me",
+          priceRwf: 3000,
+          category: "RenameCat",
+        });
+        const count = await store.renameCategory(slug, "RenameCat", "Renamed");
+        expect(count).toBeGreaterThanOrEqual(1);
+        const item = await store.getMenuItem(slug, created.id);
+        expect(item?.category).toBe("Renamed");
+      });
+
+      it("archived items stay on historical orders", async () => {
+        const available = await store.getAvailableMenu(slug);
+        const target = available[0];
+        const order = await store.createOrder({
+          vendorSlug: slug,
+          customerPhone: "0788000222",
+          deliverySector: "Kicukiro",
+          landmark: "Archive test",
+          items: [{ menuItemId: target.id, quantity: 1 }],
+        });
+
+        await store.archiveMenuItem(slug, target.id);
+        const fetched = await store.getOrder(order.id);
+        expect(fetched?.orderItems[0]?.menuItem?.id).toBe(target.id);
+      });
+    });
+
+    describe("menu images", () => {
+      async function createItemForImages() {
+        return store.createMenuItem(slug, {
+          name: "Gallery Test Dish",
+          priceRwf: 5000,
+          category: "Test",
+        });
+      }
+
+      it("adds URL images with first image primary and dual-writes imageUrl", async () => {
+        const item = await createItemForImages();
+        const first = await store.addMenuImage(slug, item.id, {
+          url: "https://example.com/a.jpg",
+        });
+        const second = await store.addMenuImage(slug, item.id, {
+          url: "https://example.com/b.jpg",
+        });
+
+        expect(first.isPrimary).toBe(true);
+        expect(second.isPrimary).toBe(false);
+
+        const fetched = await store.getMenuItem(slug, item.id);
+        expect(fetched?.images).toHaveLength(2);
+        expect(fetched?.imageUrl).toBe("https://example.com/a.jpg");
+        expect(fetched?.images?.filter((image) => image.isPrimary)).toHaveLength(
+          1
+        );
+      });
+
+      it("rejects a seventh image", async () => {
+        const item = await createItemForImages();
+        for (let index = 0; index < 6; index += 1) {
+          await store.addMenuImage(slug, item.id, {
+            url: `https://example.com/${index}.jpg`,
+          });
+        }
+        await expect(
+          store.addMenuImage(slug, item.id, {
+            url: "https://example.com/overflow.jpg",
+          })
+        ).rejects.toThrow(/Maximum 6 images/);
+      });
+
+      it("reorders images by sortOrder", async () => {
+        const item = await createItemForImages();
+        const a = await store.addMenuImage(slug, item.id, {
+          url: "https://example.com/a.jpg",
+        });
+        const b = await store.addMenuImage(slug, item.id, {
+          url: "https://example.com/b.jpg",
+        });
+        const reordered = await store.reorderMenuImages(slug, item.id, [
+          b.id,
+          a.id,
+        ]);
+        expect(reordered.map((image) => image.id)).toEqual([b.id, a.id]);
+        expect(reordered[0].sortOrder).toBe(0);
+        expect(reordered[1].sortOrder).toBe(1);
+      });
+
+      it("set-primary updates imageUrl dual-write", async () => {
+        const item = await createItemForImages();
+        const a = await store.addMenuImage(slug, item.id, {
+          url: "https://example.com/a.jpg",
+        });
+        const b = await store.addMenuImage(slug, item.id, {
+          url: "https://example.com/b.jpg",
+        });
+        await store.setPrimaryMenuImage(slug, item.id, b.id);
+        const fetched = await store.getMenuItem(slug, item.id);
+        expect(fetched?.imageUrl).toBe("https://example.com/b.jpg");
+        expect(fetched?.images?.find((image) => image.id === b.id)?.isPrimary).toBe(
+          true
+        );
+        expect(fetched?.images?.find((image) => image.id === a.id)?.isPrimary).toBe(
+          false
+        );
+      });
+
+      it("removing the primary promotes the next image and clears imageUrl when empty", async () => {
+        const item = await createItemForImages();
+        const a = await store.addMenuImage(slug, item.id, {
+          url: "https://example.com/a.jpg",
+        });
+        const b = await store.addMenuImage(slug, item.id, {
+          url: "https://example.com/b.jpg",
+        });
+        await store.removeMenuImage(slug, item.id, a.id);
+        let fetched = await store.getMenuItem(slug, item.id);
+        expect(fetched?.images).toHaveLength(1);
+        expect(fetched?.images?.[0].id).toBe(b.id);
+        expect(fetched?.images?.[0].isPrimary).toBe(true);
+        expect(fetched?.imageUrl).toBe("https://example.com/b.jpg");
+
+        await store.removeMenuImage(slug, item.id, b.id);
+        fetched = await store.getMenuItem(slug, item.id);
+        expect(fetched?.images ?? []).toHaveLength(0);
+        expect(fetched?.imageUrl).toBeUndefined();
+      });
+
+      it("uploadMenuImageBlob stores blobPath", async () => {
+        const item = await createItemForImages();
+        const buffer = Buffer.from("fake-image-bytes");
+        const uploaded = await store.uploadMenuImageBlob(
+          slug,
+          item.id,
+          buffer,
+          "image/png"
+        );
+        expect(uploaded.blobPath).toBeTruthy();
+        expect(uploaded.url).toContain(uploaded.blobPath!);
       });
     });
 
@@ -193,6 +395,147 @@ export function runStoreContract(
 
         await store.setKitchenOpen(slug, true);
         expect(await store.isKitchenOpen(slug)).toBe(true);
+      });
+    });
+
+    describe("order history filters", () => {
+      it("returns paginated orders newest-first with default page size", async () => {
+        const page1 = await store.listOrdersFiltered(slug, {}, { page: 1, pageSize: 0 });
+        expect(page1.pageSize).toBe(DEFAULT_ORDER_HISTORY_PAGE_SIZE);
+        expect(page1.total).toBeGreaterThan(0);
+        expect(page1.orders.length).toBeLessThanOrEqual(page1.pageSize);
+
+        if (page1.orders.length >= 2) {
+          const first = page1.orders[0].order.createdAt.getTime();
+          const second = page1.orders[1].order.createdAt.getTime();
+          expect(first).toBeGreaterThanOrEqual(second);
+        }
+      });
+
+      it("filters by order status", async () => {
+        const created = await placeOrderFromMenu();
+        await store.updateOrderStatus(created.id, "COMPLETED");
+
+        const completed = await store.listOrdersFiltered(
+          slug,
+          { status: "COMPLETED" },
+          { page: 1, pageSize: 50 }
+        );
+        expect(
+          completed.orders.some((row) => row.order.id === created.id)
+        ).toBe(true);
+
+        const pending = await store.listOrdersFiltered(
+          slug,
+          { status: "PENDING" },
+          { page: 1, pageSize: 50 }
+        );
+        expect(
+          pending.orders.some((row) => row.order.id === created.id)
+        ).toBe(false);
+      });
+
+      it("filters by payment status via Payment join", async () => {
+        const order = await placeOrderFromMenu();
+        const ref = `hist_${Date.now()}`;
+        const payment = await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: ref,
+        });
+        expect(payment.ok).toBe(true);
+
+        const pending = await store.listOrdersFiltered(
+          slug,
+          { paymentStatus: "PENDING" },
+          { page: 1, pageSize: 50 }
+        );
+        expect(pending.orders.some((row) => row.order.id === order.id)).toBe(
+          true
+        );
+
+        const confirmed = await store.confirmPayment(ref, MOMO_SIM_VALID_PIN);
+        expect(confirmed.ok).toBe(true);
+
+        const success = await store.listOrdersFiltered(
+          slug,
+          { paymentStatus: "SUCCESS" },
+          { page: 1, pageSize: 50 }
+        );
+        expect(success.orders.some((row) => row.order.id === order.id)).toBe(
+          true
+        );
+      });
+
+      it("searches by phone fragment and order id", async () => {
+        const created = await store.createOrder({
+          vendorSlug: slug,
+          customerPhone: "0788999777",
+          deliverySector: "Kicukiro",
+          landmark: "Search landmark",
+          items: [{ menuItemId: (await store.getAvailableMenu(slug))[0].id, quantity: 1 }],
+        });
+
+        const byPhone = await store.listOrdersFiltered(
+          slug,
+          { search: "9977" },
+          { page: 1, pageSize: 20 }
+        );
+        expect(byPhone.orders.some((row) => row.order.id === created.id)).toBe(
+          true
+        );
+
+        const byId = await store.listOrdersFiltered(
+          slug,
+          { search: created.id },
+          { page: 1, pageSize: 20 }
+        );
+        expect(byId.orders.some((row) => row.order.id === created.id)).toBe(
+          true
+        );
+      });
+
+      it("applies today preset to seeded recent orders", async () => {
+        const today = await store.listOrdersFiltered(
+          slug,
+          { datePreset: "today" },
+          { page: 1, pageSize: 50 }
+        );
+        expect(today.total).toBeGreaterThan(0);
+      });
+
+      it("paginates with correct total and slice", async () => {
+        const baseline = await store.listOrders(slug);
+        for (let i = 0; i < 3; i++) {
+          await placeOrderFromMenu();
+        }
+
+        const pageSize = 2;
+        const page1 = await store.listOrdersFiltered(
+          slug,
+          {},
+          { page: 1, pageSize }
+        );
+        expect(page1.orders.length).toBe(pageSize);
+        expect(page1.total).toBe(baseline.length + 3);
+
+        const page2 = await store.listOrdersFiltered(
+          slug,
+          {},
+          { page: 2, pageSize }
+        );
+        expect(page2.page).toBe(2);
+        expect(page1.orders[0].order.id).not.toBe(page2.orders[0]?.order.id);
+      });
+
+      it("returns empty results for an unknown vendor", async () => {
+        const result = await store.listOrdersFiltered(
+          "missing-vendor",
+          {},
+          { page: 1, pageSize: 20 }
+        );
+        expect(result.total).toBe(0);
+        expect(result.orders).toEqual([]);
       });
     });
 

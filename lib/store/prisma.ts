@@ -2,6 +2,7 @@ import "server-only";
 
 import type {
   Driver as PrismaDriver,
+  MenuImage as PrismaMenuImage,
   MenuItem as PrismaMenuItem,
   Order as PrismaOrder,
   OrderItem as PrismaOrderItem,
@@ -12,28 +13,67 @@ import type {
 } from "@prisma/client";
 
 import { MOMO_SIM_VALID_PIN } from "@/lib/momo/constants";
+import { deleteMenuImageBlob, putMenuImageBlob } from "@/lib/menu/blob-storage";
+import {
+  assertCanAddMenuImage,
+  buildMenuBlobPathname,
+  MenuImageError,
+  nextMenuImageSortOrder,
+  pickNextPrimaryImage,
+  sortMenuImages,
+  validateMenuImageFile,
+} from "@/lib/menu/media";
 import { prisma as defaultPrisma } from "@/lib/prisma";
 import type { Store } from "@/lib/store/types";
 import type {
+  AddMenuImageInput,
   ConfirmPaymentResult,
+  CreateMenuItemInput,
   CreateOrderInput,
   CreatePaymentInput,
   CreatePaymentResult,
   Driver,
+  MenuImage,
   MenuItem,
   Order,
+  OrderHistoryFilters,
   OrderStatus,
+  Pagination,
   Payment,
+  UpdateMenuItemInput,
   Vendor,
 } from "@/lib/types";
+import { thumbGradientForId } from "@/lib/menu/gradients";
+import {
+  normalizePagination,
+  resolveDateRange,
+} from "@/lib/orders/history-filters";
+import {
+  validateCreateMenuItemInput,
+  validateUpdateMenuItemInput,
+} from "@/lib/menu/validation";
 
 // Statuses that count toward a vendor's gross takings for the day.
 const COUNTED_STATUSES: OrderStatus[] = ["PAID", "DISPATCHED", "COMPLETED"];
 const ACTIVE_STATUSES: OrderStatus[] = ["PAID", "DISPATCHED"];
 
-type PrismaOrderWithItems = PrismaOrder & {
-  orderItems: (PrismaOrderItem & { menuItem: PrismaMenuItem })[];
+type PrismaMenuItemWithImages = PrismaMenuItem & {
+  images?: PrismaMenuImage[];
 };
+
+type PrismaOrderWithItems = PrismaOrder & {
+  orderItems: (PrismaOrderItem & { menuItem: PrismaMenuItemWithImages })[];
+};
+
+const activeMenuWhere = { archivedAt: null } as const;
+
+const menuImageInclude = {
+  images: { orderBy: { sortOrder: "asc" as const } },
+} satisfies Prisma.MenuItemInclude;
+
+const orderInclude = {
+  orderItems: { include: { menuItem: { include: menuImageInclude } } },
+} satisfies Prisma.OrderInclude;
 
 function mapVendor(vendor: PrismaVendor): Vendor {
   return {
@@ -51,7 +91,22 @@ function mapVendor(vendor: PrismaVendor): Vendor {
   };
 }
 
-function mapMenuItem(item: PrismaMenuItem): MenuItem {
+function mapMenuImage(image: PrismaMenuImage): MenuImage {
+  return {
+    id: image.id,
+    menuItemId: image.menuItemId,
+    url: image.url,
+    blobPath: image.blobPath ?? undefined,
+    sortOrder: image.sortOrder,
+    isPrimary: image.isPrimary,
+    createdAt: image.createdAt,
+  };
+}
+
+function mapMenuItem(item: PrismaMenuItemWithImages): MenuItem {
+  const images = item.images
+    ? sortMenuImages(item.images.map(mapMenuImage))
+    : undefined;
   return {
     id: item.id,
     vendorId: item.vendorId,
@@ -63,6 +118,8 @@ function mapMenuItem(item: PrismaMenuItem): MenuItem {
     isAvailable: item.isAvailable,
     thumbFrom: item.thumbFrom ?? undefined,
     thumbTo: item.thumbTo ?? undefined,
+    archivedAt: item.archivedAt ?? undefined,
+    images: images && images.length > 0 ? images : undefined,
   };
 }
 
@@ -110,10 +167,6 @@ function mapOrder(order: PrismaOrderWithItems): Order {
   };
 }
 
-const orderInclude = {
-  orderItems: { include: { menuItem: true } },
-} satisfies Prisma.OrderInclude;
-
 function isNotFoundError(error: unknown): boolean {
   return (
     typeof error === "object" &&
@@ -146,7 +199,8 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function getMenu(vendorSlug: string): Promise<MenuItem[]> {
     const items = await client.menuItem.findMany({
-      where: { vendor: { slug: vendorSlug } },
+      where: { vendor: { slug: vendorSlug }, ...activeMenuWhere },
+      include: menuImageInclude,
       orderBy: { createdAt: "asc" },
     });
     return items.map(mapMenuItem);
@@ -154,10 +208,35 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function getAvailableMenu(vendorSlug: string): Promise<MenuItem[]> {
     const items = await client.menuItem.findMany({
-      where: { vendor: { slug: vendorSlug }, isAvailable: true },
+      where: {
+        vendor: { slug: vendorSlug },
+        isAvailable: true,
+        ...activeMenuWhere,
+      },
+      include: menuImageInclude,
       orderBy: { createdAt: "asc" },
     });
     return items.map(mapMenuItem);
+  }
+
+  async function getArchivedMenu(vendorSlug: string): Promise<MenuItem[]> {
+    const items = await client.menuItem.findMany({
+      where: { vendor: { slug: vendorSlug }, archivedAt: { not: null } },
+      include: menuImageInclude,
+      orderBy: { archivedAt: "desc" },
+    });
+    return items.map(mapMenuItem);
+  }
+
+  async function getMenuItem(
+    vendorSlug: string,
+    itemId: string
+  ): Promise<MenuItem | null> {
+    const item = await client.menuItem.findFirst({
+      where: { id: itemId, vendor: { slug: vendorSlug } },
+      include: menuImageInclude,
+    });
+    return item ? mapMenuItem(item) : null;
   }
 
   async function getCategories(vendorSlug: string): Promise<string[]> {
@@ -168,7 +247,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     if (!vendor) return [];
 
     const rows = await client.menuItem.findMany({
-      where: { vendorId: vendor.id },
+      where: { vendorId: vendor.id, ...activeMenuWhere },
       distinct: ["category"],
       select: { category: true },
       orderBy: { category: "asc" },
@@ -176,12 +255,335 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     return ["All", ...rows.map((r) => r.category)];
   }
 
+  async function createMenuItem(
+    vendorSlug: string,
+    input: CreateMenuItemInput
+  ): Promise<MenuItem> {
+    const validationError = validateCreateMenuItemInput(input);
+    if (validationError) {
+      throw new Error(validationError);
+    }
+
+    const vendor = await client.vendor.findUnique({
+      where: { slug: vendorSlug },
+      select: { id: true },
+    });
+    if (!vendor) throw new Error("Vendor not found");
+
+    const gradient = thumbGradientForId(`new_${Date.now()}`);
+    const created = await client.menuItem.create({
+      data: {
+        vendorId: vendor.id,
+        name: input.name.trim(),
+        description: input.description?.trim() || null,
+        priceRwf: input.priceRwf,
+        category: input.category?.trim() || "General",
+        isAvailable: true,
+        thumbFrom: gradient.thumbFrom,
+        thumbTo: gradient.thumbTo,
+      },
+    });
+    return mapMenuItem(created);
+  }
+
+  async function updateMenuItem(
+    vendorSlug: string,
+    itemId: string,
+    input: UpdateMenuItemInput
+  ): Promise<MenuItem | null> {
+    const validationError = validateUpdateMenuItemInput(input);
+    if (validationError) {
+      throw new Error(validationError);
+    }
+
+    const existing = await client.menuItem.findFirst({
+      where: { id: itemId, vendor: { slug: vendorSlug } },
+    });
+    if (!existing) return null;
+
+    const data: Prisma.MenuItemUpdateInput = {};
+    if (input.name !== undefined) data.name = input.name.trim();
+    if (input.priceRwf !== undefined) data.priceRwf = input.priceRwf;
+    if (input.description !== undefined) {
+      data.description = input.description.trim() || null;
+    }
+    if (input.category !== undefined) {
+      data.category = input.category.trim() || "General";
+    }
+
+    try {
+      const updated = await client.menuItem.update({
+        where: { id: existing.id },
+        data,
+      });
+      return mapMenuItem(updated);
+    } catch (error) {
+      if (isNotFoundError(error)) return null;
+      throw error;
+    }
+  }
+
+  async function archiveMenuItem(
+    vendorSlug: string,
+    itemId: string
+  ): Promise<MenuItem | null> {
+    const existing = await client.menuItem.findFirst({
+      where: { id: itemId, vendor: { slug: vendorSlug }, ...activeMenuWhere },
+    });
+    if (!existing) return null;
+
+    try {
+      const updated = await client.menuItem.update({
+        where: { id: existing.id },
+        data: { archivedAt: new Date() },
+      });
+      return mapMenuItem(updated);
+    } catch (error) {
+      if (isNotFoundError(error)) return null;
+      throw error;
+    }
+  }
+
+  async function restoreMenuItem(
+    vendorSlug: string,
+    itemId: string
+  ): Promise<MenuItem | null> {
+    const existing = await client.menuItem.findFirst({
+      where: { id: itemId, vendor: { slug: vendorSlug }, archivedAt: { not: null } },
+    });
+    if (!existing) return null;
+
+    try {
+      const updated = await client.menuItem.update({
+        where: { id: existing.id },
+        data: { archivedAt: null },
+      });
+      return mapMenuItem(updated);
+    } catch (error) {
+      if (isNotFoundError(error)) return null;
+      throw error;
+    }
+  }
+
+  async function renameCategory(
+    vendorSlug: string,
+    from: string,
+    to: string
+  ): Promise<number> {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: vendorSlug },
+      select: { id: true },
+    });
+    if (!vendor) return 0;
+
+    const result = await client.menuItem.updateMany({
+      where: {
+        vendorId: vendor.id,
+        category: from,
+        ...activeMenuWhere,
+      },
+      data: { category: to.trim() || "General" },
+    });
+    return result.count;
+  }
+
+  async function addMenuImage(
+    vendorSlug: string,
+    itemId: string,
+    input: AddMenuImageInput
+  ): Promise<MenuImage> {
+    const item = await client.menuItem.findFirst({
+      where: { id: itemId, vendor: { slug: vendorSlug } },
+      include: menuImageInclude,
+    });
+    if (!item) {
+      throw new MenuImageError("Menu item not found", "NOT_FOUND");
+    }
+
+    assertCanAddMenuImage(item.images.length);
+    const isFirst = item.images.length === 0;
+
+    const created = await client.$transaction(async (tx) => {
+      const image = await tx.menuImage.create({
+        data: {
+          menuItemId: item.id,
+          url: input.url.trim(),
+          sortOrder: nextMenuImageSortOrder(item.images.map(mapMenuImage)),
+          isPrimary: isFirst,
+        },
+      });
+      if (isFirst) {
+        await tx.menuItem.update({
+          where: { id: item.id },
+          data: { imageUrl: image.url },
+        });
+      }
+      return image;
+    });
+
+    return mapMenuImage(created);
+  }
+
+  async function uploadMenuImageBlob(
+    vendorSlug: string,
+    itemId: string,
+    file: Buffer,
+    mime: string
+  ): Promise<MenuImage> {
+    const validationError = validateMenuImageFile(file.byteLength, mime);
+    if (validationError) {
+      throw new Error(validationError);
+    }
+
+    const item = await client.menuItem.findFirst({
+      where: { id: itemId, vendor: { slug: vendorSlug } },
+      include: menuImageInclude,
+    });
+    if (!item) {
+      throw new MenuImageError("Menu item not found", "NOT_FOUND");
+    }
+
+    assertCanAddMenuImage(item.images.length);
+    const isFirst = item.images.length === 0;
+    const pathname = buildMenuBlobPathname(vendorSlug, itemId, mime);
+    const uploaded = await putMenuImageBlob(pathname, file, mime);
+
+    const created = await client.$transaction(async (tx) => {
+      const image = await tx.menuImage.create({
+        data: {
+          menuItemId: item.id,
+          url: uploaded.url,
+          blobPath: uploaded.pathname,
+          sortOrder: nextMenuImageSortOrder(item.images.map(mapMenuImage)),
+          isPrimary: isFirst,
+        },
+      });
+      if (isFirst) {
+        await tx.menuItem.update({
+          where: { id: item.id },
+          data: { imageUrl: image.url },
+        });
+      }
+      return image;
+    });
+
+    return mapMenuImage(created);
+  }
+
+  async function reorderMenuImages(
+    vendorSlug: string,
+    itemId: string,
+    imageIds: string[]
+  ): Promise<MenuImage[]> {
+    const item = await client.menuItem.findFirst({
+      where: { id: itemId, vendor: { slug: vendorSlug } },
+      include: menuImageInclude,
+    });
+    if (!item) {
+      throw new MenuImageError("Menu item not found", "NOT_FOUND");
+    }
+
+    if (
+      imageIds.length !== item.images.length ||
+      !imageIds.every((id) => item.images.some((image) => image.id === id))
+    ) {
+      throw new MenuImageError("Image set mismatch", "INVALID_SET");
+    }
+
+    await client.$transaction(
+      imageIds.map((id, sortOrder) =>
+        client.menuImage.update({
+          where: { id },
+          data: { sortOrder },
+        })
+      )
+    );
+
+    const refreshed = await client.menuImage.findMany({
+      where: { menuItemId: item.id },
+      orderBy: { sortOrder: "asc" },
+    });
+    return sortMenuImages(refreshed.map(mapMenuImage));
+  }
+
+  async function setPrimaryMenuImage(
+    vendorSlug: string,
+    itemId: string,
+    imageId: string
+  ): Promise<MenuImage | null> {
+    const item = await client.menuItem.findFirst({
+      where: { id: itemId, vendor: { slug: vendorSlug } },
+      include: menuImageInclude,
+    });
+    if (!item) return null;
+
+    const target = item.images.find((image) => image.id === imageId);
+    if (!target) return null;
+
+    await client.$transaction(async (tx) => {
+      await tx.menuImage.updateMany({
+        where: { menuItemId: item.id },
+        data: { isPrimary: false },
+      });
+      await tx.menuImage.update({
+        where: { id: imageId },
+        data: { isPrimary: true },
+      });
+      await tx.menuItem.update({
+        where: { id: item.id },
+        data: { imageUrl: target.url },
+      });
+    });
+
+    return mapMenuImage({ ...target, isPrimary: true });
+  }
+
+  async function removeMenuImage(
+    vendorSlug: string,
+    itemId: string,
+    imageId: string
+  ): Promise<boolean> {
+    const item = await client.menuItem.findFirst({
+      where: { id: itemId, vendor: { slug: vendorSlug } },
+      include: menuImageInclude,
+    });
+    if (!item) return false;
+
+    const target = item.images.find((image) => image.id === imageId);
+    if (!target) return false;
+
+    const remaining = item.images.filter((image) => image.id !== imageId);
+    const nextPrimary = target.isPrimary
+      ? pickNextPrimaryImage(remaining.map(mapMenuImage))
+      : remaining.find((image) => image.isPrimary);
+
+    await client.$transaction(async (tx) => {
+      await tx.menuImage.delete({ where: { id: imageId } });
+      if (target.isPrimary && nextPrimary) {
+        await tx.menuImage.update({
+          where: { id: nextPrimary.id },
+          data: { isPrimary: true },
+        });
+      }
+      await tx.menuItem.update({
+        where: { id: item.id },
+        data: { imageUrl: nextPrimary?.url ?? null },
+      });
+    });
+
+    if (target.blobPath) {
+      await deleteMenuImageBlob(target.blobPath);
+    }
+
+    return true;
+  }
+
   async function toggleItemAvailability(
     vendorSlug: string,
     itemId: string
   ): Promise<MenuItem | null> {
     const item = await client.menuItem.findFirst({
-      where: { id: itemId, vendor: { slug: vendorSlug } },
+      where: { id: itemId, vendor: { slug: vendorSlug }, ...activeMenuWhere },
     });
     if (!item) return null;
 
@@ -200,7 +602,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     if (!vendor) return [];
 
     await client.menuItem.updateMany({
-      where: { vendorId: vendor.id },
+      where: { vendorId: vendor.id, ...activeMenuWhere },
       data: { isAvailable: true },
     });
     return getMenu(vendorSlug);
@@ -227,6 +629,72 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     return orders.map(mapOrder);
   }
 
+  async function listOrdersFiltered(
+    vendorSlug: string,
+    filters: OrderHistoryFilters,
+    pagination: Pagination
+  ) {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: vendorSlug },
+      select: { id: true },
+    });
+    const { page, pageSize, skip } = normalizePagination(pagination);
+
+    if (!vendor) {
+      return { orders: [], total: 0, page, pageSize };
+    }
+
+    const range = resolveDateRange(filters);
+    const where: Prisma.OrderWhereInput = { vendorId: vendor.id };
+
+    if (range) {
+      where.createdAt = { gte: range.from, lte: range.to };
+    }
+
+    if (filters.status && filters.status !== "ALL") {
+      where.status = filters.status;
+    }
+
+    if (filters.paymentStatus && filters.paymentStatus !== "ALL") {
+      where.payment = { status: filters.paymentStatus };
+    }
+
+    const search = filters.search?.trim();
+    if (search) {
+      where.OR = [
+        { customerPhone: { contains: search, mode: "insensitive" } },
+        { id: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    const [rows, total] = await Promise.all([
+      client.order.findMany({
+        where,
+        include: {
+          ...orderInclude,
+          payment: { select: { status: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize,
+      }),
+      client.order.count({ where }),
+    ]);
+
+    return {
+      orders: rows.map((row) => {
+        const { payment, ...orderRow } = row;
+        return {
+          order: mapOrder(orderRow as PrismaOrderWithItems),
+          paymentStatus: payment?.status ?? null,
+        };
+      }),
+      total,
+      page,
+      pageSize,
+    };
+  }
+
   async function getOrder(orderId: string): Promise<Order | null> {
     const order = await client.order.findUnique({
       where: { id: orderId },
@@ -243,7 +711,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     if (!vendor) throw new Error("Vendor not found");
 
     const menuItems = await client.menuItem.findMany({
-      where: { vendorId: vendor.id },
+      where: { vendorId: vendor.id, ...activeMenuWhere },
     });
     const menuById = new Map(menuItems.map((m) => [m.id, m]));
 
@@ -405,6 +873,13 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     return payment ? mapPayment(payment) : null;
   }
 
+  async function getPaymentForOrder(orderId: string): Promise<Payment | null> {
+    const payment = await client.payment.findUnique({
+      where: { orderId },
+    });
+    return payment ? mapPayment(payment) : null;
+  }
+
   async function confirmPayment(
     ref: string,
     pin: string
@@ -467,11 +942,24 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     getVendorBySlug,
     getMenu,
     getAvailableMenu,
+    getArchivedMenu,
+    getMenuItem,
     getCategories,
+    createMenuItem,
+    updateMenuItem,
+    archiveMenuItem,
+    restoreMenuItem,
+    renameCategory,
+    addMenuImage,
+    uploadMenuImageBlob,
+    reorderMenuImages,
+    setPrimaryMenuImage,
+    removeMenuImage,
     toggleItemAvailability,
     setAllItemsAvailable,
     listOrders,
     listActiveOrders,
+    listOrdersFiltered,
     getOrder,
     createOrder,
     updateOrderStatus,
@@ -481,6 +969,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     setKitchenOpen,
     createPayment,
     getPaymentByRef,
+    getPaymentForOrder,
     confirmPayment,
   };
 }

@@ -24,6 +24,7 @@ export async function seedDatabase(client: PrismaClient): Promise<void> {
   await client.orderItem.deleteMany();
   await client.order.deleteMany();
   await client.driver.deleteMany();
+  await client.menuImage.deleteMany();
   await client.menuItem.deleteMany();
   await client.vendor.deleteMany();
 

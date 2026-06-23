@@ -9,11 +9,11 @@ A restaurant or food business with a storefront, menu, drivers, and a MoMo code.
 _Avoid_: merchant, seller, restaurant
 
 **Customer view**:
-The public storefront at `/[slug]` where a Customer browses the menu and checks out. Glassmorphic styling.
+The public storefront at `/[slug]` where a Customer browses the menu and checks out. Styled per the brand design system in `DESIGN.md` (ElevenLabs editorial: off-white canvas, near-black ink, pastel gradient orbs). See ADR-0005.
 _Avoid_: customer page, frontend, shop
 
 **KDS** (Kitchen Display System):
-The vendor-facing screen at `/vendor/[slug]` for accepting, preparing, and dispatching Orders. Matte dark industrial styling, large touch targets.
+The vendor-facing screen at `/vendor/[slug]` for accepting, preparing, and dispatching Orders. Styled per the brand design system in `DESIGN.md` (same ElevenLabs editorial language as the Customer view), keeping large touch targets and high legibility for kitchen use. See ADR-0005.
 _Avoid_: dashboard, admin, backend UI
 
 **Order**:
@@ -39,6 +39,18 @@ _Avoid_: transaction, charge, txn
 **Checkout**:
 The client-side module (`lib/checkout/`) that owns checkout validation, cart line/total computation, the stage machine, and place-order / MoMo orchestration for the Customer view. Distinct from an Order (which is the server-side commitment) and from the menu **cart** (item quantities only).
 _Avoid_: basket, payment flow (when you mean the whole checkout module)
+
+**Menu image**:
+A photo attached to a MenuItem. An item has a gallery of images with exactly one **primary** image (shown on the storefront card and KDS); the rest are secondary. Uploaded (primary path) or linked by URL (secondary path). When an item has no images, a generated gradient (`thumbFrom`/`thumbTo`) is the fallback thumbnail.
+_Avoid_: photo, picture, asset
+
+**Archived item**:
+A MenuItem soft-deleted via `archivedAt`. It disappears from the storefront and the Menu list but is retained for order history and exports; it can be restored. "Deleting" a menu item means archiving it.
+_Avoid_: deleted item, removed item, hidden item (hidden = sold-out/unavailable, which is different)
+
+**Write-secret**:
+The shared secret (a single env var) that guards abuse-prone vendor write operations (media upload, menu delete) while real authentication is deferred. Entered once in the KDS, kept client-side, and validated server-side on guarded Server Actions. Not real auth.
+_Avoid_: password, api key, token (when you specifically mean this interim guard)
 
 **Adapter**:
 A concrete implementation satisfying the Store interface at its seam. Two exist: an in-memory adapter (tests/local dev) and a Prisma/Postgres adapter (production).

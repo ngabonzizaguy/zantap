@@ -39,6 +39,7 @@ export function MetricsBanner({
         </div>
         <button
           type="button"
+          data-coachmark-target="kitchen-toggle"
           onClick={onToggleKitchen}
           className={cn(
             "flex h-11 items-center gap-2 rounded-full px-4 text-sm font-extrabold tracking-wide",

@@ -54,6 +54,27 @@ describe.skipIf(!TEST_DATABASE_URL)("Prisma adapter (integration)", () => {
     return { ...base, reset: () => seedDatabase(client) };
   });
 
+  describe("menu image cascade", () => {
+    it("deletes MenuImage rows when the parent MenuItem is removed", async () => {
+      await seedDatabase(client);
+
+      const store = createPrismaStore(client);
+      const created = await store.createMenuItem(DEMO_VENDOR_SLUG, {
+        name: "Cascade Test",
+        priceRwf: 4000,
+      });
+      await store.addMenuImage(DEMO_VENDOR_SLUG, created.id, {
+        url: "https://example.com/cascade.jpg",
+      });
+
+      await client.menuItem.delete({ where: { id: created.id } });
+      const remaining = await client.menuImage.count({
+        where: { menuItemId: created.id },
+      });
+      expect(remaining).toBe(0);
+    });
+  });
+
   // The whole point of the Prisma adapter: data outlives the process. A module-
   // scoped in-memory Store would lose this Order on restart (and, on Vercel,
   // between serverless invocations) — the exact split-brain bug this slice

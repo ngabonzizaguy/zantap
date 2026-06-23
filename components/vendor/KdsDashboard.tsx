@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Driver, MenuItem, Order, Vendor } from "@/lib/types";
 import {
   advanceOrderStatus,
@@ -9,15 +9,20 @@ import {
   setKitchen,
   toggleItem,
 } from "@/lib/actions/vendor";
+import { loadOnboardingState } from "@/lib/actions/vendor-guides";
 import { useKdsLiveSnapshot } from "@/lib/kds/useKdsLiveSnapshot";
 import type { KdsSnapshot } from "@/lib/kds/types";
 import { buildDeliverySlip } from "@/lib/whatsapp";
+import { deriveOnboardingState } from "@/lib/vendor/onboarding";
 import { MetricsBanner } from "@/components/vendor/MetricsBanner";
-import { Tabs } from "@/components/vendor/Tabs";
+import { Tabs, type KdsTab } from "@/components/vendor/Tabs";
 import { OrdersList } from "@/components/vendor/OrderTicket";
-import { InventoryGrid } from "@/components/vendor/InventoryGrid";
+import { MenuSection } from "@/components/vendor/MenuSection";
+import { HistoryPanel } from "@/components/vendor/HistoryPanel";
 import { DispatchModal } from "@/components/vendor/DispatchModal";
-
+import { SetupDrawer } from "@/components/vendor/SetupDrawer";
+import { Coachmark } from "@/components/vendor/Coachmark";
+import { Card } from "@/components/ui/primitives";
 interface KdsDashboardProps {
   vendor: Vendor;
   initialOrders: Order[];
@@ -35,7 +40,7 @@ export function KdsDashboard({
   initialTodayGross,
   initialKitchenOpen,
 }: KdsDashboardProps) {
-  const [tab, setTab] = useState<"orders" | "inventory">("orders");
+  const [tab, setTab] = useState<KdsTab>("orders");
   const [orders, setOrders] = useState(initialOrders);
   const [menu, setMenu] = useState(initialMenu);
   const [drivers] = useState(initialDrivers);
@@ -46,7 +51,29 @@ export function KdsDashboard({
   );
   const [dispatchId, setDispatchId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [onboardingOverride, setOnboardingOverride] = useState<
+    ReturnType<typeof deriveOnboardingState> | null
+  >(null);
 
+  const liveChecklist = useMemo(
+    () => deriveOnboardingState(menu, kitchenOpen, orders),
+    [menu, kitchenOpen, orders]
+  );
+  const checklist = onboardingOverride ?? liveChecklist;
+
+  useEffect(() => {
+    setOnboardingOverride(null);
+  }, [menu, kitchenOpen, orders]);
+
+  const refreshOnboarding = useCallback(async () => {
+    try {
+      const state = await loadOnboardingState(vendor.slug);
+      setOnboardingOverride(state);
+    } catch {
+      setOnboardingOverride(null);
+    }
+  }, [vendor.slug]);
   const applySnapshot = useCallback((snapshot: KdsSnapshot) => {
       setOrders(snapshot.orders);
       setMenu(snapshot.menu);
@@ -56,6 +83,22 @@ export function KdsDashboard({
 
   useKdsLiveSnapshot(vendor.slug, applySnapshot);
 
+  useEffect(() => {
+    if (tab === "setup") {
+      setSetupOpen(true);
+    }
+  }, [tab]);
+
+  const openSetup = useCallback(() => {
+    setSetupOpen(true);
+  }, []);
+
+  const closeSetup = useCallback(() => {
+    setSetupOpen(false);
+    if (tab === "setup") {
+      setTab("orders");
+    }
+  }, [tab]);
   const refresh = useCallback(async () => {
     const snapshot = await loadKdsSnapshot(vendor.slug);
     applySnapshot(snapshot);
@@ -121,6 +164,7 @@ export function KdsDashboard({
   };
 
   return (
+    // DEPRECATED: zk-* palette — visual migration to DESIGN.md tokens lands in Issue 01+.
     <div className="min-h-screen w-full bg-zk-bg text-zk-text">
       <div className="relative mx-auto min-h-screen w-full max-w-kds overflow-hidden border-x border-zk-borderDark bg-zk-bg pb-10">
         <div className="pointer-events-none absolute -left-[60px] -top-[120px] z-0 h-80 w-80 rounded-full bg-[radial-gradient(circle_at_40%_40%,rgba(245,148,95,0.5),rgba(245,148,95,0))] blur-[40px]" />
@@ -137,9 +181,13 @@ export function KdsDashboard({
         <Tabs
           active={tab}
           onOrders={() => setTab("orders")}
-          onInventory={() => setTab("inventory")}
+          onMenu={() => setTab("menu")}
+          onHistory={() => setTab("history")}
+          onSetup={() => {
+            setTab("setup");
+            setSetupOpen(true);
+          }}
         />
-
         <div className="relative z-[1] px-[18px] pt-3.5">
           {tab === "orders" ? (
             <OrdersList
@@ -151,18 +199,67 @@ export function KdsDashboard({
                 setCopied(false);
               }}
             />
-          ) : (
-            <InventoryGrid
+          ) : tab === "menu" ? (
+            <MenuSection
+              vendorSlug={vendor.slug}
               items={menu}
               onToggle={handleToggleItem}
               onResetAll={handleResetAll}
+              onRefresh={refresh}
             />
-          )}
-        </div>
+          ) : tab === "history" ? (
+            <HistoryPanel vendorSlug={vendor.slug} />
+          ) : (
+            <Card padding="md" className="text-center">
+              <p className="font-display text-display-sm text-ink">
+                Setup guide
+              </p>
+              <p className="mt-2 font-body text-body-sm text-muted">
+                Your checklist opens in the panel on the right. Tap ? anytime to
+                reopen it.
+              </p>
+            </Card>
+          )}        </div>
       </div>
 
-      <DispatchModal
-        open={!!dispatchId}
+      <button
+        type="button"
+        onClick={openSetup}
+        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-hairline bg-surface-card text-2xl font-bold text-ink shadow-brand-soft hover:bg-canvas-soft"
+        aria-label="Open setup guide"
+      >
+        ?
+      </button>
+
+      <SetupDrawer
+        open={setupOpen}
+        onClose={closeSetup}
+        checklist={checklist}
+        onRefresh={refreshOnboarding}
+      />
+
+      <Coachmark
+        id="kitchen-toggle"
+        targetSelector='[data-coachmark-target="kitchen-toggle"]'
+        title="Kitchen status"
+        body="Toggle OPEN when you are ready to accept orders. Customers cannot place orders while closed."
+      />
+      <Coachmark
+        id="menu-add"
+        targetSelector='[data-coachmark-target="menu-add"]'
+        title="Add your first dish"
+        body="Tap here to create a menu item customers can order from your storefront."
+        enabled={tab === "menu"}
+      />
+      <Coachmark
+        id="dispatch-button"
+        targetSelector='[data-coachmark-target="dispatch-button"]'
+        title="Dispatch to driver"
+        body="When an order is paid, expand the ticket and dispatch the moto driver with the delivery slip."
+        enabled={tab === "orders" && !!expandedId}
+      />
+
+      <DispatchModal        open={!!dispatchId}
         order={dispatchOrder}
         vendorName={vendor.name}
         drivers={drivers}

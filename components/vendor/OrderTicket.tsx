@@ -117,6 +117,7 @@ export function OrderTicket({
           {!dispatched ? (
             <button
               type="button"
+              data-coachmark-target="dispatch-button"
               onClick={onDispatch}
               className="mt-3.5 flex h-[60px] w-full items-center justify-center gap-2.5 rounded-[14px] border-none bg-gradient-to-br from-[#FFC24C] to-[#F5945F] text-base font-extrabold tracking-wide text-[#2a1606] shadow-[0_10px_26px_rgba(245,148,95,0.32)]"
             >

@@ -2,6 +2,7 @@
 
 import type { MenuItem } from "@/lib/types";
 import { formatRwf } from "@/lib/format";
+import { getPrimaryImageUrl } from "@/lib/menu/media";
 import { Icon } from "@/components/ui/Icon";
 import { GlassPanel } from "@/components/ui/GlassPanel";
 
@@ -13,14 +14,23 @@ interface MenuItemCardProps {
 
 export function MenuItemCard({ item, qty, onAdd }: MenuItemCardProps) {
   const thumbBg = `radial-gradient(circle at 32% 28%, ${item.thumbFrom ?? "#ffd2b0"}, ${item.thumbTo ?? "#f5945f"})`;
+  const primaryImage = getPrimaryImageUrl(item);
 
   return (
     <GlassPanel className="relative flex items-center gap-4 p-3.5">
       <div
-        className="relative flex h-[72px] w-[72px] flex-none items-center justify-center rounded-2xl border border-white/70 shadow-[inset_0_2px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(170,110,100,0.16)]"
-        style={{ background: thumbBg }}
+        className="relative flex h-[72px] w-[72px] flex-none items-center justify-center overflow-hidden rounded-2xl border border-white/70 shadow-[inset_0_2px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(170,110,100,0.16)]"
+        style={
+          primaryImage
+            ? {
+                background: `center / cover no-repeat url(${primaryImage})`,
+              }
+            : { background: thumbBg }
+        }
       >
-        <Icon name="plate" size={28} className="stroke-white/90" />
+        {!primaryImage ? (
+          <Icon name="plate" size={28} className="stroke-white/90" />
+        ) : null}
         {qty > 0 && (
           <div className="absolute -left-2 -top-2 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-[#fbeee6] bg-zt-brown px-1.5 text-xs font-extrabold text-white shadow-[0_4px_10px_rgba(0,0,0,0.22)]">
             {qty}

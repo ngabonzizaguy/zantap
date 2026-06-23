@@ -9,7 +9,7 @@ is never lost again.
 > convention — local markdown, no GitHub round-trips). It persists on this machine
 > across sessions, but does **not** sync via git to other clones/machines.
 
-Last verified against the codebase: 2026-06-22.
+Last verified against the codebase: 2026-06-23.
 
 ## Open production issues (read before touching the KDS)
 
@@ -54,8 +54,9 @@ If a session ends without doing both, the handoff is incomplete.
 | 3 | Extract a Checkout module from the Storefront UI | Worth exploring | in-process (client) | ✅ Done | `.scratch/checkout-module/PRD.md` |
 | 4 | Give the KDS a real orders interface | Worth exploring | ports & adapters | ✅ Done | `.scratch/kds-live-push/PRD.md` |
 | 5 | Make Prisma the type source; Zod at the seam | Speculative | — | ◑ Audited — deferred | `.scratch/prisma-type-source/PRD.md` |
+| 6 | KDS Vendor Suite (menu, media, export, history, guides) | Strong | ports & adapters | ✅ Done — uncommitted on main | `.scratch/kds-vendor-suite/PRD.md` |
 
-There are exactly **5** candidates. No hidden #6+.
+There are exactly **6** candidates.
 
 ---
 
@@ -160,6 +161,67 @@ ADR-0003. Issue 01 queued (enums + Zod on `CreateOrderInput`).
 - PRD: `.scratch/prisma-type-source/PRD.md`
 - Issues: `01-enum-source-zod-create-order` (blocked on trigger)
 - ADR: `docs/adr/0003-prisma-type-source-audit.md`
+
+---
+
+## #6 · KDS Vendor Suite — ✅ DONE (Issue 05 shipped)
+
+Rating: Strong · Scope: ports & adapters + vendor UI.
+
+Five vendor-facing capabilities on the ElevenLabs editorial design system:
+menu CRUD (soft-delete), Vercel Blob media gallery, order History filters,
+CSV/XLSX + print receipt export, and data-derived onboarding guides. Foundation
+first: Issue 0 wires `DESIGN.md` → Tailwind + primitive kit before features.
+
+**Grilled 2026-06-23** — decisions in
+`.scratch/kds-vendor-suite/grill-decisions.md`. **PRD written 2026-06-23**.
+**Issues sliced 2026-06-23** — six vertically isolated cards (00–05) under
+`.scratch/kds-vendor-suite/issues/`.
+
+**Issue 00 shipped 2026-06-23** — `DESIGN.md` tokens in `tailwind.config.ts`
+(canvas/ink/hairline/gradient/surface/semantic + type scale + spacing/radius);
+Inter (`--font-body`) + Instrument Serif (`--font-display`) in `app/layout.tsx`;
+primitive kit at `components/ui/primitives/` (Button, Input, Card, Modal, Badge,
+GradientOrbs); four-tab KDS nav shell with History/Setup placeholders using
+primitives; legacy `zt-*`/`zk-*` marked deprecated. `npm run build` + 88/88 tests
+green.
+
+**Issue 01 shipped 2026-06-23** — `archivedAt` migration + Store CRUD
+(create/update/archive/restore/renameCategory, getArchivedMenu/getMenuItem);
+guarded `lib/actions/vendor-menu.ts` + `VENDOR_WRITE_SECRET` / `useWriteSecret`;
+Menu tab (`MenuSection`, `MenuItemModal`) replaces `InventoryGrid` with
+primitive-kit UI (create/edit, archive/restore, category typeahead, availability
+toggle unchanged). 102/102 tests green; `npm run build` passes. ADR-0006,
+ADR-0009.
+
+**Issue 02 shipped 2026-06-23** — `MenuImage` migration + data backfill from
+`imageUrl`; Store image verbs (`addMenuImage`, `uploadMenuImageBlob`,
+`reorderMenuImages`, `setPrimaryMenuImage`, `removeMenuImage`) on both adapters;
+guarded upload/URL/reorder/primary/remove actions; `MenuImageGallery` in edit
+modal; `getPrimaryImageUrl` on KDS Menu cards + storefront `MenuItemCard`;
+`@vercel/blob` + `BLOB_READ_WRITE_TOKEN`. In-memory contract 32/32 green;
+`npm run build` passes. ADR-0007, ADR-0008.
+
+**Issue 04 shipped 2026-06-23** — printable branded receipt at
+`/vendor/[slug]/receipt/[orderId]` (`PrintReceiptButton`, `@media print` CSS);
+guarded `GET /api/vendor/[slug]/export` (CSV + XLSX via `exceljs`, reuses
+`listOrdersFiltered` for all matching rows, `EXPORT_MAX_ROWS = 10_000`);
+`lib/vendor/export-orders.ts` + 9 unit tests; History export buttons + per-row
+Receipt link; `getPaymentForOrder` on Store for MoMo ref. `npm run build`
+passes. ADR-0011.
+
+**Issue 05 shipped 2026-06-23** — `SetupDrawer` with data-derived checklist
+(`lib/vendor/onboarding.ts`, `loadOnboardingState` action); dismissible
+`Coachmark` tooltips (`zantap:kds-coachmark-*` localStorage); persistent `?` FAB;
+write-secret row in drawer; coachmark targets on kitchen toggle, Menu "+", dispatch
+button. 5 onboarding unit tests; `npm run build` passes. ADR-0012. **Candidate #6
+batch complete.**
+
+- PRD: `.scratch/kds-vendor-suite/PRD.md`
+- Grill: `.scratch/kds-vendor-suite/grill-decisions.md`
+- Issues: `00-design-system-foundation` ✅ → `01-menu-crud-store-and-ui` ✅ → `02-menu-media-gallery` ✅ → `03-order-history-filters` ✅ → `04-order-export` ✅ → `05-vendor-onboarding-guides` ✅
+- ADRs: `docs/adr/0006-menu-soft-delete-archived-at.md`, `docs/adr/0007-vercel-blob-menu-media.md`, `docs/adr/0008-menu-image-gallery-model.md`, `docs/adr/0009-deferred-auth-write-secret.md`, `docs/adr/0010-order-history-filter-semantics.md`, `docs/adr/0011-order-export-guard-and-row-cap.md`, `docs/adr/0012-onboarding-data-derived-checklist.md`
+- Depends on: #1 Store seam ✅, #2 Payment ✅, ADR-0005 design system ✅
 
 ---
 
