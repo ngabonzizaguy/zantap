@@ -4,8 +4,16 @@ import { getStore } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
+// Vercel kills a function at its max duration. We claim the full window so the
+// self-close margin below is deterministic instead of riding on the plan default.
+export const maxDuration = 300;
+
 const POLL_MS = 1_000;
 const HEARTBEAT_MS = 15_000;
+// Close the stream ourselves comfortably before Vercel's hard kill. A clean
+// controller.close() lets the function RETURN (no "Task timed out" logged); the
+// browser EventSource then reconnects via the backoff in useKdsLiveSnapshot.
+const MAX_STREAM_MS = 250_000;
 
 export async function GET(
   request: Request,
@@ -41,6 +49,21 @@ export async function GET(
         controller.enqueue(encoder.encode(": heartbeat\n\n"));
       };
 
+      // Declared up front so every exit path (initial read, poll error, abort,
+      // planned self-close) routes through one idempotent cleanup.
+      let pollTimer: ReturnType<typeof setInterval>;
+      let heartbeatTimer: ReturnType<typeof setInterval>;
+      let lifetimeTimer: ReturnType<typeof setTimeout>;
+
+      const teardown = () => {
+        if (closed) return;
+        closed = true;
+        clearInterval(pollTimer);
+        clearInterval(heartbeatTimer);
+        clearTimeout(lifetimeTimer);
+        controller.close();
+      };
+
       try {
         await pushIfChanged();
       } catch {
@@ -49,23 +72,16 @@ export async function GET(
         return;
       }
 
-      const pollTimer = setInterval(() => {
-        void pushIfChanged().catch(() => {
-          closed = true;
-          clearInterval(pollTimer);
-          clearInterval(heartbeatTimer);
-          controller.close();
-        });
+      pollTimer = setInterval(() => {
+        void pushIfChanged().catch(teardown);
       }, POLL_MS);
 
-      const heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_MS);
+      heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_MS);
 
-      request.signal.addEventListener("abort", () => {
-        closed = true;
-        clearInterval(pollTimer);
-        clearInterval(heartbeatTimer);
-        controller.close();
-      });
+      // Planned self-close before the platform limit → function returns normally.
+      lifetimeTimer = setTimeout(teardown, MAX_STREAM_MS);
+
+      request.signal.addEventListener("abort", teardown);
     },
   });
 
