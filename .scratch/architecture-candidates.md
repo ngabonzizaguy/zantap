@@ -11,6 +11,16 @@ is never lost again.
 
 Last verified against the codebase: 2026-06-22.
 
+## Open production issues (read before touching the KDS)
+
+- **Known issue 0001** — KDS `/vendor/<slug>` shows the browser's "This page couldn't
+  load" on reload, and `/vendor/<slug>/kds-stream` shows "Vendor not found".
+  Diagnosed 2026-06-23: the second is just a wrong URL (the stream is under `/api/...`,
+  404 → `not-found.tsx`); the first is a real client/browser-side failure most likely
+  from candidate #4's long-lived 1s-poll SSE on Vercel+HTTP/2. Server render is proven
+  healthy. Full diagnosis, confirm-steps, and fix options:
+  `docs/known-issues/0001-kds-page-couldnt-load-and-stream-url.md` (git-tracked).
+
 ## Session handoff protocol (agents: read this in EVERY candidate session)
 
 Sessions are run one-at-a-time and kept token-light; a new session inherits only
