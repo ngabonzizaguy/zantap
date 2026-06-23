@@ -23,6 +23,10 @@ export function OrderTicket({
   onDispatch,
 }: OrderTicketProps) {
   const dispatched = order.status === "DISPATCHED" || order.status === "COMPLETED";
+  const paid =
+    order.status === "PAID" ||
+    order.status === "DISPATCHED" ||
+    order.status === "COMPLETED";
   const hue = dispatched ? "#8a766a" : HUES[index % HUES.length];
   const itemCount = order.orderItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -59,12 +63,14 @@ export function OrderTicket({
             <span className="text-[25px] font-extrabold tracking-tight text-zk-text">
               {orderDisplayId(order.id)}
             </span>
-            <span className="inline-flex h-[25px] items-center gap-1.5 rounded-full border border-green-500/50 bg-green-500/15 px-2.5 shadow-[0_0_14px_rgba(34,197,94,0.3)]">
-              <span className="h-[7px] w-[7px] animate-zkpulse rounded-full bg-green-400" />
-              <span className="text-[11px] font-extrabold tracking-wide text-green-400">
-                PAID via MoMo
+            {paid && (
+              <span className="inline-flex h-[25px] items-center gap-1.5 rounded-full border border-green-500/50 bg-green-500/15 px-2.5 shadow-[0_0_14px_rgba(34,197,94,0.3)]">
+                <span className="h-[7px] w-[7px] animate-zkpulse rounded-full bg-green-400" />
+                <span className="text-[11px] font-extrabold tracking-wide text-green-400">
+                  PAID via MoMo
+                </span>
               </span>
-            </span>
+            )}
             {dispatched && (
               <span className="inline-flex h-[25px] items-center gap-1.5 rounded-full border border-momo/55 bg-momo/15 px-2.5 shadow-[0_0_14px_rgba(245,166,35,0.3)]">
                 <Icon name="dispatch" size={13} className="text-momo" strokeWidth={2.3} />

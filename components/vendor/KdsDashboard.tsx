@@ -68,18 +68,37 @@ export function KdsDashboard({
   const dispatchOrder = orders.find((o) => o.id === dispatchId) ?? null;
 
   const handleToggleKitchen = async () => {
-    await setKitchen(vendor.slug, !kitchenOpen);
-    await refresh();
+    const next = !kitchenOpen;
+    setKitchenOpenState(next);
+    try {
+      await setKitchen(vendor.slug, next);
+      await refresh();
+    } catch {
+      setKitchenOpenState(!next);
+    }
   };
 
   const handleToggleItem = async (itemId: string) => {
-    await toggleItem(vendor.slug, itemId);
-    await refresh();
+    const flip = (item: MenuItem) =>
+      item.id === itemId ? { ...item, isAvailable: !item.isAvailable } : item;
+    setMenu((prev) => prev.map(flip));
+    try {
+      await toggleItem(vendor.slug, itemId);
+      await refresh();
+    } catch {
+      setMenu((prev) => prev.map(flip));
+    }
   };
 
   const handleResetAll = async () => {
-    await resetMenu(vendor.slug);
-    await refresh();
+    const previous = menu;
+    setMenu((prev) => prev.map((item) => ({ ...item, isAvailable: true })));
+    try {
+      await resetMenu(vendor.slug);
+      await refresh();
+    } catch {
+      setMenu(previous);
+    }
   };
 
   const handleShareWhatsApp = async () => {
@@ -90,11 +109,15 @@ export function KdsDashboard({
     } catch {
       // ignore clipboard failures in unsupported browsers
     }
-    await advanceOrderStatus(dispatchOrder.id, "DISPATCHED");
-    setDispatchId(null);
-    setExpandedId(null);
-    setCopied(false);
-    await refresh();
+    try {
+      await advanceOrderStatus(dispatchOrder.id, "DISPATCHED");
+      setDispatchId(null);
+      setExpandedId(null);
+      setCopied(false);
+      await refresh();
+    } catch {
+      // leave the modal open so the vendor can retry the dispatch
+    }
   };
 
   return (

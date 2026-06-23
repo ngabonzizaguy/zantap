@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getStore } from "@/lib/store";
+import { fetchKdsSnapshot } from "@/lib/kds/snapshot";
 import { KdsDashboard } from "@/components/vendor/KdsDashboard";
 
 interface PageProps {
@@ -12,22 +13,21 @@ export default async function VendorKdsPage({ params }: PageProps) {
   const vendor = await store.getVendorBySlug(slug);
   if (!vendor) notFound();
 
-  const [orders, menu, drivers, todayGross, kitchenOpen] = await Promise.all([
-    store.listOrders(slug),
-    store.getMenu(slug),
+  // Read through the same snapshot the live SSE stream uses, so the initial
+  // render and subsequent updates agree on which orders are visible.
+  const [snapshot, drivers] = await Promise.all([
+    fetchKdsSnapshot(slug),
     store.getDrivers(slug),
-    store.getTodayGross(slug),
-    store.isKitchenOpen(slug),
   ]);
 
   return (
     <KdsDashboard
       vendor={vendor}
-      initialOrders={orders}
-      initialMenu={menu}
+      initialOrders={snapshot.orders}
+      initialMenu={snapshot.menu}
       initialDrivers={drivers}
-      initialTodayGross={todayGross}
-      initialKitchenOpen={kitchenOpen}
+      initialTodayGross={snapshot.todayGross}
+      initialKitchenOpen={snapshot.kitchenOpen}
     />
   );
 }

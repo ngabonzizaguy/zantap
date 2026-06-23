@@ -1,13 +1,15 @@
 "use server";
 
-import {
-  fetchKdsSnapshot,
-  type KdsSnapshot,
-} from "@/lib/kds/snapshot";
+import { fetchKdsSnapshot } from "@/lib/kds/snapshot";
+import type { KdsSnapshot } from "@/lib/kds/types";
 import { getStore } from "@/lib/store";
 import type { MenuItem, Order, OrderStatus } from "@/lib/types";
 
-export type { KdsSnapshot };
+// NOTE: a "use server" module may export only async server actions. Do NOT
+// re-export types from here — Next.js registers every export as a server
+// reference, and a type re-export leaks an undefined runtime identifier in the
+// production build (ReferenceError), 500-ing every action in this file. Types
+// live in "@/lib/kds/types"; import them from there.
 
 /**
  * The KDS reads through the server seam instead of its own browser copy of
