@@ -26,7 +26,7 @@ import { HistoryPanel } from "@/components/vendor/HistoryPanel";
 import { DispatchModal } from "@/components/vendor/DispatchModal";
 import { SetupDrawer } from "@/components/vendor/SetupDrawer";
 import { Coachmark } from "@/components/vendor/Coachmark";
-import { Card } from "@/components/ui/primitives";
+import { Card, GradientOrbs } from "@/components/ui/primitives";
 
 const KDS_TABS = new Set<KdsTab>(["orders", "menu", "history", "setup"]);
 
@@ -246,11 +246,9 @@ export function KdsDashboard({
   };
 
   return (
-    // DEPRECATED: zk-* palette — visual migration to DESIGN.md tokens lands in Issue 01+.
-    <div className="min-h-screen w-full bg-zk-bg text-zk-text">
-      <div className="relative mx-auto min-h-screen w-full max-w-kds overflow-hidden border-x border-zk-borderDark bg-zk-bg pb-10">
-        <div className="pointer-events-none absolute -left-[60px] -top-[120px] z-0 h-80 w-80 rounded-full bg-[radial-gradient(circle_at_40%_40%,rgba(245,148,95,0.5),rgba(245,148,95,0))] blur-[40px]" />
-        <div className="pointer-events-none absolute -right-[70px] -top-[90px] z-0 h-[300px] w-[300px] rounded-full bg-[radial-gradient(circle_at_50%_40%,rgba(167,143,224,0.4),rgba(167,143,224,0))] blur-[44px]" />
+    <div className="min-h-screen w-full bg-canvas text-ink">
+      <div className="relative mx-auto min-h-screen w-full max-w-kds overflow-hidden border-x border-hairline bg-canvas pb-10">
+        <GradientOrbs />
 
         <MetricsBanner
           vendorName={vendor.name}
