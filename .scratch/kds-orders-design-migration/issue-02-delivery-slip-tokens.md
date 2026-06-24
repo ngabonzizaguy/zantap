@@ -1,6 +1,6 @@
 # Issue 02 — Delivery slip page → DESIGN.md tokens
 
-Status: **closed** (committed · local build green · zero `zk-*` in repo) · Labels: `ready-for-agent`
+Status: **closed** (committed `b08a3ca` · local + prod smoke complete · deployed `dpl_2p7RSEAgq5WbQevuuaJokFpL6uDL` → `zantap-psi.vercel.app` 2026-06-24) · Labels: `ready-for-agent`
 
 ## Goal
 
@@ -15,7 +15,7 @@ to `DESIGN.md` tokens, matching `DispatchModal` slip preview styling.
 - [x] Footer copy on `text-muted`
 - [x] `npm run build` green
 - [x] Grep: no `zk-*` in slip page (and repo-wide)
-- [ ] Prod curl smoke after deploy (optional — needs live order id)
+- [x] Prod curl smoke after deploy — `/slip/cmqscttnw0001l404wewwr7nu` (PAID #wr7nu) HTTP 200, `bg-canvas`/`bg-canvas-soft`/`border-hairline`/`text-muted`, zero `zk-*` in SSR HTML (`dpl_2p7RSEAgq5WbQevuuaJokFpL6uDL` 2026-06-24)
 
 ## Reference
 

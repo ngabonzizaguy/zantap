@@ -37,7 +37,7 @@ phone in expand; multi-select bulk bar; empty/degraded copy.
 
 - [x] No `zk-*` palette changes; charcoal + orange preserved
 - [x] Dispatch modal still sets `OUT FOR DELIVERY` via stage action
-- [ ] Prod smoke: pay → NEW → advance stages → dispatch → COMPLETED
+- [x] Prod smoke: pay → NEW → advance stages → dispatch → COMPLETED
 - [x] `npm run build` green
 
 ## Comments

@@ -279,7 +279,8 @@ empty/degraded states, dispatch wired to `advanceKitchenStage(…, OUT_FOR_DELIV
 | Slice | Status | Tracker |
 |-------|--------|---------|
 | KDS Orders tab → DESIGN.md | ✅ Done · committed `199048e` · deployed `dpl_G4kS89FBo71KhZLn43hvuSGZD4Wg` → `zantap-psi.vercel.app` 2026-06-24 | `.scratch/kds-orders-design-migration/issue-01-orders-tab-tokens.md` |
-| Delivery slip page → DESIGN.md | ✅ Done · committed · local build green · zero `zk-*` repo-wide | `.scratch/kds-orders-design-migration/issue-02-delivery-slip-tokens.md` |
+| Delivery slip page → DESIGN.md | ✅ Done · committed `b08a3ca` · deployed `dpl_2p7RSEAgq5WbQevuuaJokFpL6uDL` → `zantap-psi.vercel.app` 2026-06-24 | `.scratch/kds-orders-design-migration/issue-02-delivery-slip-tokens.md` |
+| Remove dead `zk-*` Tailwind palette | ✅ Done · committed `4553388` · deployed `dpl_8Q52wTnGTXU57RB7yiEDLc9jX3BU` → `zantap-psi.vercel.app` 2026-06-24 | ADR-0016 consequences |
 | Customer storefront redesign | ⏸ deferred | Owner: new designs later — do not migrate `zt-*` yet |
 | `/to-prd` post-backlog | ⏸ deferred | Owner: probing required before agent runs this |
 
