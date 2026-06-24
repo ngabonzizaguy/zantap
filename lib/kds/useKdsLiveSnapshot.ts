@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { KdsSnapshot } from "@/lib/kds/types";
 
 /**
@@ -15,6 +15,7 @@ function reviveSnapshot(raw: KdsSnapshot): KdsSnapshot {
     orders: raw.orders.map((order) => ({
       ...order,
       createdAt: new Date(order.createdAt),
+      paidAt: order.paidAt ? new Date(order.paidAt) : undefined,
     })),
   };
 }
@@ -37,9 +38,10 @@ const RECONNECT_MAX_MS = 15_000;
 export function useKdsLiveSnapshot(
   vendorSlug: string,
   onSnapshot: (snapshot: KdsSnapshot) => void
-) {
+): { sseReconnecting: boolean } {
   const onSnapshotRef = useRef(onSnapshot);
   onSnapshotRef.current = onSnapshot;
+  const [sseReconnecting, setSseReconnecting] = useState(false);
 
   useEffect(() => {
     let source: EventSource | null = null;
@@ -49,10 +51,12 @@ export function useKdsLiveSnapshot(
 
     const connect = () => {
       if (stopped) return;
+      setSseReconnecting(attempts > 0);
       source = new EventSource(`/api/vendor/${vendorSlug}/kds-stream`);
 
       source.onopen = () => {
         attempts = 0;
+        setSseReconnecting(false);
       };
 
       source.onmessage = (event) => {
@@ -65,10 +69,9 @@ export function useKdsLiveSnapshot(
       };
 
       source.onerror = () => {
-        // Fires on the planned self-close and on real drops alike. Close to stop
-        // the native retry, then reconnect ourselves with backoff.
         source?.close();
         if (stopped) return;
+        setSseReconnecting(true);
         const delay = Math.min(
           RECONNECT_BASE_MS * 2 ** attempts,
           RECONNECT_MAX_MS
@@ -82,8 +85,11 @@ export function useKdsLiveSnapshot(
 
     return () => {
       stopped = true;
+      setSseReconnecting(false);
       if (reconnectTimer) clearTimeout(reconnectTimer);
       source?.close();
     };
   }, [vendorSlug]);
+
+  return { sseReconnecting };
 }

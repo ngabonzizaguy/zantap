@@ -17,8 +17,12 @@ The vendor-facing screen at `/vendor/[slug]` for accepting, preparing, and dispa
 _Avoid_: dashboard, admin, backend UI
 
 **Order**:
-A Customer's basket committed for a Vendor, moving through `PENDING → PAID → DISPATCHED → COMPLETED`.
+A Customer's basket committed for a Vendor. **Payment/dispatch lifecycle** moves through `PENDING → PAID → DISPATCHED → COMPLETED`. **Kitchen progress** (`kitchenStage`) is tracked separately once paid: `NEW → ACCEPTED → PREPARING → READY → OUT FOR DELIVERY → COMPLETED`. See ADR-0013.
 _Avoid_: cart, basket, purchase
+
+**Kitchen stage**:
+Where an Order sits in the vendor's prep-and-handoff workflow on the KDS, independent of whether MoMo payment succeeded. The KDS surfaces kitchen stage as the primary status; payment remains visible but secondary.
+_Avoid_: order status (when you mean kitchen progress), workflow step
 
 **MoMo** (MTN Mobile Money):
 The mobile-money payment rail. Checkout simulates an STK push and PIN confirmation; a real callback integration is future work.

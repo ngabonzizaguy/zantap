@@ -1,5 +1,13 @@
 export type OrderStatus = "PENDING" | "PAID" | "DISPATCHED" | "COMPLETED";
 
+export type KitchenStage =
+  | "NEW"
+  | "ACCEPTED"
+  | "PREPARING"
+  | "READY"
+  | "OUT_FOR_DELIVERY"
+  | "COMPLETED";
+
 export interface Vendor {
   id: string;
   name: string;
@@ -74,6 +82,10 @@ export interface Order {
   landmark: string;
   totalAmount: number;
   status: OrderStatus;
+  /** Set to NEW when payment succeeds; null while PENDING. */
+  kitchenStage?: KitchenStage;
+  /** Anchors KDS aging; set once at PAID transition. */
+  paidAt?: Date;
   orderItems: OrderItem[];
   createdAt: Date;
 }

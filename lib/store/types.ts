@@ -6,6 +6,7 @@ import type {
   CreatePaymentInput,
   CreatePaymentResult,
   Driver,
+  KitchenStage,
   MenuImage,
   MenuItem,
   Order,
@@ -96,6 +97,14 @@ export interface Store {
     orderId: string,
     status: OrderStatus
   ): Promise<Order | null>;
+  updateKitchenStage(
+    orderId: string,
+    stage: KitchenStage
+  ): Promise<Order | null>;
+  bulkUpdateKitchenStage(
+    orderIds: string[],
+    stage: KitchenStage
+  ): Promise<Order[]>;
 
   // Drivers
   getDrivers(vendorSlug: string): Promise<Driver[]>;

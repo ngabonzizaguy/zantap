@@ -13,6 +13,11 @@ import type {
 } from "@prisma/client";
 
 import { MOMO_SIM_VALID_PIN } from "@/lib/momo/constants";
+import {
+  isForwardKitchenTransition,
+  kitchenStageForOrderStatus,
+  orderStatusForKitchenStage,
+} from "@/lib/kds/kitchen-stage";
 import { deleteMenuImageBlob, putMenuImageBlob } from "@/lib/menu/blob-storage";
 import {
   assertCanAddMenuImage,
@@ -33,6 +38,7 @@ import type {
   CreatePaymentInput,
   CreatePaymentResult,
   Driver,
+  KitchenStage,
   MenuImage,
   MenuItem,
   Order,
@@ -155,6 +161,8 @@ function mapOrder(order: PrismaOrderWithItems): Order {
     landmark: order.landmark,
     totalAmount: order.totalAmount,
     status: order.status as OrderStatus,
+    kitchenStage: order.kitchenStage ?? undefined,
+    paidAt: order.paidAt ?? undefined,
     createdAt: order.createdAt,
     orderItems: order.orderItems.map((item) => ({
       id: item.id,
@@ -752,9 +760,23 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     status: OrderStatus
   ): Promise<Order | null> {
     try {
+      const current = await client.order.findUnique({
+        where: { id: orderId },
+        select: { paidAt: true },
+      });
+      if (!current) return null;
+
+      const kitchenStage = kitchenStageForOrderStatus(status);
+      const paidAt =
+        status === "PAID" && !current.paidAt ? new Date() : undefined;
+
       const order = await client.order.update({
         where: { id: orderId },
-        data: { status },
+        data: {
+          status,
+          ...(kitchenStage != null ? { kitchenStage } : {}),
+          ...(paidAt ? { paidAt } : {}),
+        },
         include: orderInclude,
       });
       return mapOrder(order);
@@ -762,6 +784,54 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       if (isNotFoundError(error)) return null;
       throw error;
     }
+  }
+
+  async function updateKitchenStage(
+    orderId: string,
+    stage: KitchenStage
+  ): Promise<Order | null> {
+    const current = await client.order.findUnique({
+      where: { id: orderId },
+      select: { kitchenStage: true },
+    });
+    if (!current?.kitchenStage) return null;
+    if (
+      current.kitchenStage !== stage &&
+      !isForwardKitchenTransition(
+        current.kitchenStage as KitchenStage,
+        stage
+      )
+    ) {
+      return null;
+    }
+
+    const statusSideEffect = orderStatusForKitchenStage(stage);
+    try {
+      const order = await client.order.update({
+        where: { id: orderId },
+        data: {
+          kitchenStage: stage,
+          ...(statusSideEffect ? { status: statusSideEffect } : {}),
+        },
+        include: orderInclude,
+      });
+      return mapOrder(order);
+    } catch (error) {
+      if (isNotFoundError(error)) return null;
+      throw error;
+    }
+  }
+
+  async function bulkUpdateKitchenStage(
+    orderIds: string[],
+    stage: KitchenStage
+  ): Promise<Order[]> {
+    const updated: Order[] = [];
+    for (const orderId of orderIds) {
+      const order = await updateKitchenStage(orderId, stage);
+      if (order) updated.push(order);
+    }
+    return updated;
   }
 
   async function getDrivers(vendorSlug: string): Promise<Driver[]> {
@@ -929,7 +999,11 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
         }),
         tx.order.update({
           where: { id: current.orderId },
-          data: { status: "PAID" },
+          data: {
+            status: "PAID",
+            kitchenStage: "NEW",
+            paidAt: new Date(),
+          },
         }),
       ]);
       return paymentRow;
@@ -963,6 +1037,8 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     getOrder,
     createOrder,
     updateOrderStatus,
+    updateKitchenStage,
+    bulkUpdateKitchenStage,
     getDrivers,
     getTodayGross,
     isKitchenOpen,

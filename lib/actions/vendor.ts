@@ -1,9 +1,10 @@
 "use server";
 
+import { assertCanAdvanceKitchenStage } from "@/lib/kds/kitchen-stage";
 import { fetchKdsSnapshot } from "@/lib/kds/snapshot";
 import type { KdsSnapshot } from "@/lib/kds/types";
 import { getStore } from "@/lib/store";
-import type { MenuItem, Order, OrderStatus } from "@/lib/types";
+import type { KitchenStage, MenuItem, Order, OrderStatus } from "@/lib/types";
 
 // NOTE: a "use server" module may export only async server actions. Do NOT
 // re-export types from here — Next.js registers every export as a server
@@ -42,4 +43,30 @@ export async function advanceOrderStatus(
   status: OrderStatus
 ): Promise<Order | null> {
   return getStore().updateOrderStatus(orderId, status);
+}
+
+/** Single-order kitchen stage advance — forward-only; throws on backward moves. */
+export async function advanceKitchenStage(
+  orderId: string,
+  stage: KitchenStage
+): Promise<Order> {
+  const store = getStore();
+  const current = await store.getOrder(orderId);
+  assertCanAdvanceKitchenStage(orderId, current, stage);
+  const updated = await store.updateKitchenStage(orderId, stage);
+  if (!updated) {
+    throw new Error(`Order not found: ${orderId}`);
+  }
+  return updated;
+}
+
+/**
+ * Bulk kitchen stage advance — per-id forward-only rules; skips orders that
+ * cannot reach the target stage (backward, missing, or not yet paid).
+ */
+export async function bulkAdvanceKitchenStage(
+  orderIds: string[],
+  stage: KitchenStage
+): Promise<Order[]> {
+  return getStore().bulkUpdateKitchenStage(orderIds, stage);
 }

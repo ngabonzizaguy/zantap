@@ -1,6 +1,6 @@
 # Known issue 0001 — KDS "This page couldn't load" on reload + "Vendor not found" on the stream URL
 
-Status: **Fix applied 2026-06-23 (pending deploy/verify)** · First reported: 2026-06-23 (production, `zantap-psi.vercel.app`)
+Status: **Closed — verified in prod 2026-06-24** · First reported: 2026-06-23 (production, `zantap-psi.vercel.app`)
 Related: candidate #4 (KDS live push / SSE). See `.scratch/architecture-candidates.md` §#4 and `docs/adr/0002-kds-live-push-sse.md`.
 
 This documents two separate symptoms reported together. Only one is a real bug.

@@ -3,20 +3,24 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Driver, MenuItem, Order, Vendor } from "@/lib/types";
 import {
-  advanceOrderStatus,
+  advanceKitchenStage,
+  bulkAdvanceKitchenStage,
   loadKdsSnapshot,
   resetMenu,
   setKitchen,
   toggleItem,
 } from "@/lib/actions/vendor";
 import { loadOnboardingState } from "@/lib/actions/vendor-guides";
+import { orderStatusForKitchenStage, sortKdsQueueOrders } from "@/lib/kds/kitchen-stage";
 import { useKdsLiveSnapshot } from "@/lib/kds/useKdsLiveSnapshot";
 import type { KdsSnapshot } from "@/lib/kds/types";
+import type { KitchenStage } from "@/lib/types";
 import { buildDeliverySlip } from "@/lib/whatsapp";
 import { deriveOnboardingState } from "@/lib/vendor/onboarding";
 import { MetricsBanner } from "@/components/vendor/MetricsBanner";
 import { Tabs, type KdsTab } from "@/components/vendor/Tabs";
 import { OrdersList } from "@/components/vendor/OrderTicket";
+import { BulkActionBar } from "@/components/vendor/BulkActionBar";
 import { MenuSection } from "@/components/vendor/MenuSection";
 import { HistoryPanel } from "@/components/vendor/HistoryPanel";
 import { DispatchModal } from "@/components/vendor/DispatchModal";
@@ -67,6 +71,9 @@ export function KdsDashboard({
   const [onboardingOverride, setOnboardingOverride] = useState<
     ReturnType<typeof deriveOnboardingState> | null
   >(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const liveChecklist = useMemo(
     () => deriveOnboardingState(menu, kitchenOpen, orders),
@@ -93,7 +100,12 @@ export function KdsDashboard({
       setKitchenOpenState(snapshot.kitchenOpen);
   }, []);
 
-  useKdsLiveSnapshot(vendor.slug, applySnapshot);
+  const { sseReconnecting } = useKdsLiveSnapshot(vendor.slug, applySnapshot);
+
+  const sortedOrders = useMemo(
+    () => sortKdsQueueOrders(orders),
+    [orders]
+  );
 
   useEffect(() => {
     if (tab === "setup") {
@@ -156,6 +168,62 @@ export function KdsDashboard({
     }
   };
 
+  const applyKitchenStageOptimistic = useCallback(
+    (orderId: string, stage: KitchenStage) => {
+      const statusPatch = orderStatusForKitchenStage(stage);
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === orderId
+            ? {
+                ...order,
+                kitchenStage: stage,
+                ...(statusPatch ? { status: statusPatch } : {}),
+              }
+            : order
+        )
+      );
+    },
+    []
+  );
+
+  const handleAdvanceStage = async (orderId: string, stage: KitchenStage) => {
+    applyKitchenStageOptimistic(orderId, stage);
+    try {
+      await advanceKitchenStage(orderId, stage);
+      await refresh();
+    } catch {
+      await refresh();
+    }
+  };
+
+  const handleBulkAdvance = async (stage: KitchenStage) => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    setBulkBusy(true);
+    for (const id of ids) {
+      applyKitchenStageOptimistic(id, stage);
+    }
+    try {
+      await bulkAdvanceKitchenStage(ids, stage);
+      setSelectedIds(new Set());
+      setBulkMode(false);
+      await refresh();
+    } catch {
+      await refresh();
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const handleShareWhatsApp = async () => {
     if (!dispatchOrder) return;
     const slip = buildDeliverySlip(dispatchOrder, vendor.name);
@@ -165,12 +233,14 @@ export function KdsDashboard({
       // ignore clipboard failures in unsupported browsers
     }
     try {
-      await advanceOrderStatus(dispatchOrder.id, "DISPATCHED");
+      applyKitchenStageOptimistic(dispatchOrder.id, "OUT_FOR_DELIVERY");
+      await advanceKitchenStage(dispatchOrder.id, "OUT_FOR_DELIVERY");
       setDispatchId(null);
       setExpandedId(null);
       setCopied(false);
       await refresh();
     } catch {
+      await refresh();
       // leave the modal open so the vendor can retry the dispatch
     }
   };
@@ -203,12 +273,24 @@ export function KdsDashboard({
         <div className="relative z-[1] px-[18px] pt-3.5">
           {tab === "orders" ? (
             <OrdersList
-              orders={orders}
+              orders={sortedOrders}
               expandedId={expandedId}
+              selectedIds={selectedIds}
+              bulkMode={bulkMode}
+              kitchenOpen={kitchenOpen}
+              sseReconnecting={sseReconnecting}
               onToggle={(id) => setExpandedId((prev) => (prev === id ? null : id))}
+              onSelect={handleToggleSelect}
               onDispatch={(id) => {
                 setDispatchId(id);
                 setCopied(false);
+              }}
+              onAdvanceStage={handleAdvanceStage}
+              onToggleBulkMode={() => {
+                setBulkMode((prev) => {
+                  if (prev) setSelectedIds(new Set());
+                  return !prev;
+                });
               }}
             />
           ) : tab === "menu" ? (
@@ -284,6 +366,13 @@ export function KdsDashboard({
           setCopied(true);
         }}
         onShareWhatsApp={handleShareWhatsApp}
+      />
+
+      <BulkActionBar
+        selectedCount={selectedIds.size}
+        busy={bulkBusy}
+        onClear={() => setSelectedIds(new Set())}
+        onBulkAdvance={handleBulkAdvance}
       />
     </div>
   );

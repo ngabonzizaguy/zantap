@@ -9,17 +9,15 @@ is never lost again.
 > convention — local markdown, no GitHub round-trips). It persists on this machine
 > across sessions, but does **not** sync via git to other clones/machines.
 
-Last verified against the codebase: 2026-06-23.
+Last verified against the codebase: 2026-06-24.
 
 ## Open production issues (read before touching the KDS)
 
-- **Known issue 0001** — KDS `/vendor/<slug>` shows the browser's "This page couldn't
-  load" on reload, and `/vendor/<slug>/kds-stream` shows "Vendor not found".
-  Diagnosed 2026-06-23: the second is just a wrong URL (the stream is under `/api/...`,
-  404 → `not-found.tsx`); the first is a real client/browser-side failure most likely
-  from candidate #4's long-lived 1s-poll SSE on Vercel+HTTP/2. Server render is proven
-  healthy. Full diagnosis, confirm-steps, and fix options:
-  `docs/known-issues/0001-kds-page-couldnt-load-and-stream-url.md` (git-tracked).
+- **Known issue 0001 — closed 2026-06-24.** Symptom B (reload crash) fixed via
+  `reviveSnapshot` date revival in `useKdsLiveSnapshot.ts`; hard refresh `200` in
+  candidate #6 prod smoke. Symptom A (wrong stream URL → "Vendor not found") is
+  user error / generic 404 copy — optional polish on `app/not-found.tsx` remains.
+  Full record: `docs/known-issues/0001-kds-page-couldnt-load-and-stream-url.md`.
 
 ## Session handoff protocol (agents: read this in EVERY candidate session)
 
@@ -54,9 +52,10 @@ If a session ends without doing both, the handoff is incomplete.
 | 3 | Extract a Checkout module from the Storefront UI | Worth exploring | in-process (client) | ✅ Done | `.scratch/checkout-module/PRD.md` |
 | 4 | Give the KDS a real orders interface | Worth exploring | ports & adapters | ✅ Done | `.scratch/kds-live-push/PRD.md` |
 | 5 | Make Prisma the type source; Zod at the seam | Speculative | — | ◑ Audited — deferred | `.scratch/prisma-type-source/PRD.md` |
-| 6 | KDS Vendor Suite (menu, media, export, history, guides) | Strong | ports & adapters | ✅ Done — uncommitted on main | `.scratch/kds-vendor-suite/PRD.md` |
+| 6 | KDS Vendor Suite (menu, media, export, history, guides) | Strong | ports & adapters | ✅ Done & deployed · smoke complete | `.scratch/kds-vendor-suite/PRD.md` |
+| 7 | KDS workflow optimization (kitchen stage, aging, bulk) | Strong | ports & adapters + KDS UI | ◑ Issue 03 done — prod smoke pending | `.scratch/kds-workflow-optimization/PRD.md` |
 
-There are exactly **6** candidates.
+There are exactly **7** candidates.
 
 ---
 
@@ -217,11 +216,52 @@ write-secret row in drawer; coachmark targets on kitchen toggle, Menu "+", dispa
 button. 5 onboarding unit tests; `npm run build` passes. ADR-0012. **Candidate #6
 batch complete.**
 
+**Prod smoke complete 2026-06-24** — human walkthrough on `zantap-psi.vercel.app`
+(all steps 0–7 PASS). Latest deploy alias: `zantap-psi.vercel.app`.
+- ✅ `VENDOR_WRITE_SECRET` + `BLOB_READ_WRITE_TOKEN` in Vercel Production (Sensitive).
+- ✅ Export API `403` without secret → `200` with header (browser CSV confirmed).
+- ✅ KDS shell, Setup checklist (4/5 — dispatch pending), coachmarks, menu CRUD + Blob image,
+  History filters + CSV + receipt `200`, live PAID order on SSE, hard refresh `200` (known-issue 0001).
+- ✅ **Receipt Back polish deployed 2026-06-24** (`8b34a2f` → `zantap-psi.vercel.app`):
+  same-tab receipt links from History, `ReceiptBackButton` on receipt page,
+  `?tab=history` deep link restores History tab. Prod curl smoke: KDS `?tab=history`
+  `200` (History active), receipt `200` (Back button present), no `target="_blank"`.
+
 - PRD: `.scratch/kds-vendor-suite/PRD.md`
 - Grill: `.scratch/kds-vendor-suite/grill-decisions.md`
 - Issues: `00-design-system-foundation` ✅ → `01-menu-crud-store-and-ui` ✅ → `02-menu-media-gallery` ✅ → `03-order-history-filters` ✅ → `04-order-export` ✅ → `05-vendor-onboarding-guides` ✅
 - ADRs: `docs/adr/0006-menu-soft-delete-archived-at.md`, `docs/adr/0007-vercel-blob-menu-media.md`, `docs/adr/0008-menu-image-gallery-model.md`, `docs/adr/0009-deferred-auth-write-secret.md`, `docs/adr/0010-order-history-filter-semantics.md`, `docs/adr/0011-order-export-guard-and-row-cap.md`, `docs/adr/0012-onboarding-data-derived-checklist.md`
 - Depends on: #1 Store seam ✅, #2 Payment ✅, ADR-0005 design system ✅
+
+---
+
+## #7 · KDS workflow optimization — ◑ ISSUE 03 DONE (prod smoke pending)
+
+Rating: Strong · Scope: Store seam + KDS Orders tab UI (no visual redesign).
+
+Kitchen operations upgrade: orthogonal `kitchenStage` + `paidAt`, human-readable
+aging/urgency, workflow-first queue sort, bulk forward stage updates, expanded
+ticket data, polished empty/degraded states. Preserves dark KDS aesthetic and SSE
+live push.
+
+**Grilled 2026-06-24** — decisions in
+`.scratch/kds-workflow-optimization/grill-decisions.md`, ADR-0013.
+**PRD + issues sliced 2026-06-24** — `.scratch/kds-workflow-optimization/`.
+**Issue 01 shipped 2026-06-24** — schema/migration/backfill + Store adapters +
+contract tests (`lib/kds/kitchen-stage.ts`, migration `20260624120000_order_kitchen_stage`).
+**Issue 02 shipped 2026-06-24** — `advanceKitchenStage` / `bulkAdvanceKitchenStage`
+in `lib/actions/vendor.ts`; `KitchenStageTransitionError`; ADR-0014; build green.
+**Issue 03 shipped 2026-06-24** — KDS workflow UI: `formatRelativeTime` + urgency
+tiers, `sortKdsQueueOrders`, kitchen stage badges, stage chips, bulk bar,
+empty/degraded states, dispatch wired to `advanceKitchenStage(…, OUT_FOR_DELIVERY)`;
+`npm run build` green.
+**Next:** prod smoke on `zantap-psi.vercel.app` (pay → NEW → stages → dispatch → COMPLETED).
+
+- PRD: `.scratch/kds-workflow-optimization/PRD.md`
+- Grill: `.scratch/kds-workflow-optimization/grill-decisions.md`
+- Issues: `01-schema-and-store` ✅ → `02-server-actions` ✅ → `03-kds-ui` ✅
+- ADRs: `docs/adr/0013-kds-kitchen-stage-orthogonal-to-order-status.md`, `docs/adr/0014-kitchen-stage-server-actions.md`
+- Depends on: #1 Store ✅, #2 Payment ✅, #4 KDS SSE ✅
 
 ---
 

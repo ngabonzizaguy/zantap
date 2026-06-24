@@ -338,6 +338,34 @@ export function runStoreContract(
         ).toBeNull();
       });
 
+      it("sets kitchenStage NEW and paidAt when an order becomes PAID", async () => {
+        const created = await placeOrderFromMenu();
+        expect(created.kitchenStage).toBeUndefined();
+        expect(created.paidAt).toBeUndefined();
+
+        const paid = await store.updateOrderStatus(created.id, "PAID");
+        expect(paid?.status).toBe("PAID");
+        expect(paid?.kitchenStage).toBe("NEW");
+        expect(paid?.paidAt).toBeInstanceOf(Date);
+
+        const repeat = await store.updateOrderStatus(created.id, "PAID");
+        expect(repeat?.paidAt?.getTime()).toBe(paid?.paidAt?.getTime());
+      });
+
+      it("syncs kitchenStage when advancing status to DISPATCHED or COMPLETED", async () => {
+        const created = await placeOrderFromMenu();
+        await store.updateOrderStatus(created.id, "PAID");
+
+        const dispatched = await store.updateOrderStatus(created.id, "DISPATCHED");
+        expect(dispatched?.kitchenStage).toBe("OUT_FOR_DELIVERY");
+
+        const completed = await store.updateOrderStatus(
+          created.id,
+          "COMPLETED"
+        );
+        expect(completed?.kitchenStage).toBe("COMPLETED");
+      });
+
       it("rejects an order containing an unavailable item", async () => {
         const menu = await store.getMenu(slug);
         const unavailable = menu.find((i) => !i.isAvailable);
@@ -395,6 +423,98 @@ export function runStoreContract(
 
         await store.setKitchenOpen(slug, true);
         expect(await store.isKitchenOpen(slug)).toBe(true);
+      });
+    });
+
+    describe("kitchen stage", () => {
+      it("advances forward through kitchen stages and rejects backward moves", async () => {
+        const created = await placeOrderFromMenu();
+        await store.updateOrderStatus(created.id, "PAID");
+
+        const accepted = await store.updateKitchenStage(created.id, "ACCEPTED");
+        expect(accepted?.kitchenStage).toBe("ACCEPTED");
+        expect(accepted?.status).toBe("PAID");
+
+        const preparing = await store.updateKitchenStage(
+          created.id,
+          "PREPARING"
+        );
+        expect(preparing?.kitchenStage).toBe("PREPARING");
+
+        const backward = await store.updateKitchenStage(created.id, "NEW");
+        expect(backward).toBeNull();
+
+        const stillPreparing = await store.getOrder(created.id);
+        expect(stillPreparing?.kitchenStage).toBe("PREPARING");
+      });
+
+      it("jumps forward to a later stage in one action", async () => {
+        const created = await placeOrderFromMenu();
+        await store.updateOrderStatus(created.id, "PAID");
+
+        const ready = await store.updateKitchenStage(created.id, "READY");
+        expect(ready?.kitchenStage).toBe("READY");
+        expect(ready?.status).toBe("PAID");
+      });
+
+      it("sets DISPATCHED when kitchen stage becomes OUT_FOR_DELIVERY", async () => {
+        const created = await placeOrderFromMenu();
+        await store.updateOrderStatus(created.id, "PAID");
+
+        const out = await store.updateKitchenStage(
+          created.id,
+          "OUT_FOR_DELIVERY"
+        );
+        expect(out?.kitchenStage).toBe("OUT_FOR_DELIVERY");
+        expect(out?.status).toBe("DISPATCHED");
+      });
+
+      it("sets COMPLETED when kitchen stage becomes COMPLETED", async () => {
+        const created = await placeOrderFromMenu();
+        await store.updateOrderStatus(created.id, "PAID");
+        await store.updateKitchenStage(created.id, "READY");
+
+        const done = await store.updateKitchenStage(created.id, "COMPLETED");
+        expect(done?.kitchenStage).toBe("COMPLETED");
+        expect(done?.status).toBe("COMPLETED");
+      });
+
+      it("bulk updates only orders that can advance to the target stage", async () => {
+        const first = await placeOrderFromMenu();
+        const second = await placeOrderFromMenu();
+        await store.updateOrderStatus(first.id, "PAID");
+        await store.updateOrderStatus(second.id, "PAID");
+        await store.updateKitchenStage(second.id, "READY");
+
+        const updated = await store.bulkUpdateKitchenStage(
+          [first.id, second.id, "missing"],
+          "PREPARING"
+        );
+        expect(updated).toHaveLength(1);
+        expect(updated[0].id).toBe(first.id);
+        expect(updated[0].kitchenStage).toBe("PREPARING");
+
+        const skipped = await store.getOrder(second.id);
+        expect(skipped?.kitchenStage).toBe("READY");
+      });
+
+      it("confirmPayment sets kitchenStage NEW and paidAt", async () => {
+        const order = await placeOrderFromMenu();
+        const ref = `stage_${Date.now()}`;
+        await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: ref,
+        });
+
+        const confirmed = await store.confirmPayment(ref, MOMO_SIM_VALID_PIN);
+        expect(confirmed.ok).toBe(true);
+        if (!confirmed.ok) return;
+
+        const paid = await store.getOrder(order.id);
+        expect(paid?.status).toBe("PAID");
+        expect(paid?.kitchenStage).toBe("NEW");
+        expect(paid?.paidAt).toBeInstanceOf(Date);
       });
     });
 

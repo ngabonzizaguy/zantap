@@ -63,18 +63,20 @@ model MenuImage {
 }
 
 model Order {
-  id             String      @id @default(cuid())
+  id             String        @id @default(cuid())
   vendorId       String
-  vendor         Vendor      @relation(fields: [vendorId], references: [id])
+  vendor         Vendor        @relation(fields: [vendorId], references: [id])
   customerPhone  String
   deliverySector String
   landmark       String
   totalAmount    Int
-  status         OrderStatus @default(PENDING)
+  status         OrderStatus   @default(PENDING)
+  kitchenStage   KitchenStage?
+  paidAt         DateTime?
   orderItems     OrderItem[]
   payment        Payment?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@index([vendorId, status])
 }
@@ -120,6 +122,15 @@ enum OrderStatus {
   PENDING
   PAID
   DISPATCHED
+  COMPLETED
+}
+
+enum KitchenStage {
+  NEW
+  ACCEPTED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
   COMPLETED
 }
 

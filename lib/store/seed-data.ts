@@ -125,6 +125,8 @@ export const seedOrders: Order[] = [
     landmark: "Opp. Simba Supermarket",
     totalAmount: 19000,
     status: "PAID",
+    kitchenStage: "NEW",
+    paidAt: minutesAgo(4),
     createdAt: minutesAgo(4),
     orderItems: [
       {
@@ -153,6 +155,8 @@ export const seedOrders: Order[] = [
     landmark: "Near Amahoro Stadium gate 3",
     totalAmount: 22000,
     status: "PAID",
+    kitchenStage: "NEW",
+    paidAt: minutesAgo(7),
     createdAt: minutesAgo(7),
     orderItems: [
       {
@@ -181,6 +185,8 @@ export const seedOrders: Order[] = [
     landmark: "Opp. Bank of Kigali",
     totalAmount: 37000,
     status: "PAID",
+    kitchenStage: "NEW",
+    paidAt: minutesAgo(11),
     createdAt: minutesAgo(11),
     orderItems: [
       {

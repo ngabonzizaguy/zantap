@@ -8,6 +8,7 @@ import {
   seedOrders,
   seedVendor,
 } from "../lib/store/seed-data";
+import { withSeedLock } from "../lib/test/db-seed-lock";
 
 /**
  * Reproduce the demo dataset in Postgres so a freshly migrated local database
@@ -18,6 +19,10 @@ import {
  * the reset hook for the Prisma contract test.
  */
 export async function seedDatabase(client: PrismaClient): Promise<void> {
+  return withSeedLock(() => seedDatabaseInner(client));
+}
+
+async function seedDatabaseInner(client: PrismaClient): Promise<void> {
   // Clear in dependency order. Cascades would handle children, but being
   // explicit makes this a clean reset between contract-test runs.
   await client.payment.deleteMany();
@@ -84,6 +89,8 @@ export async function seedDatabase(client: PrismaClient): Promise<void> {
         landmark: order.landmark,
         totalAmount: order.totalAmount,
         status: order.status,
+        kitchenStage: order.kitchenStage ?? "NEW",
+        paidAt: order.paidAt ?? order.createdAt,
         createdAt: order.createdAt,
         orderItems: {
           create: order.orderItems.map((line) => {

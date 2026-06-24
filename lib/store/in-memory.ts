@@ -6,6 +6,7 @@ import type {
   CreatePaymentInput,
   CreatePaymentResult,
   Driver,
+  KitchenStage,
   MenuImage,
   MenuItem,
   Order,
@@ -39,6 +40,11 @@ import {
 } from "@/lib/menu/validation";
 import { MOMO_SIM_VALID_PIN } from "@/lib/momo/constants";
 import {
+  isForwardKitchenTransition,
+  kitchenStageForOrderStatus,
+  orderStatusForKitchenStage,
+} from "@/lib/kds/kitchen-stage";
+import {
   seedDrivers,
   seedMenuItems,
   seedOrders,
@@ -49,6 +55,7 @@ function cloneOrder(order: Order): Order {
   return {
     ...order,
     createdAt: new Date(order.createdAt),
+    paidAt: order.paidAt ? new Date(order.paidAt) : undefined,
     orderItems: order.orderItems.map((item) => ({
       ...item,
       menuItem: item.menuItem
@@ -573,8 +580,56 @@ export function createInMemoryStore(): ResettableStore {
   ): Promise<Order | null> {
     const index = orders.findIndex((o) => o.id === orderId);
     if (index === -1) return null;
-    orders[index] = { ...orders[index], status };
+
+    const current = orders[index];
+    const kitchenStage = kitchenStageForOrderStatus(status);
+    const paidAt =
+      status === "PAID" && !current.paidAt ? new Date() : current.paidAt;
+
+    orders[index] = {
+      ...current,
+      status,
+      ...(kitchenStage != null ? { kitchenStage } : {}),
+      paidAt,
+    };
     return cloneOrder(orders[index]);
+  }
+
+  async function updateKitchenStage(
+    orderId: string,
+    stage: KitchenStage
+  ): Promise<Order | null> {
+    const index = orders.findIndex((o) => o.id === orderId);
+    if (index === -1) return null;
+
+    const current = orders[index];
+    if (current.kitchenStage == null) return null;
+    if (
+      current.kitchenStage !== stage &&
+      !isForwardKitchenTransition(current.kitchenStage, stage)
+    ) {
+      return null;
+    }
+
+    const statusSideEffect = orderStatusForKitchenStage(stage);
+    orders[index] = {
+      ...current,
+      kitchenStage: stage,
+      ...(statusSideEffect ? { status: statusSideEffect } : {}),
+    };
+    return cloneOrder(orders[index]);
+  }
+
+  async function bulkUpdateKitchenStage(
+    orderIds: string[],
+    stage: KitchenStage
+  ): Promise<Order[]> {
+    const updated: Order[] = [];
+    for (const orderId of orderIds) {
+      const order = await updateKitchenStage(orderId, stage);
+      if (order) updated.push(order);
+    }
+    return updated;
   }
 
   async function toggleItemAvailability(
@@ -758,6 +813,8 @@ export function createInMemoryStore(): ResettableStore {
     getOrder,
     createOrder,
     updateOrderStatus,
+    updateKitchenStage,
+    bulkUpdateKitchenStage,
     getDrivers,
     getTodayGross,
     isKitchenOpen,
