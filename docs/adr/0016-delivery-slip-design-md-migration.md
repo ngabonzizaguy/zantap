@@ -27,7 +27,8 @@ Migrate `app/slip/[orderId]/page.tsx` to `DESIGN.md` tokens:
 
 ## Consequences
 
-- All vendor-adjacent UI is on the ElevenLabs editorial system; `zk-*` has zero
-  references in the codebase and can be removed from `tailwind.config.ts` in a
-  follow-up cleanup slice.
+- All vendor-adjacent UI is on the ElevenLabs editorial system; `zk-*` had zero
+  references in TS/TSX after this ADR shipped. **Cleanup done 2026-06-24:**
+  removed the deprecated `zk` color block and unused `zkpulse` animation from
+  `tailwind.config.ts` (local `npm run build` green).
 - Customer storefront (`zt-*`) remains deferred until new designs arrive.

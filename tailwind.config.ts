@@ -80,18 +80,6 @@ const config: Config = {
             glow: "#7ee2a8",
           },
         },
-        // DEPRECATED — legacy KDS dark-industrial palette. Do not use in new UI.
-        zk: {
-          bg: "#17110c",
-          surface: "#221913",
-          surfaceAlt: "#1a130d",
-          border: "#3a2c20",
-          borderDark: "#34281f",
-          text: "#faf4ee",
-          muted: "#9a8676",
-          sub: "#b9a89b",
-          dim: "#6f5d4f",
-        },
         momo: {
           DEFAULT: "#F5A623",
           light: "#FFD24C",
@@ -202,7 +190,6 @@ const config: Config = {
         ztspin: "ztspin 0.9s linear infinite",
         ztshim: "ztshim 1.3s ease-in-out infinite",
         ztpulse: "ztpulse 1.4s ease-in-out infinite",
-        zkpulse: "zkpulse 1.6s ease-in-out infinite",
       },
       keyframes: {
         brandfloat: {
@@ -223,10 +210,6 @@ const config: Config = {
         ztpulse: {
           "0%, 100%": { opacity: "1", transform: "scale(1)" },
           "50%": { opacity: "0.4", transform: "scale(0.8)" },
-        },
-        zkpulse: {
-          "0%, 100%": { opacity: "1", transform: "scale(1)" },
-          "50%": { opacity: "0.35", transform: "scale(0.78)" },
         },
       },
       maxWidth: {
