@@ -19,8 +19,9 @@ The user hit `https://zantap-psi.vercel.app/vendor/inka-steakhouse/kds-stream`.
 - Verified: the correct endpoint streams fine — connection stays open >70s and pushes
   live snapshots from Postgres.
 
-No code change needed. (Optional polish: reword `app/not-found.tsx` so a wrong path
-doesn't read like a missing-vendor error.)
+**Prod verified 2026-06-24** — deploy `dpl_8rxYizP4NRiiW8oi3vBv327rFviG` (`zantap-psi.vercel.app`):
+`curl` on `/vendor/inka-steakhouse/kds-stream` → `404`, HTML contains "Page not found", zero
+"Vendor not found". KDS at `/vendor/inka-steakhouse` → `200`.
 
 ## Symptom B — `/vendor/<slug>` shows "This page couldn't load" on reload  → REAL
 
@@ -30,8 +31,8 @@ doesn't read like a missing-vendor error.)
 - The string "This page couldn't load" / "Reload to try again" exists **nowhere in the
   repo** (grep clean). It is the **browser's own** connection-failure page, not an app
   error page.
-- There is **no `app/error.tsx` / `app/global-error.tsx`** — only `app/not-found.tsx`.
-  So any client/runtime failure falls through to the raw browser error.
+- At the time of diagnosis there was no `app/error.tsx`; a styled retry boundary was
+  added later (`app/error.tsx`, migrated to DESIGN.md tokens 2026-06-24).
 
 ### CONFIRMED root cause (browser console, 2026-06-23)
 DevTools showed `Uncaught TypeError: e.getTime is not a function` immediately before the
@@ -57,10 +58,9 @@ Date-serialization bug in the SSE path:
 (`reviveSnapshot`: `orders[].createdAt = new Date(...)`) so the snapshot honors its
 `Date` typing before reaching React. Single-file, no behavior change beyond correctness.
 
-Remaining (optional, not required for this crash): add `app/error.tsx` so any future
-client error degrades to a styled retry instead of the raw browser page; consider the
-fingerprint test covering a date round-trip. SSE polling/HTTP2 items below were
-speculative and are NOT the cause — keep only if separately desired.
+**Error boundary polish 2026-06-24** — `app/error.tsx` uses DESIGN.md tokens
+(`GradientOrbs`, `Button` primitive) matching `app/not-found.tsx`. Optional follow-up:
+fingerprint test covering a date round-trip.
 
 ### Key files
 - `app/vendor/[slug]/page.tsx` — KDS page (server render; healthy).
@@ -68,4 +68,5 @@ speculative and are NOT the cause — keep only if separately desired.
 - `lib/kds/useKdsLiveSnapshot.ts` — opens the `EventSource` (no reconnect/backoff).
 - `app/api/vendor/[slug]/kds-stream/route.ts` — SSE route, 1s Postgres poll.
 - `lib/kds/snapshot.ts` — `fetchKdsSnapshot` (4 queries per poll, via Store seam).
-- `app/not-found.tsx` — the "Vendor not found" 404 page (Symptom A).
+- `app/not-found.tsx` — generic 404 page (Symptom A polish).
+- `app/error.tsx` — client error retry boundary (DESIGN.md tokens).
