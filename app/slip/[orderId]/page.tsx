@@ -18,25 +18,25 @@ export default async function DriverSlipPage({ params }: PageProps) {
   const slipText = buildDeliverySlip(order, vendor?.name ?? "Vendor");
 
   return (
-    <div className="min-h-screen bg-zk-bg px-5 py-8 text-zk-text">
+    <div className="min-h-screen bg-canvas px-5 py-8 font-body text-ink">
       <div className="mx-auto max-w-kds">
         <div className="mb-6">
-          <div className="text-xs font-bold uppercase tracking-wide text-zk-muted">
+          <div className="font-body text-caption uppercase tracking-widest text-muted">
             ZanTap Delivery Slip
           </div>
-          <div className="mt-1 text-2xl font-extrabold">
+          <div className="mt-2 font-display text-display-md text-ink">
             {orderDisplayId(order.id)}
           </div>
-          <div className="mt-1 text-sm font-semibold text-zk-sub">
+          <div className="mt-1 font-body text-body-sm text-muted">
             {formatRwf(order.totalAmount)} · {order.status}
           </div>
         </div>
 
-        <pre className="m-0 overflow-x-auto whitespace-pre-wrap rounded-[13px] border-[1.5px] border-zk-borderDark bg-[#100b07] p-4 font-mono text-[13px] font-medium leading-relaxed text-[#d8c9bd]">
+        <pre className="m-0 overflow-x-auto whitespace-pre-wrap rounded-brand-lg border border-hairline bg-canvas-soft p-4 font-mono text-body-sm leading-relaxed text-ink">
           {slipText}
         </pre>
 
-        <p className="mt-4 text-sm font-medium text-zk-muted">
+        <p className="mt-4 font-body text-body-sm text-muted">
           Hand this slip to your moto driver. Full dispatch workflow lives in the
           vendor KDS dashboard.
         </p>

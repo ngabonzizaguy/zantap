@@ -16,7 +16,8 @@ Last verified against the codebase: 2026-06-24.
 - **Known issue 0001 — closed 2026-06-24.** Symptom B (reload crash) fixed via
   `reviveSnapshot` date revival in `useKdsLiveSnapshot.ts`; hard refresh `200` in
   candidate #6 prod smoke. Symptom A (wrong stream URL → "Vendor not found") is
-  user error / generic 404 copy — optional polish on `app/not-found.tsx` remains.
+  user error / generic 404 copy — **polished + deployed 2026-06-24** (`app/not-found.tsx` +
+  `app/error.tsx` → DESIGN.md tokens; prod curl: wrong stream path → "Page not found").
   Full record: `docs/known-issues/0001-kds-page-couldnt-load-and-stream-url.md`.
 
 ## Session handoff protocol (agents: read this in EVERY candidate session)
@@ -53,7 +54,7 @@ If a session ends without doing both, the handoff is incomplete.
 | 4 | Give the KDS a real orders interface | Worth exploring | ports & adapters | ✅ Done | `.scratch/kds-live-push/PRD.md` |
 | 5 | Make Prisma the type source; Zod at the seam | Speculative | — | ◑ Audited — deferred | `.scratch/prisma-type-source/PRD.md` |
 | 6 | KDS Vendor Suite (menu, media, export, history, guides) | Strong | ports & adapters | ✅ Done & deployed · smoke complete | `.scratch/kds-vendor-suite/PRD.md` |
-| 7 | KDS workflow optimization (kitchen stage, aging, bulk) | Strong | ports & adapters + KDS UI | ◑ Issue 03 done — prod smoke pending | `.scratch/kds-workflow-optimization/PRD.md` |
+| 7 | KDS workflow optimization (kitchen stage, aging, bulk) | Strong | ports & adapters + KDS UI | ✅ Done & deployed · smoke complete | `.scratch/kds-workflow-optimization/PRD.md` |
 
 There are exactly **7** candidates.
 
@@ -235,7 +236,7 @@ batch complete.**
 
 ---
 
-## #7 · KDS workflow optimization — ◑ ISSUE 03 DONE (prod smoke pending)
+## #7 · KDS workflow optimization — ✅ DONE (prod smoke complete)
 
 Rating: Strong · Scope: Store seam + KDS Orders tab UI (no visual redesign).
 
@@ -255,7 +256,15 @@ in `lib/actions/vendor.ts`; `KitchenStageTransitionError`; ADR-0014; build green
 tiers, `sortKdsQueueOrders`, kitchen stage badges, stage chips, bulk bar,
 empty/degraded states, dispatch wired to `advanceKitchenStage(…, OUT_FOR_DELIVERY)`;
 `npm run build` green.
-**Next:** prod smoke on `zantap-psi.vercel.app` (pay → NEW → stages → dispatch → COMPLETED).
+**Prod smoke complete 2026-06-24** — automated walkthrough on `zantap-psi.vercel.app`
+(`88fc62e` → `dpl_2xXFXgkvEfcT7umtg8YicR2NtHNp`):
+- ✅ Deploy + migration already applied; KDS/SSE `200`, `kitchenStage` in stream payload.
+- ✅ NEW badge dominant + PAID secondary; relative time (`Yesterday`, `2 days ago`, `3 hrs ago`).
+- ✅ Stage chips: #0485 NEW → ACCEPTED → PREPARING → READY.
+- ✅ Dispatch modal (Copy + WhatsApp share) → OUT FOR DELIVERY (SSE `DISPATCHED`).
+- ✅ Mark completed → COMPLETED badge on #0485.
+- ✅ Bulk select #0779 + #7636 → Mark Preparing (both PREPARING).
+- ✅ Customer order placed (Smash Burger, MoMo PIN 12345) appeared as #5042 on KDS.
 
 - PRD: `.scratch/kds-workflow-optimization/PRD.md`
 - Grill: `.scratch/kds-workflow-optimization/grill-decisions.md`
@@ -265,7 +274,16 @@ empty/degraded states, dispatch wired to `advanceKitchenStage(…, OUT_FOR_DELIV
 
 ---
 
-## Notes on ordering (not a mandatory sequence)
+## Post-backlog (2026-06-24)
+
+| Slice | Status | Tracker |
+|-------|--------|---------|
+| KDS Orders tab → DESIGN.md | ✅ Done · committed `199048e` · deployed `dpl_G4kS89FBo71KhZLn43hvuSGZD4Wg` → `zantap-psi.vercel.app` 2026-06-24 | `.scratch/kds-orders-design-migration/issue-01-orders-tab-tokens.md` |
+| Delivery slip page → DESIGN.md | ✅ Done · committed · local build green · zero `zk-*` repo-wide | `.scratch/kds-orders-design-migration/issue-02-delivery-slip-tokens.md` |
+| Customer storefront redesign | ⏸ deferred | Owner: new designs later — do not migrate `zt-*` yet |
+| `/to-prd` post-backlog | ⏸ deferred | Owner: probing required before agent runs this |
+
+---
 
 - The candidates are a prioritized backlog from one review, **not** a gate. New
   features/fixes can be interleaved freely.
