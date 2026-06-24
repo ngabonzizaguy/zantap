@@ -23,8 +23,8 @@ const URGENCY_BORDER: Record<
   string | undefined
 > = {
   normal: undefined,
-  warning: "ring-1 ring-amber-500/35 animate-zkpulse",
-  critical: "ring-2 ring-red-500/45 animate-zkpulse",
+  warning: "ring-2 ring-amber-500/40",
+  critical: "ring-2 ring-red-500/50",
 };
 
 function resolveKitchenStage(order: Order): KitchenStage {
@@ -151,7 +151,7 @@ export function OrderTicket({
             </div>
             <div
               className={cn(
-                "mt-1 text-[13px] font-semibold",
+                "mt-1 flex items-center gap-1.5 text-[13px] font-semibold",
                 urgency === "critical"
                   ? "text-red-400/90"
                   : urgency === "warning"
@@ -159,7 +159,18 @@ export function OrderTicket({
                     : "text-zk-muted"
               )}
             >
-              {itemCount} items · {formatRelativeTime(ageSource)}
+              {urgency !== "normal" && (
+                <span
+                  className={cn(
+                    "h-1.5 w-1.5 flex-none rounded-full animate-zkpulse",
+                    urgency === "critical" ? "bg-red-400" : "bg-amber-400"
+                  )}
+                  aria-hidden
+                />
+              )}
+              <span>
+                {itemCount} items · {formatRelativeTime(ageSource)}
+              </span>
             </div>
           </div>
           <div className="flex-none text-right">
