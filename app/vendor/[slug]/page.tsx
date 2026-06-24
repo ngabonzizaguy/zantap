@@ -5,10 +5,12 @@ import { KdsDashboard } from "@/components/vendor/KdsDashboard";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }
 
-export default async function VendorKdsPage({ params }: PageProps) {
+export default async function VendorKdsPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const { tab } = await searchParams;
   const store = getStore();
   const vendor = await store.getVendorBySlug(slug);
   if (!vendor) notFound();
@@ -28,6 +30,7 @@ export default async function VendorKdsPage({ params }: PageProps) {
       initialDrivers={drivers}
       initialTodayGross={snapshot.todayGross}
       initialKitchenOpen={snapshot.kitchenOpen}
+      initialTab={tab}
     />
   );
 }

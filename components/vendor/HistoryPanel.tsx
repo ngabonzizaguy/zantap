@@ -258,8 +258,6 @@ export function HistoryPanel({ vendorSlug }: HistoryPanelProps) {
                     <Badge variant="muted">{paymentLabel(paymentStatus)}</Badge>
                     <Link
                       href={`/vendor/${vendorSlug}/receipt/${order.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className={cn(
                         "inline-flex h-11 min-h-11 items-center justify-center rounded-brand-pill",
                         "border border-hairline-strong px-4 font-body text-body-sm font-medium text-ink",

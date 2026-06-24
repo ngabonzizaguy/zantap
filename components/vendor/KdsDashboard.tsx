@@ -23,6 +23,16 @@ import { DispatchModal } from "@/components/vendor/DispatchModal";
 import { SetupDrawer } from "@/components/vendor/SetupDrawer";
 import { Coachmark } from "@/components/vendor/Coachmark";
 import { Card } from "@/components/ui/primitives";
+
+const KDS_TABS = new Set<KdsTab>(["orders", "menu", "history", "setup"]);
+
+function parseInitialTab(tab?: string): KdsTab {
+  if (tab && KDS_TABS.has(tab as KdsTab)) {
+    return tab as KdsTab;
+  }
+  return "orders";
+}
+
 interface KdsDashboardProps {
   vendor: Vendor;
   initialOrders: Order[];
@@ -30,6 +40,7 @@ interface KdsDashboardProps {
   initialDrivers: Driver[];
   initialTodayGross: number;
   initialKitchenOpen: boolean;
+  initialTab?: string;
 }
 
 export function KdsDashboard({
@@ -39,8 +50,9 @@ export function KdsDashboard({
   initialDrivers,
   initialTodayGross,
   initialKitchenOpen,
+  initialTab,
 }: KdsDashboardProps) {
-  const [tab, setTab] = useState<KdsTab>("orders");
+  const [tab, setTab] = useState<KdsTab>(() => parseInitialTab(initialTab));
   const [orders, setOrders] = useState(initialOrders);
   const [menu, setMenu] = useState(initialMenu);
   const [drivers] = useState(initialDrivers);

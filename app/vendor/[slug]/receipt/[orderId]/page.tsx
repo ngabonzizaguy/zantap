@@ -8,6 +8,7 @@ import {
 } from "@/lib/format";
 import { ORDER_HISTORY_TIMEZONE } from "@/lib/orders/history-filters";
 import { PrintReceiptButton } from "@/components/vendor/PrintReceiptButton";
+import { ReceiptBackButton } from "@/components/vendor/ReceiptBackButton";
 
 interface PageProps {
   params: Promise<{ slug: string; orderId: string }>;
@@ -61,6 +62,10 @@ export default async function VendorReceiptPage({ params }: PageProps) {
       `}</style>
 
       <div className="receipt-card mx-auto max-w-lg rounded-brand-lg border border-hairline bg-surface-card p-8 shadow-brand-soft print:max-w-none print:rounded-none print:border-0 print:shadow-none">
+        <div className="no-print mb-6">
+          <ReceiptBackButton vendorSlug={slug} />
+        </div>
+
         <header className="border-b border-hairline pb-6">
           <p className="font-body text-caption uppercase tracking-widest text-muted">
             ZanTap receipt
