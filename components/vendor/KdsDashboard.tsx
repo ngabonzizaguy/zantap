@@ -11,7 +11,13 @@ import {
   toggleItem,
 } from "@/lib/actions/vendor";
 import { loadOnboardingState } from "@/lib/actions/vendor-guides";
-import { orderStatusForKitchenStage, sortKdsQueueOrders } from "@/lib/kds/kitchen-stage";
+import {
+  kitchenStageForOrderStatus,
+  orderStatusForKitchenStage,
+  sortKdsQueueOrders,
+  type KdsSortDirection,
+} from "@/lib/kds/kitchen-stage";
+import { stageFilterGroup, type KdsStageFilter } from "@/lib/kds/stage-styles";
 import { useKdsLiveSnapshot } from "@/lib/kds/useKdsLiveSnapshot";
 import type { KdsSnapshot } from "@/lib/kds/types";
 import type { KitchenStage } from "@/lib/types";
@@ -74,6 +80,8 @@ export function KdsDashboard({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [stageFilter, setStageFilter] = useState<KdsStageFilter>("all");
+  const [sortDirection, setSortDirection] = useState<KdsSortDirection>("oldest");
 
   const liveChecklist = useMemo(
     () => deriveOnboardingState(menu, kitchenOpen, orders),
@@ -103,9 +111,43 @@ export function KdsDashboard({
   const { sseReconnecting } = useKdsLiveSnapshot(vendor.slug, applySnapshot);
 
   const sortedOrders = useMemo(
-    () => sortKdsQueueOrders(orders),
-    [orders]
+    () => sortKdsQueueOrders(orders, sortDirection),
+    [orders, sortDirection]
   );
+
+  const filterCounts = useMemo(() => {
+    const counts: Record<KdsStageFilter, number> = {
+      all: orders.length,
+      new: 0,
+      preparing: 0,
+      ready: 0,
+      completed: 0,
+    };
+    for (const order of orders) {
+      const stage =
+        order.kitchenStage ?? kitchenStageForOrderStatus(order.status) ?? "NEW";
+      counts[stageFilterGroup(stage)] += 1;
+    }
+    return counts;
+  }, [orders]);
+
+  const queueCounts = useMemo(
+    () => ({
+      newCount: filterCounts.new,
+      preparing: filterCounts.preparing,
+      ready: filterCounts.ready,
+    }),
+    [filterCounts]
+  );
+
+  const visibleOrders = useMemo(() => {
+    if (stageFilter === "all") return sortedOrders;
+    return sortedOrders.filter((order) => {
+      const stage =
+        order.kitchenStage ?? kitchenStageForOrderStatus(order.status) ?? "NEW";
+      return stageFilterGroup(stage) === stageFilter;
+    });
+  }, [sortedOrders, stageFilter]);
 
   useEffect(() => {
     if (tab === "setup") {
@@ -246,16 +288,18 @@ export function KdsDashboard({
   };
 
   return (
-    <div className="min-h-screen w-full bg-canvas text-ink">
+    <div className="kds-dark min-h-screen w-full bg-canvas text-ink">
       <div className="relative mx-auto min-h-screen w-full max-w-kds overflow-hidden border-x border-hairline bg-canvas pb-10">
-        <GradientOrbs />
+        <GradientOrbs className="opacity-25" />
 
         <MetricsBanner
           vendorName={vendor.name}
           todayGross={todayGross}
           activeCount={activeCount}
+          queueCounts={queueCounts}
           kitchenOpen={kitchenOpen}
           onToggleKitchen={handleToggleKitchen}
+          onOpenMenu={openSetup}
         />
 
         <Tabs
@@ -271,12 +315,17 @@ export function KdsDashboard({
         <div className="relative z-[1] px-[18px] pt-3.5">
           {tab === "orders" ? (
             <OrdersList
-              orders={sortedOrders}
+              orders={visibleOrders}
               expandedId={expandedId}
               selectedIds={selectedIds}
               bulkMode={bulkMode}
               kitchenOpen={kitchenOpen}
               sseReconnecting={sseReconnecting}
+              stageFilter={stageFilter}
+              filterCounts={filterCounts}
+              sortDirection={sortDirection}
+              onStageFilter={setStageFilter}
+              onSortDirection={setSortDirection}
               onToggle={(id) => setExpandedId((prev) => (prev === id ? null : id))}
               onSelect={handleToggleSelect}
               onDispatch={(id) => {

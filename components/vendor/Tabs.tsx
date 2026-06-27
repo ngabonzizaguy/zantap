@@ -34,38 +34,44 @@ export function Tabs({
         type="button"
         variant={active === "orders" ? "primary" : "outline"}
         size="kds"
+        radius="xl"
         onClick={onOrders}
         className={tabClass(active === "orders")}
       >
-        <Icon name="orders" size={19} strokeWidth={2.1} />
+        <Icon name="orders" size={20} strokeWidth={2.1} />
         Orders
       </Button>
       <Button
         type="button"
         variant={active === "menu" ? "primary" : "outline"}
         size="kds"
+        radius="xl"
         onClick={onMenu}
         className={tabClass(active === "menu")}
       >
-        <Icon name="inventory" size={19} strokeWidth={2.1} />
+        <Icon name="inventory" size={20} strokeWidth={2.1} />
         Menu
       </Button>
       <Button
         type="button"
         variant={active === "history" ? "primary" : "outline"}
         size="kds"
+        radius="xl"
         onClick={onHistory}
         className={tabClass(active === "history")}
       >
+        <Icon name="clock" size={20} strokeWidth={2.1} />
         History
       </Button>
       <Button
         type="button"
         variant={active === "setup" ? "primary" : "outline"}
         size="kds"
+        radius="xl"
         onClick={onSetup}
         className={tabClass(active === "setup")}
       >
+        <Icon name="settings" size={20} strokeWidth={2.1} />
         Setup
       </Button>
     </div>

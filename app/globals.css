@@ -60,3 +60,64 @@
     box-shadow: 0 6px 18px rgba(170, 110, 100, 0.16);
   }
 }
+
+/*
+ * KDS dark operational theme (ADR-0017).
+ * Scoped remap of the editorial color tokens to a dark, high-contrast,
+ * orange-accented surface for the Vendor KDS only. The customer storefront is
+ * unaffected. Specificity (`.kds-dark .token`) wins over the base utility
+ * regardless of Tailwind's output order, which is required because the repo's
+ * `cn()` does not de-duplicate classes.
+ */
+.kds-dark { color-scheme: dark; }
+
+/* Surfaces */
+.kds-dark .bg-canvas { background-color: #0e0e10; }
+.kds-dark .bg-canvas-soft { background-color: #17171a; }
+.kds-dark .bg-surface-card { background-color: #161619; }
+.kds-dark .bg-surface-strong { background-color: #202024; }
+.kds-dark .bg-canvas\/80 { background-color: rgba(14, 14, 16, 0.8); }
+.kds-dark .bg-canvas\/90 { background-color: rgba(14, 14, 16, 0.9); }
+.kds-dark .bg-canvas\/95 { background-color: rgba(14, 14, 16, 0.95); }
+.kds-dark .bg-surface-card\/80 { background-color: rgba(22, 22, 25, 0.8); }
+.kds-dark .bg-surface-card\/90 { background-color: rgba(22, 22, 25, 0.9); }
+
+/* Text */
+.kds-dark .text-ink { color: #f4f4f3; }
+.kds-dark .text-body { color: #c9c8c5; }
+.kds-dark .text-body-strong { color: #e7e6e4; }
+.kds-dark .text-muted { color: #9a9a9f; }
+.kds-dark .text-muted-soft { color: #6f6f76; }
+
+/* Hairlines / borders */
+.kds-dark .border-hairline { border-color: rgba(255, 255, 255, 0.07); }
+.kds-dark .border-hairline-soft { border-color: rgba(255, 255, 255, 0.05); }
+.kds-dark .border-hairline-strong { border-color: rgba(255, 255, 255, 0.14); }
+
+/* Primary -> orange accent (price, active tab, dispatch, etc.) */
+.kds-dark .bg-primary { background-color: #f5a623; }
+.kds-dark .bg-primary-active,
+.kds-dark .hover\:bg-primary-active:hover,
+.kds-dark .active\:bg-primary-active:active { background-color: #e0951f; }
+.kds-dark .text-on-primary { color: #1a1205; }
+.kds-dark .text-primary { color: #f5a623; }
+.kds-dark .border-primary { border-color: #f5a623; }
+.kds-dark .border-l-primary { border-left-color: #f5a623; }
+.kds-dark .border-primary\/40 { border-color: rgba(245, 166, 35, 0.4); }
+.kds-dark .bg-primary\/10 { background-color: rgba(245, 166, 35, 0.12); }
+.kds-dark .bg-primary\/5 { background-color: rgba(245, 166, 35, 0.08); }
+
+/* Semantic status text brightened for dark surfaces */
+.kds-dark .text-success { color: #34d399; }
+.kds-dark .text-error { color: #f87171; }
+
+/* Inputs / selects inside the dark KDS */
+.kds-dark input,
+.kds-dark select,
+.kds-dark textarea {
+  color: #f4f4f3;
+  background-color: #161619;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.kds-dark input::placeholder,
+.kds-dark textarea::placeholder { color: #6f6f76; }

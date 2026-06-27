@@ -86,8 +86,18 @@ export function kitchenStageForOrderStatus(
   return null;
 }
 
-/** KDS queue sort: kitchen stage ordinal, then oldest `paidAt` first. */
-export function sortKdsQueueOrders(orders: Order[]): Order[] {
+/** Direction for the KDS queue time-sort within a kitchen stage group. */
+export type KdsSortDirection = "oldest" | "newest";
+
+/**
+ * KDS queue sort: kitchen stage ordinal first, then by `paidAt` within the stage.
+ * `oldest` (default) surfaces the longest-waiting order first; `newest` reverses it.
+ */
+export function sortKdsQueueOrders(
+  orders: Order[],
+  direction: KdsSortDirection = "oldest"
+): Order[] {
+  const timeSign = direction === "newest" ? -1 : 1;
   return [...orders].sort((a, b) => {
     const stageA = a.kitchenStage ?? kitchenStageForOrderStatus(a.status) ?? "NEW";
     const stageB = b.kitchenStage ?? kitchenStageForOrderStatus(b.status) ?? "NEW";
@@ -96,7 +106,7 @@ export function sortKdsQueueOrders(orders: Order[]): Order[] {
     if (stageDiff !== 0) return stageDiff;
     const paidA = (a.paidAt ?? a.createdAt).getTime();
     const paidB = (b.paidAt ?? b.createdAt).getTime();
-    return paidA - paidB;
+    return (paidA - paidB) * timeSign;
   });
 }
 

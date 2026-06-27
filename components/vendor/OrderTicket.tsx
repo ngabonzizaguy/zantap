@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { KitchenStage, Order } from "@/lib/types";
 import {
   formatKitchenStageLabel,
@@ -13,40 +14,24 @@ import {
   forwardKitchenStages,
   kitchenStageForOrderStatus,
 } from "@/lib/kds/kitchen-stage";
+import {
+  KDS_STAGE_FILTERS,
+  filterChipStyle,
+  kitchenStageStyle,
+  type KdsStageFilter,
+} from "@/lib/kds/stage-styles";
+import type { KdsSortDirection } from "@/lib/kds/kitchen-stage";
 import { Icon } from "@/components/ui/Icon";
 import { Badge, Button, Card } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 
-const TICKET_ACCENTS = [
-  {
-    border: "border-l-gradient-peach",
-    plate: "border-gradient-peach/45 bg-gradient-peach/20",
-    icon: "text-body-strong",
-  },
-  {
-    border: "border-l-gradient-rose",
-    plate: "border-gradient-rose/45 bg-gradient-rose/20",
-    icon: "text-body-strong",
-  },
-  {
-    border: "border-l-gradient-lavender",
-    plate: "border-gradient-lavender/45 bg-gradient-lavender/20",
-    icon: "text-body-strong",
-  },
-  {
-    border: "border-l-gradient-sky",
-    plate: "border-gradient-sky/45 bg-gradient-sky/20",
-    icon: "text-body-strong",
-  },
-] as const;
-
-const URGENCY_BORDER: Record<
+const URGENCY_RING: Record<
   ReturnType<typeof getPaidAgeUrgency>,
   string | undefined
 > = {
   normal: undefined,
-  warning: "ring-2 ring-amber-500/40",
-  critical: "ring-2 ring-error/50",
+  warning: "ring-1 ring-amber-500/45",
+  critical: "ring-1 ring-error/55",
 };
 
 function resolveKitchenStage(order: Order): KitchenStage {
@@ -59,7 +44,6 @@ function resolveKitchenStage(order: Order): KitchenStage {
 
 interface OrderTicketProps {
   order: Order;
-  index: number;
   expanded: boolean;
   selected: boolean;
   bulkMode: boolean;
@@ -71,7 +55,6 @@ interface OrderTicketProps {
 
 export function OrderTicket({
   order,
-  index,
   expanded,
   selected,
   bulkMode,
@@ -81,9 +64,9 @@ export function OrderTicket({
   onAdvanceStage,
 }: OrderTicketProps) {
   const stage = resolveKitchenStage(order);
+  const stageStyle = kitchenStageStyle(stage);
   const isOutForDelivery =
     stage === "OUT_FOR_DELIVERY" || stage === "COMPLETED";
-  const accent = TICKET_ACCENTS[index % TICKET_ACCENTS.length];
   const paid =
     order.status === "PAID" ||
     order.status === "DISPATCHED" ||
@@ -101,11 +84,10 @@ export function OrderTicket({
     <Card
       padding="none"
       className={cn(
-        "overflow-hidden border-l-4 shadow-brand-soft",
-        isOutForDelivery
-          ? "border-l-muted-soft opacity-80"
-          : accent.border,
-        showUrgency && URGENCY_BORDER[urgency]
+        "overflow-hidden transition-colors",
+        isOutForDelivery && "opacity-75",
+        expanded && "border-primary/40 ring-1 ring-primary/50",
+        !expanded && showUrgency && URGENCY_RING[urgency]
       )}
     >
       <div className="flex items-stretch">
@@ -133,20 +115,18 @@ export function OrderTicket({
         <button
           type="button"
           onClick={onToggle}
-          className="flex min-h-[60px] flex-1 items-center gap-[13px] px-4 py-3.5 text-left"
+          className="flex min-h-[64px] flex-1 items-center gap-3 px-4 py-3.5 text-left"
         >
           <div
             className={cn(
-              "flex h-[52px] w-[52px] flex-none items-center justify-center rounded-brand-lg border",
-              isOutForDelivery
-                ? "border-hairline bg-surface-strong"
-                : accent.plate
+              "flex h-[46px] w-[46px] flex-none items-center justify-center rounded-brand-lg border",
+              stageStyle.tile
             )}
           >
             <Icon
               name="plate"
-              size={24}
-              className={isOutForDelivery ? "text-muted" : accent.icon}
+              size={22}
+              className={stageStyle.icon}
               strokeWidth={2}
             />
           </div>
@@ -155,51 +135,70 @@ export function OrderTicket({
               <span className="font-display text-display-sm text-ink">
                 {orderDisplayId(order.id)}
               </span>
-              <Badge
-                variant="default"
-                className="inline-flex h-[27px] normal-case tracking-normal"
+              <span
+                className={cn(
+                  "inline-flex h-[24px] items-center gap-1.5 rounded-pill px-2.5 font-body text-caption-uppercase uppercase tracking-wide",
+                  stageStyle.badge
+                )}
               >
-                <Icon name="dispatch" size={12} strokeWidth={2.3} />
+                <span className={cn("h-1.5 w-1.5 rounded-full", stageStyle.dot)} />
                 {formatKitchenStageLabel(stage)}
-              </Badge>
+              </span>
+            </div>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
               {paid && (
-                <Badge variant="success" className="inline-flex h-[22px] gap-1 normal-case">
+                <Badge
+                  variant="success"
+                  className="inline-flex h-[20px] gap-1 normal-case tracking-normal"
+                >
                   <span className="h-[5px] w-[5px] rounded-full bg-success" />
                   Paid via MoMo
                 </Badge>
               )}
-            </div>
-            <div
-              className={cn(
-                "mt-1 flex items-center gap-1.5 font-body text-body-sm font-medium",
-                urgency === "critical"
-                  ? "text-error"
-                  : urgency === "warning"
-                    ? "text-amber-600"
-                    : "text-muted"
-              )}
-            >
-              {urgency !== "normal" && (
-                <span
-                  className={cn(
-                    "h-1.5 w-1.5 flex-none animate-pulse rounded-full",
-                    urgency === "critical" ? "bg-error" : "bg-amber-500"
-                  )}
-                  aria-hidden
-                />
-              )}
-              <span>
-                {itemCount} items · {formatRelativeTime(ageSource)}
+              <span
+                className={cn(
+                  "flex items-center gap-1.5 font-body text-body-sm",
+                  urgency === "critical"
+                    ? "text-error"
+                    : urgency === "warning"
+                      ? "text-amber-400"
+                      : "text-muted"
+                )}
+              >
+                {urgency !== "normal" && (
+                  <span
+                    className={cn(
+                      "h-1.5 w-1.5 flex-none animate-pulse rounded-full",
+                      urgency === "critical" ? "bg-error" : "bg-amber-400"
+                    )}
+                    aria-hidden
+                  />
+                )}
+                {itemCount} item{itemCount === 1 ? "" : "s"} · {formatRelativeTime(ageSource)}
               </span>
             </div>
           </div>
-          <div className="flex-none text-right">
-            <div className="font-body text-body-strong font-medium text-primary">
+          <div className="flex flex-none items-center gap-2.5">
+            <span className="font-body text-body-strong font-semibold text-primary">
               {formatRwf(order.totalAmount)}
-            </div>
-            <div className="mt-0.5 font-body text-caption text-muted-soft">
-              {expanded ? "Hide" : "Tap to open"}
-            </div>
+            </span>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={cn(
+                "flex-none text-muted transition-transform",
+                expanded && "rotate-180"
+              )}
+              aria-hidden
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
           </div>
         </button>
       </div>
@@ -226,7 +225,7 @@ export function OrderTicket({
           <div className="flex flex-col gap-2 border-t border-dashed border-hairline pt-3.5">
             {order.orderItems.map((item) => (
               <div key={item.id} className="flex items-baseline gap-2.5">
-                <span className="min-w-[42px] font-display text-display-sm text-primary">
+                <span className="min-w-[42px] font-display text-display-sm text-ink">
                   {item.quantity}x
                 </span>
                 <span className="font-body text-body-md font-medium text-ink">
@@ -238,7 +237,7 @@ export function OrderTicket({
 
           <a
             href={`tel:${order.customerPhone}`}
-            className="mt-[15px] flex items-center gap-2 rounded-brand-lg border border-hairline bg-surface-strong p-3.5 no-underline transition-colors hover:bg-canvas-soft"
+            className="mt-[15px] flex items-center gap-2.5 rounded-brand-lg border border-hairline bg-surface-strong p-3.5 no-underline"
           >
             <Icon name="phone" size={18} className="flex-none text-primary" strokeWidth={2} />
             <div>
@@ -251,15 +250,20 @@ export function OrderTicket({
             </div>
           </a>
 
-          <div className="mt-2.5 flex items-start gap-2 rounded-brand-lg border border-hairline bg-surface-strong p-3.5">
+          <div className="mt-2.5 flex items-start gap-2.5 rounded-brand-lg border border-hairline bg-surface-strong p-3.5">
             <Icon
               name="location"
               size={18}
               className="mt-0.5 flex-none text-primary"
               strokeWidth={2.1}
             />
-            <div className="font-body text-body-md font-medium leading-snug text-ink">
-              {order.deliverySector} — {order.landmark}
+            <div>
+              <div className="font-body text-caption-uppercase uppercase text-muted">
+                Location
+              </div>
+              <div className="font-body text-body-md font-medium leading-snug text-ink">
+                {order.deliverySector} — {order.landmark}
+              </div>
             </div>
           </div>
 
@@ -313,12 +317,22 @@ interface OrdersListProps {
   bulkMode: boolean;
   kitchenOpen: boolean;
   sseReconnecting: boolean;
+  stageFilter: KdsStageFilter;
+  filterCounts: Record<KdsStageFilter, number>;
+  sortDirection: KdsSortDirection;
+  onStageFilter: (filter: KdsStageFilter) => void;
+  onSortDirection: (direction: KdsSortDirection) => void;
   onToggle: (id: string) => void;
   onSelect: (id: string) => void;
   onDispatch: (id: string) => void;
   onAdvanceStage: (id: string, stage: KitchenStage) => void;
   onToggleBulkMode: () => void;
 }
+
+const SORT_LABELS: Record<KdsSortDirection, string> = {
+  oldest: "Oldest",
+  newest: "Newest",
+};
 
 export function OrdersList({
   orders,
@@ -327,22 +341,29 @@ export function OrdersList({
   bulkMode,
   kitchenOpen,
   sseReconnecting,
+  stageFilter,
+  filterCounts,
+  sortDirection,
+  onStageFilter,
+  onSortDirection,
   onToggle,
   onSelect,
   onDispatch,
   onAdvanceStage,
   onToggleBulkMode,
 }: OrdersListProps) {
+  const [sortOpen, setSortOpen] = useState(false);
+
   return (
     <div className="flex flex-col gap-3">
       {sseReconnecting && (
         <Card padding="sm" className="flex items-center gap-2.5 border-amber-500/35 bg-amber-500/10">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-amber-500" />
+          <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
           <div>
-            <div className="font-body text-body-sm font-medium text-amber-800">
+            <div className="font-body text-body-sm font-medium text-amber-300">
               Reconnecting…
             </div>
-            <div className="font-body text-caption text-amber-700/80">
+            <div className="font-body text-caption text-amber-200/70">
               Live updates paused — queue may be stale until the stream recovers.
             </div>
           </div>
@@ -363,21 +384,101 @@ export function OrdersList({
         </Card>
       )}
 
+      <div className="zt-hidescroll -mx-[18px] flex gap-2 overflow-x-auto px-[18px] pb-1">
+        {KDS_STAGE_FILTERS.map(({ id, label }) => {
+          const active = stageFilter === id;
+          const count = filterCounts[id];
+          const chip = filterChipStyle(id);
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onStageFilter(id)}
+              className={cn(
+                "flex flex-none items-center gap-1.5 rounded-brand-md px-3.5 py-2 font-body text-body-sm font-medium transition-colors",
+                chip.text,
+                active ? chip.activeBg : cn(chip.bg, "hover:opacity-90")
+              )}
+            >
+              {label}
+              <span className="opacity-60">({count})</span>
+            </button>
+          );
+        })}
+      </div>
+
       {orders.length > 0 && (
-        <div className="flex justify-end">
-          <Button
+        <div className="flex items-center justify-between">
+          <button
             type="button"
-            variant="outline"
-            size="default"
             onClick={onToggleBulkMode}
             className={cn(
-              "gap-1.5 font-body text-caption-uppercase uppercase tracking-wide",
-              bulkMode && "border-primary/40 bg-primary/5 text-primary"
+              "flex items-center gap-2 font-body text-body-sm font-medium transition-colors",
+              bulkMode ? "text-primary" : "text-muted hover:text-ink"
             )}
           >
-            <Icon name="check" size={14} strokeWidth={2.4} />
-            {bulkMode ? "Bulk select on" : "Bulk select"}
-          </Button>
+            <span
+              className={cn(
+                "flex h-5 w-5 items-center justify-center rounded-brand-sm border",
+                bulkMode
+                  ? "border-primary bg-primary/10"
+                  : "border-hairline-strong"
+              )}
+            >
+              {bulkMode && (
+                <Icon name="check" size={12} className="text-primary" strokeWidth={2.8} />
+              )}
+            </span>
+            Select
+          </button>
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setSortOpen((prev) => !prev)}
+              className="flex items-center gap-1.5 rounded-pill border border-hairline-strong px-3.5 py-2 font-body text-body-sm font-medium text-ink"
+            >
+              <Icon name="orders" size={14} className="text-muted" strokeWidth={2.1} />
+              Sort: {SORT_LABELS[sortDirection]}
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={cn("text-muted transition-transform", sortOpen && "rotate-180")}
+                aria-hidden
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+            {sortOpen && (
+              <div className="absolute right-0 z-20 mt-1.5 w-36 overflow-hidden rounded-brand-lg border border-hairline bg-surface-card shadow-kds">
+                {(Object.keys(SORT_LABELS) as KdsSortDirection[]).map((dir) => (
+                  <button
+                    key={dir}
+                    type="button"
+                    onClick={() => {
+                      onSortDirection(dir);
+                      setSortOpen(false);
+                    }}
+                    className={cn(
+                      "flex w-full items-center justify-between px-3.5 py-2.5 text-left font-body text-body-sm transition-colors hover:bg-surface-strong",
+                      sortDirection === dir ? "text-primary" : "text-ink"
+                    )}
+                  >
+                    {SORT_LABELS[dir]}
+                    {sortDirection === dir && (
+                      <Icon name="check" size={14} className="text-primary" strokeWidth={2.6} />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -391,17 +492,16 @@ export function OrdersList({
           </div>
           <div className="mt-1.5 font-body text-body-sm text-muted">
             {kitchenOpen
-              ? "No active orders in the queue. New paid orders appear here instantly."
+              ? "No orders match this filter. New paid orders appear here instantly."
               : "Open the kitchen when you are ready to accept orders."}
           </div>
         </Card>
       ) : (
-        <div className="flex flex-col gap-3.5">
-          {orders.map((order, index) => (
+        <div className="flex flex-col gap-3">
+          {orders.map((order) => (
             <OrderTicket
               key={order.id}
               order={order}
-              index={index}
               expanded={expandedId === order.id}
               selected={selectedIds.has(order.id)}
               bulkMode={bulkMode}
