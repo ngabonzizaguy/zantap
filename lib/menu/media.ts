@@ -52,6 +52,20 @@ export function getPrimaryImageUrl(item: MenuItem): string | undefined {
   return item.images?.find((image) => image.isPrimary)?.url ?? item.imageUrl;
 }
 
+/** Sorted gallery URLs for storefront carousel; legacy imageUrl when no rows. */
+export function getMenuItemGalleryUrls(item: MenuItem): string[] {
+  const fromGallery = sortMenuImages(item.images ?? [])
+    .map((image) => image.url.trim())
+    .filter((url) => url.length > 0);
+
+  if (fromGallery.length > 0) {
+    return fromGallery;
+  }
+
+  const legacy = item.imageUrl?.trim();
+  return legacy ? [legacy] : [];
+}
+
 export function assertCanAddMenuImage(currentCount: number): void {
   if (currentCount >= MAX_MENU_IMAGES) {
     throw new MenuImageError(
