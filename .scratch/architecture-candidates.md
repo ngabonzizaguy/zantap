@@ -61,7 +61,7 @@ If a session ends without doing both, the handoff is incomplete.
 | 11 | Live MTN MoMo integration | Strong | server + payments | ⏸ Requires `/grill-with-docs` | — |
 | 12 | Vendor authentication | Strong | server + KDS | ⏸ Requires `/grill-with-docs` | — |
 | 13 | Ops / security hardening | Worth exploring | docs + infra | ⏸ Probe — deferred | — |
-| 14 | Storefront item customization modal (visual-only) | Owner request | customer UI only | ✅ Done · committed `9479cd7` · deployed `dpl_DRzpEfNQD8RpkkX3RoM7JEtZJR1k` → `zantap-psi.vercel.app` 2026-06-28 (prod curl PASS) | `.scratch/storefront-customization-modal/PRD.md` |
+| 14 | Storefront item customization modal (visual-only) | Owner request | customer UI only | ✅ Done · `9479cd7` + mockup `d328c8a` · `dpl_DJMPCwAAE8ecdwFYbCdkdva93uvS` → `zantap-psi.vercel.app` 2026-06-28 | `.scratch/storefront-customization-modal/PRD.md` |
 
 Candidates **#1–#7** shipped. **#8** sliced 2026-06-24. **#9–#13** probed; gates noted.
 
@@ -326,15 +326,10 @@ the forward-compatible seam.
 2026-06-27** — `npm test` 187/187 + `npm run build` green; storefront dev curl HTTP 200.
 **Shipped 2026-06-28** — committed `9479cd7` (`feat(storefront): item customization
 modal (visual-only)`), pushed to `main`, deployed to prod
-`dpl_DRzpEfNQD8RpkkX3RoM7JEtZJR1k` → `zantap-psi.vercel.app`. Re-verified before
-ship: 187/187 tests + build green; prod curl `/inka-steakhouse` HTTP 200, `zt-*`
-present, no `kds-dark` (storefront stays light), `Customize <name>` card-tap wiring in
-prod bundle. Shipped Option A (single full-width hero carousel + `n/N` count badge);
-the mockup's exact two-zone layout (square header image + separate Photos thumb strip)
-remains a trivially splittable follow-up (generalized `MenuItemImageCarousel` already
-supports `variant="header"`). Remaining: human device gesture smoke at 360–390px
-(tap/drag/add-on live total/swipe) — automatable verification done, manual gesture
-pass is the one open human step.
+`dpl_DRzpEfNQD8RpkkX3RoM7JEtZJR1k` → `zantap-psi.vercel.app`. **Mockup layout
+refactor 2026-06-28** — committed `d328c8a` (square header image + Photos thumb
+strip + notes retained), deployed `dpl_DJMPCwAAE8ecdwFYbCdkdva93uvS` →
+`zantap-psi.vercel.app`. Prod curl PASS (HTTP 200, `zt-*`, Customize wiring).
 
 What shipped (Issue 01):
 - `lib/menu/customization.ts` (server-safe — no `"use client"`/React/DOM): persistence-
