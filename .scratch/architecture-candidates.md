@@ -55,8 +55,15 @@ If a session ends without doing both, the handoff is incomplete.
 | 5 | Make Prisma the type source; Zod at the seam | Speculative | — | ◑ Audited — deferred | `.scratch/prisma-type-source/PRD.md` |
 | 6 | KDS Vendor Suite (menu, media, export, history, guides) | Strong | ports & adapters | ✅ Done & deployed · smoke complete | `.scratch/kds-vendor-suite/PRD.md` |
 | 7 | KDS workflow optimization (kitchen stage, aging, bulk) | Strong | ports & adapters + KDS UI | ✅ Done & deployed · smoke complete | `.scratch/kds-workflow-optimization/PRD.md` |
+| 8 | Storefront menu image carousel | Strong | customer UI only | ✅ Done · deployed · prod-smoked 2026-06-27 | `.scratch/storefront-image-carousel/PRD.md` |
+| 9 | Vendor WhatsApp PAID notification | Worth exploring | customer + lib/whatsapp | ⏸ Probe — deferred | — |
+| 10 | Customer storefront → DESIGN.md | Strong | customer UI | ⏸ Owner designs pending | — |
+| 11 | Live MTN MoMo integration | Strong | server + payments | ⏸ Requires `/grill-with-docs` | — |
+| 12 | Vendor authentication | Strong | server + KDS | ⏸ Requires `/grill-with-docs` | — |
+| 13 | Ops / security hardening | Worth exploring | docs + infra | ⏸ Probe — deferred | — |
+| 14 | Storefront item customization modal (visual-only) | Owner request | customer UI only | ✅ Done · committed `9479cd7` · deployed `dpl_DRzpEfNQD8RpkkX3RoM7JEtZJR1k` → `zantap-psi.vercel.app` 2026-06-28 (prod curl PASS) | `.scratch/storefront-customization-modal/PRD.md` |
 
-There are exactly **7** candidates.
+Candidates **#1–#7** shipped. **#8** sliced 2026-06-24. **#9–#13** probed; gates noted.
 
 ---
 
@@ -282,7 +289,104 @@ empty/degraded states, dispatch wired to `advanceKitchenStage(…, OUT_FOR_DELIV
 | Delivery slip page → DESIGN.md | ✅ Done · committed `b08a3ca` · deployed `dpl_2p7RSEAgq5WbQevuuaJokFpL6uDL` → `zantap-psi.vercel.app` 2026-06-24 | `.scratch/kds-orders-design-migration/issue-02-delivery-slip-tokens.md` |
 | Remove dead `zk-*` Tailwind palette | ✅ Done · committed `4553388` · deployed `dpl_8Q52wTnGTXU57RB7yiEDLc9jX3BU` → `zantap-psi.vercel.app` 2026-06-24 | ADR-0016 consequences |
 | Customer storefront redesign | ⏸ deferred | Owner: new designs later — do not migrate `zt-*` yet |
-| `/to-prd` post-backlog | ⏸ deferred | Owner: probing required before agent runs this |
+| `/to-prd` post-backlog probe | ✅ Done 2026-06-24 | Candidate #8 PRD + issue; #9–#13 probe table below |
+| KDS dark operational theme restore | ✅ Done · committed `4440d2d` · deployed `dpl_6VfQnfy66KGdoJxYNbourWgvJBoD` → `zantap-psi.vercel.app` · prod-smoked 2026-06-27 | `.scratch/kds-dark-identity-restore/grill-decisions.md`, ADR-0017 |
+
+---
+
+## #8 · Storefront menu image carousel — ✅ DONE
+
+Rating: Strong · Scope: customer UI only (no Store/schema).
+
+Swipeable multi-image thumb on `MenuItemCard` when `images.length >= 2`.
+Follow-up from vendor-suite Issue 02 / ADR-0008. **Keeps `zt-*` blush-glass** —
+not the DESIGN.md customer migration.
+
+- PRD: `.scratch/storefront-image-carousel/PRD.md`
+- Issues: `01-menu-card-carousel` ✅
+- ADR: `docs/adr/0018-storefront-menu-image-carousel.md`
+- Depends on: MenuImage gallery ✅, Store hydrates `images` ✅
+- Shipped 2026-06-27: `b243c81` → `dpl_fKu6ie9FfMy552GTYBCwkAYuJy7c` → `zantap-psi.vercel.app`. `getMenuItemGalleryUrls`, `MenuItemImageCarousel` (scroll-snap + dots), `MenuItemCard` wire-up, 5 unit tests; build green; prod curl PASS (bundle has carousel; prod DB has 0 multi-image items — swipe needs KDS upload).
+
+---
+
+## #14 · Storefront item customization modal (visual-only) — ✅ DONE · DEPLOYED · prod curl PASS
+
+Rating: Owner request · Scope: customer UI only (no Store/schema/order pipeline).
+
+Tap a `MenuItemCard` body → premium glassmorphic bottom sheet (hero carousel +
+included/add-on customization + notes + live summary + sticky "Add to Order").
+`+` stays pure quick-add. **Visual-only**: modifiers/notes are display-only and do
+NOT reach cart/Order/KDS/receipt this slice — a future "real modifiers" epic
+(separate `/grill-with-docs`) makes them persisted + server-priced. Keeps `zt-*`
+blush-glass (not DESIGN.md migration). Optional `MenuItem.customization?` field is
+the forward-compatible seam.
+
+**Grilled 2026-06-27** (six decisions). PRD + issue written. **Issue 01 implemented
+2026-06-27** — `npm test` 187/187 + `npm run build` green; storefront dev curl HTTP 200.
+**Shipped 2026-06-28** — committed `9479cd7` (`feat(storefront): item customization
+modal (visual-only)`), pushed to `main`, deployed to prod
+`dpl_DRzpEfNQD8RpkkX3RoM7JEtZJR1k` → `zantap-psi.vercel.app`. Re-verified before
+ship: 187/187 tests + build green; prod curl `/inka-steakhouse` HTTP 200, `zt-*`
+present, no `kds-dark` (storefront stays light), `Customize <name>` card-tap wiring in
+prod bundle. Shipped Option A (single full-width hero carousel + `n/N` count badge);
+the mockup's exact two-zone layout (square header image + separate Photos thumb strip)
+remains a trivially splittable follow-up (generalized `MenuItemImageCarousel` already
+supports `variant="header"`). Remaining: human device gesture smoke at 360–390px
+(tap/drag/add-on live total/swipe) — automatable verification done, manual gesture
+pass is the one open human step.
+
+What shipped (Issue 01):
+- `lib/menu/customization.ts` (server-safe — no `"use client"`/React/DOM): persistence-
+  shaped `IngredientOption` / `AddOnOption` / `ItemCustomization` /
+  `CustomizationSelection` (stable string ids + integer RWF prices, `icon` = Icon-name
+  string), `resolveCustomization` (item field or generic fallback), `emptySelection`,
+  pure `computeCustomizeTotal((base + Σ addOn.priceRwf×qty) × qty)`, `CUSTOMIZATION_NOTES_MAX`.
+- `lib/types.ts`: optional `MenuItem.customization?: ItemCustomization` (type-only import;
+  no runtime cycle).
+- `lib/menu/__tests__/customization.test.ts`: 10 tests (resolve/fallback, emptySelection,
+  total with add-ons/qty/removals/unknown-id/fallback pricing).
+- `MenuItemImageCarousel.tsx`: generalized to a size-agnostic core (`variant` thumb 72×72 /
+  header 88×88 / hero full-width; slides `h-full w-full`); `indicator` `dots`|`count`;
+  scroll-snap + `ResizeObserver` preserved; 0/1/≥2 handled.
+- `MenuItemCustomizeSheet.tsx` (`"use client"`): glassmorphic bottom sheet (fixed inset-0
+  z-[60], blur scrim, translate-y, tap-scrim/X close), header (name/desc/base price/`− qty +`
+  from 1), hero carousel (count badge), Included remove-toggles, Add-on toggles updating live
+  total, capped notes textarea, live summary card, sticky `Add to order • <total>`; native
+  Pointer-Event drag-to-dismiss (threshold/flick → close, else CSS spring-back). Emits ONE
+  `CustomizationSelection` to `onAddToOrder`.
+- `MenuItemCard.tsx`: card-body tap → `onOpen(item)` (role/tabindex/Enter-Space a11y); `+`
+  keeps quick-add via `e.stopPropagation()`. `GlassPanel` now forwards `HTMLAttributes`.
+- `Storefront.tsx`: `activeItemId` state; one `MenuItemCustomizeSheet`; single
+  `handleAddToOrder(selection)` adapter (`for … addItem(menuItemId)` then close) — the only
+  cart chokepoint. Storefront stays mounted/dimmed behind the scrim.
+
+Known gap (per ADR-0019): add-ons/removals/notes are display-only — they do NOT reach
+the cart/Order/KDS/receipt. Checkout total = base prices × qty. Closed by a future
+"real modifiers" epic (separate `/grill-with-docs`).
+
+Deviation from mockup: header thumbnail + separate "Photos" strip consolidated into the
+single full-width hero carousel the spec mandates (count badge) — avoids two redundant
+carousels of the same images. Trivially splittable if the owner wants the exact layout.
+
+- PRD: `.scratch/storefront-customization-modal/PRD.md`
+- Issues: `01-customization-modal` ✅ (ready-for-human — needs device gesture smoke + commit/deploy)
+- ADR: `docs/adr/0019-storefront-item-customization-modal.md`
+- Depends on: #8 carousel ✅ (`getMenuItemGalleryUrls`, `MenuItemImageCarousel`),
+  `CartContext.addItem` ✅
+
+---
+
+## Post-backlog probe notes (#9–#13) — 2026-06-24
+
+| # | Candidate | Readiness | Gate / notes |
+|---|-----------|-----------|--------------|
+| 9 | Vendor WhatsApp PAID notification | Code stub exists | `buildVendorOrderNotification` in `lib/whatsapp.ts` is **unused**; `Vendor.phoneNumber` in schema. MVP = `wa.me` deep-link (who opens it — customer success vs KDS — needs owner UX pick). Not sliced. |
+| 10 | Customer storefront → DESIGN.md | Blocked | ~60+ `zt-*` refs across 9 customer components; `zt` palette still in `tailwind.config.ts`. **Do not start without owner designs.** |
+| 11 | Live MTN MoMo | High risk | Simulated STK in `lib/momo/simulate.ts` + `/api/momo/stk`. Payment module (#2) ✅. **Requires `/grill-with-docs` before PRD.** |
+| 12 | Vendor authentication | Deferred per AGENTS.md | Write-secret interim (ADR-0009). Real auth = separate grill + PRD. |
+| 13 | Ops / security | Mixed | `README.md` stale (still references `lib/data/*`, Phase 2 deferrals). Write-secret rotation playbook. Export/upload already guarded; rate limits not audited. |
+| 5 | Prisma/Zod type source | Audited | Triggers in ADR-0003 still not fired — **do not lift defer without owner OK.** |
 
 ---
 
