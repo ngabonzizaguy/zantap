@@ -48,6 +48,14 @@ _Avoid_: basket, payment flow (when you mean the whole checkout module)
 A photo attached to a MenuItem. An item has a gallery of images with exactly one **primary** image (shown on the storefront card and KDS); the rest are secondary. Uploaded (primary path) or linked by URL (secondary path). When an item has no images, a generated gradient (`thumbFrom`/`thumbTo`) is the fallback thumbnail.
 _Avoid_: photo, picture, asset
 
+**Customization** (presentation-only, as of ADR-0019):
+The Customer-facing selection surface on a MenuItem's storefront modal — *included
+ingredients* (removable) and paid *add-ons*. Today it is **display-only**: choices
+and notes affect the modal's shown total but are NOT carried into the cart, Order,
+KDS, or receipt (the cart remains item quantities only). A future "real modifiers"
+epic would make it a persisted, server-priced part of an Order.
+_Avoid_: options, extras, modifiers (when you mean the persisted future model)
+
 **Archived item**:
 A MenuItem soft-deleted via `archivedAt`. It disappears from the storefront and the Menu list but is retained for order history and exports; it can be restored. "Deleting" a menu item means archiving it.
 _Avoid_: deleted item, removed item, hidden item (hidden = sold-out/unavailable, which is different)

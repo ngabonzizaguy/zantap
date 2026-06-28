@@ -1,6 +1,7 @@
+import type { HTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
-interface GlassPanelProps {
+interface GlassPanelProps extends HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   variant?: "default" | "strong";
@@ -10,6 +11,7 @@ export function GlassPanel({
   children,
   className,
   variant = "default",
+  ...rest
 }: GlassPanelProps) {
   return (
     <div
@@ -18,6 +20,7 @@ export function GlassPanel({
         "rounded-3xl",
         className
       )}
+      {...rest}
     >
       {children}
     </div>

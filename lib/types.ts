@@ -1,3 +1,5 @@
+import type { ItemCustomization } from "@/lib/menu/customization";
+
 export type OrderStatus = "PENDING" | "PAID" | "DISPATCHED" | "COMPLETED";
 
 export type KitchenStage =
@@ -45,6 +47,13 @@ export interface MenuItem {
   thumbTo?: string;
   archivedAt?: Date;
   images?: MenuImage[];
+  /**
+   * Optional, presentation-only customization catalog (included ingredients +
+   * paid add-ons) for the storefront customize modal. In-memory passthrough
+   * only today — no persistence. Absent on every item currently (renders a
+   * generic fallback). Forward-compat seam for the future "real modifiers" epic.
+   */
+  customization?: ItemCustomization;
 }
 
 export interface AddMenuImageInput {

@@ -11,14 +11,27 @@ interface MenuItemCardProps {
   item: MenuItem;
   qty: number;
   onAdd: () => void;
+  onOpen: () => void;
 }
 
-export function MenuItemCard({ item, qty, onAdd }: MenuItemCardProps) {
+export function MenuItemCard({ item, qty, onAdd, onOpen }: MenuItemCardProps) {
   const thumbBg = `radial-gradient(circle at 32% 28%, ${item.thumbFrom ?? "#ffd2b0"}, ${item.thumbTo ?? "#f5945f"})`;
   const galleryUrls = getMenuItemGalleryUrls(item);
 
   return (
-    <GlassPanel className="relative flex items-center gap-4 p-3.5">
+    <GlassPanel
+      role="button"
+      tabIndex={0}
+      aria-label={`Customize ${item.name}`}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      className="relative flex cursor-pointer items-center gap-4 p-3.5 transition active:scale-[0.99]"
+    >
       <div className="relative flex-none">
         <MenuItemImageCarousel urls={galleryUrls} fallbackBg={thumbBg} />
         {qty > 0 && (
@@ -43,7 +56,10 @@ export function MenuItemCard({ item, qty, onAdd }: MenuItemCardProps) {
       <button
         type="button"
         aria-label={`Add ${item.name}`}
-        onClick={onAdd}
+        onClick={(e) => {
+          e.stopPropagation();
+          onAdd();
+        }}
         className="flex h-11 w-11 flex-none items-center justify-center rounded-[14px] border-none bg-zt-brown text-white shadow-[0_8px_18px_rgba(58,44,38,0.32)] transition-transform active:scale-95"
       >
         <Icon name="plus" size={20} strokeWidth={2.2} />
@@ -56,9 +72,10 @@ interface MenuListProps {
   items: MenuItem[];
   cart: Record<string, number>;
   onAdd: (id: string) => void;
+  onOpen: (item: MenuItem) => void;
 }
 
-export function MenuList({ items, cart, onAdd }: MenuListProps) {
+export function MenuList({ items, cart, onAdd, onOpen }: MenuListProps) {
   return (
     <div className="flex flex-col gap-3">
       {items.map((item) => (
@@ -67,6 +84,7 @@ export function MenuList({ items, cart, onAdd }: MenuListProps) {
           item={item}
           qty={cart[item.id] ?? 0}
           onAdd={() => onAdd(item.id)}
+          onOpen={() => onOpen(item)}
         />
       ))}
     </div>

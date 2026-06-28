@@ -7,8 +7,10 @@ import { TopBar } from "@/components/customer/TopBar";
 import { Hero } from "@/components/customer/Hero";
 import { CategoryChips } from "@/components/customer/CategoryChips";
 import { MenuList } from "@/components/customer/MenuItemCard";
+import { MenuItemCustomizeSheet } from "@/components/customer/MenuItemCustomizeSheet";
 import { StickyCartBar } from "@/components/customer/StickyCartBar";
 import { CheckoutSheet } from "@/components/customer/CheckoutSheet";
+import type { CustomizationSelection } from "@/lib/menu/customization";
 import { useCheckout } from "@/lib/checkout/useCheckout";
 import { UssdModal } from "@/components/customer/UssdModal";
 import { SuccessReceipt } from "@/components/customer/SuccessReceipt";
@@ -23,8 +25,27 @@ interface StorefrontProps {
 function StorefrontInner({ vendor, menu, categories }: StorefrontProps) {
   const [activeCategory, setActiveCategory] = useState("All");
   const [sectorOpen, setSectorOpen] = useState(false);
+  const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const { cart, addItem, removeItem, resetCart } = useCart();
   const checkout = useCheckout(vendor, menu);
+
+  const activeItem = useMemo(
+    () => menu.find((item) => item.id === activeItemId) ?? null,
+    [menu, activeItemId]
+  );
+
+  /**
+   * The single chokepoint where the customize modal touches the cart. Today it
+   * adds N base items and discards the modifier/notes parts of the selection
+   * (visual-only slice, ADR-0019). The future line-item cart swaps ONLY this
+   * function — do not scatter addItem calls elsewhere.
+   */
+  const handleAddToOrder = (selection: CustomizationSelection) => {
+    for (let i = 0; i < selection.qty; i++) {
+      addItem(selection.menuItemId);
+    }
+    setActiveItemId(null);
+  };
 
   const availableMenu = useMemo(
     () => menu.filter((item) => item.isAvailable),
@@ -79,10 +100,17 @@ function StorefrontInner({ vendor, menu, categories }: StorefrontProps) {
               items={filteredMenu}
               cart={cart}
               onAdd={addItem}
+              onOpen={(item) => setActiveItemId(item.id)}
             />
           </div>
         </div>
       </div>
+
+      <MenuItemCustomizeSheet
+        item={activeItem}
+        onClose={() => setActiveItemId(null)}
+        onAddToOrder={handleAddToOrder}
+      />
 
       <StickyCartBar
         count={checkout.count}
