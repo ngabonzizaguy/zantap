@@ -35,6 +35,9 @@ interface MenuItemImageCarouselProps {
   variant?: CarouselVariant;
   /** Override the default indicator for the chosen variant. */
   indicator?: "dots" | "count";
+  /** Controlled slide index (syncs header carousel ↔ Photos strip). */
+  activeIndex?: number;
+  onActiveIndexChange?: (index: number) => void;
 }
 
 export function MenuItemImageCarousel({
@@ -43,19 +46,38 @@ export function MenuItemImageCarousel({
   className = "",
   variant = "thumb",
   indicator,
+  activeIndex: controlledIndex,
+  onActiveIndexChange,
 }: MenuItemImageCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [uncontrolledIndex, setUncontrolledIndex] = useState(0);
+  const isControlled = controlledIndex !== undefined;
+  const activeIndex = isControlled ? controlledIndex : uncontrolledIndex;
+  const programmaticScroll = useRef(false);
 
   const shell = `${SHELL_CHROME} ${VARIANT_SHELL[variant]}`;
   const indicatorKind = indicator ?? VARIANT_INDICATOR[variant];
+
+  const setIndex = useCallback(
+    (index: number) => {
+      const clamped = Math.min(Math.max(index, 0), Math.max(urls.length - 1, 0));
+      if (!isControlled) setUncontrolledIndex(clamped);
+      onActiveIndexChange?.(clamped);
+    },
+    [isControlled, onActiveIndexChange, urls.length]
+  );
 
   const syncActiveIndex = useCallback(() => {
     const el = scrollRef.current;
     if (!el || el.clientWidth <= 0) return;
     const index = Math.round(el.scrollLeft / el.clientWidth);
-    setActiveIndex(Math.min(Math.max(index, 0), urls.length - 1));
-  }, [urls.length]);
+    const clamped = Math.min(Math.max(index, 0), urls.length - 1);
+    if (programmaticScroll.current) {
+      programmaticScroll.current = false;
+      return;
+    }
+    if (clamped !== activeIndex) setIndex(clamped);
+  }, [activeIndex, setIndex, urls.length]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -67,6 +89,16 @@ export function MenuItemImageCarousel({
     observer.observe(el);
     return () => observer.disconnect();
   }, [urls.length, syncActiveIndex]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || urls.length < 2 || controlledIndex === undefined) return;
+    const target = controlledIndex * el.clientWidth;
+    if (Math.abs(el.scrollLeft - target) > 1) {
+      programmaticScroll.current = true;
+      el.scrollTo({ left: target, behavior: "smooth" });
+    }
+  }, [controlledIndex, urls.length]);
 
   if (urls.length === 0) {
     return (
@@ -139,6 +171,55 @@ export function MenuItemImageCarousel({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+interface MenuItemPhotoStripProps {
+  urls: string[];
+  activeIndex: number;
+  onSelect: (index: number) => void;
+}
+
+/** Horizontal thumbnail picker + dot row (customize sheet "Photos" section). */
+export function MenuItemPhotoStrip({
+  urls,
+  activeIndex,
+  onSelect,
+}: MenuItemPhotoStripProps) {
+  if (urls.length < 2) return null;
+
+  return (
+    <div>
+      <div className="flex gap-2.5 overflow-x-auto pb-1">
+        {urls.map((url, index) => (
+          <button
+            key={`${url}-${index}`}
+            type="button"
+            aria-label={`View photo ${index + 1} of ${urls.length}`}
+            aria-current={index === activeIndex ? "true" : undefined}
+            onClick={() => onSelect(index)}
+            className={`h-[72px] w-[72px] flex-none overflow-hidden rounded-[16px] border-2 bg-cover bg-center transition ${
+              index === activeIndex
+                ? "border-zt-accent shadow-[0_4px_12px_rgba(170,110,100,0.25)]"
+                : "border-white/70 opacity-85"
+            }`}
+            style={{ backgroundImage: `url(${url})` }}
+          />
+        ))}
+      </div>
+      <div className="mt-3 flex justify-center gap-1.5" aria-hidden>
+        {urls.map((_, index) => (
+          <span
+            key={index}
+            className={`h-1.5 rounded-full transition-all ${
+              index === activeIndex
+                ? "w-4 bg-zt-brown"
+                : "w-1.5 bg-[rgba(120,90,80,0.25)]"
+            }`}
+          />
+        ))}
+      </div>
     </div>
   );
 }

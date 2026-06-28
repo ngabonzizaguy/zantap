@@ -11,7 +11,10 @@ import {
   resolveCustomization,
   type CustomizationSelection,
 } from "@/lib/menu/customization";
-import { MenuItemImageCarousel } from "@/components/customer/MenuItemImageCarousel";
+import {
+  MenuItemImageCarousel,
+  MenuItemPhotoStrip,
+} from "@/components/customer/MenuItemImageCarousel";
 import { GlassPanel } from "@/components/ui/GlassPanel";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
@@ -25,6 +28,12 @@ interface MenuItemCustomizeSheetProps {
   onAddToOrder: (selection: CustomizationSelection) => void;
 }
 
+/** "Beef Brochettes" → "Customize your brochettes" */
+function customizeSubtitle(name: string): string {
+  const last = name.trim().split(/\s+/).pop()?.toLowerCase();
+  return last ? `Customize your ${last}` : "Customize your order";
+}
+
 export function MenuItemCustomizeSheet({
   item,
   onClose,
@@ -32,20 +41,19 @@ export function MenuItemCustomizeSheet({
 }: MenuItemCustomizeSheetProps) {
   const isOpen = item !== null;
 
-  // Persist the last item through the close animation (item goes null on close).
   const [renderItem, setRenderItem] = useState<MenuItem | null>(item);
 
   const [qty, setQty] = useState(1);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [addOnQty, setAddOnQty] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState("");
+  const [photoIndex, setPhotoIndex] = useState(0);
 
   const [dragY, setDragY] = useState(0);
   const [dragging, setDragging] = useState(false);
   const dragRef = useRef<{ startY: number; startT: number } | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
 
-  // Reset the ephemeral draft each time a new item opens.
   useEffect(() => {
     if (item) {
       setRenderItem(item);
@@ -53,6 +61,7 @@ export function MenuItemCustomizeSheet({
       setRemoved(new Set());
       setAddOnQty({});
       setNotes("");
+      setPhotoIndex(0);
       setDragY(0);
     }
   }, [item]);
@@ -82,9 +91,6 @@ export function MenuItemCustomizeSheet({
   const fallbackBg = renderItem
     ? `radial-gradient(circle at 32% 28%, ${renderItem.thumbFrom ?? "#ffd2b0"}, ${renderItem.thumbTo ?? "#f5945f"})`
     : "";
-
-  const selectedAddOns =
-    customization?.addOns.filter((addOn) => (addOnQty[addOn.id] ?? 0) > 0) ?? [];
 
   const toggleRemoved = (id: string) => {
     setRemoved((prev) => {
@@ -162,64 +168,67 @@ export function MenuItemCustomizeSheet({
           <div className="h-[5px] w-[42px] rounded-full bg-[rgba(120,90,80,0.3)]" />
         </div>
 
-        <button
-          type="button"
-          aria-label="Close"
-          onClick={onClose}
-          className="absolute right-[18px] top-[18px] z-10 flex h-[38px] w-[38px] items-center justify-center rounded-full bg-[rgba(120,90,80,0.12)] backdrop-blur-sm"
-        >
-          <Icon name="close" size={18} strokeWidth={2} className="text-zt-brown-muted" />
-        </button>
-
         {renderItem && customization && (
           <>
             <div className="zt-hidescroll flex-1 overflow-y-auto px-[22px] pb-4">
-              <div className="pr-12">
-                <h2 className="font-serif text-[27px] leading-tight text-zt-brown">
-                  {renderItem.name}
-                </h2>
-                {renderItem.description && (
-                  <p className="mt-1 line-clamp-2 text-[13px] font-medium leading-snug text-zt-warm">
-                    {renderItem.description}
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <span className="text-[18px] font-extrabold tracking-[0.2px] text-zt-accent">
-                  {formatRwf(renderItem.priceRwf)}
-                </span>
-                <div className="flex items-center gap-1 rounded-full border border-white/80 bg-white/70 p-1">
-                  <button
-                    type="button"
-                    aria-label="Decrease quantity"
-                    onClick={() => setQty((q) => Math.max(1, q - 1))}
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-2xl text-zt-brown-muted disabled:opacity-40"
-                    disabled={qty <= 1}
-                  >
-                    −
-                  </button>
-                  <span className="min-w-[26px] text-center text-[16px] font-extrabold text-zt-brown">
-                    {qty}
-                  </span>
-                  <button
-                    type="button"
-                    aria-label="Increase quantity"
-                    onClick={() => setQty((q) => q + 1)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-zt-brown text-xl text-white"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-4">
+              {/* Header: square image + meta + stepper (mockup two-zone layout) */}
+              <div className="relative flex gap-3.5">
                 <MenuItemImageCarousel
                   urls={galleryUrls}
                   fallbackBg={fallbackBg}
-                  variant="hero"
+                  variant="header"
                   indicator="count"
+                  activeIndex={photoIndex}
+                  onActiveIndexChange={setPhotoIndex}
+                  className="flex-none"
                 />
+
+                <div className="min-w-0 flex-1 pt-0.5 pr-10">
+                  <h2 className="font-serif text-[22px] leading-tight text-zt-brown">
+                    {renderItem.name}
+                  </h2>
+                  {renderItem.description && (
+                    <p className="mt-0.5 line-clamp-2 text-[12px] font-medium leading-snug text-zt-warm">
+                      {renderItem.description}
+                    </p>
+                  )}
+                  <div className="mt-2.5 flex items-center justify-between gap-2">
+                    <span className="text-[17px] font-extrabold tracking-[0.2px] text-zt-accent">
+                      {formatRwf(renderItem.priceRwf)}
+                    </span>
+                    <div className="flex items-center gap-0.5 rounded-full border border-white/80 bg-white/70 p-0.5">
+                      <button
+                        type="button"
+                        aria-label="Decrease quantity"
+                        onClick={() => setQty((q) => Math.max(1, q - 1))}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-xl text-zt-brown-muted disabled:opacity-40"
+                        disabled={qty <= 1}
+                      >
+                        −
+                      </button>
+                      <span className="min-w-[22px] text-center text-[15px] font-extrabold text-zt-brown">
+                        {qty}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label="Increase quantity"
+                        onClick={() => setQty((q) => q + 1)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-zt-brown text-lg text-white"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  aria-label="Close"
+                  onClick={onClose}
+                  className="absolute right-0 top-0 flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[rgba(120,90,80,0.12)] backdrop-blur-sm"
+                >
+                  <Icon name="close" size={16} strokeWidth={2} className="text-zt-brown-muted" />
+                </button>
               </div>
 
               <GlassPanel className="mt-4 p-4">
@@ -232,7 +241,7 @@ export function MenuItemCustomizeSheet({
                   </span>
                 </div>
                 <p className="mt-1 text-[12px] font-medium text-zt-warm">
-                  Customize your order
+                  {customizeSubtitle(renderItem.name)}
                 </p>
 
                 <div className="mt-3 flex flex-col gap-2">
@@ -316,6 +325,19 @@ export function MenuItemCustomizeSheet({
                 </div>
               </GlassPanel>
 
+              {galleryUrls.length >= 2 && (
+                <div className="mt-4">
+                  <h3 className="mb-2.5 font-serif text-[20px] leading-none text-zt-brown">
+                    Photos
+                  </h3>
+                  <MenuItemPhotoStrip
+                    urls={galleryUrls}
+                    activeIndex={photoIndex}
+                    onSelect={setPhotoIndex}
+                  />
+                </div>
+              )}
+
               <div className="mt-4">
                 <label className="mb-[7px] block text-xs font-bold uppercase tracking-wide text-zt-warm">
                   Special instructions
@@ -334,47 +356,18 @@ export function MenuItemCustomizeSheet({
                   {notes.length}/{CUSTOMIZATION_NOTES_MAX}
                 </div>
               </div>
-
-              <GlassPanel className="mt-2 p-4">
-                <div className="flex items-center justify-between text-[13px] font-medium text-zt-warm">
-                  <span>Base price</span>
-                  <span className="font-bold text-zt-brown">
-                    {formatRwf(renderItem.priceRwf)}
-                  </span>
-                </div>
-                {selectedAddOns.map((addOn) => (
-                  <div
-                    key={addOn.id}
-                    className="mt-1.5 flex items-center justify-between text-[13px] font-medium text-zt-warm"
-                  >
-                    <span className="truncate pr-2">+ {addOn.name}</span>
-                    <span className="font-bold text-zt-brown">
-                      {formatRwf(addOn.priceRwf * (addOnQty[addOn.id] ?? 1))}
-                    </span>
-                  </div>
-                ))}
-                <div className="mt-1.5 flex items-center justify-between text-[13px] font-medium text-zt-warm">
-                  <span>Quantity</span>
-                  <span className="font-bold text-zt-brown">×{qty}</span>
-                </div>
-                <div className="my-3 h-px bg-[rgba(120,90,80,0.15)]" />
-                <div className="flex items-baseline justify-between">
-                  <span className="text-sm font-semibold text-zt-warm">Total</span>
-                  <span className="text-[22px] font-extrabold text-zt-brown">
-                    {formatRwf(displayTotal)}
-                  </span>
-                </div>
-              </GlassPanel>
             </div>
 
             <div className="flex-none border-t border-white/50 bg-[rgba(252,240,233,0.6)] px-[22px] py-3.5 backdrop-blur-sm">
               <button
                 type="button"
                 onClick={handleConfirm}
-                className="flex h-14 w-full items-center justify-center gap-2.5 rounded-[18px] bg-zt-brown text-[16px] font-extrabold text-white shadow-[0_14px_30px_rgba(58,44,38,0.32)] transition active:scale-[0.98]"
+                className="flex h-14 w-full items-center justify-between rounded-[18px] bg-zt-brown px-5 text-[16px] font-extrabold text-white shadow-[0_14px_30px_rgba(58,44,38,0.32)] transition active:scale-[0.98]"
               >
-                <Icon name="cart" size={20} strokeWidth={2} />
-                Add to order
+                <span className="flex items-center gap-2.5">
+                  <Icon name="cart" size={20} strokeWidth={2} />
+                  Add to order
+                </span>
                 <span className="tracking-[0.2px]">{formatRwf(displayTotal)}</span>
               </button>
             </div>
