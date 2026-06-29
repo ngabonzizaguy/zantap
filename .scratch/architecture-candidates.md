@@ -61,7 +61,7 @@ If a session ends without doing both, the handoff is incomplete.
 | 11 | Live MTN MoMo integration | Strong | server + payments | ⏸ Requires `/grill-with-docs` | — |
 | 12 | Vendor authentication | Strong | server + KDS | ⏸ Requires `/grill-with-docs` | — |
 | 13 | Ops / security hardening | Worth exploring | docs + infra | ⏸ Probe — deferred | — |
-| 14 | Storefront item customization modal (visual-only) | Owner request | customer UI only | ✅ Done · `9479cd7` + mockup `d328c8a` · `dpl_DJMPCwAAE8ecdwFYbCdkdva93uvS` → `zantap-psi.vercel.app` 2026-06-28 | `.scratch/storefront-customization-modal/PRD.md` |
+| 14 | Storefront item customization modal (visual-only) | Owner request | customer UI only | ✅ Done · mockup polish `764e916` · `dpl_2gR9gDbnH1oic5qzz5qqjTYzrPDx` → `zantap-psi.vercel.app` 2026-06-28 | `.scratch/storefront-customization-modal/PRD.md` |
 
 Candidates **#1–#7** shipped. **#8** sliced 2026-06-24. **#9–#13** probed; gates noted.
 
@@ -329,7 +329,9 @@ modal (visual-only)`), pushed to `main`, deployed to prod
 `dpl_DRzpEfNQD8RpkkX3RoM7JEtZJR1k` → `zantap-psi.vercel.app`. **Mockup layout
 refactor 2026-06-28** — committed `d328c8a` (square header image + Photos thumb
 strip + notes retained), deployed `dpl_DJMPCwAAE8ecdwFYbCdkdva93uvS` →
-`zantap-psi.vercel.app`. Prod curl PASS (HTTP 200, `zt-*`, Customize wiring).
+`zantap-psi.vercel.app`. **Stepper polish 2026-06-28** — committed `764e916`
+(compact qty pill repositioned right via `ml-auto`, top handle spacing), deployed
+`dpl_2gR9gDbnH1oic5qzz5qqjTYzrPDx` → `zantap-psi.vercel.app`. Prod curl PASS.
 
 What shipped (Issue 01):
 - `lib/menu/customization.ts` (server-safe — no `"use client"`/React/DOM): persistence-
