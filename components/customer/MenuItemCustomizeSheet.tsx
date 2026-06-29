@@ -159,7 +159,7 @@ export function MenuItemCustomizeSheet({
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className="flex flex-none cursor-grab touch-none justify-center pb-1 pt-2.5 active:cursor-grabbing"
+          className="flex flex-none cursor-grab touch-none justify-center pb-3 pt-3 active:cursor-grabbing"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerEnd}
@@ -170,7 +170,7 @@ export function MenuItemCustomizeSheet({
 
         {renderItem && customization && (
           <>
-            <div className="zt-hidescroll flex-1 overflow-y-auto px-[22px] pb-4">
+            <div className="zt-hidescroll flex-1 overflow-y-auto px-[22px] pb-4 pt-1">
               {/* Header: square image + meta + stepper (mockup two-zone layout) */}
               <div className="relative flex gap-3.5">
                 <MenuItemImageCarousel
@@ -183,20 +183,22 @@ export function MenuItemCustomizeSheet({
                   className="flex-none"
                 />
 
-                <div className="min-w-0 flex-1 pt-0.5 pr-10">
-                  <h2 className="font-serif text-[22px] leading-tight text-zt-brown">
-                    {renderItem.name}
-                  </h2>
-                  {renderItem.description && (
-                    <p className="mt-0.5 line-clamp-2 text-[12px] font-medium leading-snug text-zt-warm">
-                      {renderItem.description}
-                    </p>
-                  )}
-                  <div className="mt-2.5 flex items-center justify-between gap-2">
-                    <span className="text-[17px] font-extrabold tracking-[0.2px] text-zt-accent">
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <div className="pr-9">
+                    <h2 className="font-serif text-[22px] leading-tight text-zt-brown">
+                      {renderItem.name}
+                    </h2>
+                    {renderItem.description && (
+                      <p className="mt-0.5 line-clamp-2 text-[12px] font-medium leading-snug text-zt-warm">
+                        {renderItem.description}
+                      </p>
+                    )}
+                  </div>
+                  <div className="mt-2 flex w-full items-center">
+                    <span className="flex-none text-[17px] font-extrabold tracking-[0.2px] text-zt-accent">
                       {formatRwf(renderItem.priceRwf)}
                     </span>
-                    <div className="flex items-center gap-0.5 rounded-full border border-white/80 bg-white/70 p-0.5">
+                    <div className="ml-auto flex items-center gap-0.5 rounded-full border border-white/80 bg-white/70 p-0.5 shadow-[0_2px_10px_rgba(120,70,60,0.1)]">
                       <button
                         type="button"
                         aria-label="Decrease quantity"
@@ -231,7 +233,7 @@ export function MenuItemCustomizeSheet({
                 </button>
               </div>
 
-              <GlassPanel className="mt-4 p-4">
+              <GlassPanel className="mt-5 p-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-serif text-[20px] leading-none text-zt-brown">
                     Ingredients
