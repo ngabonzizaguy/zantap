@@ -24,6 +24,26 @@ export interface Vendor {
   createdAt: Date;
 }
 
+export interface CreateVendorInput {
+  name: string;
+  slug: string;
+  phoneNumber: string;
+  momoCode: string;
+  tagline?: string;
+  location?: string;
+  deliveryTime?: string;
+}
+
+export interface UpdateVendorInput {
+  name?: string;
+  phoneNumber?: string;
+  momoCode?: string;
+  tagline?: string;
+  location?: string;
+  deliveryTime?: string;
+  rating?: number;
+}
+
 export interface MenuImage {
   id: string;
   menuItemId: string;

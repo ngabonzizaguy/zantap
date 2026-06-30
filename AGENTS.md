@@ -46,7 +46,8 @@ Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agent
 ### Local DB verification (how to run the Prisma path)
 - Credentials live in `.env` (gitignored): `DATABASE_URL` (Supabase pooled, 6543, `pgbouncer=true`), `DIRECT_URL` (session pooler, 5432, for migrations), `TEST_DATABASE_URL` (= DIRECT_URL + `?schema=zantap_test`, isolated test schema).
 - Prisma CLI auto-loads `.env`. **vitest does NOT** — `vitest.config.ts` loads it via `loadEnv` and sets `hookTimeout: 90000` / `testTimeout: 30000` because the remote DB suite is slow (~155s). Keep those timeouts.
-- Verify: `npm run db:deploy` → `npm run db:seed` → `npm test`. The Prisma contract suite auto-skips when `TEST_DATABASE_URL` is unset.
+- **#prisma suite opt-in:** `SKIP_PRISMA_TESTS=1` (default in `.env.example`) skips the remote Prisma contract tests. The suite reseeds before every case (~100 network round-trips) and can stall when Supabase Free egress is saturated or two test processes hit the same schema. Opt in: `SKIP_PRISMA_TESTS=0 npm test`.
+- Verify: `npm run db:deploy` → `npm run db:seed` → `npm test`. The Prisma contract suite auto-skips when `TEST_DATABASE_URL` is unset or `SKIP_PRISMA_TESTS=1`.
 
 ### Deploy gotcha (RESOLVED 2026-06-23)
 - Vercel **Production** env originally had only `POSTGRES_*` names (from the Supabase integration), while the app reads `DATABASE_URL`/`DIRECT_URL`. This is now fixed: `DATABASE_URL` and `DIRECT_URL` are set in Production (confirmed via `vercel env ls production`), so the deployed app connects through the Prisma adapter and reads/writes persist. Leave this note as resolved — do **not** re-theorize prod DB failures as a missing env var without re-checking `vercel env ls`.

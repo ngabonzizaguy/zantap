@@ -5,6 +5,7 @@ import type {
   CreateOrderInput,
   CreatePaymentInput,
   CreatePaymentResult,
+  CreateVendorInput,
   Driver,
   KitchenStage,
   MenuImage,
@@ -16,6 +17,7 @@ import type {
   Pagination,
   Payment,
   UpdateMenuItemInput,
+  UpdateVendorInput,
   Vendor,
 } from "@/lib/types";
 
@@ -26,8 +28,14 @@ import type {
  * reached only from Server Actions and React Server Components.
  */
 export interface Store {
-  // Vendor reads
+  // Vendor reads + provision
   getVendorBySlug(slug: string): Promise<Vendor | null>;
+  isSlugAvailable(slug: string): Promise<boolean>;
+  createVendor(input: CreateVendorInput): Promise<Vendor>;
+  updateVendor(
+    vendorSlug: string,
+    input: UpdateVendorInput
+  ): Promise<Vendor | null>;
 
   // Menu reads + availability mutation
   getMenu(vendorSlug: string): Promise<MenuItem[]>;

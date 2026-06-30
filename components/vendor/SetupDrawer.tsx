@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Button, Card, Input } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
+import { updateVendorProfile } from "@/lib/actions/vendor-profile";
 import {
   countCompletedSteps,
   ONBOARDING_STEPS,
@@ -11,10 +12,20 @@ import {
 import { useWriteSecret } from "@/lib/vendor/useWriteSecret";
 import { resetCoachmarks } from "@/components/vendor/Coachmark";
 
+export interface StorefrontProfile {
+  tagline?: string;
+  location?: string;
+  deliveryTime?: string;
+  rating?: number;
+}
+
 interface SetupDrawerProps {
   open: boolean;
   onClose: () => void;
   checklist: OnboardingChecklist;
+  vendorSlug: string;
+  profile: StorefrontProfile;
+  onProfileSaved?: (profile: StorefrontProfile) => void;
   onRefresh?: () => void;
 }
 
@@ -22,6 +33,9 @@ export function SetupDrawer({
   open,
   onClose,
   checklist,
+  vendorSlug,
+  profile,
+  onProfileSaved,
   onRefresh,
 }: SetupDrawerProps) {
   const titleId = useId();
@@ -31,6 +45,13 @@ export function SetupDrawer({
   const [secretDraft, setSecretDraft] = useState("");
   const [secretSaved, setSecretSaved] = useState(false);
   const [tipsReset, setTipsReset] = useState(false);
+  const [taglineDraft, setTaglineDraft] = useState("");
+  const [locationDraft, setLocationDraft] = useState("");
+  const [deliveryTimeDraft, setDeliveryTimeDraft] = useState("");
+  const [ratingDraft, setRatingDraft] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   const completed = countCompletedSteps(checklist);
   const total = ONBOARDING_STEPS.length;
@@ -62,6 +83,20 @@ export function SetupDrawer({
     }
   }, [open, ready, secret]);
 
+  useEffect(() => {
+    if (!open) return;
+    setTaglineDraft(profile.tagline ?? "");
+    setLocationDraft(profile.location ?? "");
+    setDeliveryTimeDraft(profile.deliveryTime ?? "");
+    setRatingDraft(
+      profile.rating !== undefined && profile.rating !== null
+        ? String(profile.rating)
+        : ""
+    );
+    setProfileError(null);
+    setProfileSaved(false);
+  }, [open, profile]);
+
   const handleSaveSecret = () => {
     const trimmed = secretDraft.trim();
     if (!trimmed) return;
@@ -74,6 +109,55 @@ export function SetupDrawer({
     resetCoachmarks();
     setTipsReset(true);
     window.setTimeout(() => setTipsReset(false), 2000);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!secret) {
+      setProfileError("Save your write secret below before updating profile.");
+      return;
+    }
+
+    const ratingTrimmed = ratingDraft.trim();
+    let rating: number | undefined;
+    if (ratingTrimmed) {
+      const parsed = Number.parseFloat(ratingTrimmed);
+      if (!Number.isFinite(parsed) || parsed < 0 || parsed > 5) {
+        setProfileError("Rating must be a number between 0 and 5.");
+        return;
+      }
+      rating = parsed;
+    }
+
+    setProfileSaving(true);
+    setProfileError(null);
+    setProfileSaved(false);
+
+    try {
+      const updated = await updateVendorProfile(secret, vendorSlug, {
+        tagline: taglineDraft,
+        location: locationDraft,
+        deliveryTime: deliveryTimeDraft,
+        ...(ratingTrimmed ? { rating } : {}),
+      });
+      onProfileSaved?.({
+        tagline: updated.tagline,
+        location: updated.location,
+        deliveryTime: updated.deliveryTime,
+        rating: updated.rating,
+      });
+      setProfileSaved(true);
+      window.setTimeout(() => setProfileSaved(false), 2000);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not save profile.";
+      setProfileError(
+        message.toLowerCase().includes("write secret")
+          ? "Wrong write secret — update it below and try again."
+          : message
+      );
+    } finally {
+      setProfileSaving(false);
+    }
   };
 
   if (!open) return null;
@@ -172,6 +256,72 @@ export function SetupDrawer({
               );
             })}
           </ol>
+
+          <section className="mt-8">
+            <h3 className="font-display text-display-sm text-ink">
+              Storefront profile
+            </h3>
+            <p className="mt-1 font-body text-body-sm text-muted">
+              Shown on your customer menu page.
+            </p>
+            <div className="mt-4 flex flex-col gap-3">
+              <Input
+                label="Tagline"
+                value={taglineDraft}
+                onChange={(event) => setTaglineDraft(event.target.value)}
+                placeholder="Premium grills"
+                disabled={profileSaving}
+              />
+              <Input
+                label="Location"
+                value={locationDraft}
+                onChange={(event) => setLocationDraft(event.target.value)}
+                placeholder="Kigali, Rwanda"
+                disabled={profileSaving}
+              />
+              <Input
+                label="Delivery time"
+                value={deliveryTimeDraft}
+                onChange={(event) => setDeliveryTimeDraft(event.target.value)}
+                placeholder="30–40 min"
+                disabled={profileSaving}
+              />
+              <Input
+                label="Rating (optional)"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                max={5}
+                step={0.1}
+                value={ratingDraft}
+                onChange={(event) => setRatingDraft(event.target.value)}
+                placeholder="4.8"
+                disabled={profileSaving}
+              />
+              <Button
+                size="default"
+                onClick={() => void handleSaveProfile()}
+                disabled={profileSaving || !hasSecret}
+              >
+                {profileSaving ? "Saving…" : "Save profile"}
+              </Button>
+              {!hasSecret ? (
+                <p className="font-body text-body-sm text-muted">
+                  Enter your write secret below to save profile changes.
+                </p>
+              ) : null}
+              {profileSaved ? (
+                <p className="font-body text-body-sm text-primary">
+                  Profile saved. Refresh your menu page to see changes.
+                </p>
+              ) : null}
+              {profileError ? (
+                <p className="font-body text-body-sm text-error" role="alert">
+                  {profileError}
+                </p>
+              ) : null}
+            </div>
+          </section>
 
           <section className="mt-8">
             <h3 className="font-display text-display-sm text-ink">

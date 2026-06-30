@@ -5,6 +5,7 @@ import type {
   CreateOrderInput,
   CreatePaymentInput,
   CreatePaymentResult,
+  CreateVendorInput,
   Driver,
   KitchenStage,
   MenuImage,
@@ -15,6 +16,7 @@ import type {
   Pagination,
   Payment,
   UpdateMenuItemInput,
+  UpdateVendorInput,
   Vendor,
 } from "@/lib/types";
 import type { ResettableStore } from "@/lib/store/types";
@@ -50,6 +52,7 @@ import {
   seedOrders,
   seedVendor,
 } from "@/lib/store/seed-data";
+import { normalizeVendorSlug } from "@/lib/vendor/slug";
 
 function cloneOrder(order: Order): Order {
   return {
@@ -89,12 +92,18 @@ export function createInMemoryStore(): ResettableStore {
   let menuImages: MenuImage[] = [];
   let orders: Order[] = [];
   let payments: Payment[] = [];
+  let vendors: Vendor[] = [];
   let kitchenOpen = true;
   let orderCounter = 0;
   let orderItemCounter = 0;
   let paymentCounter = 0;
   let menuItemCounter = 0;
   let menuImageCounter = 0;
+  let vendorCounter = 0;
+
+  function cloneVendor(vendor: Vendor): Vendor {
+    return { ...vendor, createdAt: new Date(vendor.createdAt) };
+  }
 
   function isActiveItem(item: MenuItem): boolean {
     return item.archivedAt == null;
@@ -143,17 +152,78 @@ export function createInMemoryStore(): ResettableStore {
     menuImages = [];
     orders = seedOrders.map(cloneOrder);
     payments = [];
+    vendors = [cloneVendor(seedVendor)];
     kitchenOpen = true;
     orderCounter = 0;
     orderItemCounter = 0;
     paymentCounter = 0;
+    vendorCounter = 0;
   }
 
   load();
 
   async function getVendorBySlug(slug: string): Promise<Vendor | null> {
-    if (slug === seedVendor.slug) return { ...seedVendor };
-    return null;
+    const normalized = normalizeVendorSlug(slug);
+    const vendor = vendors.find((row) => row.slug === normalized);
+    return vendor ? cloneVendor(vendor) : null;
+  }
+
+  async function isSlugAvailable(slug: string): Promise<boolean> {
+    const normalized = normalizeVendorSlug(slug);
+    if (!normalized) return false;
+    return !vendors.some((row) => row.slug === normalized);
+  }
+
+  async function createVendor(input: CreateVendorInput): Promise<Vendor> {
+    const normalizedSlug = normalizeVendorSlug(input.slug);
+    if (!normalizedSlug) {
+      throw new Error("Invalid slug");
+    }
+    if (!(await isSlugAvailable(normalizedSlug))) {
+      throw new Error("Slug already taken");
+    }
+
+    const vendor: Vendor = {
+      id: `vendor_${++vendorCounter}_${Date.now()}`,
+      name: input.name.trim(),
+      slug: normalizedSlug,
+      phoneNumber: input.phoneNumber,
+      momoCode: input.momoCode,
+      isActive: true,
+      tagline: input.tagline,
+      location: input.location,
+      deliveryTime: input.deliveryTime,
+      createdAt: new Date(),
+    };
+    vendors.push(vendor);
+    return cloneVendor(vendor);
+  }
+
+  async function updateVendor(
+    vendorSlug: string,
+    input: UpdateVendorInput
+  ): Promise<Vendor | null> {
+    const normalized = normalizeVendorSlug(vendorSlug);
+    const index = vendors.findIndex((row) => row.slug === normalized);
+    if (index === -1) return null;
+
+    const current = vendors[index];
+    const updated: Vendor = {
+      ...current,
+      ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(input.phoneNumber !== undefined
+        ? { phoneNumber: input.phoneNumber }
+        : {}),
+      ...(input.momoCode !== undefined ? { momoCode: input.momoCode } : {}),
+      ...(input.tagline !== undefined ? { tagline: input.tagline } : {}),
+      ...(input.location !== undefined ? { location: input.location } : {}),
+      ...(input.deliveryTime !== undefined
+        ? { deliveryTime: input.deliveryTime }
+        : {}),
+      ...(input.rating !== undefined ? { rating: input.rating } : {}),
+    };
+    vendors[index] = updated;
+    return cloneVendor(updated);
   }
 
   async function getMenu(vendorSlug: string): Promise<MenuItem[]> {
@@ -790,6 +860,9 @@ export function createInMemoryStore(): ResettableStore {
 
   return {
     getVendorBySlug,
+    isSlugAvailable,
+    createVendor,
+    updateVendor,
     getMenu,
     getAvailableMenu,
     getArchivedMenu,

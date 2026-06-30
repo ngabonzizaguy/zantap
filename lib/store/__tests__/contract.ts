@@ -48,6 +48,81 @@ export function runStoreContract(
       });
     });
 
+    describe("vendor provision", () => {
+      it("isSlugAvailable is true for unused slugs and false for the seed slug", async () => {
+        expect(await store.isSlugAvailable("brand-new-slug")).toBe(true);
+        expect(await store.isSlugAvailable(slug)).toBe(false);
+        expect(await store.isSlugAvailable("INKA-STEAKHOUSE")).toBe(false);
+      });
+
+      it("createVendor persists required fields and round-trips via getVendorBySlug", async () => {
+        const created = await store.createVendor({
+          name: "Test Bistro",
+          slug: "test-bistro-contract",
+          phoneNumber: "0788999000",
+          momoCode: "TEST001",
+        });
+
+        expect(created.name).toBe("Test Bistro");
+        expect(created.slug).toBe("test-bistro-contract");
+        expect(created.phoneNumber).toBe("0788999000");
+        expect(created.momoCode).toBe("TEST001");
+        expect(created.isActive).toBe(true);
+        expect(typeof created.id).toBe("string");
+        expect(created.id.length).toBeGreaterThan(0);
+        expect(created.createdAt).toBeInstanceOf(Date);
+
+        const fetched = await store.getVendorBySlug("test-bistro-contract");
+        expect(fetched?.id).toBe(created.id);
+        expect(fetched?.name).toBe("Test Bistro");
+      });
+
+      it("createVendor rejects a duplicate slug", async () => {
+        await store.createVendor({
+          name: "Dup One",
+          slug: "dup-slug-test",
+          phoneNumber: "0788111111",
+          momoCode: "DUP001",
+        });
+
+        await expect(
+          store.createVendor({
+            name: "Dup Two",
+            slug: "dup-slug-test",
+            phoneNumber: "0788222222",
+            momoCode: "DUP002",
+          })
+        ).rejects.toThrow(/Slug already taken/);
+      });
+
+      it("updateVendor patches tagline and location without changing slug", async () => {
+        const created = await store.createVendor({
+          name: "Update Test",
+          slug: "update-test-vendor",
+          phoneNumber: "0788333333",
+          momoCode: "UPD001",
+        });
+
+        const updated = await store.updateVendor(created.slug, {
+          tagline: "Fresh tagline",
+          location: "Musanze",
+        });
+        expect(updated?.tagline).toBe("Fresh tagline");
+        expect(updated?.location).toBe("Musanze");
+        expect(updated?.slug).toBe(created.slug);
+
+        const fetched = await store.getVendorBySlug(created.slug);
+        expect(fetched?.tagline).toBe("Fresh tagline");
+        expect(fetched?.location).toBe("Musanze");
+      });
+
+      it("updateVendor returns null for an unknown slug", async () => {
+        expect(
+          await store.updateVendor("no-such-vendor", { tagline: "x" })
+        ).toBeNull();
+      });
+    });
+
     describe("menu", () => {
       it("exposes categories and a non-empty menu", async () => {
         expect((await store.getCategories(slug)).length).toBeGreaterThan(0);

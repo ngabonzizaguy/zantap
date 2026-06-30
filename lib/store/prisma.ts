@@ -37,6 +37,7 @@ import type {
   CreateOrderInput,
   CreatePaymentInput,
   CreatePaymentResult,
+  CreateVendorInput,
   Driver,
   KitchenStage,
   MenuImage,
@@ -47,8 +48,10 @@ import type {
   Pagination,
   Payment,
   UpdateMenuItemInput,
+  UpdateVendorInput,
   Vendor,
 } from "@/lib/types";
+import { normalizeVendorSlug } from "@/lib/vendor/slug";
 import { thumbGradientForId } from "@/lib/menu/gradients";
 import {
   normalizePagination,
@@ -201,8 +204,75 @@ function isUniqueConstraintError(error: unknown): boolean {
  */
 export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function getVendorBySlug(slug: string): Promise<Vendor | null> {
-    const vendor = await client.vendor.findUnique({ where: { slug } });
+    const vendor = await client.vendor.findUnique({
+      where: { slug: normalizeVendorSlug(slug) },
+    });
     return vendor ? mapVendor(vendor) : null;
+  }
+
+  async function isSlugAvailable(slug: string): Promise<boolean> {
+    const normalized = normalizeVendorSlug(slug);
+    if (!normalized) return false;
+    const vendor = await client.vendor.findUnique({ where: { slug: normalized } });
+    return vendor === null;
+  }
+
+  async function createVendor(input: CreateVendorInput): Promise<Vendor> {
+    const normalizedSlug = normalizeVendorSlug(input.slug);
+    if (!normalizedSlug) {
+      throw new Error("Invalid slug");
+    }
+
+    try {
+      const vendor = await client.vendor.create({
+        data: {
+          name: input.name.trim(),
+          slug: normalizedSlug,
+          phoneNumber: input.phoneNumber,
+          momoCode: input.momoCode,
+          isActive: true,
+          kitchenOpen: true,
+          tagline: input.tagline ?? null,
+          location: input.location ?? null,
+          deliveryTime: input.deliveryTime ?? null,
+        },
+      });
+      return mapVendor(vendor);
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        throw new Error("Slug already taken");
+      }
+      throw error;
+    }
+  }
+
+  async function updateVendor(
+    vendorSlug: string,
+    input: UpdateVendorInput
+  ): Promise<Vendor | null> {
+    const slug = normalizeVendorSlug(vendorSlug);
+    try {
+      const vendor = await client.vendor.update({
+        where: { slug },
+        data: {
+          ...(input.name !== undefined ? { name: input.name } : {}),
+          ...(input.phoneNumber !== undefined
+            ? { phoneNumber: input.phoneNumber }
+            : {}),
+          ...(input.momoCode !== undefined ? { momoCode: input.momoCode } : {}),
+          ...(input.tagline !== undefined ? { tagline: input.tagline } : {}),
+          ...(input.location !== undefined ? { location: input.location } : {}),
+          ...(input.deliveryTime !== undefined
+            ? { deliveryTime: input.deliveryTime }
+            : {}),
+          ...(input.rating !== undefined ? { rating: input.rating } : {}),
+        },
+      });
+      return mapVendor(vendor);
+    } catch (error) {
+      if (isNotFoundError(error)) return null;
+      throw error;
+    }
   }
 
   async function getMenu(vendorSlug: string): Promise<MenuItem[]> {
@@ -1014,6 +1084,9 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   return {
     getVendorBySlug,
+    isSlugAvailable,
+    createVendor,
+    updateVendor,
     getMenu,
     getAvailableMenu,
     getArchivedMenu,

@@ -30,7 +30,7 @@ import { BulkActionBar } from "@/components/vendor/BulkActionBar";
 import { MenuSection } from "@/components/vendor/MenuSection";
 import { HistoryPanel } from "@/components/vendor/HistoryPanel";
 import { DispatchModal } from "@/components/vendor/DispatchModal";
-import { SetupDrawer } from "@/components/vendor/SetupDrawer";
+import { SetupDrawer, type StorefrontProfile } from "@/components/vendor/SetupDrawer";
 import { Coachmark } from "@/components/vendor/Coachmark";
 import { Card, GradientOrbs } from "@/components/ui/primitives";
 
@@ -74,6 +74,14 @@ export function KdsDashboard({
   const [dispatchId, setDispatchId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [setupOpen, setSetupOpen] = useState(false);
+  const [storefrontProfile, setStorefrontProfile] = useState<StorefrontProfile>(
+    () => ({
+      tagline: vendor.tagline,
+      location: vendor.location,
+      deliveryTime: vendor.deliveryTime,
+      rating: vendor.rating,
+    })
+  );
   const [onboardingOverride, setOnboardingOverride] = useState<
     ReturnType<typeof deriveOnboardingState> | null
   >(null);
@@ -376,6 +384,9 @@ export function KdsDashboard({
         open={setupOpen}
         onClose={closeSetup}
         checklist={checklist}
+        vendorSlug={vendor.slug}
+        profile={storefrontProfile}
+        onProfileSaved={setStorefrontProfile}
         onRefresh={refreshOnboarding}
       />
 
@@ -383,7 +394,7 @@ export function KdsDashboard({
         id="kitchen-toggle"
         targetSelector='[data-coachmark-target="kitchen-toggle"]'
         title="Kitchen status"
-        body="Toggle OPEN when you are ready to accept orders. Customers cannot place orders while closed."
+        body="Toggle OPEN when you're ready to accept orders. Let customers know when you're accepting orders."
       />
       <Coachmark
         id="menu-add"

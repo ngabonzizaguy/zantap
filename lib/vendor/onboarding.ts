@@ -18,7 +18,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: "hasMenuItem",
     label: "Add a menu item",
-    hint: "Open Menu and tap + Add item.",
+    hint: "Open Menu and tap + Add item. If you used the setup wizard, your first dish may already be here.",
   },
   {
     id: "hasPhoto",
@@ -28,7 +28,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: "kitchenOpen",
     label: "Open the kitchen",
-    hint: "Tap OPEN in the header when you are ready for orders.",
+    hint: "Toggle OPEN when you're ready to accept orders.",
   },
   {
     id: "hasFirstOrder",

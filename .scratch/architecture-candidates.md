@@ -56,14 +56,42 @@ If a session ends without doing both, the handoff is incomplete.
 | 6 | KDS Vendor Suite (menu, media, export, history, guides) | Strong | ports & adapters | ✅ Done & deployed · smoke complete | `.scratch/kds-vendor-suite/PRD.md` |
 | 7 | KDS workflow optimization (kitchen stage, aging, bulk) | Strong | ports & adapters + KDS UI | ✅ Done & deployed · smoke complete | `.scratch/kds-workflow-optimization/PRD.md` |
 | 8 | Storefront menu image carousel | Strong | customer UI only | ✅ Done · deployed · prod-smoked 2026-06-27 | `.scratch/storefront-image-carousel/PRD.md` |
-| 9 | Vendor WhatsApp PAID notification | Worth exploring | customer + lib/whatsapp | ⏸ Probe — deferred | — |
+| 9 | Vendor WhatsApp PAID notification | Worth exploring | KDS UI + lib/whatsapp | 📋 Queued · owner locked A | `.scratch/vendor-whatsapp-paid-notification/PRD.md` |
 | 10 | Customer storefront → DESIGN.md | Strong | customer UI | ⏸ Owner designs pending | — |
 | 11 | Live MTN MoMo integration | Strong | server + payments | ⏸ Requires `/grill-with-docs` | — |
 | 12 | Vendor authentication | Strong | server + KDS | ⏸ Requires `/grill-with-docs` | — |
 | 13 | Ops / security hardening | Worth exploring | docs + infra | ⏸ Probe — deferred | — |
-| 14 | Storefront item customization modal (visual-only) | Owner request | customer UI only | ✅ Done · mockup polish `764e916` · `dpl_2gR9gDbnH1oic5qzz5qqjTYzrPDx` → `zantap-psi.vercel.app` 2026-06-28 | `.scratch/storefront-customization-modal/PRD.md` |
+| 14 | Storefront item customization modal (visual-only) | Owner request | customer UI only | ✅ Done · prod-smoked 2026-06-29 | `.scratch/storefront-customization-modal/PRD.md` |
+| 15 | Vendor onboarding (~1 min go-live) | Strong | Store + KDS + provisioning | ✅ Done (issues 01–04) | `.scratch/vendor-onboarding/PRD.md` |
+
+**#14 closed 2026-06-29** — prod gesture smoke 11/11 PASS on `zantap-psi.vercel.app/inka-steakhouse` (375px).
 
 Candidates **#1–#7** shipped. **#8** sliced 2026-06-24. **#9–#13** probed; gates noted.
+
+## #15 · Vendor onboarding (~1 min go-live) — 📋 FLOW + ISSUES SLICED
+
+Rating: Strong · Scope: Store seam + `/onboard` wizard + KDS Setup extensions.
+
+**Inventory PRD 2026-06-30** — `.scratch/vendor-onboarding/PRD.md` (read-only product spec).
+**Flow design 2026-06-30** — `.scratch/vendor-onboarding/FLOW.md`; ADR-0020.
+**Issues sliced 2026-06-30** — four vertical cards:
+
+| Issue | Status |
+|-------|--------|
+| `01-store-vendor-provision` | ✅ done 2026-06-30 |
+| `02-provision-actions-and-guard` | ✅ done 2026-06-30 |
+| `03-onboard-wizard-ui` | ✅ done 2026-06-30 |
+| `04-kds-setup-profile-and-copy` | ✅ done 2026-06-30 |
+
+**Provisioning seam:** `Store.createVendor` + `isSlugAvailable` + `updateVendor`; guarded
+`provisionVendor` action with `PROVISION_SECRET` (mirrors write-secret until auth #12).
+`updateVendorProfile` action (write-secret) for Layer B storefront profile in Setup.
+**Two layers:** Layer A `/onboard` wizard (identity + first dish); Layer B existing KDS
+checklist (photos, kitchen, order, dispatch) + storefront profile section.
+
+- Flow: `.scratch/vendor-onboarding/FLOW.md`
+- ADR: `docs/adr/0020-vendor-provisioning-store-create-vendor.md`, `docs/adr/0021-kds-setup-storefront-profile.md`
+- Depends on: #1 Store ✅, #6 KDS Setup checklist ✅
 
 ---
 
@@ -310,7 +338,7 @@ not the DESIGN.md customer migration.
 
 ---
 
-## #14 · Storefront item customization modal (visual-only) — ✅ DONE · DEPLOYED · prod curl PASS
+## #14 · Storefront item customization modal (visual-only) — ✅ DONE · PROD-SMOKED
 
 Rating: Owner request · Scope: customer UI only (no Store/schema/order pipeline).
 
@@ -331,7 +359,15 @@ refactor 2026-06-28** — committed `d328c8a` (square header image + Photos thum
 strip + notes retained), deployed `dpl_DJMPCwAAE8ecdwFYbCdkdva93uvS` →
 `zantap-psi.vercel.app`. **Stepper polish 2026-06-28** — committed `764e916`
 (compact qty pill repositioned right via `ml-auto`, top handle spacing), deployed
-`dpl_2gR9gDbnH1oic5qzz5qqjTYzrPDx` → `zantap-psi.vercel.app`. Prod curl PASS.
+`dpl_2gR9gDbnH1oic5qzz5qqjTYzrPDx` → `zantap-psi.vercel.app`.
+
+**Prod gesture smoke complete 2026-06-29** — automated Playwright harness at 375px
+on `zantap-psi.vercel.app/inka-steakhouse` (11/11 PASS): card tap → sheet; `+`
+quick-add without opening; compact stepper `ml-auto` aligned with Ingredients panel
+(Δright 17px); add-on + qty live display total; notes; Photos strip on multi-image
+item; drag-down dismiss; Add to Order adds N base items; sticky cart total = base
+prices only (ADR-0019 known gap). Harness:
+`.scratch/storefront-customization-modal/prod-gesture-smoke.mjs`.
 
 What shipped (Issue 01):
 - `lib/menu/customization.ts` (server-safe — no `"use client"`/React/DOM): persistence-
@@ -367,10 +403,30 @@ single full-width hero carousel the spec mandates (count badge) — avoids two r
 carousels of the same images. Trivially splittable if the owner wants the exact layout.
 
 - PRD: `.scratch/storefront-customization-modal/PRD.md`
-- Issues: `01-customization-modal` ✅ (ready-for-human — needs device gesture smoke + commit/deploy)
+- Issues: `01-customization-modal` ✅ closed (prod-smoked 2026-06-29)
 - ADR: `docs/adr/0019-storefront-item-customization-modal.md`
 - Depends on: #8 carousel ✅ (`getMenuItemGalleryUrls`, `MenuItemImageCarousel`),
   `CartContext.addItem` ✅
+
+---
+
+## #9 · Vendor WhatsApp PAID notification — 📋 QUEUED
+
+Rating: Worth exploring · Scope: KDS UI + `lib/whatsapp` (no Store/schema).
+
+Proactive vendor alert when MoMo payment completes. Stub `buildVendorOrderNotification`
+exists but is unused; dispatch modal already shares a **driver delivery slip** via
+phoneless `wa.me/?text=…` at dispatch time — different moment, different audience.
+
+**Owner locked 2026-06-29 — Option A:** KDS staff tap **"Notify vendor on WhatsApp"**
+on expanded PAID ticket (stages before `OUT_FOR_DELIVERY`). Opens
+`wa.me/{Vendor.phoneNumber}?text=` with PAID notification + `/slip/{orderId}` URL.
+Options B (server auto-send / WhatsApp Business API) and C (customer success copy) deferred.
+
+- PRD: `.scratch/vendor-whatsapp-paid-notification/PRD.md`
+- Issues: `01-kds-vendor-wa-me-notify` (ready-for-agent)
+- Depends on: #2 Payment ✅, #4 KDS SSE ✅, `Vendor.phoneNumber` ✅, `/slip/[orderId]` ✅
+- Does **not** require `/grill-with-docs` (no payment state machine / auth changes)
 
 ---
 
@@ -378,7 +434,7 @@ carousels of the same images. Trivially splittable if the owner wants the exact 
 
 | # | Candidate | Readiness | Gate / notes |
 |---|-----------|-----------|--------------|
-| 9 | Vendor WhatsApp PAID notification | Code stub exists | `buildVendorOrderNotification` in `lib/whatsapp.ts` is **unused**; `Vendor.phoneNumber` in schema. MVP = `wa.me` deep-link (who opens it — customer success vs KDS — needs owner UX pick). Not sliced. |
+| 9 | Vendor WhatsApp PAID notification | PRD + issue sliced 2026-06-29 | Owner locked Option A (KDS ticket wa.me). Stub wired in issue 01. B/C deferred. |
 | 10 | Customer storefront → DESIGN.md | Blocked | ~60+ `zt-*` refs across 9 customer components; `zt` palette still in `tailwind.config.ts`. **Do not start without owner designs.** |
 | 11 | Live MTN MoMo | High risk | Simulated STK in `lib/momo/simulate.ts` + `/api/momo/stk`. Payment module (#2) ✅. **Requires `/grill-with-docs` before PRD.** |
 | 12 | Vendor authentication | Deferred per AGENTS.md | Write-secret interim (ADR-0009). Real auth = separate grill + PRD. |

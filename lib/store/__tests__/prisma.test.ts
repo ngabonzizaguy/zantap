@@ -23,10 +23,18 @@ import { MOMO_SIM_VALID_PIN } from "@/lib/momo/constants";
  */
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 
+/**
+ * #prisma — remote integration suite. Skipped when `SKIP_PRISMA_TESTS=1` (default
+ * in `.env.example`) to avoid Supabase Free egress saturation and pooler stalls.
+ * Re-enable locally with `SKIP_PRISMA_TESTS=0 npm test` when you need adapter parity.
+ */
+const RUN_PRISMA_SUITE =
+  Boolean(TEST_DATABASE_URL) && process.env.SKIP_PRISMA_TESTS !== "1";
+
 let client: PrismaClient;
 let testUrl: string;
 
-describe.skipIf(!TEST_DATABASE_URL)("Prisma adapter (integration)", () => {
+describe.skipIf(!RUN_PRISMA_SUITE)("Prisma adapter (integration) #prisma", () => {
   beforeAll(() => {
     testUrl = TEST_DATABASE_URL as string;
 
