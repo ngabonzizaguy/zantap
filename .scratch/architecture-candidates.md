@@ -62,15 +62,22 @@ If a session ends without doing both, the handoff is incomplete.
 | 12 | Vendor authentication | Strong | server + KDS | ⏸ Requires `/grill-with-docs` | — |
 | 13 | Ops / security hardening | Worth exploring | docs + infra | ⏸ Probe — deferred | — |
 | 14 | Storefront item customization modal (visual-only) | Owner request | customer UI only | ✅ Done · prod-smoked 2026-06-29 | `.scratch/storefront-customization-modal/PRD.md` |
-| 15 | Vendor onboarding (~1 min go-live) | Strong | Store + KDS + provisioning | ✅ Done (issues 01–04) | `.scratch/vendor-onboarding/PRD.md` |
+| 15 | Vendor onboarding (~1 min go-live) | Strong | Store + KDS + provisioning | ✅ Done · deployed · prod-smoked 2026-06-30 | `.scratch/vendor-onboarding/PRD.md` |
 
 **#14 closed 2026-06-29** — prod gesture smoke 11/11 PASS on `zantap-psi.vercel.app/inka-steakhouse` (375px).
 
 Candidates **#1–#7** shipped. **#8** sliced 2026-06-24. **#9–#13** probed; gates noted.
 
-## #15 · Vendor onboarding (~1 min go-live) — 📋 FLOW + ISSUES SLICED
+## #15 · Vendor onboarding (~1 min go-live) — ✅ DONE · prod-smoked 2026-06-30
 
 Rating: Strong · Scope: Store seam + `/onboard` wizard + KDS Setup extensions.
+
+**Shipped 2026-06-30** — `7ca82ff` → `dpl_FzEoVe8J9KTcDqXfqp8KsWT4AR4q` → `zantap-psi.vercel.app`.
+`PROVISION_SECRET` added to Vercel Production (Sensitive). **Prod acceptance** (`RUN_PROD_SMOKE=1`
+`scripts/prod-onboard-acceptance.test.ts`): `/onboard` wizard enabled → `provisionVendor` +
+first dish → storefront `200` → KDS `?tab=setup` → checklist `hasMenuItem` pre-checked → tagline
+on `/{slug}` → MoMo sim PIN `12345` → PAID on KDS → export `403` without write secret.
+157/157 unit tests green; `npm run build` before deploy.
 
 **Inventory PRD 2026-06-30** — `.scratch/vendor-onboarding/PRD.md` (read-only product spec).
 **Flow design 2026-06-30** — `.scratch/vendor-onboarding/FLOW.md`; ADR-0020.
