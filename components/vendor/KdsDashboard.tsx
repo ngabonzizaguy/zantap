@@ -80,6 +80,9 @@ export function KdsDashboard({
       location: vendor.location,
       deliveryTime: vendor.deliveryTime,
       rating: vendor.rating,
+      logoUrl: vendor.logoUrl,
+      coverImageUrl: vendor.coverImageUrl,
+      description: vendor.description,
     })
   );
   const [onboardingOverride, setOnboardingOverride] = useState<
@@ -386,6 +389,7 @@ export function KdsDashboard({
         checklist={checklist}
         vendorSlug={vendor.slug}
         profile={storefrontProfile}
+        menu={menu}
         onProfileSaved={setStorefrontProfile}
         onRefresh={refreshOnboarding}
       />

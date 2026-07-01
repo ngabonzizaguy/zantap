@@ -63,7 +63,7 @@ If a session ends without doing both, the handoff is incomplete.
 | 13 | Ops / security hardening | Worth exploring | docs + infra | ⏸ Probe — deferred | — |
 | 14 | Storefront item customization modal (visual-only) | Owner request | customer UI only | ✅ Done · prod-smoked 2026-06-29 | `.scratch/storefront-customization-modal/PRD.md` |
 | 15 | Vendor onboarding (~1 min go-live) | Strong | Store + KDS + provisioning | ✅ Done · deployed · prod-smoked 2026-06-30 | `.scratch/vendor-onboarding/PRD.md` |
-| 16 | Onboarding redesign (dark, self-serve, owner token) | Owner request | Store + Prisma + onboarding + KDS Setup | 🚧 In progress · sliced into 4 issues · **Issues 1–3 done 2026-07-01** (schema+Store+owner token; server actions + guard swap + recovery; dark wizard UI) · **Issue 4 (checklist) next** · branch `feat/onboarding-redesign` (not deployed) | `.scratch/onboarding-redesign/PRD.md` |
+| 16 | Onboarding redesign (dark, self-serve, owner token) | Owner request | Store + Prisma + onboarding + KDS Setup | 🚧 Feature-complete · all 4 issues done 2026-07-01 (schema+Store+owner token; server actions + guard swap + recovery; dark wizard UI; post-launch optional checklist) · branch `feat/onboarding-redesign` — **ready for build → deploy → prod smoke** (not deployed) | `.scratch/onboarding-redesign/PRD.md` |
 | 17 | ZanTap operator/admin panel (vendor system-of-record + recovery verification) | Owner design | server + admin UI | ⏸ Deferred — owner design; consumes #16 recovery events | — |
 | 18 | Supabase pooler egress — KDS snapshot optimization | Strong | Store + KDS SSE | ✅ Done 2026-07-01 | `.scratch/pooler-egress-audit/issue-01-kds-snapshot-egress.md` |
 
@@ -173,8 +173,23 @@ path). Deleted `GateStep`, `OperatorContact`, `is-provision-enabled.ts`, `usePro
 **Recovery UI** — `RecoverAccessDialog` (slug + signup phone → `recoverOwnerToken`, auto-caches) from
 the splash + deep link `/onboard?recover=1`; the interim manual owner-token paste field in `SetupDrawer`
 is removed (lock chip + Recover link). `npm run build` clean; `npm test` 174 passed / 64 skipped.
-ADR-0025. **Next: Issue 4** (post-launch optional checklist — the "0 of 8" screen wiring into KDS Setup).
-Branch `feat/onboarding-redesign`, **not yet deployed**.
+ADR-0025.
+
+**Issue 4 done 2026-07-01** (post-launch optional checklist — the mockup's "keep improving your
+storefront" screen wired into the KDS Setup drawer): new pure module
+`lib/vendor/optional-checklist.ts` (`OPTIONAL_CHECKLIST_ITEMS` 9 rows + `deriveOptionalChecklist` +
+`countOptionalCompleted`); `SetupDrawer` gains the checklist section ("X of 4 completed" — actionable
+rows only, the 5 deferred rows show a "Soon" badge) plus Logo URL / Cover image URL inputs + a
+Business Description textarea in the profile editor; `updateVendorProfile` forwards
+`logoUrl`/`coverImageUrl`/`description` (fields already in the schema since Issue 1); `KdsDashboard`
+seeds those from the vendor + passes `menu` to `SetupDrawer`; owner-token guarded via
+`useOwnerToken` (never prompts). Actionable = Logo, Cover, Menu Photos, Description; deferred
+`comingSoon` (no schema/editor) = Business Hours, Ingredients, Delivery Zones, Estimated Prep Time,
+Social Links. No new schema/migration, no Blob action, no wizard/server-signature change. 6 new unit
+tests; `npm run build` clean; `npm test` **180 passed / 64 skipped**. ADR-0026. **Candidate #16 is now
+feature-complete** — all 4 issues done on `feat/onboarding-redesign`; next step is the
+build → deploy → prod smoke pass (prod cutover: remove `PROVISION_SECRET` from Vercel, leave
+`PROVISION_KILL_SWITCH` unset, `VENDOR_WRITE_SECRET` already dead).
 
 ---
 

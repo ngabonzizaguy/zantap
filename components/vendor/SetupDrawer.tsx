@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import type { MenuItem } from "@/lib/types";
 import { Button, Card, Input } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 import { updateVendorProfile } from "@/lib/actions/vendor-profile";
@@ -10,6 +11,11 @@ import {
   ONBOARDING_STEPS,
   type OnboardingChecklist,
 } from "@/lib/vendor/onboarding";
+import {
+  countOptionalCompleted,
+  deriveOptionalChecklist,
+  OPTIONAL_CHECKLIST_ITEMS,
+} from "@/lib/vendor/optional-checklist";
 import { useOwnerToken } from "@/lib/vendor/useOwnerToken";
 import { resetCoachmarks } from "@/components/vendor/Coachmark";
 
@@ -18,6 +24,9 @@ export interface StorefrontProfile {
   location?: string;
   deliveryTime?: string;
   rating?: number;
+  logoUrl?: string;
+  coverImageUrl?: string;
+  description?: string;
 }
 
 interface SetupDrawerProps {
@@ -26,6 +35,7 @@ interface SetupDrawerProps {
   checklist: OnboardingChecklist;
   vendorSlug: string;
   profile: StorefrontProfile;
+  menu: MenuItem[];
   onProfileSaved?: (profile: StorefrontProfile) => void;
   onRefresh?: () => void;
 }
@@ -36,6 +46,7 @@ export function SetupDrawer({
   checklist,
   vendorSlug,
   profile,
+  menu,
   onProfileSaved,
   onRefresh,
 }: SetupDrawerProps) {
@@ -48,12 +59,29 @@ export function SetupDrawer({
   const [locationDraft, setLocationDraft] = useState("");
   const [deliveryTimeDraft, setDeliveryTimeDraft] = useState("");
   const [ratingDraft, setRatingDraft] = useState("");
+  const [logoUrlDraft, setLogoUrlDraft] = useState("");
+  const [coverImageUrlDraft, setCoverImageUrlDraft] = useState("");
+  const [descriptionDraft, setDescriptionDraft] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
 
   const completed = countCompletedSteps(checklist);
   const total = ONBOARDING_STEPS.length;
+
+  const optionalChecklist = useMemo(
+    () =>
+      deriveOptionalChecklist(
+        {
+          logoUrl: profile.logoUrl,
+          coverImageUrl: profile.coverImageUrl,
+          description: profile.description,
+        },
+        menu
+      ),
+    [profile.logoUrl, profile.coverImageUrl, profile.description, menu]
+  );
+  const optionalProgress = countOptionalCompleted(optionalChecklist);
 
   useEffect(() => {
     if (!open) return;
@@ -86,6 +114,9 @@ export function SetupDrawer({
         ? String(profile.rating)
         : ""
     );
+    setLogoUrlDraft(profile.logoUrl ?? "");
+    setCoverImageUrlDraft(profile.coverImageUrl ?? "");
+    setDescriptionDraft(profile.description ?? "");
     setProfileError(null);
     setProfileSaved(false);
   }, [open, profile]);
@@ -115,6 +146,17 @@ export function SetupDrawer({
       rating = parsed;
     }
 
+    const logoTrimmed = logoUrlDraft.trim();
+    if (logoTrimmed && !/^https?:\/\//i.test(logoTrimmed)) {
+      setProfileError("Logo must be a valid image URL (https://…).");
+      return;
+    }
+    const coverTrimmed = coverImageUrlDraft.trim();
+    if (coverTrimmed && !/^https?:\/\//i.test(coverTrimmed)) {
+      setProfileError("Cover must be a valid image URL (https://…).");
+      return;
+    }
+
     setProfileSaving(true);
     setProfileError(null);
     setProfileSaved(false);
@@ -125,12 +167,18 @@ export function SetupDrawer({
         location: locationDraft,
         deliveryTime: deliveryTimeDraft,
         ...(ratingTrimmed ? { rating } : {}),
+        logoUrl: logoUrlDraft,
+        coverImageUrl: coverImageUrlDraft,
+        description: descriptionDraft,
       });
       onProfileSaved?.({
         tagline: updated.tagline,
         location: updated.location,
         deliveryTime: updated.deliveryTime,
         rating: updated.rating,
+        logoUrl: updated.logoUrl,
+        coverImageUrl: updated.coverImageUrl,
+        description: updated.description,
       });
       setProfileSaved(true);
       window.setTimeout(() => setProfileSaved(false), 2000);
@@ -246,6 +294,62 @@ export function SetupDrawer({
 
           <section className="mt-8">
             <h3 className="font-display text-display-sm text-ink">
+              Keep improving your storefront
+            </h3>
+            <p className="mt-1 font-body text-body-sm text-muted">
+              You&apos;re live and accepting orders — these optional touches just
+              help you grow.
+            </p>
+            <p className="mt-2 font-body text-body-sm font-medium text-ink">
+              {optionalProgress.completed} of {optionalProgress.total} completed
+            </p>
+            <ul className="mt-4 flex flex-col gap-2">
+              {OPTIONAL_CHECKLIST_ITEMS.map((item) => {
+                const done = optionalChecklist[item.id];
+                return (
+                  <li
+                    key={item.id}
+                    className="flex items-start gap-3 rounded-brand-md border border-hairline px-3 py-2.5"
+                  >
+                    <span
+                      className={cn(
+                        "flex h-7 w-7 flex-none items-center justify-center rounded-full text-sm font-bold",
+                        done
+                          ? "bg-primary text-on-primary"
+                          : "border border-hairline bg-surface-card text-muted-soft"
+                      )}
+                      aria-hidden
+                    >
+                      {done ? "✓" : ""}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p
+                          className={cn(
+                            "font-body text-body-md font-medium",
+                            done ? "text-muted line-through" : "text-ink"
+                          )}
+                        >
+                          {item.label}
+                        </p>
+                        {item.comingSoon ? (
+                          <span className="rounded-pill border border-hairline px-2 py-0.5 font-body text-caption text-muted-soft">
+                            Soon
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-0.5 font-body text-body-sm text-muted">
+                        {item.hint}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+
+          <section className="mt-8">
+            <h3 className="font-display text-display-sm text-ink">
               Storefront profile
             </h3>
             <p className="mt-1 font-body text-body-sm text-muted">
@@ -285,6 +389,47 @@ export function SetupDrawer({
                 placeholder="4.8"
                 disabled={profileSaving}
               />
+              <Input
+                label="Logo URL"
+                type="url"
+                inputMode="url"
+                value={logoUrlDraft}
+                onChange={(event) => setLogoUrlDraft(event.target.value)}
+                placeholder="https://…/logo.png"
+                disabled={profileSaving}
+              />
+              <Input
+                label="Cover image URL"
+                type="url"
+                inputMode="url"
+                value={coverImageUrlDraft}
+                onChange={(event) => setCoverImageUrlDraft(event.target.value)}
+                placeholder="https://…/cover.jpg"
+                disabled={profileSaving}
+              />
+              <div className="flex w-full flex-col gap-1.5">
+                <label
+                  htmlFor="vendor-description"
+                  className="font-body text-body-sm font-medium text-ink"
+                >
+                  Business description
+                </label>
+                <textarea
+                  id="vendor-description"
+                  value={descriptionDraft}
+                  onChange={(event) => setDescriptionDraft(event.target.value)}
+                  placeholder="Tell your story — what makes your kitchen special."
+                  disabled={profileSaving}
+                  rows={3}
+                  className={cn(
+                    "w-full rounded-brand-md border border-hairline-strong bg-surface-card px-4 py-3 font-body text-body-md text-ink",
+                    "placeholder:text-muted-soft",
+                    "focus:border-2 focus:border-ink focus:outline-none",
+                    profileSaving &&
+                      "cursor-not-allowed bg-canvas-soft text-muted-soft"
+                  )}
+                />
+              </div>
               <Button
                 size="default"
                 onClick={() => void handleSaveProfile()}

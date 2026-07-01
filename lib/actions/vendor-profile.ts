@@ -24,6 +24,15 @@ export async function updateVendorProfile(
       ? { deliveryTime: input.deliveryTime.trim() || undefined }
       : {}),
     ...(input.rating !== undefined ? { rating: input.rating } : {}),
+    ...(input.logoUrl !== undefined
+      ? { logoUrl: input.logoUrl.trim() || undefined }
+      : {}),
+    ...(input.coverImageUrl !== undefined
+      ? { coverImageUrl: input.coverImageUrl.trim() || undefined }
+      : {}),
+    ...(input.description !== undefined
+      ? { description: input.description.trim() || undefined }
+      : {}),
   };
 
   const updated = await getStore().updateVendor(vendorSlug, payload);
