@@ -80,4 +80,32 @@ describe("fingerprintKdsSnapshot", () => {
       fingerprintKdsSnapshot({ ...before, kitchenOpen: false })
     );
   });
+
+  it("is stable regardless of order row sequence", () => {
+    const snapshot = baseSnapshot();
+    const reversed = {
+      ...snapshot,
+      orders: [
+        {
+          id: "o2",
+          vendorId: "v1",
+          customerPhone: "0780000001",
+          deliverySector: "Kacyiru",
+          landmark: "Gate",
+          totalAmount: 3000,
+          status: "PAID" as const,
+          orderItems: [],
+          createdAt: new Date("2026-06-22T11:00:00Z"),
+        },
+        snapshot.orders[0],
+      ],
+    };
+    const reordered = {
+      ...snapshot,
+      orders: [reversed.orders[1], reversed.orders[0]],
+    };
+    expect(fingerprintKdsSnapshot(reversed)).toBe(
+      fingerprintKdsSnapshot(reordered)
+    );
+  });
 });

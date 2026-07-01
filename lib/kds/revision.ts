@@ -19,13 +19,15 @@ export function buildKdsSnapshotRevision(input: {
   todayGross: number;
   kitchenOpen: boolean;
 }): string {
-  const orderKey = input.orders
+  const orderKey = [...input.orders]
+    .sort((a, b) => a.id.localeCompare(b.id))
     .map(
       (order) =>
         `${order.id}:${order.status}:${order.kitchenStage ?? ""}:${order.totalAmount}`
     )
     .join("|");
-  const menuKey = input.menu
+  const menuKey = [...input.menu]
+    .sort((a, b) => a.id.localeCompare(b.id))
     .map((item) => `${item.id}:${item.isAvailable}`)
     .join("|");
   return `${orderKey}#${menuKey}#${input.todayGross}#${input.kitchenOpen}`;
