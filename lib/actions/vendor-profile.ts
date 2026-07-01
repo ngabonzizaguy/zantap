@@ -2,16 +2,16 @@
 
 import { getStore } from "@/lib/store";
 import type { UpdateVendorInput, Vendor } from "@/lib/types";
-import { assertWriteSecret } from "@/lib/vendor/write-secret";
+import { assertOwnerToken } from "@/lib/vendor/owner-token-guard";
 
 // NOTE: export only async server actions — no type re-exports (AGENTS.md).
 
 export async function updateVendorProfile(
-  writeSecret: string,
+  ownerToken: string,
   vendorSlug: string,
   input: UpdateVendorInput
 ): Promise<Vendor> {
-  assertWriteSecret(writeSecret);
+  await assertOwnerToken(vendorSlug, ownerToken);
 
   const payload: UpdateVendorInput = {
     ...(input.tagline !== undefined

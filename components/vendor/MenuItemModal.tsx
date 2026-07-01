@@ -22,7 +22,7 @@ interface MenuItemModalProps {
   saving: boolean;
   serverError: string | null;
   vendorSlug: string;
-  writeSecret: string | null;
+  ownerToken: string | null;
   onClose: () => void;
   onSubmit: (values: MenuItemFormValues) => void;
   onImagesChange?: (images: MenuImage[]) => void;
@@ -58,7 +58,7 @@ export function MenuItemModal({
   saving,
   serverError,
   vendorSlug,
-  writeSecret,
+  ownerToken,
   onClose,
   onSubmit,
   onImagesChange,
@@ -177,12 +177,12 @@ export function MenuItemModal({
             ))}
           </datalist>
         </div>
-        {mode === "edit" && item && writeSecret ? (
+        {mode === "edit" && item && ownerToken ? (
           <MenuImageGallery
             vendorSlug={vendorSlug}
             itemId={item.id}
             images={galleryImages}
-            writeSecret={writeSecret}
+            ownerToken={ownerToken}
             onImagesChange={handleGalleryChange}
             onError={setGalleryError}
             disabled={saving}

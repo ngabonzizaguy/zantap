@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { MenuItem } from "@/lib/types";
 import { formatRwf } from "@/lib/format";
 import { getPrimaryImageUrl } from "@/lib/menu/media";
-import { useWriteSecret } from "@/lib/vendor/useWriteSecret";
+import { useOwnerToken } from "@/lib/vendor/useOwnerToken";
 import {
   archiveMenuItem,
   createMenuItem,
@@ -16,9 +16,14 @@ import {
 import { Badge, Button, Card, Modal } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 import { MenuItemModal, type MenuItemFormValues } from "@/components/vendor/MenuItemModal";
-import { WriteSecretPrompt } from "@/components/vendor/WriteSecretPrompt";
 
 type MenuFilter = "active" | "archived";
+
+// Owner token is auto-issued at provision and cached by slug — it is never
+// typed here. When it is absent (new device / cleared storage) we point the
+// vendor at Setup rather than prompting (ADR-0022; recovery UI lands in Issue 3).
+const NO_TOKEN_MESSAGE =
+  "Owner access required — add your owner token in the Setup guide.";
 
 interface MenuCardProps {
   item: MenuItem;
@@ -141,18 +146,16 @@ export function MenuSection({
   onResetAll,
   onRefresh,
 }: MenuSectionProps) {
-  const { secret, setSecret, hasSecret, ready } = useWriteSecret();
+  const { token, hasToken, ready } = useOwnerToken(vendorSlug);
   const [filter, setFilter] = useState<MenuFilter>("active");
   const [archivedItems, setArchivedItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<"create" | "edit">("create");
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
-  const [secretPromptOpen, setSecretPromptOpen] = useState(false);
   const [confirmArchiveId, setConfirmArchiveId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [pendingWrite, setPendingWrite] = useState<(() => void) | null>(null);
 
   const loadCategories = useCallback(async () => {
     const next = await loadMenuCategories(vendorSlug);
@@ -174,39 +177,30 @@ export function MenuSection({
     }
   }, [filter, loadArchived]);
 
-  const requireSecret = useCallback(
+  const requireToken = useCallback(
     (action: () => void) => {
-      if (!hasSecret) {
-        setPendingWrite(() => action);
-        setSecretPromptOpen(true);
+      if (!hasToken) {
+        setActionError(NO_TOKEN_MESSAGE);
         return;
       }
+      setActionError(null);
       action();
     },
-    [hasSecret]
+    [hasToken]
   );
-
-  const handleSecretSaved = (value: string) => {
-    setSecret(value);
-    if (pendingWrite) {
-      const run = pendingWrite;
-      setPendingWrite(null);
-      run();
-    }
-  };
 
   const parseActionError = (error: unknown): string => {
     const message =
       error instanceof Error ? error.message : "Something went wrong";
-    if (message.toLowerCase().includes("write secret")) {
-      return "Wrong write secret — tap the key icon to update it";
+    if (message.toLowerCase().includes("owner token")) {
+      return NO_TOKEN_MESSAGE;
     }
     return message;
   };
 
   const runGuarded = async <T,>(fn: () => Promise<T>): Promise<T | null> => {
-    if (!secret) {
-      setActionError("Write secret required");
+    if (!token) {
+      setActionError(NO_TOKEN_MESSAGE);
       return null;
     }
     try {
@@ -221,18 +215,18 @@ export function MenuSection({
     setEditorMode("create");
     setEditingItem(null);
     setActionError(null);
-    requireSecret(() => setEditorOpen(true));
+    requireToken(() => setEditorOpen(true));
   };
 
   const openEdit = (item: MenuItem) => {
     setEditorMode("edit");
     setEditingItem(item);
     setActionError(null);
-    requireSecret(() => setEditorOpen(true));
+    requireToken(() => setEditorOpen(true));
   };
 
   const handleSubmit = async (values: MenuItemFormValues) => {
-    if (!secret) return;
+    if (!token) return;
     setSaving(true);
     setActionError(null);
     const priceRwf = Number(values.priceRwf);
@@ -245,10 +239,10 @@ export function MenuSection({
 
     const result =
       editorMode === "create"
-        ? await runGuarded(() => createMenuItem(secret, vendorSlug, payload))
+        ? await runGuarded(() => createMenuItem(token, vendorSlug, payload))
         : editingItem
           ? await runGuarded(() =>
-              updateMenuItem(secret, vendorSlug, editingItem.id, payload)
+              updateMenuItem(token, vendorSlug, editingItem.id, payload)
             )
           : null;
 
@@ -262,11 +256,11 @@ export function MenuSection({
   };
 
   const handleArchive = async (itemId: string) => {
-    if (!secret) return;
+    if (!token) return;
     setSaving(true);
     setActionError(null);
     const result = await runGuarded(() =>
-      archiveMenuItem(secret, vendorSlug, itemId)
+      archiveMenuItem(token, vendorSlug, itemId)
     );
     setSaving(false);
     setConfirmArchiveId(null);
@@ -277,11 +271,11 @@ export function MenuSection({
   };
 
   const handleRestore = async (itemId: string) => {
-    if (!secret) return;
+    if (!token) return;
     setSaving(true);
     setActionError(null);
     const result = await runGuarded(() =>
-      restoreMenuItem(secret, vendorSlug, itemId)
+      restoreMenuItem(token, vendorSlug, itemId)
     );
     setSaving(false);
     if (result) {
@@ -307,14 +301,6 @@ export function MenuSection({
           </h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            size="default"
-            variant="outline"
-            onClick={() => setSecretPromptOpen(true)}
-            aria-label="Write secret settings"
-          >
-            {hasSecret ? "🔑" : "Set secret"}
-          </Button>
           {filter === "active" ? (
             <>
               <Button size="default" variant="outline" onClick={onResetAll}>
@@ -375,9 +361,9 @@ export function MenuSection({
               onEdit={() => openEdit(item)}
               onToggle={() => onToggle(item.id)}
               onArchive={() =>
-                requireSecret(() => setConfirmArchiveId(item.id))
+                requireToken(() => setConfirmArchiveId(item.id))
               }
-              onRestore={() => requireSecret(() => void handleRestore(item.id))}
+              onRestore={() => requireToken(() => void handleRestore(item.id))}
             />
           ))}
         </div>
@@ -391,7 +377,7 @@ export function MenuSection({
         saving={saving}
         serverError={actionError}
         vendorSlug={vendorSlug}
-        writeSecret={secret}
+        ownerToken={token}
         onClose={() => {
           setEditorOpen(false);
           setActionError(null);
@@ -402,15 +388,6 @@ export function MenuSection({
             prev ? { ...prev, images, imageUrl: images.find((i) => i.isPrimary)?.url } : prev
           );
           void onRefresh();
-        }}
-      />
-
-      <WriteSecretPrompt
-        open={secretPromptOpen}
-        onSave={handleSecretSaved}
-        onClose={() => {
-          setSecretPromptOpen(false);
-          setPendingWrite(null);
         }}
       />
 

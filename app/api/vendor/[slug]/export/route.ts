@@ -7,16 +7,16 @@ import {
   fetchAllFilteredOrders,
   parseExportFiltersFromSearchParams,
 } from "@/lib/vendor/export-orders";
-import { assertWriteSecret, WriteSecretError } from "@/lib/vendor/write-secret";
+import { assertOwnerToken, OwnerTokenError } from "@/lib/vendor/owner-token-guard";
 
 export const dynamic = "force-dynamic";
 
-const WRITE_SECRET_HEADER = "x-vendor-write-secret";
+const OWNER_TOKEN_HEADER = "x-vendor-owner-token";
 
-function readWriteSecret(request: Request): string {
-  const header = request.headers.get(WRITE_SECRET_HEADER);
+function readOwnerToken(request: Request): string {
+  const header = request.headers.get(OWNER_TOKEN_HEADER);
   if (header) return header;
-  return new URL(request.url).searchParams.get("writeSecret") ?? "";
+  return new URL(request.url).searchParams.get("ownerToken") ?? "";
 }
 
 export async function GET(
@@ -26,11 +26,11 @@ export async function GET(
   const { slug } = await context.params;
 
   try {
-    assertWriteSecret(readWriteSecret(request));
+    await assertOwnerToken(slug, readOwnerToken(request));
   } catch (error) {
-    if (error instanceof WriteSecretError) {
+    if (error instanceof OwnerTokenError) {
       return Response.json(
-        { error: error.message, code: "WRITE_SECRET_INVALID" },
+        { error: error.message, code: "OWNER_TOKEN_INVALID" },
         { status: 403 }
       );
     }

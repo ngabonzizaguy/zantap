@@ -9,7 +9,7 @@ import {
   ONBOARDING_STEPS,
   type OnboardingChecklist,
 } from "@/lib/vendor/onboarding";
-import { useWriteSecret } from "@/lib/vendor/useWriteSecret";
+import { useOwnerToken } from "@/lib/vendor/useOwnerToken";
 import { resetCoachmarks } from "@/components/vendor/Coachmark";
 
 export interface StorefrontProfile {
@@ -41,9 +41,9 @@ export function SetupDrawer({
   const titleId = useId();
   const panelRef = useRef<HTMLElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
-  const { secret, setSecret, hasSecret, ready } = useWriteSecret();
-  const [secretDraft, setSecretDraft] = useState("");
-  const [secretSaved, setSecretSaved] = useState(false);
+  const { token, setToken, hasToken, ready } = useOwnerToken(vendorSlug);
+  const [tokenDraft, setTokenDraft] = useState("");
+  const [tokenSaved, setTokenSaved] = useState(false);
   const [tipsReset, setTipsReset] = useState(false);
   const [taglineDraft, setTaglineDraft] = useState("");
   const [locationDraft, setLocationDraft] = useState("");
@@ -79,9 +79,9 @@ export function SetupDrawer({
 
   useEffect(() => {
     if (open && ready) {
-      setSecretDraft(secret ?? "");
+      setTokenDraft(token ?? "");
     }
-  }, [open, ready, secret]);
+  }, [open, ready, token]);
 
   useEffect(() => {
     if (!open) return;
@@ -97,12 +97,12 @@ export function SetupDrawer({
     setProfileSaved(false);
   }, [open, profile]);
 
-  const handleSaveSecret = () => {
-    const trimmed = secretDraft.trim();
+  const handleSaveToken = () => {
+    const trimmed = tokenDraft.trim();
     if (!trimmed) return;
-    setSecret(trimmed);
-    setSecretSaved(true);
-    window.setTimeout(() => setSecretSaved(false), 2000);
+    setToken(trimmed);
+    setTokenSaved(true);
+    window.setTimeout(() => setTokenSaved(false), 2000);
   };
 
   const handleShowTipsAgain = () => {
@@ -112,8 +112,8 @@ export function SetupDrawer({
   };
 
   const handleSaveProfile = async () => {
-    if (!secret) {
-      setProfileError("Save your write secret below before updating profile.");
+    if (!token) {
+      setProfileError("Add your owner token below before updating profile.");
       return;
     }
 
@@ -133,7 +133,7 @@ export function SetupDrawer({
     setProfileSaved(false);
 
     try {
-      const updated = await updateVendorProfile(secret, vendorSlug, {
+      const updated = await updateVendorProfile(token, vendorSlug, {
         tagline: taglineDraft,
         location: locationDraft,
         deliveryTime: deliveryTimeDraft,
@@ -151,8 +151,8 @@ export function SetupDrawer({
       const message =
         error instanceof Error ? error.message : "Could not save profile.";
       setProfileError(
-        message.toLowerCase().includes("write secret")
-          ? "Wrong write secret — update it below and try again."
+        message.toLowerCase().includes("owner token")
+          ? "Wrong owner token — update it below and try again."
           : message
       );
     } finally {
@@ -301,13 +301,13 @@ export function SetupDrawer({
               <Button
                 size="default"
                 onClick={() => void handleSaveProfile()}
-                disabled={profileSaving || !hasSecret}
+                disabled={profileSaving || !hasToken}
               >
                 {profileSaving ? "Saving…" : "Save profile"}
               </Button>
-              {!hasSecret ? (
+              {!hasToken ? (
                 <p className="font-body text-body-sm text-muted">
-                  Enter your write secret below to save profile changes.
+                  Add your owner token below to save profile changes.
                 </p>
               ) : null}
               {profileSaved ? (
@@ -325,29 +325,32 @@ export function SetupDrawer({
 
           <section className="mt-8">
             <h3 className="font-display text-display-sm text-ink">
-              Write secret
+              Owner access
             </h3>
             <p className="mt-1 font-body text-body-sm text-muted">
-              Required for menu edits and exports. Stored on this device only.
+              Your owner token unlocks menu edits, photos, and exports. It is
+              issued automatically when you set up your store and kept on this
+              device only. Lost it on a new device? Recover it from your
+              storefront link, then paste it here.
             </p>
             <div className="mt-4 flex flex-col gap-3">
               <Input
-                label="Write secret"
+                label="Owner token"
                 type="password"
                 autoComplete="off"
-                value={secretDraft}
-                onChange={(event) => setSecretDraft(event.target.value)}
+                value={tokenDraft}
+                onChange={(event) => setTokenDraft(event.target.value)}
               />
               <Button
                 size="default"
-                onClick={handleSaveSecret}
-                disabled={!secretDraft.trim()}
+                onClick={handleSaveToken}
+                disabled={!tokenDraft.trim()}
               >
-                {hasSecret ? "Update secret" : "Save secret"}
+                {hasToken ? "Update token" : "Save token"}
               </Button>
-              {secretSaved ? (
+              {tokenSaved ? (
                 <p className="font-body text-body-sm text-primary">
-                  Secret saved on this device.
+                  Owner token saved on this device.
                 </p>
               ) : null}
             </div>

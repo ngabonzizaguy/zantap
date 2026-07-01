@@ -29,8 +29,6 @@ function hydrateEnvFromDisk(): void {
 hydrateEnvFromDisk();
 
 const PROD = "https://zantap-psi.vercel.app";
-const PROVISION_SECRET =
-  process.env.PROVISION_SECRET ?? "zantap-provision-onboard-2026";
 const runProdSmoke = process.env.RUN_PROD_SMOKE === "1";
 
 async function fetchText(path: string): Promise<{ status: number; body: string }> {
@@ -95,8 +93,7 @@ describe.skipIf(!runProdSmoke)("prod onboard acceptance (#15)", () => {
     expect(onboard.status).toBe(200);
     expect(onboard.body).not.toContain("Vendor signup is not open");
 
-    const { vendor, menuItem } = await provisionVendor(
-      PROVISION_SECRET,
+    const { vendor, menuItem, ownerToken } = await provisionVendor(
       {
         name: businessName,
         slug,
@@ -107,6 +104,7 @@ describe.skipIf(!runProdSmoke)("prod onboard acceptance (#15)", () => {
     );
     expect(vendor.slug).toBe(slug);
     expect(menuItem?.id).toBeTruthy();
+    expect(ownerToken).toBeTruthy();
 
     const persisted = await getStore().getVendorBySlug(slug);
     expect(persisted?.slug).toBe(slug);
@@ -131,12 +129,8 @@ describe.skipIf(!runProdSmoke)("prod onboard acceptance (#15)", () => {
     );
     expect(checklist.hasMenuItem).toBe(true);
 
-    const writeSecret = process.env.VENDOR_WRITE_SECRET?.trim();
-    if (writeSecret) {
-      await updateVendorProfile(writeSecret, slug, { tagline });
-    } else {
-      await getStore().updateVendor(slug, { tagline });
-    }
+    // Owner token from provision guards the profile write (ADR-0022).
+    await updateVendorProfile(ownerToken, slug, { tagline });
     const afterTagline = await fetchText(`/${slug}`);
     expect(afterTagline.body).toContain(tagline);
 

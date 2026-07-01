@@ -12,7 +12,7 @@ import {
   validateCreateMenuItemInput,
   validateUpdateMenuItemInput,
 } from "@/lib/menu/validation";
-import { assertWriteSecret } from "@/lib/vendor/write-secret";
+import { assertOwnerToken } from "@/lib/vendor/owner-token-guard";
 
 // NOTE: export only async server actions — no type re-exports (AGENTS.md).
 
@@ -28,11 +28,11 @@ export async function loadMenuCategories(vendorSlug: string): Promise<string[]> 
 }
 
 export async function createMenuItem(
-  writeSecret: string,
+  ownerToken: string,
   vendorSlug: string,
   input: CreateMenuItemInput
 ): Promise<MenuItem> {
-  assertWriteSecret(writeSecret);
+  await assertOwnerToken(vendorSlug, ownerToken);
   const validationError = validateCreateMenuItemInput(input);
   if (validationError) {
     throw new Error(validationError);
@@ -46,12 +46,12 @@ export async function createMenuItem(
 }
 
 export async function updateMenuItem(
-  writeSecret: string,
+  ownerToken: string,
   vendorSlug: string,
   itemId: string,
   input: UpdateMenuItemInput
 ): Promise<MenuItem | null> {
-  assertWriteSecret(writeSecret);
+  await assertOwnerToken(vendorSlug, ownerToken);
   const validationError = validateUpdateMenuItemInput(input);
   if (validationError) {
     throw new Error(validationError);
@@ -71,40 +71,40 @@ export async function updateMenuItem(
 }
 
 export async function archiveMenuItem(
-  writeSecret: string,
+  ownerToken: string,
   vendorSlug: string,
   itemId: string
 ): Promise<MenuItem | null> {
-  assertWriteSecret(writeSecret);
+  await assertOwnerToken(vendorSlug, ownerToken);
   return getStore().archiveMenuItem(vendorSlug, itemId);
 }
 
 export async function restoreMenuItem(
-  writeSecret: string,
+  ownerToken: string,
   vendorSlug: string,
   itemId: string
 ): Promise<MenuItem | null> {
-  assertWriteSecret(writeSecret);
+  await assertOwnerToken(vendorSlug, ownerToken);
   return getStore().restoreMenuItem(vendorSlug, itemId);
 }
 
 export async function renameCategory(
-  writeSecret: string,
+  ownerToken: string,
   vendorSlug: string,
   from: string,
   to: string
 ): Promise<number> {
-  assertWriteSecret(writeSecret);
+  await assertOwnerToken(vendorSlug, ownerToken);
   return getStore().renameCategory(vendorSlug, from, to);
 }
 
 export async function addMenuImageByUrl(
-  writeSecret: string,
+  ownerToken: string,
   vendorSlug: string,
   itemId: string,
   url: string
 ): Promise<MenuImage> {
-  assertWriteSecret(writeSecret);
+  await assertOwnerToken(vendorSlug, ownerToken);
   const trimmed = url.trim();
   if (!trimmed || !/^https?:\/\//i.test(trimmed)) {
     throw new Error("Valid image URL required");
@@ -113,12 +113,12 @@ export async function addMenuImageByUrl(
 }
 
 export async function uploadMenuImage(
-  writeSecret: string,
+  ownerToken: string,
   vendorSlug: string,
   itemId: string,
   formData: FormData
 ): Promise<MenuImage> {
-  assertWriteSecret(writeSecret);
+  await assertOwnerToken(vendorSlug, ownerToken);
   const file = formData.get("file");
   if (!(file instanceof File)) {
     throw new Error("No image file provided");
@@ -139,31 +139,31 @@ export async function uploadMenuImage(
 }
 
 export async function reorderMenuImages(
-  writeSecret: string,
+  ownerToken: string,
   vendorSlug: string,
   itemId: string,
   imageIds: string[]
 ): Promise<MenuImage[]> {
-  assertWriteSecret(writeSecret);
+  await assertOwnerToken(vendorSlug, ownerToken);
   return getStore().reorderMenuImages(vendorSlug, itemId, imageIds);
 }
 
 export async function setPrimaryMenuImage(
-  writeSecret: string,
+  ownerToken: string,
   vendorSlug: string,
   itemId: string,
   imageId: string
 ): Promise<MenuImage | null> {
-  assertWriteSecret(writeSecret);
+  await assertOwnerToken(vendorSlug, ownerToken);
   return getStore().setPrimaryMenuImage(vendorSlug, itemId, imageId);
 }
 
 export async function removeMenuImage(
-  writeSecret: string,
+  ownerToken: string,
   vendorSlug: string,
   itemId: string,
   imageId: string
 ): Promise<boolean> {
-  assertWriteSecret(writeSecret);
+  await assertOwnerToken(vendorSlug, ownerToken);
   return getStore().removeMenuImage(vendorSlug, itemId, imageId);
 }

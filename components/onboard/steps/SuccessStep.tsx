@@ -55,7 +55,8 @@ export function SuccessStep({ slug, vendorName }: SuccessStepProps) {
       </div>
 
       <p className="font-body text-caption text-muted-soft">
-        Enter your write secret in Setup to edit the menu and upload photos.
+        Menu edits and photo uploads unlock automatically on this device — no
+        code to enter.
       </p>
     </div>
   );

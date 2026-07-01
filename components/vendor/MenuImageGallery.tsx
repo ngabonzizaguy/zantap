@@ -17,7 +17,7 @@ interface MenuImageGalleryProps {
   vendorSlug: string;
   itemId: string;
   images: MenuImage[];
-  writeSecret: string;
+  ownerToken: string;
   onImagesChange: (images: MenuImage[]) => void;
   onError: (message: string) => void;
   disabled?: boolean;
@@ -27,7 +27,7 @@ export function MenuImageGallery({
   vendorSlug,
   itemId,
   images,
-  writeSecret,
+  ownerToken,
   onImagesChange,
   onError,
   disabled = false,
@@ -59,7 +59,7 @@ export function MenuImageGallery({
     const formData = new FormData();
     formData.set("file", file);
     const result = await run(() =>
-      uploadMenuImage(writeSecret, vendorSlug, itemId, formData)
+      uploadMenuImage(ownerToken, vendorSlug, itemId, formData)
     );
     if (!result) return;
     onImagesChange([...sorted, result]);
@@ -67,7 +67,7 @@ export function MenuImageGallery({
 
   const handleAddUrl = async () => {
     const result = await run(() =>
-      addMenuImageByUrl(writeSecret, vendorSlug, itemId, urlInput)
+      addMenuImageByUrl(ownerToken, vendorSlug, itemId, urlInput)
     );
     if (!result) return;
     setUrlInput("");
@@ -76,7 +76,7 @@ export function MenuImageGallery({
 
   const handleSetPrimary = async (imageId: string) => {
     const result = await run(() =>
-      setPrimaryMenuImage(writeSecret, vendorSlug, itemId, imageId)
+      setPrimaryMenuImage(ownerToken, vendorSlug, itemId, imageId)
     );
     if (!result) return;
     onImagesChange(
@@ -89,7 +89,7 @@ export function MenuImageGallery({
 
   const handleRemove = async (imageId: string) => {
     const ok = await run(() =>
-      removeMenuImage(writeSecret, vendorSlug, itemId, imageId)
+      removeMenuImage(ownerToken, vendorSlug, itemId, imageId)
     );
     if (!ok) return;
     setConfirmRemoveId(null);
@@ -112,7 +112,7 @@ export function MenuImageGallery({
     setDraggingId(null);
 
     const result = await run(() =>
-      reorderMenuImages(writeSecret, vendorSlug, itemId, ids)
+      reorderMenuImages(ownerToken, vendorSlug, itemId, ids)
     );
     if (result) onImagesChange(result);
   };

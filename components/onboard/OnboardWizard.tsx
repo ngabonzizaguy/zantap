@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { provisionVendor } from "@/lib/actions/vendor-provision";
+import { cacheOwnerToken } from "@/lib/vendor/useOwnerToken";
 import { useProvisionSecret } from "@/lib/vendor/useProvisionSecret";
 import { Card } from "@/components/ui/primitives";
 import { GateStep } from "@/components/onboard/steps/GateStep";
@@ -83,7 +84,6 @@ export function OnboardWizard() {
 
     try {
       const result = await provisionVendor(
-        secret,
         {
           name: business.name,
           slug: business.slug,
@@ -95,6 +95,9 @@ export function OnboardWizard() {
           priceRwf,
         }
       );
+      // Owner token is returned exactly once — cache it (keyed by slug) so the
+      // new vendor can immediately edit their menu without ever typing it.
+      cacheOwnerToken(result.vendor.slug, result.ownerToken);
       setCreatedSlug(result.vendor.slug);
       setCreatedName(result.vendor.name);
       setStep("success");

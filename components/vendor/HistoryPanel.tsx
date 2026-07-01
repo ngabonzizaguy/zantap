@@ -13,7 +13,7 @@ import {
   exportFilename,
   serializeFiltersToSearchParams,
 } from "@/lib/vendor/export-orders";
-import { useWriteSecret } from "@/lib/vendor/useWriteSecret";
+import { useOwnerToken } from "@/lib/vendor/useOwnerToken";
 import {
   formatPhoneDisplay,
   formatRwf,
@@ -27,7 +27,7 @@ interface HistoryPanelProps {
   vendorSlug: string;
 }
 
-const WRITE_SECRET_HEADER = "x-vendor-write-secret";
+const OWNER_TOKEN_HEADER = "x-vendor-owner-token";
 
 const DEFAULT_FILTERS: OrderHistoryFilters = {
   datePreset: "last30",
@@ -73,7 +73,7 @@ function paymentLabel(status: OrderHistoryItem["paymentStatus"]): string {
 }
 
 export function HistoryPanel({ vendorSlug }: HistoryPanelProps) {
-  const { secret, hasSecret, ready } = useWriteSecret();
+  const { token, hasToken, ready } = useOwnerToken(vendorSlug);
   const [filters, setFilters] = useState<OrderHistoryFilters>(DEFAULT_FILTERS);
   const [appliedFilters, setAppliedFilters] =
     useState<OrderHistoryFilters>(DEFAULT_FILTERS);
@@ -119,9 +119,9 @@ export function HistoryPanel({ vendorSlug }: HistoryPanelProps) {
   };
 
   const handleExport = async (format: "csv" | "xlsx") => {
-    if (!secret) {
+    if (!token) {
       setExportError(
-        "Enter the vendor write secret in the Menu tab before exporting."
+        "Add your owner token in the Setup guide before exporting."
       );
       return;
     }
@@ -134,7 +134,7 @@ export function HistoryPanel({ vendorSlug }: HistoryPanelProps) {
       const response = await fetch(
         `/api/vendor/${encodeURIComponent(vendorSlug)}/export?${params.toString()}`,
         {
-          headers: { [WRITE_SECRET_HEADER]: secret },
+          headers: { [OWNER_TOKEN_HEADER]: token },
         }
       );
 
@@ -216,7 +216,7 @@ export function HistoryPanel({ vendorSlug }: HistoryPanelProps) {
                 type="button"
                 variant="outline"
                 size="default"
-                disabled={!ready || !hasSecret || exporting !== null || loading}
+                disabled={!ready || !hasToken || exporting !== null || loading}
                 onClick={() => void handleExport("csv")}
               >
                 {exporting === "csv" ? "Exporting…" : "Export CSV"}
@@ -225,7 +225,7 @@ export function HistoryPanel({ vendorSlug }: HistoryPanelProps) {
                 type="button"
                 variant="outline"
                 size="default"
-                disabled={!ready || !hasSecret || exporting !== null || loading}
+                disabled={!ready || !hasToken || exporting !== null || loading}
                 onClick={() => void handleExport("xlsx")}
               >
                 {exporting === "xlsx" ? "Exporting…" : "Export Excel"}
