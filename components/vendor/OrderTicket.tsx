@@ -357,17 +357,15 @@ export function OrdersList({
   return (
     <div className="flex flex-col gap-3">
       {sseReconnecting && (
-        <Card padding="sm" className="flex items-center gap-2.5 border-amber-500/35 bg-amber-500/10">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
-          <div>
-            <div className="font-body text-body-sm font-medium text-amber-300">
-              Reconnecting…
-            </div>
-            <div className="font-body text-caption text-amber-200/70">
-              Live updates paused — queue may be stale until the stream recovers.
-            </div>
-          </div>
-        </Card>
+        <div className="flex items-center justify-center gap-2 rounded-brand-md border border-amber-500/25 bg-amber-500/10 px-3 py-2">
+          <span
+            className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-400/30 border-t-amber-400"
+            aria-hidden
+          />
+          <span className="font-body text-caption font-medium text-amber-300">
+            Reconnecting…
+          </span>
+        </div>
       )}
 
       {!kitchenOpen && (

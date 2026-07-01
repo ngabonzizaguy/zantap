@@ -93,6 +93,19 @@
 .kds-dark .bg-surface-card\/80 { background-color: rgba(22, 22, 25, 0.8); }
 .kds-dark .bg-surface-card\/90 { background-color: rgba(22, 22, 25, 0.9); }
 
+/*
+ * KDS operational canvas: a touch darker than the base #0e0e10 with a subtle
+ * fractal-noise film grain baked into a repeating SVG data-URI (no extra asset,
+ * paints behind content since it is a background-image). Scoped to the KDS
+ * (`.kds-surface`) so the onboarding wizard's dark surface is unaffected.
+ */
+.kds-dark .kds-surface {
+  background-color: #0b0b0d;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='kdsGrain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23kdsGrain)' opacity='0.05'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 180px 180px;
+}
+
 /* Text */
 .kds-dark .text-ink { color: #f4f4f3; }
 .kds-dark .text-body { color: #c9c8c5; }

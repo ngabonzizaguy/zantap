@@ -299,8 +299,8 @@ export function KdsDashboard({
   };
 
   return (
-    <div className="kds-dark min-h-screen w-full bg-canvas text-ink">
-      <div className="relative mx-auto min-h-screen w-full max-w-kds overflow-hidden border-x border-hairline bg-canvas pb-10">
+    <div className="kds-dark kds-surface min-h-screen w-full bg-canvas text-ink">
+      <div className="kds-surface relative mx-auto min-h-screen w-full max-w-kds overflow-hidden border-x border-hairline bg-canvas pb-10">
         <GradientOrbs className="opacity-25" />
 
         <MetricsBanner
