@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Button } from "@/components/ui/primitives";
 
 interface SplashStepProps {
@@ -8,29 +9,51 @@ interface SplashStepProps {
 }
 
 interface Role {
-  emoji: string;
+  icon: string;
   title: string;
   subtitle: string;
 }
 
 const ROLES: Role[] = [
-  { emoji: "🏪", title: "Restaurant", subtitle: "You prepare delicious food" },
-  { emoji: "🧍", title: "Customer", subtitle: "They place an order" },
-  { emoji: "👨‍🍳", title: "Kitchen", subtitle: "You cook with ease" },
-  { emoji: "📱", title: "Mobile Money", subtitle: "Get paid instantly" },
-  { emoji: "🛵", title: "Delivery", subtitle: "Orders get to your customers" },
+  {
+    icon: "/brand/roles/restaurant.png",
+    title: "Restaurant",
+    subtitle: "You prepare delicious food",
+  },
+  {
+    icon: "/brand/roles/customer.png",
+    title: "Customer",
+    subtitle: "They place an order",
+  },
+  {
+    icon: "/brand/roles/kitchen.png",
+    title: "Kitchen",
+    subtitle: "You cook with ease",
+  },
+  {
+    icon: "/brand/roles/mobile-money.png",
+    title: "Mobile Money",
+    subtitle: "Get paid instantly",
+  },
+  {
+    icon: "/brand/roles/delivery.png",
+    title: "Delivery",
+    subtitle: "Orders get to your customers",
+  },
 ];
 
 export function SplashStep({ onGetStarted, onRecoverAccess }: SplashStepProps) {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center gap-3">
-        <span
-          className="flex h-11 w-11 items-center justify-center rounded-brand-md bg-surface-strong text-xl"
-          aria-hidden="true"
-        >
-          🍽️
-        </span>
+        <Image
+          src="/brand/zantap-logo.png"
+          alt="ZanTap"
+          width={56}
+          height={56}
+          priority
+          className="h-14 w-14 flex-none"
+        />
         <p className="font-display text-display-sm leading-none text-ink">
           ZanTap{" "}
           <span className="font-body text-body-sm font-semibold text-primary">
@@ -61,8 +84,14 @@ export function SplashStep({ onGetStarted, onRecoverAccess }: SplashStepProps) {
               aria-hidden="true"
             />
             <div className="flex items-center gap-3 rounded-brand-lg border border-hairline bg-surface-card px-4 py-3">
-              <span className="text-xl" aria-hidden="true">
-                {role.emoji}
+              <span className="flex h-12 w-12 flex-none items-center justify-center rounded-brand-lg border border-hairline-strong bg-surface-strong p-1.5">
+                <Image
+                  src={role.icon}
+                  alt=""
+                  width={48}
+                  height={48}
+                  className="h-full w-full object-contain"
+                />
               </span>
               <div>
                 <p className="font-body text-body-md font-semibold text-ink">

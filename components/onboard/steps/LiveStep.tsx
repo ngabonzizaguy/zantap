@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { cn } from "@/lib/cn";
@@ -56,11 +57,15 @@ export function LiveStep({
     <div className="relative flex flex-col items-center gap-6 text-center">
       <Confetti />
 
-      <span
-        className="zt-live-glow mt-4 flex h-20 w-20 items-center justify-center rounded-brand-xl bg-primary text-4xl"
-        aria-hidden="true"
-      >
-        🛍️
+      <span className="zt-live-glow mt-4 flex h-24 w-24 items-center justify-center rounded-full">
+        <Image
+          src="/brand/zantap-logo.png"
+          alt="ZanTap"
+          width={96}
+          height={96}
+          priority
+          className="h-full w-full object-contain"
+        />
       </span>
 
       <div>

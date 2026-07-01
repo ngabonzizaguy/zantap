@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Icon } from "@/components/ui/Icon";
 import { Card } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
@@ -41,22 +42,14 @@ export function MetricsBanner({
     <div className="sticky top-0 z-30 border-b border-hairline bg-canvas/90 backdrop-blur-md">
       <div className="flex items-center justify-between gap-3 px-4 pb-3.5 pt-4 sm:px-[18px]">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 flex-none items-center justify-center rounded-brand-lg border border-hairline bg-primary/10">
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 48 48"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinejoin="round"
-              className="text-primary"
-              aria-hidden
-            >
-              <path d="M24 6l13 7.5v15L24 36 11 28.5v-15L24 6z" />
-              <path d="M24 14l7 4v8l-7 4-7-4v-8l7-4z" />
-            </svg>
-          </div>
+          <Image
+            src="/brand/zantap-logo.png"
+            alt="ZanTap"
+            width={40}
+            height={40}
+            priority
+            className="h-10 w-10 flex-none"
+          />
           <div className="min-w-0">
             <div className="truncate font-display text-display-sm text-ink">
               ZanTap Kitchen
