@@ -1,15 +1,23 @@
 import type { KdsSnapshot } from "@/lib/kds/types";
+import { buildKdsSnapshotRevision } from "@/lib/kds/revision";
 
 /**
- * Stable, cheap change detector for KDS snapshots. Used by the SSE stream to
- * skip redundant pushes when nothing changed.
+ * Stable change detector for full KDS snapshots. Matches {@link buildKdsSnapshotRevision}
+ * so SSE pushes stay aligned with lightweight poll revisions.
  */
 export function fingerprintKdsSnapshot(snapshot: KdsSnapshot): string {
-  const orderKey = snapshot.orders
-    .map((o) => `${o.id}:${o.status}:${o.totalAmount}`)
-    .join("|");
-  const menuKey = snapshot.menu
-    .map((m) => `${m.id}:${m.isAvailable}`)
-    .join("|");
-  return `${orderKey}#${menuKey}#${snapshot.todayGross}#${snapshot.kitchenOpen}`;
+  return buildKdsSnapshotRevision({
+    orders: snapshot.orders.map((order) => ({
+      id: order.id,
+      status: order.status,
+      kitchenStage: order.kitchenStage,
+      totalAmount: order.totalAmount,
+    })),
+    menu: snapshot.menu.map((item) => ({
+      id: item.id,
+      isAvailable: item.isAvailable,
+    })),
+    todayGross: snapshot.todayGross,
+    kitchenOpen: snapshot.kitchenOpen,
+  });
 }

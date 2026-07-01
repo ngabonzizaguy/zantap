@@ -60,9 +60,17 @@ _Avoid_: options, extras, modifiers (when you mean the persisted future model)
 A MenuItem soft-deleted via `archivedAt`. It disappears from the storefront and the Menu list but is retained for order history and exports; it can be restored. "Deleting" a menu item means archiving it.
 _Avoid_: deleted item, removed item, hidden item (hidden = sold-out/unavailable, which is different)
 
-**Write-secret**:
-The shared secret (a single env var) that guards abuse-prone vendor write operations (media upload, menu delete) while real authentication is deferred. Entered once in the KDS, kept client-side, and validated server-side on guarded Server Actions. Not real auth.
+**Write-secret** (being retired — ADR-0022):
+The shared secret (a single env var) that guards abuse-prone vendor write operations (media upload, menu delete) while real authentication is deferred. Entered once in the KDS, kept client-side, and validated server-side on guarded Server Actions. Not real auth. **Being replaced by the per-vendor Owner token** (candidate #16): the data-layer primitive landed in Issue 1; the guard swap that actually removes `assertWriteSecret` happens in Issue 2.
 _Avoid_: password, api key, token (when you specifically mean this interim guard)
+
+**Owner token** (ADR-0022):
+A per-vendor capability token minted at provision, cached in that vendor's browser (keyed by slug) and **never typed**. Only its sha256 hash is stored on the Vendor (`ownerTokenHash`, server-only — never sent to the browser); the plaintext is returned exactly once. Guarded writes validate the token *against that specific vendor*, so it gives per-vendor isolation the shared Write-secret never had. A bearer capability, not real auth (candidate #12 subsumes it). Minted/verified by `lib/vendor/owner-token.ts`.
+_Avoid_: password, api key, write-secret, session (it has no identity or revocation UX)
+
+**Recovery event** (ADR-0022):
+A server-side log entry (`VendorRecoveryEvent`) emitted each time a Vendor recovers their Owner token via phone-based recovery (storefront slug + signup phone → the token is **immediately re-issued**, never halting the vendor). It exists purely as the seam the future ZanTap operator/admin panel (candidate #17) will consume for async verification. No admin UI reads it yet.
+_Avoid_: audit log, recovery request, verification (it does not itself verify anything)
 
 **Adapter**:
 A concrete implementation satisfying the Store interface at its seam. Two exist: an in-memory adapter (tests/local dev) and a Prisma/Postgres adapter (production).

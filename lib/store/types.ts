@@ -16,9 +16,11 @@ import type {
   PaginatedOrders,
   Pagination,
   Payment,
+  RecordRecoveryEventInput,
   UpdateMenuItemInput,
   UpdateVendorInput,
   Vendor,
+  VendorRecoveryEvent,
 } from "@/lib/types";
 
 /**
@@ -36,6 +38,20 @@ export interface Store {
     vendorSlug: string,
     input: UpdateVendorInput
   ): Promise<Vendor | null>;
+
+  // Owner token (per-vendor capability, ADR-0022). The hash is server-only and
+  // never appears on the domain Vendor; validate via lib/vendor/owner-token.
+  getVendorOwnerTokenHash(vendorSlug: string): Promise<string | null>;
+  setVendorOwnerToken(
+    vendorSlug: string,
+    ownerTokenHash: string
+  ): Promise<Vendor | null>;
+
+  // Recovery-event log — the seam the future admin panel (candidate #17) consumes.
+  recordRecoveryEvent(
+    input: RecordRecoveryEventInput
+  ): Promise<VendorRecoveryEvent>;
+  listRecoveryEvents(vendorId: string): Promise<VendorRecoveryEvent[]>;
 
   // Menu reads + availability mutation
   getMenu(vendorSlug: string): Promise<MenuItem[]>;
@@ -94,6 +110,10 @@ export interface Store {
   // Order reads + create + status
   listOrders(vendorSlug: string): Promise<Order[]>;
   listActiveOrders(vendorSlug: string): Promise<Order[]>;
+  /** KDS queue scope — active tickets plus today's completed; not full history. */
+  listKdsOrders(vendorSlug: string): Promise<Order[]>;
+  /** Cheap change token for SSE poll loops (ADR-0023). */
+  getKdsSnapshotRevision(vendorSlug: string): Promise<string>;
   listOrdersFiltered(
     vendorSlug: string,
     filters: OrderHistoryFilters,

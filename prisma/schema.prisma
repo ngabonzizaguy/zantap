@@ -9,22 +9,39 @@ datasource db {
 }
 
 model Vendor {
-  id          String     @id @default(cuid())
-  name        String
-  slug        String     @unique
-  phoneNumber String
-  momoCode    String
-  isActive    Boolean    @default(true)
-  kitchenOpen Boolean    @default(true)
-  tagline     String?
-  location    String?
-  deliveryTime String?
-  rating      Float?
-  menuItems   MenuItem[]
-  orders      Order[]
-  drivers     Driver[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id              String                @id @default(cuid())
+  name            String
+  slug            String                @unique
+  phoneNumber     String
+  momoCode        String
+  isActive        Boolean               @default(true)
+  kitchenOpen     Boolean               @default(true)
+  tagline         String?
+  location        String?
+  deliveryTime    String?
+  rating          Float?
+  businessCategory String?
+  payoutMethod    PayoutMethod          @default(MERCHANT_CODE)
+  logoUrl         String?
+  coverImageUrl   String?
+  description     String?
+  ownerTokenHash  String?
+  menuItems       MenuItem[]
+  orders          Order[]
+  drivers         Driver[]
+  recoveryEvents  VendorRecoveryEvent[]
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+}
+
+model VendorRecoveryEvent {
+  id        String   @id @default(cuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  context   String?
+  at        DateTime @default(now())
+
+  @@index([vendorId])
 }
 
 model MenuItem {
@@ -132,6 +149,11 @@ enum KitchenStage {
   READY
   OUT_FOR_DELIVERY
   COMPLETED
+}
+
+enum PayoutMethod {
+  MERCHANT_CODE
+  PHONE
 }
 
 enum PaymentProvider {

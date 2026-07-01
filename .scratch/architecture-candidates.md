@@ -63,6 +63,11 @@ If a session ends without doing both, the handoff is incomplete.
 | 13 | Ops / security hardening | Worth exploring | docs + infra | ⏸ Probe — deferred | — |
 | 14 | Storefront item customization modal (visual-only) | Owner request | customer UI only | ✅ Done · prod-smoked 2026-06-29 | `.scratch/storefront-customization-modal/PRD.md` |
 | 15 | Vendor onboarding (~1 min go-live) | Strong | Store + KDS + provisioning | ✅ Done · deployed · prod-smoked 2026-06-30 | `.scratch/vendor-onboarding/PRD.md` |
+| 16 | Onboarding redesign (dark, self-serve, owner token) | Owner request | Store + Prisma + onboarding + KDS Setup | 🚧 In progress · sliced into 4 issues · **Issue 1 (schema+Store+owner token) done 2026-07-01** · branch `feat/onboarding-redesign` | `.scratch/onboarding-redesign/PRD.md` |
+| 17 | ZanTap operator/admin panel (vendor system-of-record + recovery verification) | Owner design | server + admin UI | ⏸ Deferred — owner design; consumes #16 recovery events | — |
+| 18 | Supabase pooler egress — KDS snapshot optimization | Strong | Store + KDS SSE | ✅ Done 2026-07-01 | `.scratch/pooler-egress-audit/issue-01-kds-snapshot-egress.md` |
+
+**#18 closed 2026-07-01** — revision-first SSE poll, scoped `listKdsOrders`, narrow includes, seed remote guard. ADR-0023.
 
 **#14 closed 2026-06-29** — prod gesture smoke 11/11 PASS on `zantap-psi.vercel.app/inka-steakhouse` (375px).
 
@@ -99,6 +104,60 @@ checklist (photos, kitchen, order, dispatch) + storefront profile section.
 - Flow: `.scratch/vendor-onboarding/FLOW.md`
 - ADR: `docs/adr/0020-vendor-provisioning-store-create-vendor.md`, `docs/adr/0021-kds-setup-storefront-profile.md`
 - Depends on: #1 Store ✅, #6 KDS Setup checklist ✅
+
+---
+
+## #16 · Onboarding redesign (dark, self-serve, owner token) — 📋 GRILLED · PRD WRITTEN
+
+Rating: Owner request · Scope: Prisma + Store + onboarding UI + KDS Setup. Branch: `feat/onboarding-redesign`.
+
+Replaces the candidate #15 UI with the redesigned **dark `.kds-dark`, mobile-first, self-serve**
+onboarding from `design-assets/UI-screens/*` (7 surfaces: splash → business essentials → payments →
+quick menu → review → go-live QR → optional checklist). Reuses #15's Store/provisioning seam.
+
+**Grilled 2026-07-01** (`/grill-with-docs`) — 8 decisions in `.scratch/onboarding-redesign/grill-decisions.md`.
+Key calls: new branch (not new repo); replace `/onboard` in place; **drop the provision gate → open
+self-serve** (PROVISION_SECRET kept as optional kill-switch + rate limit); dark theme; `payoutMethod`
+preference enum; first-dish photo uploaded post-provision; **retire shared write-secret → per-vendor
+owner token** (supersedes ADR-0009). Launch "cap-off" features parked pending owner direction.
+
+**Never-locked-out recovery (decision 9):** phone-based (`recoverOwnerToken(slug, phone)`) re-issues
+the token immediately and non-halting; logs a **recovery event** for the future admin panel (#17). No
+OTP. **No backfill (decision 10):** no public vendors exist — the migration resets the personal test vendor.
+
+New Vendor fields: `businessCategory`, `payoutMethod`, `logoUrl`, `coverImageUrl`, `description`,
+`ownerTokenHash` + a `VendorRecoveryEvent` log. Checklist wires into the existing KDS Setup drawer;
+hours/delivery-zones/prep-time/social deferred.
+
+- PRD: `.scratch/onboarding-redesign/PRD.md`
+- Grill: `.scratch/onboarding-redesign/grill-decisions.md`
+- ADR: `docs/adr/0022-self-serve-onboarding-and-owner-token.md`
+- Depends on: #15 provisioning ✅, #6 KDS Setup ✅, #1 Store ✅; ADR-0017 dark theme ✅
+- Feeds: #17 admin panel (recovery-event seam).
+
+**Sliced into 4 issues 2026-07-01** (`.scratch/onboarding-redesign/issues/`): 01 schema+Store+owner
+token, 02 server actions + owner-token guard swap + recovery, 03 wizard UI (dark, 7 surfaces),
+04 post-launch checklist.
+
+**Issue 1 done 2026-07-01** (data layer only): `Vendor` gains `businessCategory`, `payoutMethod`
+(real enum `PayoutMethod`, default `MERCHANT_CODE`), `logoUrl`, `coverImageUrl`, `description`,
+`ownerTokenHash` (server-only, off the domain type); new `VendorRecoveryEvent` table + Store verbs
+(`getVendorOwnerTokenHash`, `setVendorOwnerToken`, `recordRecoveryEvent`, `listRecoveryEvents`);
+owner-token helper (`lib/vendor/owner-token.ts` — mint/hash/verify). Migration
+`20260701150531_onboarding_redesign_vendor_fields` applied; demo vendor re-seeded with a fresh
+deterministic owner token (`DEMO_OWNER_TOKEN`). Both adapters + contract tests green; `npm run build`
+clean. Remote `#prisma` suite opt-in and stalled on Supabase Free pooler (schema push OK) — parity
+proven via the shared in-memory contract. **Next: Issue 2** (server actions + guard swap).
+
+---
+
+## #17 · ZanTap operator/admin panel — ⏸ DEFERRED (owner design)
+
+Owner's design. System-of-record for every vendor's details; consumes the recovery events emitted by
+#16. On a recovery / new-device trigger (fires on both vendor + admin side), the operator reviews
+current-vs-original details asynchronously and verifies via a WhatsApp message or a triggered KDS
+verification modal — **never halting the vendor**. Long-term replacement for #16's phone-based recovery
+stopgap and a precursor to real auth (#12). Not started; no PRD yet — will get its own `/grill-with-docs`.
 
 ---
 

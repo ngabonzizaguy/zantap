@@ -1,4 +1,4 @@
-import { fetchKdsSnapshot } from "@/lib/kds/snapshot";
+import { fetchKdsSnapshot, fetchKdsSnapshotRevision } from "@/lib/kds/snapshot";
 import { fingerprintKdsSnapshot } from "@/lib/kds/fingerprint";
 import { getStore } from "@/lib/store";
 
@@ -30,18 +30,18 @@ export async function GET(
 
   const stream = new ReadableStream({
     async start(controller) {
-      let lastFingerprint = "";
+      let lastRevision = "";
 
       const pushIfChanged = async () => {
         if (closed) return;
+        const revision = await fetchKdsSnapshotRevision(slug);
+        if (revision === lastRevision) return;
+
         const snapshot = await fetchKdsSnapshot(slug);
-        const fingerprint = fingerprintKdsSnapshot(snapshot);
-        if (fingerprint !== lastFingerprint) {
-          lastFingerprint = fingerprint;
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(snapshot)}\n\n`)
-          );
-        }
+        lastRevision = fingerprintKdsSnapshot(snapshot);
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify(snapshot)}\n\n`)
+        );
       };
 
       const sendHeartbeat = () => {

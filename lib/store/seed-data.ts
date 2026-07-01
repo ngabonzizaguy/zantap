@@ -1,6 +1,16 @@
 import type { Driver, MenuItem, Order, Vendor } from "@/lib/types";
+import { hashOwnerToken } from "@/lib/vendor/owner-token";
 
 export const DEMO_VENDOR_SLUG = "inka-steakhouse";
+
+/**
+ * Deterministic owner token for the re-seeded demo vendor (ADR-0022, decision 10).
+ * There is no production vendor to back-fill, so the seed simply mints this fresh
+ * token; keeping it constant lets local dev exercise the owner-token guard on
+ * `inka-steakhouse` without going through provisioning. Only the hash is stored.
+ */
+export const DEMO_OWNER_TOKEN = "demo-owner-token-inka-steakhouse";
+export const DEMO_OWNER_TOKEN_HASH = hashOwnerToken(DEMO_OWNER_TOKEN);
 
 export const seedCategories = ["All", "Grills", "Burgers", "Sides"];
 
@@ -15,6 +25,7 @@ export const seedVendor: Vendor = {
   location: "Kigali, Rwanda",
   deliveryTime: "30–40 min",
   rating: 4.8,
+  payoutMethod: "MERCHANT_CODE",
   createdAt: new Date("2025-01-01"),
 };
 

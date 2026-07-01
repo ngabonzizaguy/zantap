@@ -3,6 +3,7 @@ import type { ResettableStore } from "@/lib/store/types";
 import { DEMO_VENDOR_SLUG } from "@/lib/store/seed-data";
 import { MOMO_SIM_VALID_PIN } from "@/lib/momo/constants";
 import { DEFAULT_ORDER_HISTORY_PAGE_SIZE } from "@/lib/orders/history-filters";
+import { mintOwnerToken } from "@/lib/vendor/owner-token";
 
 /**
  * The single behavioral contract every Store adapter must satisfy. Tests cross
@@ -120,6 +121,150 @@ export function runStoreContract(
         expect(
           await store.updateVendor("no-such-vendor", { tagline: "x" })
         ).toBeNull();
+      });
+
+      it("createVendor persists onboarding fields and defaults payoutMethod", async () => {
+        const withoutPayout = await store.createVendor({
+          name: "Category Cafe",
+          slug: "category-cafe",
+          phoneNumber: "0788444444",
+          momoCode: "CAT001",
+          businessCategory: "Cafe",
+          description: "Cozy corner cafe",
+        });
+        expect(withoutPayout.businessCategory).toBe("Cafe");
+        expect(withoutPayout.description).toBe("Cozy corner cafe");
+        expect(withoutPayout.payoutMethod).toBe("MERCHANT_CODE");
+
+        const withPhone = await store.createVendor({
+          name: "Phone Payout Grill",
+          slug: "phone-payout-grill",
+          phoneNumber: "0788555555",
+          momoCode: "PHN001",
+          payoutMethod: "PHONE",
+        });
+        expect(withPhone.payoutMethod).toBe("PHONE");
+
+        const fetched = await store.getVendorBySlug("category-cafe");
+        expect(fetched?.businessCategory).toBe("Cafe");
+        expect(fetched?.payoutMethod).toBe("MERCHANT_CODE");
+      });
+
+      it("updateVendor patches logo, cover, description, and payoutMethod", async () => {
+        const created = await store.createVendor({
+          name: "Profile Fields Vendor",
+          slug: "profile-fields-vendor",
+          phoneNumber: "0788666666",
+          momoCode: "PFV001",
+        });
+
+        const updated = await store.updateVendor(created.slug, {
+          logoUrl: "https://cdn.example.com/logo.png",
+          coverImageUrl: "https://cdn.example.com/cover.png",
+          description: "Now with a description",
+          payoutMethod: "PHONE",
+        });
+        expect(updated?.logoUrl).toBe("https://cdn.example.com/logo.png");
+        expect(updated?.coverImageUrl).toBe("https://cdn.example.com/cover.png");
+        expect(updated?.description).toBe("Now with a description");
+        expect(updated?.payoutMethod).toBe("PHONE");
+
+        const fetched = await store.getVendorBySlug(created.slug);
+        expect(fetched?.logoUrl).toBe("https://cdn.example.com/logo.png");
+        expect(fetched?.payoutMethod).toBe("PHONE");
+      });
+    });
+
+    describe("owner token", () => {
+      it("stores an owner-token hash at create and reads it back without leaking on Vendor", async () => {
+        const minted = mintOwnerToken();
+        const created = await store.createVendor({
+          name: "Token Vendor",
+          slug: "token-vendor",
+          phoneNumber: "0788777777",
+          momoCode: "TKN001",
+          ownerTokenHash: minted.hash,
+        });
+
+        // The hash must never appear on the domain Vendor returned to callers.
+        expect(
+          (created as Record<string, unknown>).ownerTokenHash
+        ).toBeUndefined();
+
+        expect(await store.getVendorOwnerTokenHash("token-vendor")).toBe(
+          minted.hash
+        );
+      });
+
+      it("setVendorOwnerToken re-issues (rotates) the stored hash", async () => {
+        const first = mintOwnerToken();
+        await store.createVendor({
+          name: "Rotate Vendor",
+          slug: "rotate-vendor",
+          phoneNumber: "0788888888",
+          momoCode: "ROT001",
+          ownerTokenHash: first.hash,
+        });
+        expect(await store.getVendorOwnerTokenHash("rotate-vendor")).toBe(
+          first.hash
+        );
+
+        const second = mintOwnerToken();
+        const rotated = await store.setVendorOwnerToken(
+          "rotate-vendor",
+          second.hash
+        );
+        expect(rotated?.slug).toBe("rotate-vendor");
+        expect(
+          (rotated as Record<string, unknown>).ownerTokenHash
+        ).toBeUndefined();
+        expect(await store.getVendorOwnerTokenHash("rotate-vendor")).toBe(
+          second.hash
+        );
+      });
+
+      it("returns null hash for an unknown vendor and null when rotating one", async () => {
+        expect(await store.getVendorOwnerTokenHash("nope-vendor")).toBeNull();
+        expect(
+          await store.setVendorOwnerToken("nope-vendor", "deadbeef")
+        ).toBeNull();
+      });
+
+      it("the seeded demo vendor has an owner-token hash", async () => {
+        expect(await store.getVendorOwnerTokenHash(slug)).toBeTruthy();
+      });
+    });
+
+    describe("recovery events", () => {
+      it("records and lists recovery events newest-first", async () => {
+        const vendor = await store.getVendorBySlug(slug);
+        expect(vendor).not.toBeNull();
+        const vendorId = vendor!.id;
+
+        expect(await store.listRecoveryEvents(vendorId)).toEqual([]);
+
+        const first = await store.recordRecoveryEvent({
+          vendorId,
+          context: "first recovery",
+        });
+        expect(first.vendorId).toBe(vendorId);
+        expect(first.context).toBe("first recovery");
+        expect(first.at).toBeInstanceOf(Date);
+
+        const second = await store.recordRecoveryEvent({ vendorId });
+
+        const events = await store.listRecoveryEvents(vendorId);
+        expect(events).toHaveLength(2);
+        expect(events.map((e) => e.id)).toContain(first.id);
+        expect(events.map((e) => e.id)).toContain(second.id);
+        // Newest-first ordering.
+        expect(events[0].at.getTime()).toBeGreaterThanOrEqual(
+          events[1].at.getTime()
+        );
+      });
+
+      it("returns an empty list for a vendor with no recovery events", async () => {
+        expect(await store.listRecoveryEvents("unknown-vendor-id")).toEqual([]);
       });
     });
 

@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { PrismaClient } from "@prisma/client";
 
 import {
+  DEMO_OWNER_TOKEN_HASH,
   seedDrivers,
   seedMenuItems,
   seedOrders,
@@ -23,16 +24,30 @@ export async function seedDatabase(client: PrismaClient): Promise<void> {
 }
 
 async function seedDatabaseInner(client: PrismaClient): Promise<void> {
-  // Clear in dependency order. Cascades would handle children, but being
-  // explicit makes this a clean reset between contract-test runs.
+  const databaseUrl = process.env.DATABASE_URL ?? "";
+  const looksRemote =
+    /supabase\.co/i.test(databaseUrl) ||
+    /aws-0-.*\.pooler\.supabase\.com/i.test(databaseUrl);
+  if (looksRemote && process.env.SEED_ALLOW_REMOTE !== "1") {
+    throw new Error(
+      "Refusing to seed a remote Supabase database via the pooler. " +
+        "Point DATABASE_URL at local Postgres, or set SEED_ALLOW_REMOTE=1 " +
+        "if you intentionally mean to wipe that target."
+    );
+  }
+
+  // Clear in dependency order.
   await client.payment.deleteMany();
   await client.orderItem.deleteMany();
   await client.order.deleteMany();
   await client.driver.deleteMany();
   await client.menuImage.deleteMany();
   await client.menuItem.deleteMany();
+  await client.vendorRecoveryEvent.deleteMany();
   await client.vendor.deleteMany();
 
+  // No production vendor to back-fill (ADR-0022, decision 10): the demo vendor is
+  // simply re-seeded with a fresh (deterministic) owner token.
   const vendor = await client.vendor.create({
     data: {
       name: seedVendor.name,
@@ -45,6 +60,8 @@ async function seedDatabaseInner(client: PrismaClient): Promise<void> {
       location: seedVendor.location,
       deliveryTime: seedVendor.deliveryTime,
       rating: seedVendor.rating,
+      payoutMethod: seedVendor.payoutMethod,
+      ownerTokenHash: DEMO_OWNER_TOKEN_HASH,
       createdAt: seedVendor.createdAt,
     },
   });

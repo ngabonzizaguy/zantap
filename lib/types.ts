@@ -10,6 +10,12 @@ export type KitchenStage =
   | "OUT_FOR_DELIVERY"
   | "COMPLETED";
 
+/**
+ * How a Vendor prefers to receive MoMo payouts. Preference-only today (the sim
+ * behaviour is unchanged); real payout routing is deferred. See ADR-0022.
+ */
+export type PayoutMethod = "MERCHANT_CODE" | "PHONE";
+
 export interface Vendor {
   id: string;
   name: string;
@@ -21,7 +27,15 @@ export interface Vendor {
   location?: string;
   deliveryTime?: string;
   rating?: number;
+  businessCategory?: string;
+  payoutMethod: PayoutMethod;
+  logoUrl?: string;
+  coverImageUrl?: string;
+  description?: string;
   createdAt: Date;
+  // NOTE: ownerTokenHash is intentionally NOT on the domain Vendor — it is a
+  // server-only secret hash and must never be serialized to the browser. Read it
+  // via Store.getVendorOwnerTokenHash and compare with lib/vendor/owner-token.
 }
 
 export interface CreateVendorInput {
@@ -32,6 +46,12 @@ export interface CreateVendorInput {
   tagline?: string;
   location?: string;
   deliveryTime?: string;
+  businessCategory?: string;
+  payoutMethod?: PayoutMethod;
+  logoUrl?: string;
+  coverImageUrl?: string;
+  description?: string;
+  ownerTokenHash?: string;
 }
 
 export interface UpdateVendorInput {
@@ -42,6 +62,29 @@ export interface UpdateVendorInput {
   location?: string;
   deliveryTime?: string;
   rating?: number;
+  businessCategory?: string;
+  payoutMethod?: PayoutMethod;
+  logoUrl?: string;
+  coverImageUrl?: string;
+  description?: string;
+}
+
+/**
+ * A server-side log entry emitted each time a Vendor recovers their owner token
+ * (phone-based recovery, ADR-0022). Non-halting: recovery re-issues the token
+ * immediately and records this event so the future ZanTap admin panel
+ * (candidate #17) can run async verification. No admin UI consumes it yet.
+ */
+export interface VendorRecoveryEvent {
+  id: string;
+  vendorId: string;
+  at: Date;
+  context?: string;
+}
+
+export interface RecordRecoveryEventInput {
+  vendorId: string;
+  context?: string;
 }
 
 export interface MenuImage {
@@ -117,6 +160,8 @@ export interface Order {
   paidAt?: Date;
   orderItems: OrderItem[];
   createdAt: Date;
+  /** Last mutation time — used for KDS queue roll-off of completed tickets. */
+  updatedAt?: Date;
 }
 
 export interface Driver {

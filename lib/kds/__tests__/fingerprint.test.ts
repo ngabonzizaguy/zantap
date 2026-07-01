@@ -60,6 +60,17 @@ describe("fingerprintKdsSnapshot", () => {
     );
   });
 
+  it("changes when kitchen stage changes", () => {
+    const before = baseSnapshot();
+    const after = {
+      ...before,
+      orders: [{ ...before.orders[0], kitchenStage: "PREPARING" as const }],
+    };
+    expect(fingerprintKdsSnapshot(before)).not.toBe(
+      fingerprintKdsSnapshot(after)
+    );
+  });
+
   it("changes when today gross or kitchen flag changes", () => {
     const before = baseSnapshot();
     expect(fingerprintKdsSnapshot(before)).not.toBe(

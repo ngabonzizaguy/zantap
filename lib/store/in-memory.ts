@@ -15,9 +15,11 @@ import type {
   OrderStatus,
   Pagination,
   Payment,
+  RecordRecoveryEventInput,
   UpdateMenuItemInput,
   UpdateVendorInput,
   Vendor,
+  VendorRecoveryEvent,
 } from "@/lib/types";
 import type { ResettableStore } from "@/lib/store/types";
 import {
@@ -47,17 +49,31 @@ import {
   orderStatusForKitchenStage,
 } from "@/lib/kds/kitchen-stage";
 import {
+  DEMO_OWNER_TOKEN_HASH,
   seedDrivers,
   seedMenuItems,
   seedOrders,
   seedVendor,
 } from "@/lib/store/seed-data";
 import { normalizeVendorSlug } from "@/lib/vendor/slug";
+import { buildKdsSnapshotRevision } from "@/lib/kds/revision";
+import { filterKdsQueueOrders } from "@/lib/kds/visible-orders";
+import { startOfDayInTimezone } from "@/lib/orders/history-filters";
+
+/**
+ * Internal row shape: the domain Vendor plus the server-only owner-token hash.
+ * The hash is stripped in cloneVendor so it never crosses the Store seam.
+ */
+type StoredVendor = Vendor & { ownerTokenHash?: string };
 
 function cloneOrder(order: Order): Order {
+  const createdAt = new Date(order.createdAt);
   return {
     ...order,
-    createdAt: new Date(order.createdAt),
+    createdAt,
+    updatedAt: order.updatedAt
+      ? new Date(order.updatedAt)
+      : new Date(order.paidAt ?? createdAt),
     paidAt: order.paidAt ? new Date(order.paidAt) : undefined,
     orderItems: order.orderItems.map((item) => ({
       ...item,
@@ -92,7 +108,8 @@ export function createInMemoryStore(): ResettableStore {
   let menuImages: MenuImage[] = [];
   let orders: Order[] = [];
   let payments: Payment[] = [];
-  let vendors: Vendor[] = [];
+  let vendors: StoredVendor[] = [];
+  let recoveryEvents: VendorRecoveryEvent[] = [];
   let kitchenOpen = true;
   let orderCounter = 0;
   let orderItemCounter = 0;
@@ -100,9 +117,16 @@ export function createInMemoryStore(): ResettableStore {
   let menuItemCounter = 0;
   let menuImageCounter = 0;
   let vendorCounter = 0;
+  let recoveryEventCounter = 0;
 
-  function cloneVendor(vendor: Vendor): Vendor {
-    return { ...vendor, createdAt: new Date(vendor.createdAt) };
+  function cloneVendor(vendor: StoredVendor): Vendor {
+    // Strip the server-only owner-token hash — it must never leave the Store.
+    const { ownerTokenHash: _ownerTokenHash, ...rest } = vendor;
+    return { ...rest, createdAt: new Date(vendor.createdAt) };
+  }
+
+  function cloneRecoveryEvent(event: VendorRecoveryEvent): VendorRecoveryEvent {
+    return { ...event, at: new Date(event.at) };
   }
 
   function isActiveItem(item: MenuItem): boolean {
@@ -152,12 +176,16 @@ export function createInMemoryStore(): ResettableStore {
     menuImages = [];
     orders = seedOrders.map(cloneOrder);
     payments = [];
-    vendors = [cloneVendor(seedVendor)];
+    vendors = [
+      { ...seedVendor, ownerTokenHash: DEMO_OWNER_TOKEN_HASH },
+    ];
+    recoveryEvents = [];
     kitchenOpen = true;
     orderCounter = 0;
     orderItemCounter = 0;
     paymentCounter = 0;
     vendorCounter = 0;
+    recoveryEventCounter = 0;
   }
 
   load();
@@ -183,7 +211,7 @@ export function createInMemoryStore(): ResettableStore {
       throw new Error("Slug already taken");
     }
 
-    const vendor: Vendor = {
+    const vendor: StoredVendor = {
       id: `vendor_${++vendorCounter}_${Date.now()}`,
       name: input.name.trim(),
       slug: normalizedSlug,
@@ -193,6 +221,12 @@ export function createInMemoryStore(): ResettableStore {
       tagline: input.tagline,
       location: input.location,
       deliveryTime: input.deliveryTime,
+      businessCategory: input.businessCategory,
+      payoutMethod: input.payoutMethod ?? "MERCHANT_CODE",
+      logoUrl: input.logoUrl,
+      coverImageUrl: input.coverImageUrl,
+      description: input.description,
+      ownerTokenHash: input.ownerTokenHash,
       createdAt: new Date(),
     };
     vendors.push(vendor);
@@ -208,7 +242,7 @@ export function createInMemoryStore(): ResettableStore {
     if (index === -1) return null;
 
     const current = vendors[index];
-    const updated: Vendor = {
+    const updated: StoredVendor = {
       ...current,
       ...(input.name !== undefined ? { name: input.name } : {}),
       ...(input.phoneNumber !== undefined
@@ -221,9 +255,64 @@ export function createInMemoryStore(): ResettableStore {
         ? { deliveryTime: input.deliveryTime }
         : {}),
       ...(input.rating !== undefined ? { rating: input.rating } : {}),
+      ...(input.businessCategory !== undefined
+        ? { businessCategory: input.businessCategory }
+        : {}),
+      ...(input.payoutMethod !== undefined
+        ? { payoutMethod: input.payoutMethod }
+        : {}),
+      ...(input.logoUrl !== undefined ? { logoUrl: input.logoUrl } : {}),
+      ...(input.coverImageUrl !== undefined
+        ? { coverImageUrl: input.coverImageUrl }
+        : {}),
+      ...(input.description !== undefined
+        ? { description: input.description }
+        : {}),
     };
     vendors[index] = updated;
     return cloneVendor(updated);
+  }
+
+  async function getVendorOwnerTokenHash(
+    vendorSlug: string
+  ): Promise<string | null> {
+    const normalized = normalizeVendorSlug(vendorSlug);
+    const vendor = vendors.find((row) => row.slug === normalized);
+    return vendor?.ownerTokenHash ?? null;
+  }
+
+  async function setVendorOwnerToken(
+    vendorSlug: string,
+    ownerTokenHash: string
+  ): Promise<Vendor | null> {
+    const normalized = normalizeVendorSlug(vendorSlug);
+    const index = vendors.findIndex((row) => row.slug === normalized);
+    if (index === -1) return null;
+
+    vendors[index] = { ...vendors[index], ownerTokenHash };
+    return cloneVendor(vendors[index]);
+  }
+
+  async function recordRecoveryEvent(
+    input: RecordRecoveryEventInput
+  ): Promise<VendorRecoveryEvent> {
+    const event: VendorRecoveryEvent = {
+      id: `rec_${++recoveryEventCounter}_${Date.now()}`,
+      vendorId: input.vendorId,
+      context: input.context,
+      at: new Date(),
+    };
+    recoveryEvents.push(event);
+    return cloneRecoveryEvent(event);
+  }
+
+  async function listRecoveryEvents(
+    vendorId: string
+  ): Promise<VendorRecoveryEvent[]> {
+    return recoveryEvents
+      .filter((event) => event.vendorId === vendorId)
+      .map(cloneRecoveryEvent)
+      .sort((a, b) => b.at.getTime() - a.at.getTime());
   }
 
   async function getMenu(vendorSlug: string): Promise<MenuItem[]> {
@@ -533,6 +622,52 @@ export function createInMemoryStore(): ResettableStore {
     return all.filter((o) => o.status === "PAID" || o.status === "DISPATCHED");
   }
 
+  async function listKdsOrders(vendorSlug: string): Promise<Order[]> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return [];
+    return filterKdsQueueOrders(
+      orders.filter((o) => o.vendorId === vendor.id).map(cloneOrder)
+    ).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async function getKdsSnapshotRevision(vendorSlug: string): Promise<string> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return "missing";
+
+    const startOfToday = startOfDayInTimezone(new Date());
+    const queueOrders = filterKdsQueueOrders(
+      orders.filter((o) => o.vendorId === vendor.id)
+    );
+    const activeMenu = menuItems.filter(
+      (item) => item.vendorId === vendor.id && isActiveItem(item)
+    );
+    const todayGross = orders
+      .filter(
+        (o) =>
+          o.vendorId === vendor.id &&
+          o.createdAt >= startOfToday &&
+          (o.status === "PAID" ||
+            o.status === "DISPATCHED" ||
+            o.status === "COMPLETED")
+      )
+      .reduce((sum, o) => sum + o.totalAmount, 0);
+
+    return buildKdsSnapshotRevision({
+      orders: queueOrders.map((order) => ({
+        id: order.id,
+        status: order.status,
+        kitchenStage: order.kitchenStage,
+        totalAmount: order.totalAmount,
+      })),
+      menu: activeMenu.map((item) => ({
+        id: item.id,
+        isAvailable: item.isAvailable,
+      })),
+      todayGross,
+      kitchenOpen: kitchenOpen && vendor.isActive,
+    });
+  }
+
   function paymentForOrder(orderId: string): Payment | null {
     return payments.find((p) => p.orderId === orderId) ?? null;
   }
@@ -637,6 +772,7 @@ export function createInMemoryStore(): ResettableStore {
       totalAmount,
       status: "PENDING",
       createdAt: new Date(),
+      updatedAt: new Date(),
       orderItems,
     };
 
@@ -661,6 +797,7 @@ export function createInMemoryStore(): ResettableStore {
       status,
       ...(kitchenStage != null ? { kitchenStage } : {}),
       paidAt,
+      updatedAt: new Date(),
     };
     return cloneOrder(orders[index]);
   }
@@ -686,6 +823,7 @@ export function createInMemoryStore(): ResettableStore {
       ...current,
       kitchenStage: stage,
       ...(statusSideEffect ? { status: statusSideEffect } : {}),
+      updatedAt: new Date(),
     };
     return cloneOrder(orders[index]);
   }
@@ -863,6 +1001,10 @@ export function createInMemoryStore(): ResettableStore {
     isSlugAvailable,
     createVendor,
     updateVendor,
+    getVendorOwnerTokenHash,
+    setVendorOwnerToken,
+    recordRecoveryEvent,
+    listRecoveryEvents,
     getMenu,
     getAvailableMenu,
     getArchivedMenu,
@@ -882,6 +1024,8 @@ export function createInMemoryStore(): ResettableStore {
     setAllItemsAvailable,
     listOrders,
     listActiveOrders,
+    listKdsOrders,
+    getKdsSnapshotRevision,
     listOrdersFiltered,
     getOrder,
     createOrder,

@@ -10,6 +10,7 @@ import type {
   Prisma,
   PrismaClient,
   Vendor as PrismaVendor,
+  VendorRecoveryEvent as PrismaVendorRecoveryEvent,
 } from "@prisma/client";
 
 import { MOMO_SIM_VALID_PIN } from "@/lib/momo/constants";
@@ -47,16 +48,21 @@ import type {
   OrderStatus,
   Pagination,
   Payment,
+  PayoutMethod,
+  RecordRecoveryEventInput,
   UpdateMenuItemInput,
   UpdateVendorInput,
   Vendor,
+  VendorRecoveryEvent,
 } from "@/lib/types";
 import { normalizeVendorSlug } from "@/lib/vendor/slug";
 import { thumbGradientForId } from "@/lib/menu/gradients";
 import {
   normalizePagination,
   resolveDateRange,
+  startOfDayInTimezone,
 } from "@/lib/orders/history-filters";
+import { buildKdsSnapshotRevision } from "@/lib/kds/revision";
 import {
   validateCreateMenuItemInput,
   validateUpdateMenuItemInput,
@@ -84,6 +90,45 @@ const orderInclude = {
   orderItems: { include: { menuItem: { include: menuImageInclude } } },
 } satisfies Prisma.OrderInclude;
 
+/** KDS queue reads — line items need menu names, not full image galleries. */
+const kdsOrderInclude = {
+  orderItems: {
+    include: {
+      menuItem: {
+        select: {
+          id: true,
+          vendorId: true,
+          name: true,
+          description: true,
+          priceRwf: true,
+          imageUrl: true,
+          category: true,
+          isAvailable: true,
+          thumbFrom: true,
+          thumbTo: true,
+          archivedAt: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.OrderInclude;
+
+function kdsOrdersWhere(
+  vendorId: string,
+  ref: Date = new Date()
+): Prisma.OrderWhereInput {
+  const startOfToday = startOfDayInTimezone(ref);
+  return {
+    vendorId,
+    OR: [
+      { status: { in: ["PAID", "DISPATCHED"] } },
+      { status: "COMPLETED", updatedAt: { gte: startOfToday } },
+    ],
+  };
+}
+
 function mapVendor(vendor: PrismaVendor): Vendor {
   return {
     id: vendor.id,
@@ -96,7 +141,24 @@ function mapVendor(vendor: PrismaVendor): Vendor {
     location: vendor.location ?? undefined,
     deliveryTime: vendor.deliveryTime ?? undefined,
     rating: vendor.rating ?? undefined,
+    businessCategory: vendor.businessCategory ?? undefined,
+    payoutMethod: vendor.payoutMethod as PayoutMethod,
+    logoUrl: vendor.logoUrl ?? undefined,
+    coverImageUrl: vendor.coverImageUrl ?? undefined,
+    description: vendor.description ?? undefined,
     createdAt: vendor.createdAt,
+    // ownerTokenHash deliberately omitted — server-only (ADR-0022).
+  };
+}
+
+function mapRecoveryEvent(
+  event: PrismaVendorRecoveryEvent
+): VendorRecoveryEvent {
+  return {
+    id: event.id,
+    vendorId: event.vendorId,
+    context: event.context ?? undefined,
+    at: event.at,
   };
 }
 
@@ -167,6 +229,7 @@ function mapOrder(order: PrismaOrderWithItems): Order {
     kitchenStage: order.kitchenStage ?? undefined,
     paidAt: order.paidAt ?? undefined,
     createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
     orderItems: order.orderItems.map((item) => ({
       id: item.id,
       orderId: item.orderId,
@@ -235,6 +298,12 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
           tagline: input.tagline ?? null,
           location: input.location ?? null,
           deliveryTime: input.deliveryTime ?? null,
+          businessCategory: input.businessCategory ?? null,
+          payoutMethod: input.payoutMethod ?? "MERCHANT_CODE",
+          logoUrl: input.logoUrl ?? null,
+          coverImageUrl: input.coverImageUrl ?? null,
+          description: input.description ?? null,
+          ownerTokenHash: input.ownerTokenHash ?? null,
         },
       });
       return mapVendor(vendor);
@@ -266,6 +335,19 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
             ? { deliveryTime: input.deliveryTime }
             : {}),
           ...(input.rating !== undefined ? { rating: input.rating } : {}),
+          ...(input.businessCategory !== undefined
+            ? { businessCategory: input.businessCategory }
+            : {}),
+          ...(input.payoutMethod !== undefined
+            ? { payoutMethod: input.payoutMethod }
+            : {}),
+          ...(input.logoUrl !== undefined ? { logoUrl: input.logoUrl } : {}),
+          ...(input.coverImageUrl !== undefined
+            ? { coverImageUrl: input.coverImageUrl }
+            : {}),
+          ...(input.description !== undefined
+            ? { description: input.description }
+            : {}),
         },
       });
       return mapVendor(vendor);
@@ -273,6 +355,54 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       if (isNotFoundError(error)) return null;
       throw error;
     }
+  }
+
+  async function getVendorOwnerTokenHash(
+    vendorSlug: string
+  ): Promise<string | null> {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: normalizeVendorSlug(vendorSlug) },
+      select: { ownerTokenHash: true },
+    });
+    return vendor?.ownerTokenHash ?? null;
+  }
+
+  async function setVendorOwnerToken(
+    vendorSlug: string,
+    ownerTokenHash: string
+  ): Promise<Vendor | null> {
+    try {
+      const vendor = await client.vendor.update({
+        where: { slug: normalizeVendorSlug(vendorSlug) },
+        data: { ownerTokenHash },
+      });
+      return mapVendor(vendor);
+    } catch (error) {
+      if (isNotFoundError(error)) return null;
+      throw error;
+    }
+  }
+
+  async function recordRecoveryEvent(
+    input: RecordRecoveryEventInput
+  ): Promise<VendorRecoveryEvent> {
+    const event = await client.vendorRecoveryEvent.create({
+      data: {
+        vendorId: input.vendorId,
+        context: input.context ?? null,
+      },
+    });
+    return mapRecoveryEvent(event);
+  }
+
+  async function listRecoveryEvents(
+    vendorId: string
+  ): Promise<VendorRecoveryEvent[]> {
+    const events = await client.vendorRecoveryEvent.findMany({
+      where: { vendorId },
+      orderBy: { at: "desc" },
+    });
+    return events.map(mapRecoveryEvent);
   }
 
   async function getMenu(vendorSlug: string): Promise<MenuItem[]> {
@@ -707,6 +837,69 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     return orders.map(mapOrder);
   }
 
+  async function listKdsOrders(vendorSlug: string): Promise<Order[]> {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: vendorSlug },
+      select: { id: true },
+    });
+    if (!vendor) return [];
+
+    const orders = await client.order.findMany({
+      where: kdsOrdersWhere(vendor.id),
+      include: kdsOrderInclude,
+      orderBy: { createdAt: "desc" },
+    });
+    return orders.map(mapOrder);
+  }
+
+  async function getKdsSnapshotRevision(vendorSlug: string): Promise<string> {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: vendorSlug },
+      select: { id: true, kitchenOpen: true, isActive: true },
+    });
+    if (!vendor) return "missing";
+
+    const startOfToday = startOfDayInTimezone(new Date());
+
+    const [orderRows, menuRows, grossResult] = await Promise.all([
+      client.order.findMany({
+        where: kdsOrdersWhere(vendor.id),
+        select: {
+          id: true,
+          status: true,
+          kitchenStage: true,
+          totalAmount: true,
+        },
+        orderBy: { id: "asc" },
+      }),
+      client.menuItem.findMany({
+        where: { vendorId: vendor.id, archivedAt: null },
+        select: { id: true, isAvailable: true },
+        orderBy: { id: "asc" },
+      }),
+      client.order.aggregate({
+        where: {
+          vendorId: vendor.id,
+          createdAt: { gte: startOfToday },
+          status: { in: COUNTED_STATUSES },
+        },
+        _sum: { totalAmount: true },
+      }),
+    ]);
+
+    return buildKdsSnapshotRevision({
+      orders: orderRows.map((row) => ({
+        id: row.id,
+        status: row.status as OrderStatus,
+        kitchenStage: row.kitchenStage ?? undefined,
+        totalAmount: row.totalAmount,
+      })),
+      menu: menuRows,
+      todayGross: grossResult._sum.totalAmount ?? 0,
+      kitchenOpen: vendor.kitchenOpen && vendor.isActive,
+    });
+  }
+
   async function listOrdersFiltered(
     vendorSlug: string,
     filters: OrderHistoryFilters,
@@ -1087,6 +1280,10 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     isSlugAvailable,
     createVendor,
     updateVendor,
+    getVendorOwnerTokenHash,
+    setVendorOwnerToken,
+    recordRecoveryEvent,
+    listRecoveryEvents,
     getMenu,
     getAvailableMenu,
     getArchivedMenu,
@@ -1106,6 +1303,8 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     setAllItemsAvailable,
     listOrders,
     listActiveOrders,
+    listKdsOrders,
+    getKdsSnapshotRevision,
     listOrdersFiltered,
     getOrder,
     createOrder,
