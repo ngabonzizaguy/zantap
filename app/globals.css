@@ -69,7 +69,18 @@
  * regardless of Tailwind's output order, which is required because the repo's
  * `cn()` does not de-duplicate classes.
  */
-.kds-dark { color-scheme: dark; }
+/*
+ * Root paint: the token remaps below use a descendant combinator
+ * (`.kds-dark .bg-canvas`), so they do NOT recolor an element that carries
+ * `.kds-dark` and the token on the SAME node (e.g. the onboarding wizard's
+ * `<div class="kds-dark bg-canvas">`). Paint the root here so the dark surface
+ * covers the full viewport regardless of where the token sits.
+ */
+.kds-dark {
+  color-scheme: dark;
+  background-color: #0e0e10;
+  color: #f4f4f3;
+}
 
 /* Surfaces */
 .kds-dark .bg-canvas { background-color: #0e0e10; }
