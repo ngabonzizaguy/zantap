@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { Button, Card, Input } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
@@ -41,9 +42,7 @@ export function SetupDrawer({
   const titleId = useId();
   const panelRef = useRef<HTMLElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
-  const { token, setToken, hasToken, ready } = useOwnerToken(vendorSlug);
-  const [tokenDraft, setTokenDraft] = useState("");
-  const [tokenSaved, setTokenSaved] = useState(false);
+  const { token, hasToken } = useOwnerToken(vendorSlug);
   const [tipsReset, setTipsReset] = useState(false);
   const [taglineDraft, setTaglineDraft] = useState("");
   const [locationDraft, setLocationDraft] = useState("");
@@ -78,12 +77,6 @@ export function SetupDrawer({
   }, [open, onClose, onRefresh]);
 
   useEffect(() => {
-    if (open && ready) {
-      setTokenDraft(token ?? "");
-    }
-  }, [open, ready, token]);
-
-  useEffect(() => {
     if (!open) return;
     setTaglineDraft(profile.tagline ?? "");
     setLocationDraft(profile.location ?? "");
@@ -97,14 +90,6 @@ export function SetupDrawer({
     setProfileSaved(false);
   }, [open, profile]);
 
-  const handleSaveToken = () => {
-    const trimmed = tokenDraft.trim();
-    if (!trimmed) return;
-    setToken(trimmed);
-    setTokenSaved(true);
-    window.setTimeout(() => setTokenSaved(false), 2000);
-  };
-
   const handleShowTipsAgain = () => {
     resetCoachmarks();
     setTipsReset(true);
@@ -113,7 +98,9 @@ export function SetupDrawer({
 
   const handleSaveProfile = async () => {
     if (!token) {
-      setProfileError("Add your owner token below before updating profile.");
+      setProfileError(
+        "This device isn't unlocked. Recover access to edit your profile."
+      );
       return;
     }
 
@@ -152,7 +139,7 @@ export function SetupDrawer({
         error instanceof Error ? error.message : "Could not save profile.";
       setProfileError(
         message.toLowerCase().includes("owner token")
-          ? "Wrong owner token — update it below and try again."
+          ? "This device isn't unlocked. Recover access and try again."
           : message
       );
     } finally {
@@ -307,7 +294,14 @@ export function SetupDrawer({
               </Button>
               {!hasToken ? (
                 <p className="font-body text-body-sm text-muted">
-                  Add your owner token below to save profile changes.
+                  This device isn&apos;t unlocked yet. Use{" "}
+                  <Link
+                    href="/onboard?recover=1"
+                    className="text-primary underline underline-offset-2"
+                  >
+                    Recover access
+                  </Link>{" "}
+                  to edit your store.
                 </p>
               ) : null}
               {profileSaved ? (
@@ -328,30 +322,34 @@ export function SetupDrawer({
               Owner access
             </h3>
             <p className="mt-1 font-body text-body-sm text-muted">
-              Your owner token unlocks menu edits, photos, and exports. It is
-              issued automatically when you set up your store and kept on this
-              device only. Lost it on a new device? Recover it from your
-              storefront link, then paste it here.
+              Editing is unlocked automatically on the device you set up your
+              store with — there is no code to type. On a new device or after
+              clearing your browser, recover access with your storefront URL and
+              signup phone number.
             </p>
-            <div className="mt-4 flex flex-col gap-3">
-              <Input
-                label="Owner token"
-                type="password"
-                autoComplete="off"
-                value={tokenDraft}
-                onChange={(event) => setTokenDraft(event.target.value)}
-              />
-              <Button
-                size="default"
-                onClick={handleSaveToken}
-                disabled={!tokenDraft.trim()}
+            <div className="mt-4 flex flex-col gap-2">
+              <div
+                className={cn(
+                  "flex items-center gap-2 rounded-brand-md border px-3 py-2 font-body text-body-sm",
+                  hasToken
+                    ? "border-primary/40 text-primary"
+                    : "border-hairline text-muted"
+                )}
               >
-                {hasToken ? "Update token" : "Save token"}
-              </Button>
-              {tokenSaved ? (
-                <p className="font-body text-body-sm text-primary">
-                  Owner token saved on this device.
-                </p>
+                <span aria-hidden="true">{hasToken ? "🔓" : "🔒"}</span>
+                <span>
+                  {hasToken
+                    ? "This device is unlocked."
+                    : "This device is not unlocked."}
+                </span>
+              </div>
+              {!hasToken ? (
+                <Link
+                  href="/onboard?recover=1"
+                  className="inline-flex h-10 min-h-10 w-full items-center justify-center rounded-pill bg-primary px-5 font-body text-button font-medium text-on-primary transition-colors hover:bg-primary-active"
+                >
+                  Recover access
+                </Link>
               ) : null}
             </div>
           </section>

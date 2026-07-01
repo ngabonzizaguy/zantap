@@ -2,38 +2,37 @@
 
 import { useEffect, useState } from "react";
 import { checkSlugAvailable } from "@/lib/actions/vendor-provision";
+import { isValidVendorSlug, normalizeVendorSlug } from "@/lib/vendor/slug";
 import {
-  isValidVendorSlug,
-  normalizeVendorSlug,
-} from "@/lib/vendor/slug";
-import { Button, Input } from "@/components/ui/primitives";
-
-export interface BusinessFormValues {
-  name: string;
-  slug: string;
-  phoneNumber: string;
-  momoCode: string;
-}
+  BUSINESS_CATEGORIES,
+  COUNTRY_OPTIONS,
+} from "@/lib/vendor/onboard-options";
+import { Button } from "@/components/ui/primitives";
+import type { WizardData } from "@/components/onboard/types";
 
 type SlugAvailability = "idle" | "checking" | "available" | "taken" | "invalid";
 
 interface BusinessStepProps {
-  values: BusinessFormValues;
-  onChange: (values: BusinessFormValues) => void;
+  data: WizardData;
+  update: (patch: Partial<WizardData>) => void;
   slugManuallyEdited: boolean;
   onSlugManuallyEdited: () => void;
-  onBack?: () => void;
   onContinue: () => void;
 }
 
 const SLUG_DEBOUNCE_MS = 400;
+
+const fieldLabelClass =
+  "font-body text-body-sm font-medium text-ink";
+const fieldControlClass =
+  "h-12 w-full rounded-brand-md border border-hairline-strong bg-surface-card px-4 font-body text-body-md text-ink placeholder:text-muted-soft focus:border-primary focus:outline-none";
 
 function slugStatusMessage(status: SlugAvailability): string | null {
   switch (status) {
     case "checking":
       return "Checking availability…";
     case "available":
-      return "This URL is available";
+      return "Available!";
     case "taken":
       return "This URL is already taken";
     case "invalid":
@@ -56,7 +55,7 @@ function slugStatusClass(status: SlugAvailability): string {
       return "text-error";
     case "checking":
     case "idle":
-      return "text-muted-soft";
+      return "text-muted";
     default: {
       const _exhaustive: never = status;
       return _exhaustive;
@@ -65,29 +64,21 @@ function slugStatusClass(status: SlugAvailability): string {
 }
 
 export function BusinessStep({
-  values,
-  onChange,
+  data,
+  update,
   slugManuallyEdited,
   onSlugManuallyEdited,
-  onBack,
   onContinue,
 }: BusinessStepProps) {
-  const [origin, setOrigin] = useState("");
   const [slugStatus, setSlugStatus] = useState<SlugAvailability>("idle");
-
-  useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
-
-  const normalizedSlug = normalizeVendorSlug(values.slug);
+  const normalizedSlug = normalizeVendorSlug(data.slug);
 
   useEffect(() => {
     if (!normalizedSlug) {
       setSlugStatus("idle");
       return;
     }
-
-    if (!isValidVendorSlug(values.slug)) {
+    if (!isValidVendorSlug(data.slug)) {
       setSlugStatus("invalid");
       return;
     }
@@ -96,9 +87,7 @@ export function BusinessStep({
     let cancelled = false;
     const timer = window.setTimeout(() => {
       void checkSlugAvailable(normalizedSlug).then((available) => {
-        if (!cancelled) {
-          setSlugStatus(available ? "available" : "taken");
-        }
+        if (!cancelled) setSlugStatus(available ? "available" : "taken");
       });
     }, SLUG_DEBOUNCE_MS);
 
@@ -106,69 +95,76 @@ export function BusinessStep({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [normalizedSlug, values.slug]);
+  }, [normalizedSlug, data.slug]);
 
   const handleNameBlur = () => {
-    if (slugManuallyEdited || !values.name.trim()) return;
-    onChange({
-      ...values,
-      slug: normalizeVendorSlug(values.name),
-    });
+    if (slugManuallyEdited || !data.name.trim()) return;
+    update({ slug: normalizeVendorSlug(data.name) });
   };
 
   const canContinue =
-    values.name.trim().length > 0 &&
-    isValidVendorSlug(values.slug) &&
+    data.name.trim().length > 0 &&
     slugStatus === "available" &&
-    values.phoneNumber.trim().length > 0 &&
-    values.momoCode.trim().length > 0;
+    data.phoneLocal.trim().length >= 6;
 
   const statusMessage = slugStatusMessage(slugStatus);
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-display text-display-sm text-ink">
-          Your restaurant
-        </h2>
+        <h1 className="font-display text-display-md leading-tight text-ink">
+          Let&apos;s get your business essentials.
+        </h1>
         <p className="mt-2 font-body text-body-md text-muted">
-          This is what customers will see on your menu page.
+          This helps us create your storefront.
         </p>
       </div>
 
-      <Input
-        label="Restaurant name"
-        value={values.name}
-        onChange={(event) =>
-          onChange({ ...values, name: event.target.value })
-        }
-        onBlur={handleNameBlur}
-        placeholder="e.g. Sunrise Café"
-        maxLength={80}
-        autoComplete="organization"
-      />
-
-      <div className="flex flex-col gap-1.5">
-        <Input
-          label="Storefront URL"
-          value={values.slug}
-          onChange={(event) => {
-            onSlugManuallyEdited();
-            onChange({ ...values, slug: event.target.value });
-          }}
-          placeholder="sunrise-cafe"
-          autoComplete="off"
-          spellCheck={false}
+      <div className="flex flex-col gap-2">
+        <label htmlFor="biz-name" className={fieldLabelClass}>
+          Restaurant Name
+        </label>
+        <input
+          id="biz-name"
+          className={fieldControlClass}
+          value={data.name}
+          onChange={(event) => update({ name: event.target.value })}
+          onBlur={handleNameBlur}
+          placeholder="e.g. Inka Steakhouse"
+          maxLength={80}
+          autoComplete="organization"
         />
-        {origin && normalizedSlug ? (
-          <p className="font-body text-caption text-muted">
-            {origin}/{normalizedSlug}
-          </p>
-        ) : origin ? (
-          <p className="font-body text-caption text-muted-soft">
-            {origin}/your-restaurant
-          </p>
-        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label htmlFor="biz-slug" className={fieldLabelClass}>
+          Storefront URL
+        </label>
+        <div className="flex items-stretch overflow-hidden rounded-brand-md border border-hairline-strong bg-surface-card focus-within:border-primary">
+          <span className="flex items-center whitespace-nowrap border-r border-hairline-strong bg-surface-strong px-3 font-body text-body-sm text-muted">
+            zantap.ai/
+          </span>
+          <input
+            id="biz-slug"
+            className="h-12 min-w-0 flex-1 bg-transparent px-3 font-body text-body-md text-ink placeholder:text-muted-soft focus:outline-none"
+            value={data.slug}
+            onChange={(event) => {
+              onSlugManuallyEdited();
+              update({ slug: event.target.value });
+            }}
+            placeholder="inka-steakhouse"
+            autoComplete="off"
+            spellCheck={false}
+          />
+          {slugStatus === "available" ? (
+            <span
+              className="flex items-center pr-3 text-success"
+              aria-hidden="true"
+            >
+              ✓
+            </span>
+          ) : null}
+        </div>
         {statusMessage ? (
           <p
             className={`font-body text-caption ${slugStatusClass(slugStatus)}`}
@@ -179,52 +175,72 @@ export function BusinessStep({
         ) : null}
       </div>
 
-      <Input
-        label="Phone number"
-        type="tel"
-        value={values.phoneNumber}
-        onChange={(event) =>
-          onChange({ ...values, phoneNumber: event.target.value })
-        }
-        placeholder="0788 123 456"
-        autoComplete="tel"
-      />
+      <div className="flex flex-col gap-2">
+        <label htmlFor="biz-phone" className={fieldLabelClass}>
+          Phone Number
+        </label>
+        <div className="flex items-stretch gap-2">
+          <select
+            aria-label="Country code"
+            className="h-12 rounded-brand-md border border-hairline-strong bg-surface-card px-2 font-body text-body-md text-ink focus:border-primary focus:outline-none"
+            value={data.countryDialCode}
+            onChange={(event) => update({ countryDialCode: event.target.value })}
+          >
+            {COUNTRY_OPTIONS.map((country) => (
+              <option key={country.code} value={country.dialCode}>
+                {country.flag} {country.dialCode}
+              </option>
+            ))}
+          </select>
+          <input
+            id="biz-phone"
+            type="tel"
+            className={`${fieldControlClass} flex-1`}
+            value={data.phoneLocal}
+            onChange={(event) => update({ phoneLocal: event.target.value })}
+            placeholder="781 234 567"
+            autoComplete="tel-national"
+          />
+        </div>
+      </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Input
-          label="MoMo merchant code"
-          value={values.momoCode}
-          onChange={(event) =>
-            onChange({ ...values, momoCode: event.target.value })
-          }
-          placeholder="Your merchant ID"
-          autoComplete="off"
-        />
-        <p className="font-body text-caption text-muted-soft">
-          Used when live mobile money is enabled.
+      <div className="flex flex-col gap-2">
+        <label htmlFor="biz-category" className={fieldLabelClass}>
+          Business Category
+        </label>
+        <select
+          id="biz-category"
+          className={fieldControlClass}
+          value={data.businessCategory}
+          onChange={(event) => update({ businessCategory: event.target.value })}
+        >
+          {BUSINESS_CATEGORIES.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex items-start gap-3 rounded-brand-lg border border-primary/40 bg-primary/5 px-4 py-3">
+        <span className="text-primary" aria-hidden="true">
+          ★
+        </span>
+        <p className="font-body text-body-sm text-muted">
+          You can change everything later. This just gets you live faster.
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row">
-        {onBack ? (
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full sm:flex-1"
-            onClick={onBack}
-          >
-            Back
-          </Button>
-        ) : null}
-        <Button
-          type="button"
-          className="w-full sm:flex-1"
-          disabled={!canContinue}
-          onClick={onContinue}
-        >
-          Continue
-        </Button>
-      </div>
+      <Button
+        type="button"
+        size="kds"
+        radius="lg"
+        className="w-full"
+        disabled={!canContinue}
+        onClick={onContinue}
+      >
+        Continue →
+      </Button>
     </div>
   );
 }

@@ -1,11 +1,8 @@
-import { isProvisionEnabled } from "@/lib/vendor/is-provision-enabled";
 import { OnboardWizard } from "@/components/onboard/OnboardWizard";
-import { OperatorContact } from "@/components/onboard/OperatorContact";
 
+// Self-serve onboarding is open by default (ADR-0022/0024). There is no
+// provision-secret gate screen anymore; signup is closable server-side via the
+// PROVISION_KILL_SWITCH env brake enforced inside provisionVendor.
 export default function OnboardPage() {
-  if (!isProvisionEnabled()) {
-    return <OperatorContact />;
-  }
-
   return <OnboardWizard />;
 }

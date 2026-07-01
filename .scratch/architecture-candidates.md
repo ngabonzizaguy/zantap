@@ -63,7 +63,7 @@ If a session ends without doing both, the handoff is incomplete.
 | 13 | Ops / security hardening | Worth exploring | docs + infra | ⏸ Probe — deferred | — |
 | 14 | Storefront item customization modal (visual-only) | Owner request | customer UI only | ✅ Done · prod-smoked 2026-06-29 | `.scratch/storefront-customization-modal/PRD.md` |
 | 15 | Vendor onboarding (~1 min go-live) | Strong | Store + KDS + provisioning | ✅ Done · deployed · prod-smoked 2026-06-30 | `.scratch/vendor-onboarding/PRD.md` |
-| 16 | Onboarding redesign (dark, self-serve, owner token) | Owner request | Store + Prisma + onboarding + KDS Setup | 🚧 In progress · sliced into 4 issues · **Issue 1 (schema+Store+owner token) done 2026-07-01** · branch `feat/onboarding-redesign` | `.scratch/onboarding-redesign/PRD.md` |
+| 16 | Onboarding redesign (dark, self-serve, owner token) | Owner request | Store + Prisma + onboarding + KDS Setup | 🚧 In progress · sliced into 4 issues · **Issues 1–3 done 2026-07-01** (schema+Store+owner token; server actions + guard swap + recovery; dark wizard UI) · **Issue 4 (checklist) next** · branch `feat/onboarding-redesign` (not deployed) | `.scratch/onboarding-redesign/PRD.md` |
 | 17 | ZanTap operator/admin panel (vendor system-of-record + recovery verification) | Owner design | server + admin UI | ⏸ Deferred — owner design; consumes #16 recovery events | — |
 | 18 | Supabase pooler egress — KDS snapshot optimization | Strong | Store + KDS SSE | ✅ Done 2026-07-01 | `.scratch/pooler-egress-audit/issue-01-kds-snapshot-egress.md` |
 
@@ -147,7 +147,34 @@ owner-token helper (`lib/vendor/owner-token.ts` — mint/hash/verify). Migration
 `20260701150531_onboarding_redesign_vendor_fields` applied; demo vendor re-seeded with a fresh
 deterministic owner token (`DEMO_OWNER_TOKEN`). Both adapters + contract tests green; `npm run build`
 clean. Remote `#prisma` suite opt-in and stalled on Supabase Free pooler (schema push OK) — parity
-proven via the shared in-memory contract. **Next: Issue 2** (server actions + guard swap).
+proven via the shared in-memory contract.
+
+**Issue 2 done 2026-07-01** (server surface, no wizard redesign): `provisionVendor` is gate-free
+(dropped the required secret; optional `PROVISION_KILL_SWITCH` env brake + 10/60s rate limit),
+accepts `businessCategory`/`payoutMethod`, mints the owner token and returns the plaintext once.
+New `recoverOwnerToken(slug, phone)` — non-halting phone recovery that re-issues the token + logs a
+recovery event (5/60s per slug, generic miss). Owner-token guard (`lib/vendor/owner-token-guard.ts`,
+slug-bound) replaces `assertWriteSecret` across `vendor-menu`, media upload, `updateVendorProfile`,
+and the export route (`x-vendor-owner-token`). New `lib/vendor/{rate-limit,provision-gate,useOwnerToken}.ts`;
+KDS components moved onto `useOwnerToken` (cache by slug, never prompt). Deleted `write-secret.ts`,
+`provision-secret.ts`, `useWriteSecret.ts`, `WriteSecretPrompt.tsx` (+ their tests). `npm run build`
+clean; `npm test` 174 passed / 64 skipped. ADR-0024.
+
+**Issue 3 done 2026-07-01** (dark wizard UI, 7 surfaces): `/onboard` rebuilt as the `.kds-dark`,
+mobile-first self-serve wizard (`OnboardWizard` step machine + `WizardProgress` + `components/onboard/steps/*`):
+splash (role wheel) → business essentials (live slug availability, country picker, `businessCategory`) →
+payments (`payoutMethod` radio) → quick menu (first dish + category + optional photo + live preview) →
+review (editable cards) → You're Live (CSS confetti, storefront URL + copy, QR via `qrcode.react`,
+Share/Copy, Open Kitchen Dashboard). **Page gate removed** — `app/onboard/page.tsx` renders the wizard
+unconditionally; signup closable only via `PROVISION_KILL_SWITCH` (`PROVISION_SECRET` now has no code
+path). Deleted `GateStep`, `OperatorContact`, `is-provision-enabled.ts`, `useProvisionSecret.ts`,
+`FirstDishStep`, `SuccessStep`. On Go Live: `cacheOwnerToken`, then category + optional photo persisted
+**post-provision** via existing `updateMenuItem`/`uploadMenuImage` (decision 7 — no server change).
+**Recovery UI** — `RecoverAccessDialog` (slug + signup phone → `recoverOwnerToken`, auto-caches) from
+the splash + deep link `/onboard?recover=1`; the interim manual owner-token paste field in `SetupDrawer`
+is removed (lock chip + Recover link). `npm run build` clean; `npm test` 174 passed / 64 skipped.
+ADR-0025. **Next: Issue 4** (post-launch optional checklist — the "0 of 8" screen wiring into KDS Setup).
+Branch `feat/onboarding-redesign`, **not yet deployed**.
 
 ---
 

@@ -2,44 +2,57 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { provisionVendor } from "@/lib/actions/vendor-provision";
+import { updateMenuItem, uploadMenuImage } from "@/lib/actions/vendor-menu";
 import { cacheOwnerToken } from "@/lib/vendor/useOwnerToken";
-import { useProvisionSecret } from "@/lib/vendor/useProvisionSecret";
-import { Card } from "@/components/ui/primitives";
-import { GateStep } from "@/components/onboard/steps/GateStep";
 import {
-  BusinessStep,
-  type BusinessFormValues,
-} from "@/components/onboard/steps/BusinessStep";
-import {
-  FirstDishStep,
-  type FirstDishFormValues,
-} from "@/components/onboard/steps/FirstDishStep";
-import { SuccessStep } from "@/components/onboard/steps/SuccessStep";
+  BUSINESS_CATEGORIES,
+  DEFAULT_COUNTRY,
+  DEFAULT_MENU_CATEGORY,
+  MENU_CATEGORIES,
+} from "@/lib/vendor/onboard-options";
+import { WizardProgress } from "@/components/onboard/WizardProgress";
+import { RecoverAccessDialog } from "@/components/onboard/RecoverAccessDialog";
+import { SplashStep } from "@/components/onboard/steps/SplashStep";
+import { BusinessStep } from "@/components/onboard/steps/BusinessStep";
+import { PaymentsStep } from "@/components/onboard/steps/PaymentsStep";
+import { QuickMenuStep } from "@/components/onboard/steps/QuickMenuStep";
+import { ReviewStep } from "@/components/onboard/steps/ReviewStep";
+import { LiveStep } from "@/components/onboard/steps/LiveStep";
+import type { WizardData, WizardStep } from "@/components/onboard/types";
 
-type WizardStep = "gate" | "business" | "first-dish" | "success";
-
-const EMPTY_BUSINESS: BusinessFormValues = {
+const EMPTY_DATA: WizardData = {
   name: "",
   slug: "",
-  phoneNumber: "",
-  momoCode: "",
+  countryDialCode: DEFAULT_COUNTRY.dialCode,
+  phoneLocal: "",
+  businessCategory: BUSINESS_CATEGORIES[0],
+  payoutMethod: "MERCHANT_CODE",
+  merchantCode: "",
+  payoutPhone: "",
+  dishName: "",
+  dishPriceRwf: "",
+  dishCategory: MENU_CATEGORIES[0],
+  dishPhoto: null,
 };
 
-const EMPTY_DISH: FirstDishFormValues = {
-  name: "",
-  priceRwf: "",
-};
+/** Steps that render the "Step N of 6" progress header, in order. */
+const PROGRESS_STEPS: WizardStep[] = [
+  "business",
+  "payments",
+  "menu",
+  "review",
+];
 
 function provisionErrorMessage(error: unknown): string {
   if (error instanceof Error) {
-    if (
-      error.message.includes("provision secret") ||
-      error.message === "Invalid or missing provision secret"
-    ) {
-      return "Invalid setup code. Check with your operator and try again.";
-    }
-    if (error.message.includes("storefront URL is already taken")) {
+    if (error.message.includes("already taken")) {
       return "This storefront URL was just taken. Go back and choose another.";
+    }
+    if (error.message.toLowerCase().includes("temporarily closed")) {
+      return "Signups are paused right now. Please try again later.";
+    }
+    if (error.message.toLowerCase().includes("too many")) {
+      return "Too many attempts. Please wait a minute and try again.";
     }
     return error.message;
   }
@@ -47,138 +60,186 @@ function provisionErrorMessage(error: unknown): string {
 }
 
 export function OnboardWizard() {
-  const { secret, setSecret, ready, hasSecret } = useProvisionSecret();
-  const [step, setStep] = useState<WizardStep>("gate");
-  const [gateInput, setGateInput] = useState("");
-  const [business, setBusiness] = useState<BusinessFormValues>(EMPTY_BUSINESS);
+  const [step, setStep] = useState<WizardStep>("splash");
+  const [data, setData] = useState<WizardData>(EMPTY_DATA);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
-  const [dish, setDish] = useState<FirstDishFormValues>(EMPTY_DISH);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [createdSlug, setCreatedSlug] = useState("");
-  const [createdName, setCreatedName] = useState("");
+  const [recoverOpen, setRecoverOpen] = useState(false);
+  const [created, setCreated] = useState<{
+    slug: string;
+    name: string;
+  } | null>(null);
 
+  const update = useCallback((patch: Partial<WizardData>) => {
+    setData((current) => ({ ...current, ...patch }));
+  }, []);
+
+  // Deep link from the KDS Setup drawer (/onboard?recover=1) opens recovery
+  // directly. Read from the URL (client-only) to avoid a Suspense boundary.
   useEffect(() => {
-    if (!ready) return;
-    if (hasSecret) {
-      setGateInput((current) => current || secret || "");
-      setStep((current) => (current === "gate" ? "business" : current));
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("recover") === "1") {
+      setRecoverOpen(true);
     }
-  }, [ready, hasSecret, secret]);
+  }, []);
 
-  const handleGateContinue = useCallback(() => {
-    setSecret(gateInput);
-    setStep("business");
-  }, [gateInput, setSecret]);
-
-  const handleProvision = useCallback(async () => {
-    if (!secret) {
-      setSubmitError("Setup code missing. Go back and enter your code.");
-      setStep("gate");
-      return;
-    }
-
-    const priceRwf = Number.parseInt(dish.priceRwf, 10);
+  const handleGoLive = useCallback(async () => {
     setSubmitting(true);
     setSubmitError(null);
+
+    const momoCode =
+      data.payoutMethod === "MERCHANT_CODE"
+        ? data.merchantCode.trim()
+        : data.payoutPhone.trim();
+    const priceRwf = Number.parseInt(data.dishPriceRwf, 10);
 
     try {
       const result = await provisionVendor(
         {
-          name: business.name,
-          slug: business.slug,
-          phoneNumber: business.phoneNumber,
-          momoCode: business.momoCode,
+          name: data.name,
+          slug: data.slug,
+          phoneNumber: `${data.countryDialCode} ${data.phoneLocal}`.trim(),
+          momoCode,
+          businessCategory: data.businessCategory,
+          payoutMethod: data.payoutMethod,
         },
-        {
-          name: dish.name,
-          priceRwf,
-        }
+        { name: data.dishName, priceRwf }
       );
+
       // Owner token is returned exactly once — cache it (keyed by slug) so the
-      // new vendor can immediately edit their menu without ever typing it.
+      // new vendor edits their store with zero typing (ADR-0022).
       cacheOwnerToken(result.vendor.slug, result.ownerToken);
-      setCreatedSlug(result.vendor.slug);
-      setCreatedName(result.vendor.name);
-      setStep("success");
+
+      // Post-provision finalize (decision 7): the starter item is created with
+      // the default category and no photo. Persist the chosen category and the
+      // optional first-dish photo now, keyed to the new item and owner token.
+      // Non-fatal: the store is already live if these fail.
+      if (result.menuItem) {
+        const itemId = result.menuItem.id;
+        if (
+          data.dishCategory &&
+          data.dishCategory !== DEFAULT_MENU_CATEGORY
+        ) {
+          try {
+            await updateMenuItem(result.ownerToken, result.vendor.slug, itemId, {
+              category: data.dishCategory,
+            });
+          } catch {
+            // leave as default category — vendor can fix it in KDS
+          }
+        }
+        if (data.dishPhoto) {
+          try {
+            const formData = new FormData();
+            formData.append("file", data.dishPhoto);
+            await uploadMenuImage(
+              result.ownerToken,
+              result.vendor.slug,
+              itemId,
+              formData
+            );
+          } catch {
+            // non-fatal — photo can be added from the KDS menu tab
+          }
+        }
+      }
+
+      setCreated({ slug: result.vendor.slug, name: result.vendor.name });
+      setStep("live");
     } catch (error) {
       setSubmitError(provisionErrorMessage(error));
     } finally {
       setSubmitting(false);
     }
-  }, [secret, business, dish]);
+  }, [data]);
 
-  const stepNumber =
-    step === "gate"
-      ? 1
-      : step === "business"
-        ? 2
-        : step === "first-dish"
-          ? 3
-          : 3;
-
-  const showProgress = step !== "success";
+  const progressCurrent = PROGRESS_STEPS.indexOf(step) + 1;
+  const showProgress = progressCurrent > 0;
+  const storefrontPath = created ? `/${created.slug}` : "/";
+  const storefrontUrl =
+    created && typeof window !== "undefined"
+      ? `${window.location.origin}/${created.slug}`
+      : storefrontPath;
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-lg">
-        <header className="mb-8 text-center">
-          <p className="font-body text-caption uppercase tracking-wider text-muted-soft">
-            ZanTap
-          </p>
-          <h1 className="mt-2 font-display text-display-md text-ink">
-            Set up your restaurant
-          </h1>
-          {showProgress ? (
-            <p className="mt-2 font-body text-body-sm text-muted">
-              Step {stepNumber} of 3
-            </p>
-          ) : null}
-        </header>
-
-        <Card padding="lg">
-          {step === "gate" ? (
-            <GateStep
-              value={gateInput}
-              onChange={setGateInput}
-              onContinue={handleGateContinue}
-            />
-          ) : null}
-
-          {step === "business" ? (
-            <BusinessStep
-              values={business}
-              onChange={setBusiness}
-              slugManuallyEdited={slugManuallyEdited}
-              onSlugManuallyEdited={() => setSlugManuallyEdited(true)}
-              onBack={
-                hasSecret
-                  ? () => {
-                      setGateInput(secret ?? "");
-                      setStep("gate");
-                    }
-                  : undefined
+    <div className="kds-dark min-h-screen bg-canvas text-ink">
+      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 py-8">
+        {showProgress ? (
+          <WizardProgress
+            current={progressCurrent}
+            onBack={() => {
+              const index = PROGRESS_STEPS.indexOf(step);
+              setSubmitError(null);
+              if (index <= 0) {
+                setStep("splash");
+              } else {
+                setStep(PROGRESS_STEPS[index - 1]);
               }
-              onContinue={() => setStep("first-dish")}
-            />
-          ) : null}
+            }}
+          />
+        ) : null}
 
-          {step === "first-dish" ? (
-            <FirstDishStep
-              values={dish}
-              onChange={setDish}
-              onBack={() => setStep("business")}
-              onSubmit={() => void handleProvision()}
-              submitting={submitting}
-              error={submitError}
-            />
-          ) : null}
+        {step === "splash" ? (
+          <SplashStep
+            onGetStarted={() => setStep("business")}
+            onRecoverAccess={() => setRecoverOpen(true)}
+          />
+        ) : null}
 
-          {step === "success" ? (
-            <SuccessStep slug={createdSlug} vendorName={createdName} />
-          ) : null}
-        </Card>
+        {step === "business" ? (
+          <BusinessStep
+            data={data}
+            update={update}
+            slugManuallyEdited={slugManuallyEdited}
+            onSlugManuallyEdited={() => setSlugManuallyEdited(true)}
+            onContinue={() => setStep("payments")}
+          />
+        ) : null}
+
+        {step === "payments" ? (
+          <PaymentsStep
+            data={data}
+            update={update}
+            onContinue={() => setStep("menu")}
+          />
+        ) : null}
+
+        {step === "menu" ? (
+          <QuickMenuStep
+            data={data}
+            update={update}
+            onContinue={() => setStep("review")}
+          />
+        ) : null}
+
+        {step === "review" ? (
+          <ReviewStep
+            data={data}
+            onEdit={(target) => {
+              setSubmitError(null);
+              setStep(target);
+            }}
+            onGoLive={() => void handleGoLive()}
+            submitting={submitting}
+            error={submitError}
+          />
+        ) : null}
+
+        {step === "live" && created ? (
+          <LiveStep
+            vendorName={created.name}
+            slug={created.slug}
+            storefrontUrl={storefrontUrl}
+            storefrontPath={storefrontPath}
+          />
+        ) : null}
       </div>
+
+      <RecoverAccessDialog
+        open={recoverOpen}
+        onClose={() => setRecoverOpen(false)}
+      />
     </div>
   );
 }

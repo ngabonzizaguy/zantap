@@ -121,3 +121,43 @@
 }
 .kds-dark input::placeholder,
 .kds-dark textarea::placeholder { color: #6f6f76; }
+
+/*
+ * Onboarding wizard motion (Issue 3, candidate #16). Confetti + icon glow for
+ * the "You're Live" celebration and a gentle pulse for the splash role wheel
+ * dots. All motion is disabled under prefers-reduced-motion.
+ */
+@keyframes zt-confetti-fall {
+  0% { transform: translate3d(0, -10%, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translate3d(var(--zt-confetti-x, 0), 120vh, 0) rotate(720deg); opacity: 0; }
+}
+
+@keyframes zt-live-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 166, 35, 0); }
+  50% { box-shadow: 0 0 48px 6px rgba(245, 166, 35, 0.45); }
+}
+
+.zt-confetti-piece {
+  position: absolute;
+  top: 0;
+  width: 9px;
+  height: 14px;
+  border-radius: 2px;
+  will-change: transform, opacity;
+  animation: zt-confetti-fall var(--zt-confetti-duration, 2.6s) ease-in var(--zt-confetti-delay, 0s) forwards;
+}
+
+.zt-live-glow {
+  animation: zt-live-glow 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zt-confetti-piece,
+  .zt-live-glow {
+    animation: none;
+  }
+  .zt-confetti-piece {
+    opacity: 0;
+  }
+}
