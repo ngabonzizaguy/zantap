@@ -119,7 +119,7 @@ export function SplashStep({ onGetStarted, onRecoverAccess }: SplashStepProps) {
         <button
           type="button"
           onClick={onRecoverAccess}
-          className="font-body text-body-sm text-muted underline-offset-4 transition-colors hover:text-ink hover:underline"
+          className="inline-flex h-11 w-full items-center justify-center rounded-brand-lg border border-gold/50 bg-gold/10 font-body text-body-sm font-medium text-gold transition-colors hover:border-gold hover:bg-gold/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
         >
           Already have a store? Recover access
         </button>

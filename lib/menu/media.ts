@@ -102,6 +102,17 @@ export function buildMenuBlobPathname(
   return `menu/${vendorSlug}/${itemId}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
 }
 
+export type BrandingImageField = "logo" | "cover";
+
+export function buildBrandingBlobPathname(
+  vendorSlug: string,
+  field: BrandingImageField,
+  mime: string
+): string {
+  const ext = extensionForMime(mime);
+  return `branding/${vendorSlug}/${field}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
+}
+
 export function pickNextPrimaryImage(
   images: MenuImage[],
   excludeId?: string

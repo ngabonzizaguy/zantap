@@ -100,7 +100,7 @@ export function LiveStep({
         </div>
       </div>
 
-      <StorefrontQr url={storefrontUrl} />
+      <StorefrontQr url={storefrontUrl} slug={slug} showActions />
 
       <div className="flex w-full gap-3">
         <button

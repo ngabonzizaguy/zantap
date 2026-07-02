@@ -627,6 +627,33 @@ export function runStoreContract(
       });
     });
 
+    describe("yesterday's gross", () => {
+      it("does not include today's paid orders", async () => {
+        const yesterdayBaseline = await store.getYesterdayGross(slug);
+        const todayBaseline = await store.getTodayGross(slug);
+
+        const created = await placeOrderFromMenu();
+        await store.updateOrderStatus(created.id, "PAID");
+
+        expect(await store.getYesterdayGross(slug)).toBe(yesterdayBaseline);
+        expect(await store.getTodayGross(slug)).toBe(
+          todayBaseline + created.totalAmount
+        );
+      });
+
+      it("uses the same counted statuses as today's gross", async () => {
+        const baseline = await store.getYesterdayGross(slug);
+        const created = await placeOrderFromMenu();
+
+        expect(await store.getYesterdayGross(slug)).toBe(baseline);
+
+        await store.updateOrderStatus(created.id, "PAID");
+        const todayAfterPay = await store.getTodayGross(slug);
+        expect(await store.getYesterdayGross(slug)).toBe(baseline);
+        expect(todayAfterPay).toBeGreaterThan(baseline);
+      });
+    });
+
     describe("drivers", () => {
       it("lists the seeded drivers for the vendor", async () => {
         const drivers = await store.getDrivers(slug);

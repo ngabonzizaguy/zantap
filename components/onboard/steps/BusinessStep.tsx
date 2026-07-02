@@ -5,9 +5,10 @@ import { checkSlugAvailable } from "@/lib/actions/vendor-provision";
 import { isValidVendorSlug, normalizeVendorSlug } from "@/lib/vendor/slug";
 import {
   BUSINESS_CATEGORIES,
-  COUNTRY_OPTIONS,
+  DIAL_CODE_SELECT_OPTIONS,
 } from "@/lib/vendor/onboard-options";
-import { Button } from "@/components/ui/primitives";
+import { Button, Select } from "@/components/ui/primitives";
+import { getDisplayHostPrefix } from "@/lib/base-url";
 import type { WizardData } from "@/components/onboard/types";
 
 type SlugAvailability = "idle" | "checking" | "available" | "taken" | "invalid";
@@ -108,6 +109,7 @@ export function BusinessStep({
     data.phoneLocal.trim().length >= 6;
 
   const statusMessage = slugStatusMessage(slugStatus);
+  const hostPrefix = getDisplayHostPrefix();
 
   return (
     <div className="flex flex-col gap-6">
@@ -142,7 +144,7 @@ export function BusinessStep({
         </label>
         <div className="flex items-stretch overflow-hidden rounded-brand-md border border-hairline-strong bg-surface-card focus-within:border-primary">
           <span className="flex items-center whitespace-nowrap border-r border-hairline-strong bg-surface-strong px-3 font-body text-body-sm text-muted">
-            zantap.ai/
+            {hostPrefix}
           </span>
           <input
             id="biz-slug"
@@ -180,18 +182,14 @@ export function BusinessStep({
           Phone Number
         </label>
         <div className="flex items-stretch gap-2">
-          <select
-            aria-label="Country code"
-            className="h-12 rounded-brand-md border border-hairline-strong bg-surface-card px-2 font-body text-body-md text-ink focus:border-primary focus:outline-none"
+          <Select
+            ariaLabel="Country code"
             value={data.countryDialCode}
-            onChange={(event) => update({ countryDialCode: event.target.value })}
-          >
-            {COUNTRY_OPTIONS.map((country) => (
-              <option key={country.code} value={country.dialCode}>
-                {country.flag} {country.dialCode}
-              </option>
-            ))}
-          </select>
+            onChange={(dialCode) => update({ countryDialCode: dialCode })}
+            options={DIAL_CODE_SELECT_OPTIONS}
+            className="shrink-0"
+            triggerClassName="h-12 w-[6.75rem] px-2"
+          />
           <input
             id="biz-phone"
             type="tel"
@@ -202,6 +200,10 @@ export function BusinessStep({
             autoComplete="tel-national"
           />
         </div>
+        <p className="font-body text-caption text-muted">
+          Used for customer contact, account recovery, and your storefront call
+          button.
+        </p>
       </div>
 
       <div className="flex flex-col gap-2">

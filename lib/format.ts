@@ -1,3 +1,5 @@
+import { COUNTRY_OPTIONS, DEFAULT_COUNTRY } from "@/lib/vendor/onboard-options";
+
 export function formatRwf(amount: number): string {
   return `${amount.toLocaleString("en-US")} RWF`;
 }
@@ -12,6 +14,66 @@ export function formatPhoneDisplay(phone: string): string {
 
 export function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, "");
+}
+
+/** Dial codes (digits only), longest first — avoids +1 matching before +44, etc. */
+const DIAL_CODES_DESC = [...COUNTRY_OPTIONS]
+  .map((country) => normalizePhone(country.dialCode))
+  .sort((a, b) => b.length - a.length);
+
+const DEFAULT_DIAL_CODE = normalizePhone(DEFAULT_COUNTRY.dialCode);
+
+function inferDialCodeDigits(digits: string): string | undefined {
+  for (const code of DIAL_CODES_DESC) {
+    if (!digits.startsWith(code)) continue;
+    const national = digits.slice(code.length);
+    if (national.length >= 7 && national.length <= 12) {
+      return code;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Canonicalize a phone to E.164 digits (no leading +) for comparison. Handles
+ * local (`07…`), national (`2507…`), and intl (`+2507…`) forms. Scoped to
+ * recovery matching (ADR-0029) — does not replace `normalizePhone` elsewhere.
+ */
+export function canonicalizePhone(
+  raw: string,
+  defaultDialCode: string = DEFAULT_DIAL_CODE
+): string {
+  const digits = normalizePhone(raw);
+  if (!digits) return "";
+
+  const fallbackCode = normalizePhone(defaultDialCode) || DEFAULT_DIAL_CODE;
+
+  const inferred = inferDialCodeDigits(digits);
+  if (inferred) {
+    return digits;
+  }
+
+  if (digits.startsWith("0") && digits.length >= 9) {
+    return fallbackCode + digits.slice(1);
+  }
+
+  return digits;
+}
+
+/** Compare signup/business phones for owner-token recovery (ADR-0029). */
+export function phonesMatchForRecovery(stored: string, entered: string): boolean {
+  const storedDigits = normalizePhone(stored);
+  const enteredDigits = normalizePhone(entered);
+  if (!storedDigits || !enteredDigits) return false;
+
+  const dialCode =
+    inferDialCodeDigits(storedDigits) ??
+    inferDialCodeDigits(enteredDigits) ??
+    DEFAULT_DIAL_CODE;
+
+  return (
+    canonicalizePhone(stored, dialCode) === canonicalizePhone(entered, dialCode)
+  );
 }
 
 export function orderDisplayId(id: string): string {

@@ -10,16 +10,19 @@ export async function fetchKdsSnapshot(
   vendorSlug: string
 ): Promise<KdsSnapshot> {
   const store = getStore();
-  const [orders, menu, todayGross, kitchenOpen] = await Promise.all([
-    store.listKdsOrders(vendorSlug),
-    store.getMenu(vendorSlug),
-    store.getTodayGross(vendorSlug),
-    store.isKitchenOpen(vendorSlug),
-  ]);
+  const [orders, menu, todayGross, yesterdayGross, kitchenOpen] =
+    await Promise.all([
+      store.listKdsOrders(vendorSlug),
+      store.getMenu(vendorSlug),
+      store.getTodayGross(vendorSlug),
+      store.getYesterdayGross(vendorSlug),
+      store.isKitchenOpen(vendorSlug),
+    ]);
   return {
     orders,
     menu,
     todayGross,
+    yesterdayGross,
     kitchenOpen,
   };
 }

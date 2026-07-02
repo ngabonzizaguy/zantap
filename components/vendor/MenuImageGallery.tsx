@@ -146,7 +146,7 @@ export function MenuImageGallery({
               <img
                 src={image.url}
                 alt=""
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover object-center"
                 draggable={false}
               />
               <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-ink/55 p-1">

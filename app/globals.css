@@ -131,6 +131,16 @@
 .kds-dark .bg-primary\/10 { background-color: rgba(245, 166, 35, 0.12); }
 .kds-dark .bg-primary\/5 { background-color: rgba(245, 166, 35, 0.08); }
 
+/* Golden-yellow recover-access accent (D5) — distinct from primary CTAs */
+.kds-dark .text-gold { color: #ffd24c; }
+.kds-dark .border-gold { border-color: #ffd24c; }
+.kds-dark .border-gold\/50 { border-color: rgba(255, 210, 76, 0.5); }
+.kds-dark .bg-gold\/10 { background-color: rgba(255, 210, 76, 0.12); }
+.kds-dark .bg-gold\/20 { background-color: rgba(255, 210, 76, 0.2); }
+.kds-dark .hover\:border-gold:hover { border-color: #ffd24c; }
+.kds-dark .hover\:bg-gold\/20:hover { background-color: rgba(255, 210, 76, 0.2); }
+.kds-dark .focus-visible\:outline-gold:focus-visible { outline-color: #ffd24c; }
+
 /* Semantic status text brightened for dark surfaces */
 .kds-dark .text-success { color: #34d399; }
 .kds-dark .text-error { color: #f87171; }

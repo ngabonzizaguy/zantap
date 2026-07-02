@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import type { MenuImage, MenuItem } from "@/lib/types";
 import { formatRwf } from "@/lib/format";
-import { Button, Input, Modal } from "@/components/ui/primitives";
+import { Button, Combobox, Input, Modal } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 import { MenuImageGallery } from "@/components/vendor/MenuImageGallery";
 
@@ -150,33 +150,17 @@ export function MenuItemModal({
             placeholder="Optional — ingredients, portion size…"
           />
         </div>
-        <div className="flex w-full flex-col gap-1.5">
-          <label
-            htmlFor={`${listId}-category`}
-            className="font-body text-body-sm font-medium text-ink"
-          >
-            Category
-          </label>
-          <input
-            id={`${listId}-category`}
-            list={`${listId}-categories`}
-            value={values.category}
-            onChange={(event) =>
-              setValues((prev) => ({ ...prev, category: event.target.value }))
-            }
-            disabled={saving}
-            className={cn(
-              "h-11 min-h-11 w-full rounded-brand-md border border-hairline-strong bg-surface-card px-4 font-body text-body-md text-ink",
-              "placeholder:text-muted-soft focus:border-2 focus:border-ink focus:px-[15px] focus:outline-none"
-            )}
-            placeholder="General"
-          />
-          <datalist id={`${listId}-categories`}>
-            {suggestions.map((category) => (
-              <option key={category} value={category} />
-            ))}
-          </datalist>
-        </div>
+        <Combobox
+          id={`${listId}-category`}
+          label="Category"
+          value={values.category}
+          onChange={(category) =>
+            setValues((prev) => ({ ...prev, category }))
+          }
+          suggestions={suggestions}
+          disabled={saving}
+          placeholder="General"
+        />
         {mode === "edit" && item && ownerToken ? (
           <MenuImageGallery
             vendorSlug={vendorSlug}

@@ -20,7 +20,10 @@ import {
   orderDisplayId,
 } from "@/lib/format";
 import { Badge, Button, Card } from "@/components/ui/primitives";
-import { OrderHistoryFilters as OrderHistoryFiltersBar } from "@/components/vendor/OrderHistoryFilters";
+import {
+  OrderHistoryFilters as OrderHistoryFiltersBar,
+  type DatePreset,
+} from "@/components/vendor/OrderHistoryFilters";
 import { cn } from "@/lib/cn";
 
 interface HistoryPanelProps {
@@ -118,6 +121,23 @@ export function HistoryPanel({ vendorSlug }: HistoryPanelProps) {
     setPage(1);
   };
 
+  const handleDatePresetApply = (preset: DatePreset) => {
+    const nextApplied = {
+      ...appliedFilters,
+      datePreset: preset,
+      dateFrom: undefined,
+      dateTo: undefined,
+    };
+    setAppliedFilters(nextApplied);
+    setFilters((prev) => ({
+      ...prev,
+      datePreset: preset,
+      dateFrom: undefined,
+      dateTo: undefined,
+    }));
+    setPage(1);
+  };
+
   const handleExport = async (format: "csv" | "xlsx") => {
     if (!token) {
       setExportError(
@@ -177,6 +197,7 @@ export function HistoryPanel({ vendorSlug }: HistoryPanelProps) {
           <OrderHistoryFiltersBar
             filters={filters}
             onChange={setFilters}
+            onDatePresetApply={handleDatePresetApply}
             onApply={applyFilters}
             loading={loading}
           />

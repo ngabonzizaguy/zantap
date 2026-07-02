@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { recoverOwnerToken } from "@/lib/actions/vendor-provision";
+import { getDisplayHostPrefix } from "@/lib/base-url";
 import { cacheOwnerToken } from "@/lib/vendor/useOwnerToken";
 import { normalizeVendorSlug } from "@/lib/vendor/slug";
 import { Button } from "@/components/ui/primitives";
@@ -31,6 +32,7 @@ export function RecoverAccessDialog({ open, onClose }: RecoverAccessDialogProps)
   const normalizedSlug = normalizeVendorSlug(slug);
   const canSubmit =
     normalizedSlug.length > 0 && phone.trim().length >= 6 && !submitting;
+  const hostPrefix = getDisplayHostPrefix();
 
   const handleClose = () => {
     setSlug("");
@@ -136,7 +138,7 @@ export function RecoverAccessDialog({ open, onClose }: RecoverAccessDialogProps)
               </label>
               <div className="flex items-stretch overflow-hidden rounded-brand-md border border-hairline-strong bg-surface-card focus-within:border-primary">
                 <span className="flex items-center whitespace-nowrap border-r border-hairline-strong bg-surface-strong px-3 font-body text-body-sm text-muted">
-                  zantap.ai/
+                  {hostPrefix}
                 </span>
                 <input
                   id="recover-slug"

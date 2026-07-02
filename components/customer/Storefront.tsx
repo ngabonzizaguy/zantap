@@ -14,15 +14,22 @@ import type { CustomizationSelection } from "@/lib/menu/customization";
 import { useCheckout } from "@/lib/checkout/useCheckout";
 import { UssdModal } from "@/components/customer/UssdModal";
 import { SuccessReceipt } from "@/components/customer/SuccessReceipt";
+import { BackToKdsChip } from "@/components/customer/BackToKdsChip";
 import { CartProvider, useCart } from "@/components/customer/CartContext";
 
 interface StorefrontProps {
   vendor: Vendor;
   menu: MenuItem[];
   categories: string[];
+  fromKds?: boolean;
 }
 
-function StorefrontInner({ vendor, menu, categories }: StorefrontProps) {
+function StorefrontInner({
+  vendor,
+  menu,
+  categories,
+  fromKds = false,
+}: StorefrontProps) {
   const [activeCategory, setActiveCategory] = useState("All");
   const [sectorOpen, setSectorOpen] = useState(false);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
@@ -67,6 +74,7 @@ function StorefrontInner({ vendor, menu, categories }: StorefrontProps) {
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden bg-gradient-to-b from-zt-blush-50 via-zt-blush-100 to-zt-blush-200">
+      {fromKds ? <BackToKdsChip vendorSlug={vendor.slug} /> : null}
       <Orbs />
       <div className="zt-hidescroll relative z-[1] mx-auto min-h-screen w-full max-w-customer px-5 pb-40 pt-4">
         <TopBar location={vendor.location ?? "Kigali, Rwanda"} />
@@ -77,6 +85,10 @@ function StorefrontInner({ vendor, menu, categories }: StorefrontProps) {
             restaurantName={vendor.name}
             deliveryTime={vendor.deliveryTime ?? "30–40 min"}
             rating={vendor.rating}
+            logoUrl={vendor.logoUrl}
+            coverImageUrl={vendor.coverImageUrl}
+            description={vendor.description}
+            phoneNumber={vendor.phoneNumber}
           />
         </div>
 

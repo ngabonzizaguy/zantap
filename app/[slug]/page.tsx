@@ -4,10 +4,15 @@ import { Storefront } from "@/components/customer/Storefront";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ from?: string }>;
 }
 
-export default async function CustomerStorefrontPage({ params }: PageProps) {
+export default async function CustomerStorefrontPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { slug } = await params;
+  const { from } = await searchParams;
   const store = getStore();
   const vendor = await store.getVendorBySlug(slug);
   if (!vendor) notFound();
@@ -18,6 +23,11 @@ export default async function CustomerStorefrontPage({ params }: PageProps) {
   ]);
 
   return (
-    <Storefront vendor={vendor} menu={menu} categories={categories} />
+    <Storefront
+      vendor={vendor}
+      menu={menu}
+      categories={categories}
+      fromKds={from === "kds"}
+    />
   );
 }

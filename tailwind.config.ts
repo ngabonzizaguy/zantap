@@ -86,6 +86,11 @@ const config: Config = {
           light: "#FFD24C",
           dark: "#4a3500",
         },
+        gold: {
+          DEFAULT: "#FFD24C",
+          muted: "#F5A623",
+          on: "#1a1205",
+        },
       },
       fontFamily: {
         display: ["var(--font-display)", "Georgia", "Times New Roman", "serif"],

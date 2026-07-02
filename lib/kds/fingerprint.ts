@@ -18,6 +18,7 @@ export function fingerprintKdsSnapshot(snapshot: KdsSnapshot): string {
       isAvailable: item.isAvailable,
     })),
     todayGross: snapshot.todayGross,
+    yesterdayGross: snapshot.yesterdayGross,
     kitchenOpen: snapshot.kitchenOpen,
   });
 }

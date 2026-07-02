@@ -14,6 +14,7 @@ interface QueueCounts {
 interface MetricsBannerProps {
   vendorName: string;
   todayGross: number;
+  yesterdayGross: number;
   activeCount: number;
   queueCounts: QueueCounts;
   kitchenOpen: boolean;
@@ -21,23 +22,37 @@ interface MetricsBannerProps {
   onOpenMenu: () => void;
 }
 
-/*
- * PLACEHOLDER metrics — not yet backed by data (ADR-0017 deferred a DB/server
- * slice for per-stage prep timestamps and daily totals). These render the exact
- * target layout; wire them to real values when that tracking lands.
- */
-const GROSS_TREND_PLACEHOLDER = "+12.5%";
-const SPARKLINE_POINTS = "0,16 8,13 16,15 24,9 32,11 40,6 48,8 56,3";
+function formatGrossDelta(
+  today: number,
+  yesterday: number
+): { label: string; className: string } {
+  if (yesterday === 0) {
+    return {
+      label: "New",
+      className: today > 0 ? "text-success" : "text-muted",
+    };
+  }
+
+  const pct = ((today - yesterday) / yesterday) * 100;
+  const sign = pct > 0 ? "+" : "";
+  return {
+    label: `${sign}${pct.toFixed(1)}%`,
+    className: pct >= 0 ? "text-success" : "text-error",
+  };
+}
 
 export function MetricsBanner({
   vendorName,
   todayGross,
+  yesterdayGross,
   activeCount,
   queueCounts,
   kitchenOpen,
   onToggleKitchen,
   onOpenMenu,
 }: MetricsBannerProps) {
+  const grossDelta = formatGrossDelta(todayGross, yesterdayGross);
+
   return (
     <div className="sticky top-0 z-30 border-b border-hairline bg-canvas/90 backdrop-blur-md">
       <div className="flex items-center justify-between gap-3 px-4 pb-3.5 pt-4 sm:px-[18px]">
@@ -56,7 +71,14 @@ export function MetricsBanner({
             </div>
             <div className="truncate font-body text-caption text-muted">
               {vendorName}{" "}
-              <span className="font-medium text-success">· Live</span>
+              <span
+                className={cn(
+                  "font-medium",
+                  kitchenOpen ? "text-success" : "text-error"
+                )}
+              >
+                · {kitchenOpen ? "Live" : "Off"}
+              </span>
             </div>
           </div>
         </div>
@@ -105,27 +127,11 @@ export function MetricsBanner({
             </span>
             <span className="font-body text-caption text-muted-soft">RWF</span>
           </div>
-          <div className="mt-1.5 flex items-center justify-between gap-1">
-            <span className="font-body text-caption text-success">
-              {GROSS_TREND_PLACEHOLDER}
+          <div className="mt-1.5">
+            <span className={cn("font-body text-caption", grossDelta.className)}>
+              {grossDelta.label}
               <span className="text-muted-soft"> vs yest.</span>
             </span>
-            <svg
-              width="56"
-              height="18"
-              viewBox="0 0 56 18"
-              fill="none"
-              className="flex-none"
-              aria-hidden
-            >
-              <polyline
-                points={SPARKLINE_POINTS}
-                stroke="#f5a623"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
           </div>
         </Card>
 

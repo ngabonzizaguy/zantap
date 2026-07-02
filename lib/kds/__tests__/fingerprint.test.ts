@@ -27,6 +27,7 @@ const baseSnapshot = (): KdsSnapshot => ({
     },
   ],
   todayGross: 5000,
+  yesterdayGross: 4000,
   kitchenOpen: true,
 });
 
@@ -71,10 +72,13 @@ describe("fingerprintKdsSnapshot", () => {
     );
   });
 
-  it("changes when today gross or kitchen flag changes", () => {
+  it("changes when today gross, yesterday gross, or kitchen flag changes", () => {
     const before = baseSnapshot();
     expect(fingerprintKdsSnapshot(before)).not.toBe(
       fingerprintKdsSnapshot({ ...before, todayGross: 6000 })
+    );
+    expect(fingerprintKdsSnapshot(before)).not.toBe(
+      fingerprintKdsSnapshot({ ...before, yesterdayGross: 3000 })
     );
     expect(fingerprintKdsSnapshot(before)).not.toBe(
       fingerprintKdsSnapshot({ ...before, kitchenOpen: false })

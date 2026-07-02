@@ -49,11 +49,24 @@ export default async function VendorReceiptPage({ params }: PageProps) {
   const paidLine = paymentLine(payment, order);
 
   return (
-    <div className="receipt-root min-h-screen bg-canvas px-5 py-8 font-body text-ink print:bg-white print:px-0 print:py-0">
+    <div className="kds-dark kds-surface receipt-root min-h-screen w-full bg-canvas px-5 py-8 font-body text-ink print:bg-white print:px-0 print:py-0 print:text-ink">
       <style>{`
         @media print {
           .no-print { display: none !important; }
-          .receipt-root { background: white !important; }
+          .receipt-root,
+          .receipt-root .receipt-card,
+          .receipt-root .bg-canvas-soft {
+            background: white !important;
+            color: #292524 !important;
+          }
+          .receipt-root .text-ink { color: #292524 !important; }
+          .receipt-root .text-muted { color: #78716c !important; }
+          .receipt-root .text-muted-soft { color: #a8a29e !important; }
+          .receipt-root .border-hairline,
+          .receipt-root .border-hairline-soft,
+          .receipt-root .divide-hairline-soft > * + * {
+            border-color: #e7e5e4 !important;
+          }
           .receipt-card {
             box-shadow: none !important;
             border: 1px solid #e7e5e4 !important;
@@ -61,7 +74,7 @@ export default async function VendorReceiptPage({ params }: PageProps) {
         }
       `}</style>
 
-      <div className="receipt-card mx-auto max-w-lg rounded-brand-lg border border-hairline bg-surface-card p-8 shadow-brand-soft print:max-w-none print:rounded-none print:border-0 print:shadow-none">
+      <div className="kds-surface receipt-card mx-auto max-w-lg rounded-brand-lg border border-hairline bg-surface-card p-8 shadow-brand-soft print:max-w-none print:rounded-none print:border-0 print:bg-white print:shadow-none">
         <div className="no-print mb-6">
           <ReceiptBackButton vendorSlug={slug} />
         </div>

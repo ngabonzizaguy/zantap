@@ -117,14 +117,17 @@ export function MenuItemImageCarousel({
 
   if (urls.length === 1) {
     return (
-      <div
-        className={`${shell} ${className}`}
-        role="img"
-        aria-label="Menu item photo"
-        style={{
-          background: `center / cover no-repeat url(${urls[0]})`,
-        }}
-      />
+      <div className={`relative ${shell} ${className}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={urls[0]}
+          alt=""
+          role="img"
+          aria-label="Menu item photo"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+          draggable={false}
+        />
+      </div>
     );
   }
 
@@ -139,11 +142,18 @@ export function MenuItemImageCarousel({
         {urls.map((url, index) => (
           <div
             key={`${url}-${index}`}
-            role="img"
-            aria-label={`Photo ${index + 1} of ${urls.length}`}
-            className="h-full w-full flex-none snap-center bg-cover bg-center"
-            style={{ backgroundImage: `url(${url})` }}
-          />
+            className="relative h-full w-full flex-none snap-center overflow-hidden"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={url}
+              alt=""
+              role="img"
+              aria-label={`Photo ${index + 1} of ${urls.length}`}
+              className="absolute inset-0 h-full w-full object-cover object-center"
+              draggable={false}
+            />
+          </div>
         ))}
       </div>
 
@@ -199,13 +209,20 @@ export function MenuItemPhotoStrip({
             aria-label={`View photo ${index + 1} of ${urls.length}`}
             aria-current={index === activeIndex ? "true" : undefined}
             onClick={() => onSelect(index)}
-            className={`h-[72px] w-[72px] flex-none overflow-hidden rounded-[16px] border-2 bg-cover bg-center transition ${
+            className={`relative h-[72px] w-[72px] flex-none overflow-hidden rounded-[16px] border-2 transition ${
               index === activeIndex
                 ? "border-zt-accent shadow-[0_4px_12px_rgba(170,110,100,0.25)]"
                 : "border-white/70 opacity-85"
             }`}
-            style={{ backgroundImage: `url(${url})` }}
-          />
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={url}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover object-center"
+              draggable={false}
+            />
+          </button>
         ))}
       </div>
       <div className="mt-3 flex justify-center gap-1.5" aria-hidden>

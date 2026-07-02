@@ -1,8 +1,7 @@
 "use client";
 
 import type { OrderHistoryFilters as Filters } from "@/lib/types";
-import { Button, Input } from "@/components/ui/primitives";
-import { cn } from "@/lib/cn";
+import { Button, Input, Select } from "@/components/ui/primitives";
 
 export type DatePreset = NonNullable<Filters["datePreset"]>;
 
@@ -32,6 +31,8 @@ const PAYMENT_STATUSES: { value: Filters["paymentStatus"]; label: string }[] = [
 interface OrderHistoryFiltersProps {
   filters: Filters;
   onChange: (next: Filters) => void;
+  /** Non-custom date presets apply + refetch immediately (B2). */
+  onDatePresetApply: (preset: DatePreset) => void;
   onApply: () => void;
   loading?: boolean;
 }
@@ -43,37 +44,37 @@ function toDateInputValue(value?: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-function selectClassName() {
-  return cn(
-    "h-11 min-h-11 w-full rounded-brand-md border border-hairline-strong bg-surface-card px-3",
-    "font-body text-body-md text-ink focus:border-2 focus:border-ink focus:outline-none"
-  );
-}
-
 export function OrderHistoryFilters({
   filters,
   onChange,
+  onDatePresetApply,
   onApply,
   loading = false,
 }: OrderHistoryFiltersProps) {
   const preset = filters.datePreset ?? "last30";
 
+  const handlePresetClick = (itemId: DatePreset) => {
+    if (itemId === "custom") {
+      onChange({ ...filters, datePreset: "custom" });
+      return;
+    }
+    onDatePresetApply(itemId);
+  };
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-2">
+      <div
+        className="zt-hidescroll -mx-1 flex flex-nowrap gap-2 overflow-x-auto px-1 pb-0.5 snap-x snap-mandatory"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
         {DATE_PRESETS.map((item) => (
           <Button
             key={item.id}
             type="button"
             size="default"
             variant={preset === item.id ? "primary" : "outline"}
-            className="min-w-[88px]"
-            onClick={() =>
-              onChange({
-                ...filters,
-                datePreset: item.id,
-              })
-            }
+            className="min-w-[88px] shrink-0 snap-start"
+            onClick={() => handlePresetClick(item.id)}
           >
             {item.label}
           </Button>
@@ -114,49 +115,35 @@ export function OrderHistoryFilters({
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="flex flex-col gap-1.5">
-          <span className="font-body text-body-sm font-medium text-ink">
-            Order status
-          </span>
-          <select
-            className={selectClassName()}
-            value={filters.status ?? "ALL"}
-            onChange={(event) =>
-              onChange({
-                ...filters,
-                status: event.target.value as Filters["status"],
-              })
-            }
-          >
-            {ORDER_STATUSES.map((option) => (
-              <option key={option.value} value={option.value ?? "ALL"}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <Select
+          label="Order status"
+          value={filters.status ?? "ALL"}
+          options={ORDER_STATUSES.map((option) => ({
+            value: option.value ?? "ALL",
+            label: option.label,
+          }))}
+          onChange={(status) =>
+            onChange({
+              ...filters,
+              status,
+            })
+          }
+        />
 
-        <label className="flex flex-col gap-1.5">
-          <span className="font-body text-body-sm font-medium text-ink">
-            Payment status
-          </span>
-          <select
-            className={selectClassName()}
-            value={filters.paymentStatus ?? "ALL"}
-            onChange={(event) =>
-              onChange({
-                ...filters,
-                paymentStatus: event.target.value as Filters["paymentStatus"],
-              })
-            }
-          >
-            {PAYMENT_STATUSES.map((option) => (
-              <option key={option.value} value={option.value ?? "ALL"}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <Select
+          label="Payment status"
+          value={filters.paymentStatus ?? "ALL"}
+          options={PAYMENT_STATUSES.map((option) => ({
+            value: option.value ?? "ALL",
+            label: option.label,
+          }))}
+          onChange={(paymentStatus) =>
+            onChange({
+              ...filters,
+              paymentStatus,
+            })
+          }
+        />
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">

@@ -1,6 +1,6 @@
 "use server";
 
-import { normalizePhone } from "@/lib/format";
+import { normalizePhone, phonesMatchForRecovery } from "@/lib/format";
 import { getStore } from "@/lib/store";
 import type { CreateVendorInput, MenuItem, Vendor } from "@/lib/types";
 import { mintOwnerToken } from "@/lib/vendor/owner-token";
@@ -111,7 +111,7 @@ export async function recoverOwnerToken(
   const vendor = await store.getVendorBySlug(normalizedSlug);
   if (!vendor) return { ok: false };
 
-  if (normalizePhone(vendor.phoneNumber) !== normalizePhone(phoneNumber)) {
+  if (!phonesMatchForRecovery(vendor.phoneNumber, phoneNumber)) {
     return { ok: false };
   }
 

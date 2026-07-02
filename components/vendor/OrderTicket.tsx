@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import type { KitchenStage, Order } from "@/lib/types";
 import {
   formatKitchenStageLabel,
@@ -22,8 +21,9 @@ import {
 } from "@/lib/kds/stage-styles";
 import type { KdsSortDirection } from "@/lib/kds/kitchen-stage";
 import { Icon } from "@/components/ui/Icon";
-import { Badge, Button, Card } from "@/components/ui/primitives";
+import { Badge, Button, Card, Select } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
+import { getBaseUrl } from "@/lib/base-url";
 import { buildVendorWhatsAppUrl, toWhatsAppE164 } from "@/lib/whatsapp";
 
 const URGENCY_RING: Record<
@@ -290,7 +290,7 @@ export function OrderTicket({
                   vendorPhone,
                   order,
                   vendorName,
-                  window.location.origin
+                  getBaseUrl()
                 );
                 window.open(url, "_blank", "noopener");
               }}
@@ -372,6 +372,11 @@ const SORT_LABELS: Record<KdsSortDirection, string> = {
   newest: "Newest",
 };
 
+const SORT_OPTIONS = (Object.keys(SORT_LABELS) as KdsSortDirection[]).map((dir) => ({
+  value: dir,
+  label: SORT_LABELS[dir],
+}));
+
 export function OrdersList({
   orders,
   vendorPhone,
@@ -392,7 +397,6 @@ export function OrdersList({
   onAdvanceStage,
   onToggleBulkMode,
 }: OrdersListProps) {
-  const [sortOpen, setSortOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-3">
@@ -470,53 +474,20 @@ export function OrdersList({
             Select
           </button>
 
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setSortOpen((prev) => !prev)}
-              className="flex items-center gap-1.5 rounded-pill border border-hairline-strong px-3.5 py-2 font-body text-body-sm font-medium text-ink"
-            >
-              <Icon name="orders" size={14} className="text-muted" strokeWidth={2.1} />
-              Sort: {SORT_LABELS[sortDirection]}
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={cn("text-muted transition-transform", sortOpen && "rotate-180")}
-                aria-hidden
-              >
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
-            {sortOpen && (
-              <div className="absolute right-0 z-20 mt-1.5 w-36 overflow-hidden rounded-brand-lg border border-hairline bg-surface-card shadow-kds">
-                {(Object.keys(SORT_LABELS) as KdsSortDirection[]).map((dir) => (
-                  <button
-                    key={dir}
-                    type="button"
-                    onClick={() => {
-                      onSortDirection(dir);
-                      setSortOpen(false);
-                    }}
-                    className={cn(
-                      "flex w-full items-center justify-between px-3.5 py-2.5 text-left font-body text-body-sm transition-colors hover:bg-surface-strong",
-                      sortDirection === dir ? "text-primary" : "text-ink"
-                    )}
-                  >
-                    {SORT_LABELS[dir]}
-                    {sortDirection === dir && (
-                      <Icon name="check" size={14} className="text-primary" strokeWidth={2.6} />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <Select
+            variant="pill"
+            align="end"
+            value={sortDirection}
+            onChange={onSortDirection}
+            options={SORT_OPTIONS}
+            ariaLabel="Sort orders"
+            prefix={
+              <>
+                <Icon name="orders" size={14} className="text-muted" strokeWidth={2.1} />
+                <span>Sort:</span>
+              </>
+            }
+          />
         </div>
       )}
 

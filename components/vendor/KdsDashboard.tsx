@@ -19,6 +19,7 @@ import {
 } from "@/lib/kds/kitchen-stage";
 import { stageFilterGroup, type KdsStageFilter } from "@/lib/kds/stage-styles";
 import { useKdsLiveSnapshot } from "@/lib/kds/useKdsLiveSnapshot";
+import { usePeekVisibility } from "@/lib/kds/usePeekVisibility";
 import type { KdsSnapshot } from "@/lib/kds/types";
 import type { KitchenStage } from "@/lib/types";
 import { buildDeliverySlip } from "@/lib/whatsapp";
@@ -31,8 +32,10 @@ import { MenuSection } from "@/components/vendor/MenuSection";
 import { HistoryPanel } from "@/components/vendor/HistoryPanel";
 import { DispatchModal } from "@/components/vendor/DispatchModal";
 import { SetupDrawer, type StorefrontProfile } from "@/components/vendor/SetupDrawer";
+import { HelpModal } from "@/components/vendor/HelpModal";
 import { Coachmark } from "@/components/vendor/Coachmark";
 import { Card, GradientOrbs } from "@/components/ui/primitives";
+import { cn } from "@/lib/cn";
 
 const KDS_TABS = new Set<KdsTab>(["orders", "menu", "history", "setup"]);
 
@@ -49,6 +52,7 @@ interface KdsDashboardProps {
   initialMenu: MenuItem[];
   initialDrivers: Driver[];
   initialTodayGross: number;
+  initialYesterdayGross: number;
   initialKitchenOpen: boolean;
   initialTab?: string;
 }
@@ -59,6 +63,7 @@ export function KdsDashboard({
   initialMenu,
   initialDrivers,
   initialTodayGross,
+  initialYesterdayGross,
   initialKitchenOpen,
   initialTab,
 }: KdsDashboardProps) {
@@ -67,6 +72,7 @@ export function KdsDashboard({
   const [menu, setMenu] = useState(initialMenu);
   const [drivers] = useState(initialDrivers);
   const [todayGross, setTodayGross] = useState(initialTodayGross);
+  const [yesterdayGross, setYesterdayGross] = useState(initialYesterdayGross);
   const [kitchenOpen, setKitchenOpenState] = useState(initialKitchenOpen);
   const [expandedId, setExpandedId] = useState<string | null>(
     initialOrders[0]?.id ?? null
@@ -74,6 +80,7 @@ export function KdsDashboard({
   const [dispatchId, setDispatchId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [setupOpen, setSetupOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [storefrontProfile, setStorefrontProfile] = useState<StorefrontProfile>(
     () => ({
       tagline: vendor.tagline,
@@ -116,10 +123,13 @@ export function KdsDashboard({
       setOrders(snapshot.orders);
       setMenu(snapshot.menu);
       setTodayGross(snapshot.todayGross);
+      setYesterdayGross(snapshot.yesterdayGross);
       setKitchenOpenState(snapshot.kitchenOpen);
   }, []);
 
   const { sseReconnecting } = useKdsLiveSnapshot(vendor.slug, applySnapshot);
+  const { visible: helpPeekVisible, peekHandlers: helpPeekHandlers } =
+    usePeekVisibility();
 
   const sortedOrders = useMemo(
     () => sortKdsQueueOrders(orders, sortDirection),
@@ -306,6 +316,7 @@ export function KdsDashboard({
         <MetricsBanner
           vendorName={vendor.name}
           todayGross={todayGross}
+          yesterdayGross={yesterdayGross}
           activeCount={activeCount}
           queueCounts={queueCounts}
           kitchenOpen={kitchenOpen}
@@ -369,8 +380,8 @@ export function KdsDashboard({
                 Setup guide
               </p>
               <p className="mt-2 font-body text-body-sm text-muted">
-                Your checklist opens in the panel on the right. Tap ? anytime to
-                reopen it.
+                Your checklist opens in the panel on the right. Use the menu icon in
+                the header anytime to reopen it.
               </p>
             </Card>
           )}        </div>
@@ -378,12 +389,22 @@ export function KdsDashboard({
 
       <button
         type="button"
-        onClick={openSetup}
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-hairline bg-surface-card text-2xl font-bold text-ink shadow-brand-soft hover:bg-canvas-soft"
-        aria-label="Open setup guide"
+        onClick={() => setHelpOpen(true)}
+        {...helpPeekHandlers}
+        className={cn(
+          "fixed bottom-24 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-hairline bg-surface-card text-2xl font-bold text-ink shadow-brand-soft hover:bg-canvas-soft motion-safe:transition-opacity motion-safe:duration-300",
+          helpPeekVisible ? "opacity-100" : "pointer-events-none opacity-0 motion-reduce:opacity-100 motion-reduce:pointer-events-auto"
+        )}
+        aria-label="Open help"
       >
         ?
       </button>
+
+      <HelpModal
+        open={helpOpen}
+        onClose={() => setHelpOpen(false)}
+        vendorSlug={vendor.slug}
+      />
 
       <SetupDrawer
         open={setupOpen}

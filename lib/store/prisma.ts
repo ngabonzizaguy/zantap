@@ -859,9 +859,8 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     });
     if (!vendor) return "missing";
 
-    const startOfToday = startOfDayInTimezone(new Date());
-
-    const [orderRows, menuRows, grossResult] = await Promise.all([
+    const [orderRows, menuRows, todayGrossResult, yesterdayGrossResult] =
+      await Promise.all([
       client.order.findMany({
         where: kdsOrdersWhere(vendor.id),
         select: {
@@ -877,14 +876,8 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
         select: { id: true, isAvailable: true },
         orderBy: { id: "asc" },
       }),
-      client.order.aggregate({
-        where: {
-          vendorId: vendor.id,
-          createdAt: { gte: startOfToday },
-          status: { in: COUNTED_STATUSES },
-        },
-        _sum: { totalAmount: true },
-      }),
+      aggregateGrossForPreset(vendor.id, "today"),
+      aggregateGrossForPreset(vendor.id, "yesterday"),
     ]);
 
     return buildKdsSnapshotRevision({
@@ -895,7 +888,8 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
         totalAmount: row.totalAmount,
       })),
       menu: menuRows,
-      todayGross: grossResult._sum.totalAmount ?? 0,
+      todayGross: todayGrossResult,
+      yesterdayGross: yesterdayGrossResult,
       kitchenOpen: vendor.kitchenOpen && vendor.isActive,
     });
   }
@@ -1105,25 +1099,40 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     return drivers.map(mapDriver);
   }
 
+  async function aggregateGrossForPreset(
+    vendorId: string,
+    preset: "today" | "yesterday"
+  ): Promise<number> {
+    const range = resolveDateRange({ datePreset: preset });
+    if (!range) return 0;
+
+    const result = await client.order.aggregate({
+      where: {
+        vendorId,
+        createdAt: { gte: range.from, lte: range.to },
+        status: { in: COUNTED_STATUSES },
+      },
+      _sum: { totalAmount: true },
+    });
+    return result._sum.totalAmount ?? 0;
+  }
+
   async function getTodayGross(vendorSlug: string): Promise<number> {
     const vendor = await client.vendor.findUnique({
       where: { slug: vendorSlug },
       select: { id: true },
     });
     if (!vendor) return 0;
+    return aggregateGrossForPreset(vendor.id, "today");
+  }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const result = await client.order.aggregate({
-      where: {
-        vendorId: vendor.id,
-        createdAt: { gte: today },
-        status: { in: COUNTED_STATUSES },
-      },
-      _sum: { totalAmount: true },
+  async function getYesterdayGross(vendorSlug: string): Promise<number> {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: vendorSlug },
+      select: { id: true },
     });
-    return result._sum.totalAmount ?? 0;
+    if (!vendor) return 0;
+    return aggregateGrossForPreset(vendor.id, "yesterday");
   }
 
   async function isKitchenOpen(vendorSlug: string): Promise<boolean> {
@@ -1313,6 +1322,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     bulkUpdateKitchenStage,
     getDrivers,
     getTodayGross,
+    getYesterdayGross,
     isKitchenOpen,
     setKitchenOpen,
     createPayment,

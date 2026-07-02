@@ -57,22 +57,32 @@ function MenuCard({
           archived ? "cursor-default" : "cursor-pointer"
         )}
       >
-        <div
-          className="h-24 w-full rounded-brand-md"
-          style={{
-            background: primaryImage
-              ? `center / cover no-repeat url(${primaryImage})`
-              : thumbBg,
-          }}
-        />
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <h3 className="font-display text-display-sm text-ink">{item.name}</h3>
-            <p className="mt-1 font-body text-body-sm font-medium text-primary">
-              {formatRwf(item.priceRwf)}
-            </p>
+        <div className="flex gap-3">
+          <div
+            className="relative h-[72px] w-[72px] flex-none overflow-hidden rounded-brand-md"
+            style={primaryImage ? undefined : { background: thumbBg }}
+          >
+            {primaryImage ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={primaryImage}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover object-center"
+                draggable={false}
+              />
+            ) : null}
           </div>
-          <Badge variant={archived ? "muted" : "default"}>{item.category}</Badge>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h3 className="font-display text-display-sm text-ink">{item.name}</h3>
+                <p className="mt-1 font-body text-body-sm font-medium text-primary">
+                  {formatRwf(item.priceRwf)}
+                </p>
+              </div>
+              <Badge variant={archived ? "muted" : "default"}>{item.category}</Badge>
+            </div>
+          </div>
         </div>
         {item.description ? (
           <p className="line-clamp-2 font-body text-body-sm text-muted">

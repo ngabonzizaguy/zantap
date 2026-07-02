@@ -1,8 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/cn";
-import { COUNTRY_OPTIONS } from "@/lib/vendor/onboard-options";
-import { Button } from "@/components/ui/primitives";
+import { DIAL_CODE_SELECT_OPTIONS } from "@/lib/vendor/onboard-options";
+import { Button, Select } from "@/components/ui/primitives";
 import type { PayoutMethod } from "@/lib/types";
 import type { WizardData } from "@/components/onboard/types";
 
@@ -84,7 +84,10 @@ function OptionShell({
 
 export function PaymentsStep({ data, update, onContinue }: PaymentsStepProps) {
   const merchantValid = data.merchantCode.trim().length >= 3;
-  const phoneValid = data.payoutPhone.trim().length >= 6;
+  const payoutLocal = data.payoutSameAsBusiness
+    ? data.phoneLocal.trim()
+    : data.payoutPhone.trim();
+  const phoneValid = payoutLocal.length >= 6;
   const canContinue =
     data.payoutMethod === "MERCHANT_CODE" ? merchantValid : phoneValid;
 
@@ -147,37 +150,58 @@ export function PaymentsStep({ data, update, onContinue }: PaymentsStepProps) {
           subtitle="Receive payments to your MoMo registered phone."
           onSelect={(method) => update({ payoutMethod: method })}
         >
-          <div className="flex flex-col gap-2">
-            <label htmlFor="pay-phone" className={fieldLabelClass}>
-              Phone Number
-            </label>
-            <div className="flex items-stretch gap-2">
-              <select
-                aria-label="Country code"
-                className="h-12 rounded-brand-md border border-hairline-strong bg-surface-card px-2 font-body text-body-md text-ink focus:border-primary focus:outline-none"
-                value={data.countryDialCode}
-                onChange={(event) =>
-                  update({ countryDialCode: event.target.value })
-                }
-              >
-                {COUNTRY_OPTIONS.map((country) => (
-                  <option key={country.code} value={country.dialCode}>
-                    {country.flag} {country.dialCode}
-                  </option>
-                ))}
-              </select>
+          <div className="flex flex-col gap-3">
+            <label className="flex cursor-pointer items-start gap-3">
               <input
-                id="pay-phone"
-                type="tel"
-                className={`${fieldControlClass} flex-1`}
-                value={data.payoutPhone}
+                type="checkbox"
+                checked={data.payoutSameAsBusiness}
                 onChange={(event) =>
-                  update({ payoutPhone: event.target.value })
+                  update({ payoutSameAsBusiness: event.target.checked })
                 }
-                placeholder="781 234 567"
-                autoComplete="off"
+                className="mt-1 h-4 w-4 shrink-0 rounded border-hairline-strong accent-primary"
               />
-            </div>
+              <span className="font-body text-body-sm text-ink">
+                Payment number is the same as my business number
+              </span>
+            </label>
+
+            {data.payoutSameAsBusiness ? (
+              <p className="rounded-brand-md border border-hairline bg-surface-strong px-3 py-2 font-body text-body-sm text-ink">
+                {data.countryDialCode} {data.phoneLocal.trim() || "—"}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <label htmlFor="pay-phone" className={fieldLabelClass}>
+                  Payout phone number
+                </label>
+                <div className="flex items-stretch gap-2">
+                  <Select
+                    ariaLabel="Country code"
+                    value={data.countryDialCode}
+                    onChange={(dialCode) => update({ countryDialCode: dialCode })}
+                    options={DIAL_CODE_SELECT_OPTIONS}
+                    className="shrink-0"
+                    triggerClassName="h-12 w-[6.75rem] px-2"
+                  />
+                  <input
+                    id="pay-phone"
+                    type="tel"
+                    className={`${fieldControlClass} flex-1`}
+                    value={data.payoutPhone}
+                    onChange={(event) =>
+                      update({ payoutPhone: event.target.value })
+                    }
+                    placeholder="781 234 567"
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+            )}
+
+            <p className="font-body text-caption text-muted">
+              This is where MoMo payments land — it can differ from your business
+              contact number.
+            </p>
           </div>
         </OptionShell>
       </div>

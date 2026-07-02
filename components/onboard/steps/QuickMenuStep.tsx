@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { formatRwf } from "@/lib/format";
 import { MENU_CATEGORIES } from "@/lib/vendor/onboard-options";
-import { Button } from "@/components/ui/primitives";
+import { Button, Combobox } from "@/components/ui/primitives";
 import type { WizardData } from "@/components/onboard/types";
 
 interface QuickMenuStepProps {
@@ -81,23 +81,14 @@ export function QuickMenuStep({ data, update, onContinue }: QuickMenuStepProps) 
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-2">
-        <label htmlFor="dish-category" className={fieldLabelClass}>
-          Category
-        </label>
-        <select
-          id="dish-category"
-          className={fieldControlClass}
-          value={data.dishCategory}
-          onChange={(event) => update({ dishCategory: event.target.value })}
-        >
-          {MENU_CATEGORIES.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
-      </div>
+      <Combobox
+        id="dish-category"
+        label="Category"
+        value={data.dishCategory}
+        onChange={(category) => update({ dishCategory: category })}
+        suggestions={MENU_CATEGORIES}
+        placeholder="General"
+      />
 
       <div className="flex flex-col gap-2">
         <p className={fieldLabelClass}>Photo (optional)</p>
@@ -119,7 +110,7 @@ export function QuickMenuStep({ data, update, onContinue }: QuickMenuStepProps) 
               alt="Selected dish"
               className="h-16 w-16 rounded-brand-md object-cover"
             />
-            <div className="flex flex-1 flex-col gap-1">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
               <p className="truncate font-body text-body-sm text-ink">
                 {data.dishPhoto?.name}
               </p>
@@ -129,8 +120,13 @@ export function QuickMenuStep({ data, update, onContinue }: QuickMenuStepProps) 
             </div>
             <button
               type="button"
-              onClick={() => update({ dishPhoto: null })}
-              className="font-body text-caption text-muted underline-offset-2 hover:text-error hover:underline"
+              onClick={() => {
+                update({ dishPhoto: null });
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = "";
+                }
+              }}
+              className="flex-none shrink-0 font-body text-caption text-muted underline-offset-2 hover:text-error hover:underline"
             >
               Remove
             </button>

@@ -29,6 +29,7 @@ export default async function VendorKdsPage({ params, searchParams }: PageProps)
       initialMenu={snapshot.menu}
       initialDrivers={drivers}
       initialTodayGross={snapshot.todayGross}
+      initialYesterdayGross={snapshot.yesterdayGross}
       initialKitchenOpen={snapshot.kitchenOpen}
       initialTab={tab}
     />

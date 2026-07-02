@@ -58,7 +58,8 @@ import {
 import { normalizeVendorSlug } from "@/lib/vendor/slug";
 import { buildKdsSnapshotRevision } from "@/lib/kds/revision";
 import { filterKdsQueueOrders } from "@/lib/kds/visible-orders";
-import { startOfDayInTimezone } from "@/lib/orders/history-filters";
+
+const COUNTED_STATUSES: OrderStatus[] = ["PAID", "DISPATCHED", "COMPLETED"];
 
 /**
  * Internal row shape: the domain Vendor plus the server-only owner-token hash.
@@ -634,23 +635,14 @@ export function createInMemoryStore(): ResettableStore {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return "missing";
 
-    const startOfToday = startOfDayInTimezone(new Date());
     const queueOrders = filterKdsQueueOrders(
       orders.filter((o) => o.vendorId === vendor.id)
     );
     const activeMenu = menuItems.filter(
       (item) => item.vendorId === vendor.id && isActiveItem(item)
     );
-    const todayGross = orders
-      .filter(
-        (o) =>
-          o.vendorId === vendor.id &&
-          o.createdAt >= startOfToday &&
-          (o.status === "PAID" ||
-            o.status === "DISPATCHED" ||
-            o.status === "COMPLETED")
-      )
-      .reduce((sum, o) => sum + o.totalAmount, 0);
+    const todayGross = grossForDatePreset(vendor.id, "today");
+    const yesterdayGross = grossForDatePreset(vendor.id, "yesterday");
 
     return buildKdsSnapshotRevision({
       orders: queueOrders.map((order) => ({
@@ -664,6 +656,7 @@ export function createInMemoryStore(): ResettableStore {
         isAvailable: item.isAvailable,
       })),
       todayGross,
+      yesterdayGross,
       kitchenOpen: kitchenOpen && vendor.isActive,
     });
   }
@@ -880,23 +873,34 @@ export function createInMemoryStore(): ResettableStore {
       .map((d) => ({ ...d }));
   }
 
-  async function getTodayGross(vendorSlug: string): Promise<number> {
-    const vendor = await getVendorBySlug(vendorSlug);
-    if (!vendor) return 0;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  function grossForDatePreset(
+    vendorId: string,
+    preset: "today" | "yesterday"
+  ): number {
+    const range = resolveDateRange({ datePreset: preset });
+    if (!range) return 0;
 
     return orders
       .filter(
         (o) =>
-          o.vendorId === vendor.id &&
-          o.createdAt >= today &&
-          (o.status === "PAID" ||
-            o.status === "DISPATCHED" ||
-            o.status === "COMPLETED")
+          o.vendorId === vendorId &&
+          o.createdAt >= range.from &&
+          o.createdAt <= range.to &&
+          COUNTED_STATUSES.includes(o.status)
       )
       .reduce((sum, o) => sum + o.totalAmount, 0);
+  }
+
+  async function getTodayGross(vendorSlug: string): Promise<number> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return 0;
+    return grossForDatePreset(vendor.id, "today");
+  }
+
+  async function getYesterdayGross(vendorSlug: string): Promise<number> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return 0;
+    return grossForDatePreset(vendor.id, "yesterday");
   }
 
   async function isKitchenOpen(vendorSlug: string): Promise<boolean> {
@@ -1034,6 +1038,7 @@ export function createInMemoryStore(): ResettableStore {
     bulkUpdateKitchenStage,
     getDrivers,
     getTodayGross,
+    getYesterdayGross,
     isKitchenOpen,
     setKitchenOpen,
     createPayment,

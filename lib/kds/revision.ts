@@ -17,6 +17,7 @@ export function buildKdsSnapshotRevision(input: {
   orders: KdsOrderRevisionRow[];
   menu: KdsMenuRevisionRow[];
   todayGross: number;
+  yesterdayGross: number;
   kitchenOpen: boolean;
 }): string {
   const orderKey = [...input.orders]
@@ -30,5 +31,5 @@ export function buildKdsSnapshotRevision(input: {
     .sort((a, b) => a.id.localeCompare(b.id))
     .map((item) => `${item.id}:${item.isAvailable}`)
     .join("|");
-  return `${orderKey}#${menuKey}#${input.todayGross}#${input.kitchenOpen}`;
+  return `${orderKey}#${menuKey}#${input.todayGross}#${input.yesterdayGross}#${input.kitchenOpen}`;
 }

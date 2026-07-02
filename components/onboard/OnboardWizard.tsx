@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { provisionVendor } from "@/lib/actions/vendor-provision";
 import { updateMenuItem, uploadMenuImage } from "@/lib/actions/vendor-menu";
 import { cacheOwnerToken } from "@/lib/vendor/useOwnerToken";
+import { getStorefrontUrl } from "@/lib/vendor/storefront-url";
 import {
   BUSINESS_CATEGORIES,
   DEFAULT_COUNTRY,
@@ -29,6 +30,7 @@ const EMPTY_DATA: WizardData = {
   payoutMethod: "MERCHANT_CODE",
   merchantCode: "",
   payoutPhone: "",
+  payoutSameAsBusiness: true,
   dishName: "",
   dishPriceRwf: "",
   dishCategory: MENU_CATEGORIES[0],
@@ -88,10 +90,13 @@ export function OnboardWizard() {
     setSubmitting(true);
     setSubmitError(null);
 
+    const payoutLocal = data.payoutSameAsBusiness
+      ? data.phoneLocal.trim()
+      : data.payoutPhone.trim();
     const momoCode =
       data.payoutMethod === "MERCHANT_CODE"
         ? data.merchantCode.trim()
-        : data.payoutPhone.trim();
+        : `${data.countryDialCode} ${payoutLocal}`.trim();
     const priceRwf = Number.parseInt(data.dishPriceRwf, 10);
 
     try {
@@ -157,10 +162,7 @@ export function OnboardWizard() {
   const progressCurrent = PROGRESS_STEPS.indexOf(step) + 1;
   const showProgress = progressCurrent > 0;
   const storefrontPath = created ? `/${created.slug}` : "/";
-  const storefrontUrl =
-    created && typeof window !== "undefined"
-      ? `${window.location.origin}/${created.slug}`
-      : storefrontPath;
+  const storefrontUrl = created ? getStorefrontUrl(created.slug) : storefrontPath;
 
   return (
     <div className="kds-dark min-h-screen bg-canvas text-ink">

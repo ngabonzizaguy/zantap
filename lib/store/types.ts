@@ -137,8 +137,9 @@ export interface Store {
   // Drivers
   getDrivers(vendorSlug: string): Promise<Driver[]>;
 
-  // Today's gross
+  // Today's gross (+ yesterday for dashboard delta)
   getTodayGross(vendorSlug: string): Promise<number>;
+  getYesterdayGross(vendorSlug: string): Promise<number>;
 
   // Kitchen open/close
   isKitchenOpen(vendorSlug: string): Promise<boolean>;

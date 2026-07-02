@@ -16,6 +16,8 @@ export interface WizardData {
   payoutMethod: PayoutMethod;
   merchantCode: string;
   payoutPhone: string;
+  /** When payout method is PHONE, reuse the business phone if true. */
+  payoutSameAsBusiness: boolean;
 
   // First dish
   dishName: string;

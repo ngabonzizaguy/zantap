@@ -53,3 +53,8 @@ export const COUNTRY_OPTIONS: CountryOption[] = [
 ];
 
 export const DEFAULT_COUNTRY = COUNTRY_OPTIONS[0];
+
+export const DIAL_CODE_SELECT_OPTIONS = COUNTRY_OPTIONS.map((country) => ({
+  value: country.dialCode,
+  label: `${country.flag} ${country.dialCode}`,
+}));

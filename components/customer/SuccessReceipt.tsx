@@ -76,13 +76,22 @@ export function SuccessReceipt({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={onReset}
-          className="h-14 w-full rounded-2xl border-none bg-white text-base font-extrabold text-zt-success shadow-[0_12px_30px_rgba(0,0,0,0.2)]"
-        >
-          Place another order
-        </button>
+        <div className="flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={onReset}
+            className="h-14 w-full rounded-2xl border-none bg-white text-base font-extrabold text-zt-success shadow-[0_12px_30px_rgba(0,0,0,0.2)]"
+          >
+            Place another order
+          </button>
+          <button
+            type="button"
+            onClick={onReset}
+            className="h-14 w-full rounded-2xl border-2 border-white bg-transparent text-base font-extrabold text-white shadow-[0_8px_20px_rgba(0,0,0,0.12)]"
+          >
+            Back to menu
+          </button>
+        </div>
       </div>
     </div>
   );

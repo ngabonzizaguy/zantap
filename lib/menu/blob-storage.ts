@@ -24,6 +24,15 @@ export async function putMenuImageBlob(
   return { url: blob.url, pathname: blob.pathname };
 }
 
+/** Server-side Vercel Blob put for vendor branding (logo/cover, ADR E3). */
+export async function putBrandingBlob(
+  pathname: string,
+  body: Buffer,
+  contentType: string
+): Promise<{ url: string; pathname: string }> {
+  return putMenuImageBlob(pathname, body, contentType);
+}
+
 /** Deletes a stored blob when a MenuImage row with blobPath is removed. */
 export async function deleteMenuImageBlob(pathname: string): Promise<void> {
   const token = process.env.BLOB_READ_WRITE_TOKEN;

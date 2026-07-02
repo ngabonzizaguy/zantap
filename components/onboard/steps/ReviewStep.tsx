@@ -1,5 +1,6 @@
 "use client";
 
+import { formatStorefrontDisplayPath } from "@/lib/base-url";
 import { formatRwf } from "@/lib/format";
 import { normalizeVendorSlug } from "@/lib/vendor/slug";
 import { Button } from "@/components/ui/primitives";
@@ -69,7 +70,9 @@ export function ReviewStep({
       <div className="flex flex-col gap-4">
         <ReviewCard title="Restaurant" onEdit={() => onEdit("business")}>
           <p className="font-body text-body-md text-ink">{data.name}</p>
-          <p className="font-body text-caption text-muted">zantap.ai/{slug}</p>
+          <p className="font-body text-caption text-muted">
+            {formatStorefrontDisplayPath(slug)}
+          </p>
           <p className="mt-1 font-body text-body-sm text-primary">
             {fullPhone}
           </p>
@@ -91,7 +94,9 @@ export function ReviewStep({
                 Receive to Phone Number
               </p>
               <p className="font-body text-body-md text-ink">
-                {data.countryDialCode} {data.payoutPhone}
+                {data.payoutSameAsBusiness
+                  ? `${data.countryDialCode} ${data.phoneLocal}`.trim()
+                  : `${data.countryDialCode} ${data.payoutPhone}`.trim()}
               </p>
             </>
           )}

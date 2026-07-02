@@ -5,7 +5,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { MenuItem } from "@/lib/types";
 import { Button, Card, Input } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
-import { updateVendorProfile } from "@/lib/actions/vendor-profile";
+import { updateVendorProfile, uploadBrandingImage } from "@/lib/actions/vendor-profile";
 import {
   countCompletedSteps,
   ONBOARDING_STEPS,
@@ -18,6 +18,8 @@ import {
 } from "@/lib/vendor/optional-checklist";
 import { useOwnerToken } from "@/lib/vendor/useOwnerToken";
 import { resetCoachmarks } from "@/components/vendor/Coachmark";
+import { StorefrontQr } from "@/components/onboard/StorefrontQr";
+import { getStorefrontUrl } from "@/lib/vendor/storefront-url";
 
 export interface StorefrontProfile {
   tagline?: string;
@@ -53,6 +55,8 @@ export function SetupDrawer({
   const titleId = useId();
   const panelRef = useRef<HTMLElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
+  const coverFileInputRef = useRef<HTMLInputElement>(null);
   const { token, hasToken } = useOwnerToken(vendorSlug);
   const [tipsReset, setTipsReset] = useState(false);
   const [taglineDraft, setTaglineDraft] = useState("");
@@ -63,6 +67,8 @@ export function SetupDrawer({
   const [coverImageUrlDraft, setCoverImageUrlDraft] = useState("");
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
+  const [logoUploadBusy, setLogoUploadBusy] = useState(false);
+  const [coverUploadBusy, setCoverUploadBusy] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
 
@@ -82,6 +88,10 @@ export function SetupDrawer({
     [profile.logoUrl, profile.coverImageUrl, profile.description, menu]
   );
   const optionalProgress = countOptionalCompleted(optionalChecklist);
+  const storefrontUrl = useMemo(
+    () => getStorefrontUrl(vendorSlug),
+    [vendorSlug]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -125,6 +135,58 @@ export function SetupDrawer({
     resetCoachmarks();
     setTipsReset(true);
     window.setTimeout(() => setTipsReset(false), 2000);
+  };
+
+  const applySavedProfile = (saved: StorefrontProfile) => {
+    onProfileSaved?.(saved);
+    setProfileSaved(true);
+    window.setTimeout(() => setProfileSaved(false), 2000);
+  };
+
+  const mapOwnerTokenError = (error: unknown): string => {
+    const message =
+      error instanceof Error ? error.message : "Could not save profile.";
+    return message.toLowerCase().includes("owner token")
+      ? "This device isn't unlocked. Recover access and try again."
+      : message;
+  };
+
+  const handleBrandingUpload = async (field: "logo" | "cover", file: File) => {
+    if (!token) {
+      setProfileError(
+        "This device isn't unlocked. Recover access to edit your profile."
+      );
+      return;
+    }
+
+    const setBusy = field === "logo" ? setLogoUploadBusy : setCoverUploadBusy;
+    setBusy(true);
+    setProfileError(null);
+    setProfileSaved(false);
+
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      const updated = await uploadBrandingImage(token, vendorSlug, field, formData);
+      if (field === "logo") {
+        setLogoUrlDraft(updated.logoUrl ?? "");
+      } else {
+        setCoverImageUrlDraft(updated.coverImageUrl ?? "");
+      }
+      applySavedProfile({
+        tagline: updated.tagline,
+        location: updated.location,
+        deliveryTime: updated.deliveryTime,
+        rating: updated.rating,
+        logoUrl: updated.logoUrl,
+        coverImageUrl: updated.coverImageUrl,
+        description: updated.description,
+      });
+    } catch (error) {
+      setProfileError(mapOwnerTokenError(error));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -183,17 +245,14 @@ export function SetupDrawer({
       setProfileSaved(true);
       window.setTimeout(() => setProfileSaved(false), 2000);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not save profile.";
-      setProfileError(
-        message.toLowerCase().includes("owner token")
-          ? "This device isn't unlocked. Recover access and try again."
-          : message
-      );
+      setProfileError(mapOwnerTokenError(error));
     } finally {
       setProfileSaving(false);
     }
   };
+
+  const brandingBusy = logoUploadBusy || coverUploadBusy;
+  const profileFieldsDisabled = profileSaving || brandingBusy;
 
   if (!open) return null;
 
@@ -355,27 +414,33 @@ export function SetupDrawer({
             <p className="mt-1 font-body text-body-sm text-muted">
               Shown on your customer menu page.
             </p>
+            <Link
+              href={`/${vendorSlug}?from=kds`}
+              className="mt-4 inline-flex h-10 min-h-10 w-full items-center justify-center rounded-brand-lg border border-hairline bg-canvas-soft px-5 font-body text-button font-medium text-ink transition-colors hover:bg-canvas"
+            >
+              Preview storefront
+            </Link>
             <div className="mt-4 flex flex-col gap-3">
               <Input
                 label="Tagline"
                 value={taglineDraft}
                 onChange={(event) => setTaglineDraft(event.target.value)}
                 placeholder="Premium grills"
-                disabled={profileSaving}
+                disabled={profileFieldsDisabled}
               />
               <Input
                 label="Location"
                 value={locationDraft}
                 onChange={(event) => setLocationDraft(event.target.value)}
                 placeholder="Kigali, Rwanda"
-                disabled={profileSaving}
+                disabled={profileFieldsDisabled}
               />
               <Input
                 label="Delivery time"
                 value={deliveryTimeDraft}
                 onChange={(event) => setDeliveryTimeDraft(event.target.value)}
                 placeholder="30–40 min"
-                disabled={profileSaving}
+                disabled={profileFieldsDisabled}
               />
               <Input
                 label="Rating (optional)"
@@ -387,26 +452,88 @@ export function SetupDrawer({
                 value={ratingDraft}
                 onChange={(event) => setRatingDraft(event.target.value)}
                 placeholder="4.8"
-                disabled={profileSaving}
+                disabled={profileFieldsDisabled}
               />
-              <Input
-                label="Logo URL"
-                type="url"
-                inputMode="url"
-                value={logoUrlDraft}
-                onChange={(event) => setLogoUrlDraft(event.target.value)}
-                placeholder="https://…/logo.png"
-                disabled={profileSaving}
-              />
-              <Input
-                label="Cover image URL"
-                type="url"
-                inputMode="url"
-                value={coverImageUrlDraft}
-                onChange={(event) => setCoverImageUrlDraft(event.target.value)}
-                placeholder="https://…/cover.jpg"
-                disabled={profileSaving}
-              />
+              <div className="flex flex-col gap-2">
+                <Input
+                  label="Logo URL"
+                  type="url"
+                  inputMode="url"
+                  value={logoUrlDraft}
+                  onChange={(event) => setLogoUrlDraft(event.target.value)}
+                  placeholder="https://…/logo.png"
+                  disabled={profileFieldsDisabled}
+                />
+                <input
+                  ref={logoFileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (file) void handleBrandingUpload("logo", file);
+                  }}
+                />
+                <Button
+                  size="default"
+                  variant="outline"
+                  disabled={profileFieldsDisabled || !hasToken}
+                  onClick={() => logoFileInputRef.current?.click()}
+                >
+                  {logoUploadBusy ? "Uploading logo…" : "Upload logo"}
+                </Button>
+                {logoUrlDraft ? (
+                  <div className="overflow-hidden rounded-brand-md border border-hairline">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={logoUrlDraft}
+                      alt="Logo preview"
+                      className="h-20 w-full object-contain object-center bg-canvas-soft p-2"
+                    />
+                  </div>
+                ) : null}
+              </div>
+              <div className="flex flex-col gap-2">
+                <Input
+                  label="Cover image URL"
+                  type="url"
+                  inputMode="url"
+                  value={coverImageUrlDraft}
+                  onChange={(event) => setCoverImageUrlDraft(event.target.value)}
+                  placeholder="https://…/cover.jpg"
+                  disabled={profileFieldsDisabled}
+                />
+                <input
+                  ref={coverFileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (file) void handleBrandingUpload("cover", file);
+                  }}
+                />
+                <Button
+                  size="default"
+                  variant="outline"
+                  disabled={profileFieldsDisabled || !hasToken}
+                  onClick={() => coverFileInputRef.current?.click()}
+                >
+                  {coverUploadBusy ? "Uploading cover…" : "Upload cover"}
+                </Button>
+                {coverImageUrlDraft ? (
+                  <div className="overflow-hidden rounded-brand-md border border-hairline">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={coverImageUrlDraft}
+                      alt="Cover preview"
+                      className="aspect-[3/1] w-full object-cover object-center"
+                    />
+                  </div>
+                ) : null}
+              </div>
               <div className="flex w-full flex-col gap-1.5">
                 <label
                   htmlFor="vendor-description"
@@ -419,13 +546,13 @@ export function SetupDrawer({
                   value={descriptionDraft}
                   onChange={(event) => setDescriptionDraft(event.target.value)}
                   placeholder="Tell your story — what makes your kitchen special."
-                  disabled={profileSaving}
+                  disabled={profileFieldsDisabled}
                   rows={3}
                   className={cn(
                     "w-full rounded-brand-md border border-hairline-strong bg-surface-card px-4 py-3 font-body text-body-md text-ink",
                     "placeholder:text-muted-soft",
                     "focus:border-2 focus:border-ink focus:outline-none",
-                    profileSaving &&
+                    profileFieldsDisabled &&
                       "cursor-not-allowed bg-canvas-soft text-muted-soft"
                   )}
                 />
@@ -433,7 +560,7 @@ export function SetupDrawer({
               <Button
                 size="default"
                 onClick={() => void handleSaveProfile()}
-                disabled={profileSaving || !hasToken}
+                disabled={profileFieldsDisabled || !hasToken}
               >
                 {profileSaving ? "Saving…" : "Save profile"}
               </Button>
@@ -442,7 +569,7 @@ export function SetupDrawer({
                   This device isn&apos;t unlocked yet. Use{" "}
                   <Link
                     href="/onboard?recover=1"
-                    className="text-primary underline underline-offset-2"
+                    className="font-medium text-gold underline underline-offset-2 hover:text-gold/80"
                   >
                     Recover access
                   </Link>{" "}
@@ -491,11 +618,28 @@ export function SetupDrawer({
               {!hasToken ? (
                 <Link
                   href="/onboard?recover=1"
-                  className="inline-flex h-10 min-h-10 w-full items-center justify-center rounded-pill bg-primary px-5 font-body text-button font-medium text-on-primary transition-colors hover:bg-primary-active"
+                  className="inline-flex h-10 min-h-10 w-full items-center justify-center rounded-brand-lg border border-gold/50 bg-gold/10 px-5 font-body text-button font-medium text-gold transition-colors hover:border-gold hover:bg-gold/20"
                 >
                   Recover access
                 </Link>
               ) : null}
+            </div>
+          </section>
+
+          <section className="mt-8">
+            <h3 className="font-display text-display-sm text-ink">
+              Storefront QR
+            </h3>
+            <p className="mt-1 font-body text-body-sm text-muted">
+              Print or download a QR code so customers can open your menu on
+              their phone.
+            </p>
+            <div className="mt-4">
+              <StorefrontQr
+                url={storefrontUrl}
+                slug={vendorSlug}
+                showActions
+              />
             </div>
           </section>
 

@@ -184,6 +184,61 @@ describe("vendor-provision actions", () => {
       expect(result.ok).toBe(false);
     });
 
+    it.each([
+      {
+        label: "intl stored (+250), local recovery (07…)",
+        storePhone: "+250 788 123 456",
+        recoverPhone: "0788123456",
+      },
+      {
+        label: "local stored (07…), intl recovery (+250)",
+        storePhone: "0788 123 456",
+        recoverPhone: "+250 788 123 456",
+      },
+      {
+        label: "national stored (250…), local recovery (07…)",
+        storePhone: "250788123456",
+        recoverPhone: "0788123456",
+      },
+      {
+        label: "national stored (250…), intl recovery (+250)",
+        storePhone: "250788123456",
+        recoverPhone: "+250 788 123 456",
+      },
+      {
+        label: "local stored (07…), national recovery (250…)",
+        storePhone: "0788 123 456",
+        recoverPhone: "250788123456",
+      },
+    ])(
+      "recovers when formats differ ($label)",
+      async ({ storePhone, recoverPhone }) => {
+        await provisionVendor({
+          ...validInput,
+          phoneNumber: storePhone,
+        });
+
+        const result = await recoverOwnerToken("sunrise-cafe", recoverPhone);
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+          const hash = await getStore().getVendorOwnerTokenHash("sunrise-cafe");
+          expect(verifyOwnerToken(result.ownerToken, hash)).toBe(true);
+        }
+      }
+    );
+
+    it("does not match payout/MoMo number — business phone only", async () => {
+      await provisionVendor({
+        ...validInput,
+        phoneNumber: "+250 788 123 456",
+        momoCode: "0700999888",
+        payoutMethod: "PHONE",
+      });
+
+      const result = await recoverOwnerToken("sunrise-cafe", "0700999888");
+      expect(result.ok).toBe(false);
+    });
+
     it("rate-limits recovery attempts per slug", async () => {
       await provisionVendor(validInput);
       // RECOVERY_LIMIT = 5 per window; the 6th trips.
