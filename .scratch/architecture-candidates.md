@@ -63,7 +63,7 @@ If a session ends without doing both, the handoff is incomplete.
 | 13 | Ops / security hardening | Worth exploring | docs + infra | ⏸ Probe — deferred | — |
 | 14 | Storefront item customization modal (visual-only) | Owner request | customer UI only | ✅ Done · prod-smoked 2026-06-29 | `.scratch/storefront-customization-modal/PRD.md` |
 | 15 | Vendor onboarding (~1 min go-live) | Strong | Store + KDS + provisioning | ✅ Done · deployed · prod-smoked 2026-06-30 | `.scratch/vendor-onboarding/PRD.md` |
-| 16 | Onboarding redesign (dark, self-serve, owner token) | Owner request | Store + Prisma + onboarding + KDS Setup | 🚀 Deployed 2026-07-01 (`c5a7048` → `dpl_Gc27AbbG7dCA11HAzAaPurBjHcCZ` → `zantap-psi.vercel.app`; supersedes `26ef33d`/`dpl_J2iP…` after a `.kds-dark` root-paint fix — wizard splash was rendering light) · all 4 issues done · prod env cut over (PROVISION_SECRET + VENDOR_WRITE_SECRET removed, kill-switch unset) · migration applied · **curl-smoked PASS** (dark `/onboard` splash+recover, gate gone, theme split, checklist bundle, KDS SSE live) — **interactive two-tab walkthrough pending human** (Go Live provision / MoMo PAID / recovery re-issue / checklist save) | `.scratch/onboarding-redesign/PRD.md` |
+| 16 | Onboarding redesign (dark, self-serve, owner token) | Owner request | Store + Prisma + onboarding + KDS Setup | ✅ DONE · deployed · prod-smoked 2026-07-02 (Playwright real-browser harness + human confirmation; `abc` vendor + profile fields verified in prod DB; organic vendor `lilys` self-served 2026-07-01; merged to `main` 2026-07-02) | `.scratch/onboarding-redesign/PRD.md` |
 | 17 | ZanTap operator/admin panel (vendor system-of-record + recovery verification) | Owner design | server + admin UI | ⏸ Deferred — owner design; consumes #16 recovery events | — |
 | 18 | Supabase pooler egress — KDS snapshot optimization | Strong | Store + KDS SSE | ✅ Done 2026-07-01 | `.scratch/pooler-egress-audit/issue-01-kds-snapshot-egress.md` |
 
@@ -190,6 +190,28 @@ tests; `npm run build` clean; `npm test` **180 passed / 64 skipped**. ADR-0026. 
 feature-complete** — all 4 issues done on `feat/onboarding-redesign`; next step is the
 build → deploy → prod smoke pass (prod cutover: remove `PROVISION_SECRET` from Vercel, leave
 `PROVISION_KILL_SWITCH` unset, `VENDOR_WRITE_SECRET` already dead).
+
+**Brand + KDS polish shipped 2026-07-01** (branch `feat/onboarding-redesign`, ADR-0027, two prod
+deploys): (1) `09943b0` → `dpl_3LK5RHZdDKLdfU6wBe3YWf15v8Ga` — real ZanTap logo + illustrated role
+icons on the splash, "You're Live" hero, and KDS `MetricsBanner`; round transparent favicon
+(`app/favicon.ico`/`icon.png`/`apple-icon.png`); assets alpha-trimmed + downscaled into
+`public/brand/` (source art was ~14–19% opaque → first render was tiny). (2) `aa9d1d1` →
+`dpl_GBVsWAaQXukhbsVengzHFo9hbFF5` (current live alias) — `.kds-surface` = darker `#0b0b0d` + subtle
+SVG `feTurbulence` film grain (scoped to KDS, not onboarding); SSE "Reconnecting…" reduced to a
+compact centered chip with a spinning loader ring. Build + lint green; prod curl `200`; assets +
+`kds-surface` confirmed live.
+
+**✅ Prod smoke PASSED 2026-07-02 — #16 CLOSED.** Real-browser Playwright harness
+(`.scratch/onboarding-redesign/prod-two-tab-smoke.mjs`, screenshots in `smoke-shots/`) on
+`zantap-psi.vercel.app`: wizard → Go Live provisioned vendor `abc` on the PROD DB (row +
+`businessCategory`/`payoutMethod`/owner-token hash verified via Supabase MCP), owner token
+auto-cached (no secret typed), brand logo + 5 role icons + dark root paint, `.kds-surface` grain,
+optional checklist "0 of 4" + 5 "Soon" badges, device-unlocked chip, profile save without prompt
+(Logo/Cover/Description persisted — verified in DB). Human completed + confirmed the remaining
+interactive steps (MoMo PIN `12345` → PAID on KDS; recovery re-issue). Bonus signal: organic
+vendor `lilys` self-served through the live wizard 2026-07-01 with a real dispatched order.
+Merged `feat/onboarding-redesign` → `main` and pushed 2026-07-02; prod alias unchanged
+(`dpl_GBVsWAaQXukhbsVengzHFo9hbFF5` → `zantap-psi.vercel.app`), no redeploy needed.
 
 ---
 
