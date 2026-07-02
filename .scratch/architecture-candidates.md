@@ -210,8 +210,9 @@ optional checklist "0 of 4" + 5 "Soon" badges, device-unlocked chip, profile sav
 (Logo/Cover/Description persisted — verified in DB). Human completed + confirmed the remaining
 interactive steps (MoMo PIN `12345` → PAID on KDS; recovery re-issue). Bonus signal: organic
 vendor `lilys` self-served through the live wizard 2026-07-01 with a real dispatched order.
-Merged `feat/onboarding-redesign` → `main` and pushed 2026-07-02; prod alias unchanged
-(`dpl_GBVsWAaQXukhbsVengzHFo9hbFF5` → `zantap-psi.vercel.app`), no redeploy needed.
+Merged `feat/onboarding-redesign` → `main` (fast-forward) and pushed 2026-07-02; the push
+auto-triggered a Vercel prod deploy of the identical code (`dpl_5dzRyX7KCz9GrmfKoW8P4fuEwPqX`),
+which now holds alias `zantap-psi.vercel.app` — no behavior change; post-merge curl smoke 200.
 
 ---
 
