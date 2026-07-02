@@ -327,6 +327,8 @@ export function KdsDashboard({
           {tab === "orders" ? (
             <OrdersList
               orders={visibleOrders}
+              vendorPhone={vendor.phoneNumber}
+              vendorName={vendor.name}
               expandedId={expandedId}
               selectedIds={selectedIds}
               bulkMode={bulkMode}

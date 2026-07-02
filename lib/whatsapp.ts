@@ -1,5 +1,17 @@
 import type { Order } from "@/lib/types";
-import { formatRwf } from "@/lib/format";
+import { formatRwf, normalizePhone } from "@/lib/format";
+
+/** Rwanda local → WhatsApp wa.me path segment (e.g. 0788123456 → 250788123456). */
+export function toWhatsAppE164(localPhone: string): string {
+  const digits = normalizePhone(localPhone);
+  if (digits.length === 12 && digits.startsWith("250")) {
+    return digits;
+  }
+  if (digits.length === 10 && digits.startsWith("0")) {
+    return `250${digits.slice(1)}`;
+  }
+  return "";
+}
 
 export function buildDeliverySlip(order: Order, vendorName: string): string {
   const lines = [
@@ -26,8 +38,26 @@ export function buildDeliverySlip(order: Order, vendorName: string): string {
   return lines.join("\n");
 }
 
-export function buildWhatsAppUrl(text: string): string {
-  return `https://wa.me/?text=${encodeURIComponent(text)}`;
+export function buildWhatsAppUrl(text: string, phone?: string): string {
+  const encoded = encodeURIComponent(text);
+  if (phone !== undefined) {
+    const e164 = toWhatsAppE164(phone);
+    if (e164) {
+      return `https://wa.me/${e164}?text=${encoded}`;
+    }
+  }
+  return `https://wa.me/?text=${encoded}`;
+}
+
+export function buildVendorWhatsAppUrl(
+  vendorPhone: string,
+  order: Order,
+  vendorName: string,
+  origin: string
+): string {
+  const slipUrl = `${origin.replace(/\/$/, "")}/slip/${order.id}`;
+  const text = buildVendorOrderNotification(order, vendorName, slipUrl);
+  return buildWhatsAppUrl(text, vendorPhone);
 }
 
 export function buildVendorOrderNotification(

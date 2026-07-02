@@ -9,7 +9,20 @@ is never lost again.
 > convention — local markdown, no GitHub round-trips). It persists on this machine
 > across sessions, but does **not** sync via git to other clones/machines.
 
-Last verified against the codebase: 2026-06-24.
+Last verified against the codebase: 2026-07-02.
+
+## Recommended next (2026-07-02)
+
+**Candidate #9 — Vendor WhatsApp PAID notification** — ✅ **Issue 01 shipped** (local;
+deploy + prod smoke pending). Next: `npm run build` deploy → manual MoMo smoke
+(PIN `12345` → expand ticket → wa.me opens with vendor number + slip URL).
+
+All other open candidates are gated (#10/#17 owner design, #11/#12 grill, #13 probe,
+#5 deferred).
+
+Housekeeping (non-blocking): delete merged branch `feat/onboarding-redesign` (local only —
+no `origin/feat/onboarding-redesign`); rotate Supabase DB password per `AGENTS.md` Security
+(human action → update `.env` + Vercel synced vars).
 
 ## Open production issues (read before touching the KDS)
 
@@ -56,7 +69,7 @@ If a session ends without doing both, the handoff is incomplete.
 | 6 | KDS Vendor Suite (menu, media, export, history, guides) | Strong | ports & adapters | ✅ Done & deployed · smoke complete | `.scratch/kds-vendor-suite/PRD.md` |
 | 7 | KDS workflow optimization (kitchen stage, aging, bulk) | Strong | ports & adapters + KDS UI | ✅ Done & deployed · smoke complete | `.scratch/kds-workflow-optimization/PRD.md` |
 | 8 | Storefront menu image carousel | Strong | customer UI only | ✅ Done · deployed · prod-smoked 2026-06-27 | `.scratch/storefront-image-carousel/PRD.md` |
-| 9 | Vendor WhatsApp PAID notification | Worth exploring | KDS UI + lib/whatsapp | 📋 Queued · owner locked A | `.scratch/vendor-whatsapp-paid-notification/PRD.md` |
+| 9 | Vendor WhatsApp PAID notification | Worth exploring | KDS UI + lib/whatsapp | ✅ Done · Issue 01 shipped 2026-07-02 (deploy pending) | `.scratch/vendor-whatsapp-paid-notification/PRD.md` |
 | 10 | Customer storefront → DESIGN.md | Strong | customer UI | ⏸ Owner designs pending | — |
 | 11 | Live MTN MoMo integration | Strong | server + payments | ⏸ Requires `/grill-with-docs` | — |
 | 12 | Vendor authentication | Strong | server + KDS | ⏸ Requires `/grill-with-docs` | — |
@@ -107,7 +120,7 @@ checklist (photos, kitchen, order, dispatch) + storefront profile section.
 
 ---
 
-## #16 · Onboarding redesign (dark, self-serve, owner token) — 📋 GRILLED · PRD WRITTEN
+## #16 · Onboarding redesign (dark, self-serve, owner token) — ✅ DONE · deployed · prod-smoked 2026-07-02
 
 Rating: Owner request · Scope: Prisma + Store + onboarding UI + KDS Setup. Branch: `feat/onboarding-redesign`.
 
@@ -541,7 +554,7 @@ carousels of the same images. Trivially splittable if the owner wants the exact 
 
 ---
 
-## #9 · Vendor WhatsApp PAID notification — 📋 QUEUED
+## #9 · Vendor WhatsApp PAID notification — ✅ DONE (Issue 01)
 
 Rating: Worth exploring · Scope: KDS UI + `lib/whatsapp` (no Store/schema).
 
@@ -555,9 +568,10 @@ on expanded PAID ticket (stages before `OUT_FOR_DELIVERY`). Opens
 Options B (server auto-send / WhatsApp Business API) and C (customer success copy) deferred.
 
 - PRD: `.scratch/vendor-whatsapp-paid-notification/PRD.md`
-- Issues: `01-kds-vendor-wa-me-notify` (ready-for-agent)
+- Issues: `01-kds-vendor-wa-me-notify` ✅ done 2026-07-02
+- ADR: `docs/adr/0028-kds-vendor-whatsapp-paid-notify.md`
 - Depends on: #2 Payment ✅, #4 KDS SSE ✅, `Vendor.phoneNumber` ✅, `/slip/[orderId]` ✅
-- Does **not** require `/grill-with-docs` (no payment state machine / auth changes)
+- **Next:** deploy + prod smoke (MoMo PIN `12345` → expand ticket → wa.me)
 
 ---
 
@@ -565,7 +579,7 @@ Options B (server auto-send / WhatsApp Business API) and C (customer success cop
 
 | # | Candidate | Readiness | Gate / notes |
 |---|-----------|-----------|--------------|
-| 9 | Vendor WhatsApp PAID notification | PRD + issue sliced 2026-06-29 | Owner locked Option A (KDS ticket wa.me). Stub wired in issue 01. B/C deferred. |
+| 9 | Vendor WhatsApp PAID notification | Issue 01 shipped 2026-07-02 | wa.me deep-link on KDS ticket; ADR-0028; deploy + prod smoke pending |
 | 10 | Customer storefront → DESIGN.md | Blocked | ~60+ `zt-*` refs across 9 customer components; `zt` palette still in `tailwind.config.ts`. **Do not start without owner designs.** |
 | 11 | Live MTN MoMo | High risk | Simulated STK in `lib/momo/simulate.ts` + `/api/momo/stk`. Payment module (#2) ✅. **Requires `/grill-with-docs` before PRD.** |
 | 12 | Vendor authentication | Deferred per AGENTS.md | Write-secret interim (ADR-0009). Real auth = separate grill + PRD. |

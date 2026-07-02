@@ -24,6 +24,7 @@ import type { KdsSortDirection } from "@/lib/kds/kitchen-stage";
 import { Icon } from "@/components/ui/Icon";
 import { Badge, Button, Card } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
+import { buildVendorWhatsAppUrl, toWhatsAppE164 } from "@/lib/whatsapp";
 
 const URGENCY_RING: Record<
   ReturnType<typeof getPaidAgeUrgency>,
@@ -44,6 +45,8 @@ function resolveKitchenStage(order: Order): KitchenStage {
 
 interface OrderTicketProps {
   order: Order;
+  vendorPhone: string;
+  vendorName: string;
   expanded: boolean;
   selected: boolean;
   bulkMode: boolean;
@@ -55,6 +58,8 @@ interface OrderTicketProps {
 
 export function OrderTicket({
   order,
+  vendorPhone,
+  vendorName,
   expanded,
   selected,
   bulkMode,
@@ -79,6 +84,11 @@ export function OrderTicket({
     (s) => s !== "OUT_FOR_DELIVERY" && s !== "COMPLETED"
   );
   const canComplete = stage === "OUT_FOR_DELIVERY";
+  const vendorE164 = toWhatsAppE164(vendorPhone);
+  const showVendorWhatsAppNotify =
+    order.status === "PAID" &&
+    stage !== "OUT_FOR_DELIVERY" &&
+    stage !== "COMPLETED";
 
   return (
     <Card
@@ -267,6 +277,32 @@ export function OrderTicket({
             </div>
           </div>
 
+          {showVendorWhatsAppNotify && (
+            <Button
+              type="button"
+              variant="outline"
+              size="kds"
+              disabled={!vendorE164}
+              title={vendorE164 ? undefined : "Add vendor phone in setup"}
+              onClick={() => {
+                if (!vendorE164) return;
+                const url = buildVendorWhatsAppUrl(
+                  vendorPhone,
+                  order,
+                  vendorName,
+                  window.location.origin
+                );
+                window.open(url, "_blank", "noopener");
+              }}
+              className="mt-3.5 w-full gap-2.5 border-[#25D366]/35 text-[#25D366] hover:bg-[#25D366]/10"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.86 9.86 0 0 0 12.04 2zm5.8 14.13c-.24.68-1.42 1.31-1.95 1.36-.5.05-1.13.27-3.82-.8-3.21-1.27-5.26-4.54-5.42-4.75-.16-.21-1.3-1.73-1.3-3.3 0-1.57.82-2.34 1.12-2.66.3-.32.65-.4.86-.4.21 0 .43 0 .61.01.2.01.46-.07.72.55.27.64.92 2.21 1 2.37.08.16.13.35.03.56-.1.21-.16.34-.31.53-.16.18-.33.41-.47.55-.16.16-.32.33-.14.64.18.32.8 1.32 1.72 2.14 1.18 1.05 2.18 1.38 2.49 1.54.31.16.49.13.67-.08.18-.21.77-.9.98-1.21.21-.32.42-.26.71-.16.29.11 1.85.87 2.17 1.03.32.16.53.24.61.37.08.14.08.78-.16 1.46z" />
+              </svg>
+              Notify vendor on WhatsApp
+            </Button>
+          )}
+
           {stage !== "OUT_FOR_DELIVERY" && stage !== "COMPLETED" && (
             <Button
               type="button"
@@ -312,6 +348,8 @@ export function OrderTicket({
 
 interface OrdersListProps {
   orders: Order[];
+  vendorPhone: string;
+  vendorName: string;
   expandedId: string | null;
   selectedIds: Set<string>;
   bulkMode: boolean;
@@ -336,6 +374,8 @@ const SORT_LABELS: Record<KdsSortDirection, string> = {
 
 export function OrdersList({
   orders,
+  vendorPhone,
+  vendorName,
   expandedId,
   selectedIds,
   bulkMode,
@@ -500,6 +540,8 @@ export function OrdersList({
             <OrderTicket
               key={order.id}
               order={order}
+              vendorPhone={vendorPhone}
+              vendorName={vendorName}
               expanded={expandedId === order.id}
               selected={selectedIds.has(order.id)}
               bulkMode={bulkMode}
