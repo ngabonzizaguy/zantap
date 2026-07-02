@@ -13,9 +13,15 @@ Last verified against the codebase: 2026-07-02.
 
 ## Recommended next (2026-07-02)
 
-**Candidate #9 — Vendor WhatsApp PAID notification** — ✅ **Issue 01 shipped** (local;
-deploy + prod smoke pending). Next: `npm run build` deploy → manual MoMo smoke
-(PIN `12345` → expand ticket → wa.me opens with vendor number + slip URL).
+**Candidate #19 — KDS + Storefront polish batch** — ✅ **DONE · deployed · prod-smoked**
+(`31c33c7` → `dpl_Aq8HQ3Hivdm3r1txwmKSLG2ygkUP` → alias `zantap-psi.vercel.app`).
+Playwright smoke 15/15 PASS (`.scratch/kds-storefront-polish/prod-smoke.mjs`).
+`NEXT_PUBLIC_BASE_URL=https://zantap.ai` set in Vercel Production.
+
+**Candidate #9 — Vendor WhatsApp PAID notification** — ✅ **DONE · deployed · prod-smoked**
+(`5f56269` → `dpl_EcGsGd4WNbRtgPKLUK9mcnaHMcK5` → `zantap-psi.vercel.app`). Playwright
+smoke 8/8 PASS on prod (MoMo PIN `12345` → expand ticket → `wa.me/250788123456` + slip URL;
+dispatch modal phoneless share unchanged).
 
 All other open candidates are gated (#10/#17 owner design, #11/#12 grill, #13 probe,
 #5 deferred).
@@ -69,7 +75,7 @@ If a session ends without doing both, the handoff is incomplete.
 | 6 | KDS Vendor Suite (menu, media, export, history, guides) | Strong | ports & adapters | ✅ Done & deployed · smoke complete | `.scratch/kds-vendor-suite/PRD.md` |
 | 7 | KDS workflow optimization (kitchen stage, aging, bulk) | Strong | ports & adapters + KDS UI | ✅ Done & deployed · smoke complete | `.scratch/kds-workflow-optimization/PRD.md` |
 | 8 | Storefront menu image carousel | Strong | customer UI only | ✅ Done · deployed · prod-smoked 2026-06-27 | `.scratch/storefront-image-carousel/PRD.md` |
-| 9 | Vendor WhatsApp PAID notification | Worth exploring | KDS UI + lib/whatsapp | ✅ Done · Issue 01 shipped 2026-07-02 (deploy pending) | `.scratch/vendor-whatsapp-paid-notification/PRD.md` |
+| 9 | Vendor WhatsApp PAID notification | Worth exploring | KDS UI + lib/whatsapp | ✅ Done · deployed · prod-smoked 2026-07-02 | `.scratch/vendor-whatsapp-paid-notification/PRD.md` |
 | 10 | Customer storefront → DESIGN.md | Strong | customer UI | ⏸ Owner designs pending | — |
 | 11 | Live MTN MoMo integration | Strong | server + payments | ⏸ Requires `/grill-with-docs` | — |
 | 12 | Vendor authentication | Strong | server + KDS | ⏸ Requires `/grill-with-docs` | — |
@@ -79,8 +85,49 @@ If a session ends without doing both, the handoff is incomplete.
 | 16 | Onboarding redesign (dark, self-serve, owner token) | Owner request | Store + Prisma + onboarding + KDS Setup | ✅ DONE · deployed · prod-smoked 2026-07-02 (Playwright real-browser harness + human confirmation; `abc` vendor + profile fields verified in prod DB; organic vendor `lilys` self-served 2026-07-01; merged to `main` 2026-07-02) | `.scratch/onboarding-redesign/PRD.md` |
 | 17 | ZanTap operator/admin panel (vendor system-of-record + recovery verification) | Owner design | server + admin UI | ⏸ Deferred — owner design; consumes #16 recovery events | — |
 | 18 | Supabase pooler egress — KDS snapshot optimization | Strong | Store + KDS SSE | ✅ Done 2026-07-01 | `.scratch/pooler-egress-audit/issue-01-kds-snapshot-egress.md` |
+| 19 | KDS + Storefront polish batch (recovery, dashboard, images, help, onboarding, storefront sync, domain) | Owner request | Store + KDS + onboarding + customer UI + config | ✅ Done · deployed · prod-smoked 2026-07-02 | `.scratch/kds-storefront-polish/PRD.md` |
 
 **#18 closed 2026-07-01** — revision-first SSE poll, scoped `listKdsOrders`, narrow includes, seed remote guard. ADR-0023.
+
+**#19 in progress 2026-07-02** — owner punch-list, grilled via `/grill-with-docs`.
+Decisions: `.scratch/kds-storefront-polish/grill-decisions.md`; PRD:
+`.scratch/kds-storefront-polish/PRD.md`; 11 issues under
+`.scratch/kds-storefront-polish/issues/`. **Issue 01 done:** `canonicalizePhone` +
+`phonesMatchForRecovery` in `lib/format.ts`; `recoverOwnerToken` E.164 compare;
+format-permutation tests; ADR-0029. **Issue 02 done:** `getYesterdayGross` Store verb;
+Kigali-bounded `getTodayGross` fix; `yesterdayGross` on `KdsSnapshot`; `MetricsBanner`
+Live/Off + real delta ("New" when yesterday = 0); ADR-0030. **Issue 03 done:**
+storefront `Hero` renders `logoUrl`/`coverImageUrl`/`description` + `tel:` call button;
+`DescriptionClamp` client component (2-line clamp, orange more/less, ≤300 chars).
+**Issue 04 done:** `object-cover` `<img>` in fixed shells on storefront carousel +
+KDS menu card; KDS wide banner → 72×72 square thumb (horizontal row, matches
+storefront); gallery `object-center`; RSC refresh path unchanged (`getMenuItemGalleryUrls`).
+**Issue 05 done:** `uploadBrandingImage` owner-token action → Vercel Blob `branding/`
+folder → `updateVendor` logoUrl/coverImageUrl; SetupDrawer upload buttons + previews
+(URL fallback kept); reuses `validateMenuImageFile` (JPEG/PNG/WebP, 5MB).
+**Issue 06 done:** shared `Select` + `Combobox` primitives; History status/payment
+filters; onboarding dial-code pickers; category type-or-pick in `QuickMenuStep` +
+`MenuItemModal`; Orders Sort refactored to `Select variant="pill"`.
+**Issue 07 done:** peek `?` FAB (`usePeekVisibility`, `bottom-24`); `HelpModal` with
+6 accordion sections + WhatsApp ask-a-question to owner `250784928786`.
+**Issue 08 done:** horizontal swipe date chips (`zt-hidescroll` + snap); non-custom
+presets apply instantly via `onDatePresetApply` (custom range still draft→Apply);
+receipt page wrapped in `.kds-dark` + `.kds-surface` with print white/ink override.
+**Issue 10 done:** SetupDrawer "Preview storefront" → `/{slug}?from=kds` same tab;
+`BackToKdsChip` on storefront when `from=kds` → `/vendor/{slug}?tab=setup`;
+`SuccessReceipt` white-outline "Back to menu" below "Place another order" (both
+`onReset`). `npm run build` + `npm test` 196/66 green.
+**Issue 11 done:** `lib/base-url.ts` (`getBaseUrl`, `getDisplayHostPrefix`,
+`getStorefrontUrl`, `formatStorefrontDisplayPath`); `storefront-url.ts` re-exports;
+onboarding display copy + Help modal + OrderTicket WA notify routed through seam;
+`.env.example` documents optional `NEXT_PUBLIC_BASE_URL`. ADR-0032.
+`npm run build` + `npm test` 203/66 green.
+**✅ DEPLOYED & prod-smoked 2026-07-02** — `31c33c7` → `dpl_Aq8HQ3Hivdm3r1txwmKSLG2ygkUP`
+→ `zantap-psi.vercel.app` (redeploy with `NEXT_PUBLIC_BASE_URL=https://zantap.ai`).
+Playwright smoke 15/15 PASS: E.164 recovery (`+250788123456` → inka), Live label +
+real gross delta, help modal → `wa.me/250784928786` with `zantap.ai` storefront URL,
+preview `?from=kds` + Back chip, success Back to menu, call button on Hero.
+Harness: `.scratch/kds-storefront-polish/prod-smoke.mjs`.
 
 **#14 closed 2026-06-29** — prod gesture smoke 11/11 PASS on `zantap-psi.vercel.app/inka-steakhouse` (375px).
 
@@ -554,7 +601,7 @@ carousels of the same images. Trivially splittable if the owner wants the exact 
 
 ---
 
-## #9 · Vendor WhatsApp PAID notification — ✅ DONE (Issue 01)
+## #9 · Vendor WhatsApp PAID notification — ✅ DONE · deployed · prod-smoked 2026-07-02
 
 Rating: Worth exploring · Scope: KDS UI + `lib/whatsapp` (no Store/schema).
 
@@ -571,7 +618,8 @@ Options B (server auto-send / WhatsApp Business API) and C (customer success cop
 - Issues: `01-kds-vendor-wa-me-notify` ✅ done 2026-07-02
 - ADR: `docs/adr/0028-kds-vendor-whatsapp-paid-notify.md`
 - Depends on: #2 Payment ✅, #4 KDS SSE ✅, `Vendor.phoneNumber` ✅, `/slip/[orderId]` ✅
-- **Next:** deploy + prod smoke (MoMo PIN `12345` → expand ticket → wa.me)
+- Deploy: `5f56269` → `dpl_EcGsGd4WNbRtgPKLUK9mcnaHMcK5` → `zantap-psi.vercel.app`
+- Prod smoke: Playwright 8/8 PASS (`.scratch/vendor-whatsapp-paid-notification/prod-smoke.mjs`)
 
 ---
 
@@ -579,7 +627,7 @@ Options B (server auto-send / WhatsApp Business API) and C (customer success cop
 
 | # | Candidate | Readiness | Gate / notes |
 |---|-----------|-----------|--------------|
-| 9 | Vendor WhatsApp PAID notification | Issue 01 shipped 2026-07-02 | wa.me deep-link on KDS ticket; ADR-0028; deploy + prod smoke pending |
+| 9 | Vendor WhatsApp PAID notification | ✅ Done · deployed · prod-smoked 2026-07-02 | wa.me deep-link on KDS ticket; ADR-0028; Playwright smoke 8/8 |
 | 10 | Customer storefront → DESIGN.md | Blocked | ~60+ `zt-*` refs across 9 customer components; `zt` palette still in `tailwind.config.ts`. **Do not start without owner designs.** |
 | 11 | Live MTN MoMo | High risk | Simulated STK in `lib/momo/simulate.ts` + `/api/momo/stk`. Payment module (#2) ✅. **Requires `/grill-with-docs` before PRD.** |
 | 12 | Vendor authentication | Deferred per AGENTS.md | Write-secret interim (ADR-0009). Real auth = separate grill + PRD. |
