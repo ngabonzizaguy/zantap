@@ -1,6 +1,6 @@
 # Issue 01 — KDS vendor WhatsApp PAID notify (wa.me deep-link)
 
-Status: **done** (2026-07-02)
+Status: **done · deployed · prod-smoked** (2026-07-02)
 Feature: vendor-whatsapp-paid-notification · candidate #9
 Refs: PRD `.scratch/vendor-whatsapp-paid-notification/PRD.md`
 Labels: ready-for-agent
@@ -70,10 +70,9 @@ Owner locked **Option A — KDS ticket button** (2026-06-29).
 
 ## Manual smoke
 
-1. Dev: customer checkout → MoMo PIN `12345` → PAID on KDS.
-2. Expand ticket → tap "Notify vendor on WhatsApp".
-3. WhatsApp opens with vendor number + notification text containing `/slip/{id}`.
-4. Dispatch flow still shares delivery slip separately.
+- [x] Prod 2026-07-02: MoMo PIN `12345` → PAID on `/vendor/inka-steakhouse` (Playwright).
+- [x] Expand ticket → "Notify vendor on WhatsApp" → `wa.me/250788123456` + `/slip/{id}`.
+- [x] Dispatch modal "Copy & Share to WhatsApp" still phoneless `wa.me/?text=` + delivery slip.
 
 ## Comments
 

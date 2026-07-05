@@ -8,6 +8,7 @@ import type {
   CreatePaymentInput,
   CreatePaymentResult,
   CreateVendorInput,
+  CreateDriverInput,
   Driver,
   KitchenStage,
   MenuImage,
@@ -21,6 +22,7 @@ import type {
   RecordRecoveryEventInput,
   ResumableManualOrder,
   UpdateMenuItemInput,
+  UpdateDriverInput,
   UpdateVendorInput,
   Vendor,
   VendorRecoveryEvent,
@@ -139,6 +141,18 @@ export interface Store {
 
   // Drivers
   getDrivers(vendorSlug: string): Promise<Driver[]>;
+  createDriver(vendorSlug: string, input: CreateDriverInput): Promise<Driver>;
+  updateDriver(
+    vendorSlug: string,
+    driverId: string,
+    input: UpdateDriverInput
+  ): Promise<Driver | null>;
+  deleteDriver(vendorSlug: string, driverId: string): Promise<boolean>;
+  assignOrderDriver(orderId: string, driverId: string): Promise<Order | null>;
+  bulkAssignOrderDriver(
+    orderIds: string[],
+    driverId: string
+  ): Promise<Order[]>;
 
   // Today's gross (+ yesterday for dashboard delta)
   getTodayGross(vendorSlug: string): Promise<number>;

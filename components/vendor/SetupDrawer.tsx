@@ -442,7 +442,7 @@ export function SetupDrawer({
       const slugChanged = updated.slug !== vendorSlug;
       if (slugChanged) {
         transferOwnerTokenCache(vendorSlug, updated.slug);
-        router.replace(`/vendor/${updated.slug}?tab=setup`);
+        router.replace(`/vendor/${updated.slug}?tab=drivers`);
         return;
       }
 

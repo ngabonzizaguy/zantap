@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import type { MenuItem } from "@/lib/types";
 import { formatRwf } from "@/lib/format";
 import { getMenuItemGalleryUrls } from "@/lib/menu/media";
 import { MenuItemImageCarousel } from "@/components/customer/MenuItemImageCarousel";
+import { MenuImageLightbox } from "@/components/customer/MenuImageLightbox";
 import { Icon } from "@/components/ui/Icon";
 import { GlassPanel } from "@/components/ui/GlassPanel";
 
@@ -15,10 +17,13 @@ interface MenuItemCardProps {
 }
 
 export function MenuItemCard({ item, qty, onAdd, onOpen }: MenuItemCardProps) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const thumbBg = `radial-gradient(circle at 32% 28%, ${item.thumbFrom ?? "#ffd2b0"}, ${item.thumbTo ?? "#f5945f"})`;
   const galleryUrls = getMenuItemGalleryUrls(item);
+  const hasPhotos = galleryUrls.length > 0;
 
   return (
+    <>
     <GlassPanel
       role="button"
       tabIndex={0}
@@ -32,7 +37,25 @@ export function MenuItemCard({ item, qty, onAdd, onOpen }: MenuItemCardProps) {
       }}
       className="relative flex cursor-pointer items-center gap-4 p-3.5 transition active:scale-[0.99]"
     >
-      <div className="relative flex-none">
+      <div
+        className="relative flex-none"
+        onClick={(e) => {
+          if (!hasPhotos) return;
+          e.stopPropagation();
+          setLightboxOpen(true);
+        }}
+        onKeyDown={(e) => {
+          if (!hasPhotos) return;
+          if (e.key === "Enter" || e.key === " ") {
+            e.stopPropagation();
+            e.preventDefault();
+            setLightboxOpen(true);
+          }
+        }}
+        role={hasPhotos ? "button" : undefined}
+        tabIndex={hasPhotos ? 0 : undefined}
+        aria-label={hasPhotos ? `View photos of ${item.name}` : undefined}
+      >
         <MenuItemImageCarousel urls={galleryUrls} fallbackBg={thumbBg} />
         {qty > 0 && (
           <div className="absolute -left-2 -top-2 z-10 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-[#fbeee6] bg-zt-brown px-1.5 text-xs font-extrabold text-white shadow-[0_4px_10px_rgba(0,0,0,0.22)]">
@@ -65,6 +88,16 @@ export function MenuItemCard({ item, qty, onAdd, onOpen }: MenuItemCardProps) {
         <Icon name="plus" size={20} strokeWidth={2.2} />
       </button>
     </GlassPanel>
+
+    {hasPhotos ? (
+      <MenuImageLightbox
+        open={lightboxOpen}
+        urls={galleryUrls}
+        itemName={item.name}
+        onClose={() => setLightboxOpen(false)}
+      />
+    ) : null}
+    </>
   );
 }
 

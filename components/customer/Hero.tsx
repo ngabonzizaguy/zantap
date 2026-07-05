@@ -1,9 +1,14 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { GlassPanel } from "@/components/ui/GlassPanel";
 import { DescriptionClamp } from "@/components/customer/DescriptionClamp";
+import { getStorefrontUrl } from "@/lib/base-url";
 
 interface HeroProps {
+  vendorSlug: string;
   tagline: string;
   restaurantName: string;
   deliveryTime: string;
@@ -40,6 +45,7 @@ const actionButtonClass =
   "flex h-10 w-10 flex-none items-center justify-center rounded-full border border-white/70 bg-white/55 text-zt-brown-muted backdrop-blur-md transition-colors hover:text-zt-brown";
 
 export function Hero({
+  vendorSlug,
   tagline,
   restaurantName,
   deliveryTime,
@@ -49,8 +55,36 @@ export function Hero({
   description,
   phoneNumber,
 }: HeroProps) {
+  const [copied, setCopied] = useState(false);
   const trimmedDescription = description?.trim();
   const trimmedPhone = phoneNumber?.trim();
+  const storefrontUrl = getStorefrontUrl(vendorSlug);
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(storefrontUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard unavailable
+    }
+  };
+
+  const shareStore = async () => {
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({
+          title: `${restaurantName} on ZanTap`,
+          text: `Order from ${restaurantName}`,
+          url: storefrontUrl,
+        });
+        return;
+      } catch {
+        // user cancelled or share failed
+      }
+    }
+    void copyLink();
+  };
 
   return (
     <>
@@ -99,7 +133,8 @@ export function Hero({
             ) : null}
             <button
               type="button"
-              aria-label="Share storefront"
+              aria-label={copied ? "Link copied" : "Share storefront"}
+              onClick={() => void shareStore()}
               className={actionButtonClass}
             >
               <svg

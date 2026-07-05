@@ -729,6 +729,35 @@ export function runStoreContract(
         const drivers = await store.getDrivers(slug);
         expect(drivers.length).toBeGreaterThan(0);
       });
+
+      it("creates, updates, deletes, and assigns a driver to an order", async () => {
+        const created = await store.createDriver(slug, {
+          name: "Smoke Driver",
+          phone: "0788001122",
+        });
+        expect(created.name).toBe("Smoke Driver");
+        expect(created.initials).toBe("SD");
+
+        const listed = await store.getDrivers(slug);
+        expect(listed.some((driver) => driver.id === created.id)).toBe(true);
+
+        const updated = await store.updateDriver(slug, created.id, {
+          name: "Smoke Driver Updated",
+        });
+        expect(updated?.name).toBe("Smoke Driver Updated");
+
+        const order = await placeOrderFromMenu();
+        await store.updateOrderStatus(order.id, "PAID");
+        await store.updateKitchenStage(order.id, "READY");
+
+        const assigned = await store.assignOrderDriver(order.id, created.id);
+        expect(assigned?.driverId).toBe(created.id);
+        expect(assigned?.assignedDriver?.name).toBe("Smoke Driver Updated");
+        expect(assigned?.kitchenStage).toBe("READY");
+
+        const deleted = await store.deleteDriver(slug, created.id);
+        expect(deleted).toBe(true);
+      });
     });
 
     describe("kitchen state", () => {

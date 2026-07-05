@@ -164,6 +164,9 @@ export interface Order {
   status: OrderStatus;
   /** Set to NEW when payment succeeds; null while PENDING. */
   kitchenStage?: KitchenStage;
+  /** Driver assigned for delivery record-keeping (order may stay READY). */
+  driverId?: string;
+  assignedDriver?: Driver;
   /** Anchors KDS aging; set once at PAID transition. */
   paidAt?: Date;
   orderItems: OrderItem[];
@@ -179,6 +182,16 @@ export interface Driver {
   phone: string;
   initials: string;
   hue: string;
+}
+
+export interface CreateDriverInput {
+  name: string;
+  phone: string;
+}
+
+export interface UpdateDriverInput {
+  name?: string;
+  phone?: string;
 }
 
 export interface Payment {

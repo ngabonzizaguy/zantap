@@ -4,14 +4,14 @@ import { cn } from "@/lib/cn";
 import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/primitives";
 
-export type KdsTab = "orders" | "menu" | "history" | "setup";
+export type KdsTab = "orders" | "menu" | "history" | "drivers";
 
 interface TabsProps {
   active: KdsTab;
   onOrders: () => void;
   onMenu: () => void;
   onHistory: () => void;
-  onSetup: () => void;
+  onDrivers: () => void;
 }
 
 function tabClass(active: boolean) {
@@ -26,7 +26,7 @@ export function Tabs({
   onOrders,
   onMenu,
   onHistory,
-  onSetup,
+  onDrivers,
 }: TabsProps) {
   return (
     <div className="relative z-[1] grid grid-cols-2 gap-2.5 px-[18px] pb-1 pt-4 sm:grid-cols-4">
@@ -65,14 +65,14 @@ export function Tabs({
       </Button>
       <Button
         type="button"
-        variant={active === "setup" ? "primary" : "outline"}
+        variant={active === "drivers" ? "primary" : "outline"}
         size="kds"
         radius="xl"
-        onClick={onSetup}
-        className={tabClass(active === "setup")}
+        onClick={onDrivers}
+        className={tabClass(active === "drivers")}
       >
-        <Icon name="settings" size={20} strokeWidth={2.1} />
-        Setup
+        <Icon name="dispatch" size={20} strokeWidth={2.1} />
+        Drivers
       </Button>
     </div>
   );

@@ -78,12 +78,13 @@ function StorefrontInner({
         <TopBar
           location={vendor.location ?? "Kigali, Rwanda"}
           kdsBackHref={
-            fromKds ? `/vendor/${vendor.slug}?tab=setup` : undefined
+            fromKds ? `/vendor/${vendor.slug}?tab=orders` : undefined
           }
         />
 
         <div className="mt-5">
           <Hero
+            vendorSlug={vendor.slug}
             tagline={vendor.tagline ?? "Premium grills"}
             restaurantName={vendor.name}
             deliveryTime={vendor.deliveryTime ?? "30–40 min"}

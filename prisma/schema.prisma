@@ -89,6 +89,8 @@ model Order {
   totalAmount    Int
   status         OrderStatus   @default(PENDING)
   kitchenStage   KitchenStage?
+  driverId       String?
+  driver         Driver?       @relation(fields: [driverId], references: [id], onDelete: SetNull)
   paidAt         DateTime?
   orderItems     OrderItem[]
   payment        Payment?
@@ -120,6 +122,7 @@ model Driver {
   initials  String
   hue       String   @default("#F5945F")
   createdAt DateTime @default(now())
+  orders    Order[]
 
   @@index([vendorId])
 }

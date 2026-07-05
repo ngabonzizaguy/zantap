@@ -25,7 +25,7 @@ export function LiveStep({
   storefrontPreviewPath,
 }: LiveStepProps) {
   const [copied, setCopied] = useState(false);
-  const kdsPath = `/vendor/${slug}?tab=setup`;
+  const kdsPath = `/vendor/${slug}?tab=drivers`;
   const displayUrl = storefrontUrl.replace(/^https?:\/\//, "");
 
   const copyLink = async () => {

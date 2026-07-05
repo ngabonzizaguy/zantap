@@ -38,7 +38,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: "hasDispatch",
     label: "Dispatch an order",
-    hint: "Expand a paid ticket and tap Dispatch moto driver.",
+    hint: "Expand a ready ticket and assign a driver.",
   },
 ];
 

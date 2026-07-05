@@ -104,7 +104,7 @@ export function RecoverAccessDialog({ open, onClose }: RecoverAccessDialogProps)
               </p>
             </div>
             <Link
-              href={`/vendor/${recoveredSlug}?tab=setup`}
+              href={`/vendor/${recoveredSlug}?tab=drivers`}
               className="inline-flex h-12 w-full items-center justify-center rounded-brand-lg bg-primary px-6 font-body text-button font-medium text-on-primary transition-colors hover:bg-primary-active"
             >
               Open Kitchen Dashboard →

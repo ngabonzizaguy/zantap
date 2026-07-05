@@ -52,7 +52,7 @@ interface OrderTicketProps {
   bulkMode: boolean;
   onToggle: () => void;
   onSelect: () => void;
-  onDispatch: () => void;
+  onAssign: () => void;
   onAdvanceStage: (stage: KitchenStage) => void;
 }
 
@@ -65,7 +65,7 @@ export function OrderTicket({
   bulkMode,
   onToggle,
   onSelect,
-  onDispatch,
+  onAssign,
   onAdvanceStage,
 }: OrderTicketProps) {
   const stage = resolveKitchenStage(order);
@@ -310,17 +310,63 @@ export function OrderTicket({
             </Button>
           )}
 
-          {stage !== "OUT_FOR_DELIVERY" && stage !== "COMPLETED" && (
+          {order.assignedDriver ? (
+            <a
+              href={`tel:${order.assignedDriver.phone}`}
+              className="mt-3.5 flex min-h-[60px] items-center gap-[13px] rounded-brand-lg border border-hairline bg-surface-strong p-3.5 no-underline transition-colors hover:bg-canvas-soft"
+            >
+              <div
+                className="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-brand-lg text-base font-medium"
+                style={{
+                  background: `${order.assignedDriver.hue}26`,
+                  border: `1.5px solid ${order.assignedDriver.hue}73`,
+                  color: order.assignedDriver.hue,
+                }}
+              >
+                {order.assignedDriver.initials}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-body text-caption-uppercase uppercase text-muted">
+                  Assigned driver
+                </div>
+                <div className="font-body text-body-md font-medium text-ink">
+                  {order.assignedDriver.name}
+                </div>
+                <div className="font-mono font-body text-body-sm text-muted">
+                  {formatPhoneDisplay(order.assignedDriver.phone)}
+                </div>
+              </div>
+              <span className="flex h-[42px] flex-none items-center gap-1.5 rounded-pill border border-success/40 bg-success/10 px-4 font-body text-body-sm font-medium text-success">
+                <Icon name="call" size={17} strokeWidth={2.3} />
+                Call
+              </span>
+            </a>
+          ) : null}
+
+          {stage === "READY" && (
             <Button
               type="button"
               size="kds"
               variant="primary"
               data-coachmark-target="dispatch-button"
-              onClick={onDispatch}
+              onClick={onAssign}
               className="mt-3.5 w-full gap-2.5"
             >
               <Icon name="dispatch" size={22} strokeWidth={2.3} />
-              Dispatch moto driver
+              {order.assignedDriver ? "Change driver" : "Assign driver"}
+            </Button>
+          )}
+
+          {stage === "READY" && (
+            <Button
+              type="button"
+              variant="outline"
+              size="kds"
+              onClick={() => onAdvanceStage("OUT_FOR_DELIVERY")}
+              className="mt-2.5 w-full gap-2"
+            >
+              <Icon name="dispatch" size={18} strokeWidth={2.3} />
+              Mark out for delivery
             </Button>
           )}
 
@@ -329,11 +375,11 @@ export function OrderTicket({
               type="button"
               variant="outline"
               size="kds"
-              onClick={onDispatch}
+              onClick={onAssign}
               className="mt-3.5 w-full gap-2"
             >
-              <Icon name="check" size={18} className="text-success" strokeWidth={2.4} />
-              Driver dispatched · Re-share slip
+              <Icon name="dispatch" size={18} strokeWidth={2.3} />
+              {order.assignedDriver ? "Change driver" : "Assign driver"}
             </Button>
           )}
 
@@ -369,7 +415,7 @@ interface OrdersListProps {
   onSortDirection: (direction: KdsSortDirection) => void;
   onToggle: (id: string) => void;
   onSelect: (id: string) => void;
-  onDispatch: (id: string) => void;
+  onAssign: (id: string) => void;
   onAdvanceStage: (id: string, stage: KitchenStage) => void;
   onToggleBulkMode: () => void;
 }
@@ -400,7 +446,7 @@ export function OrdersList({
   onSortDirection,
   onToggle,
   onSelect,
-  onDispatch,
+  onAssign,
   onAdvanceStage,
   onToggleBulkMode,
 }: OrdersListProps) {
@@ -525,7 +571,7 @@ export function OrdersList({
               bulkMode={bulkMode}
               onToggle={() => onToggle(order.id)}
               onSelect={() => onSelect(order.id)}
-              onDispatch={() => onDispatch(order.id)}
+              onAssign={() => onAssign(order.id)}
               onAdvanceStage={(stage) => onAdvanceStage(order.id, stage)}
             />
           ))}

@@ -36,6 +36,12 @@ import {
   validateMenuImageFile,
 } from "@/lib/menu/media";
 import { prisma as defaultPrisma } from "@/lib/prisma";
+import { canonicalizePhone } from "@/lib/format";
+import {
+  deriveDriverHue,
+  deriveDriverInitials,
+  normalizeDriverName,
+} from "@/lib/vendor/driver-display";
 import type { Store } from "@/lib/store/types";
 import type {
   AbandonManualPaymentResult,
@@ -47,6 +53,7 @@ import type {
   CreatePaymentInput,
   CreatePaymentResult,
   CreateVendorInput,
+  CreateDriverInput,
   Driver,
   KitchenStage,
   MenuImage,
@@ -60,6 +67,7 @@ import type {
   RecordRecoveryEventInput,
   ResumableManualOrder,
   UpdateMenuItemInput,
+  UpdateDriverInput,
   UpdateVendorInput,
   Vendor,
   VendorRecoveryEvent,
@@ -87,6 +95,7 @@ type PrismaMenuItemWithImages = PrismaMenuItem & {
 
 type PrismaOrderWithItems = PrismaOrder & {
   orderItems: (PrismaOrderItem & { menuItem: PrismaMenuItemWithImages })[];
+  driver?: PrismaDriver | null;
 };
 
 const activeMenuWhere = { archivedAt: null } as const;
@@ -97,6 +106,7 @@ const menuImageInclude = {
 
 const orderInclude = {
   orderItems: { include: { menuItem: { include: menuImageInclude } } },
+  driver: true,
 } satisfies Prisma.OrderInclude;
 
 /** KDS queue reads — line items need menu names, not full image galleries. */
@@ -122,6 +132,7 @@ const kdsOrderInclude = {
       },
     },
   },
+  driver: true,
 } satisfies Prisma.OrderInclude;
 
 function kdsOrdersWhere(
@@ -236,6 +247,8 @@ function mapOrder(order: PrismaOrderWithItems): Order {
     totalAmount: order.totalAmount,
     status: order.status as OrderStatus,
     kitchenStage: order.kitchenStage ?? undefined,
+    driverId: order.driverId ?? undefined,
+    assignedDriver: order.driver ? mapDriver(order.driver) : undefined,
     paidAt: order.paidAt ?? undefined,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
@@ -1125,6 +1138,140 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     return drivers.map(mapDriver);
   }
 
+  async function resolveVendorId(vendorSlug: string): Promise<string | null> {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: vendorSlug },
+      select: { id: true },
+    });
+    return vendor?.id ?? null;
+  }
+
+  function normalizeDriverPhone(phone: string): string | null {
+    return canonicalizePhone(phone, "250");
+  }
+
+  async function createDriver(
+    vendorSlug: string,
+    input: CreateDriverInput
+  ): Promise<Driver> {
+    const vendorId = await resolveVendorId(vendorSlug);
+    if (!vendorId) {
+      throw new Error("Vendor not found");
+    }
+
+    const name = normalizeDriverName(input.name);
+    if (!name) {
+      throw new Error("Driver name is required");
+    }
+
+    const phone = normalizeDriverPhone(input.phone);
+    if (!phone) {
+      throw new Error("Valid driver phone is required");
+    }
+
+    const existingCount = await client.driver.count({ where: { vendorId } });
+    const driver = await client.driver.create({
+      data: {
+        vendorId,
+        name,
+        phone,
+        initials: deriveDriverInitials(name),
+        hue: deriveDriverHue(existingCount),
+      },
+    });
+    return mapDriver(driver);
+  }
+
+  async function updateDriver(
+    vendorSlug: string,
+    driverId: string,
+    input: UpdateDriverInput
+  ): Promise<Driver | null> {
+    const vendorId = await resolveVendorId(vendorSlug);
+    if (!vendorId) return null;
+
+    const existing = await client.driver.findFirst({
+      where: { id: driverId, vendorId },
+    });
+    if (!existing) return null;
+
+    const name =
+      input.name !== undefined ? normalizeDriverName(input.name) : existing.name;
+    if (!name) {
+      throw new Error("Driver name is required");
+    }
+
+    const phone =
+      input.phone !== undefined
+        ? normalizeDriverPhone(input.phone)
+        : existing.phone;
+    if (!phone) {
+      throw new Error("Valid driver phone is required");
+    }
+
+    const driver = await client.driver.update({
+      where: { id: driverId },
+      data: {
+        name,
+        phone,
+        initials: deriveDriverInitials(name),
+      },
+    });
+    return mapDriver(driver);
+  }
+
+  async function deleteDriver(
+    vendorSlug: string,
+    driverId: string
+  ): Promise<boolean> {
+    const vendorId = await resolveVendorId(vendorSlug);
+    if (!vendorId) return false;
+
+    const existing = await client.driver.findFirst({
+      where: { id: driverId, vendorId },
+      select: { id: true },
+    });
+    if (!existing) return false;
+
+    await client.driver.delete({ where: { id: driverId } });
+    return true;
+  }
+
+  async function assignOrderDriver(
+    orderId: string,
+    driverId: string
+  ): Promise<Order | null> {
+    const order = await client.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, vendorId: true },
+    });
+    if (!order) return null;
+
+    const driver = await client.driver.findFirst({
+      where: { id: driverId, vendorId: order.vendorId },
+    });
+    if (!driver) return null;
+
+    const updated = await client.order.update({
+      where: { id: orderId },
+      data: { driverId },
+      include: orderInclude,
+    });
+    return mapOrder(updated);
+  }
+
+  async function bulkAssignOrderDriver(
+    orderIds: string[],
+    driverId: string
+  ): Promise<Order[]> {
+    const updated: Order[] = [];
+    for (const orderId of orderIds) {
+      const order = await assignOrderDriver(orderId, driverId);
+      if (order) updated.push(order);
+    }
+    return updated;
+  }
+
   async function aggregateGrossForPreset(
     vendorId: string,
     preset: "today" | "yesterday"
@@ -1521,6 +1668,11 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     updateKitchenStage,
     bulkUpdateKitchenStage,
     getDrivers,
+    createDriver,
+    updateDriver,
+    deleteDriver,
+    assignOrderDriver,
+    bulkAssignOrderDriver,
     getTodayGross,
     getYesterdayGross,
     isKitchenOpen,

@@ -316,6 +316,16 @@ export function HistoryPanel({ vendorSlug }: HistoryPanelProps) {
                       {formatRwf(order.totalAmount)}
                     </p>
                   </div>
+                  {order.assignedDriver ? (
+                    <div>
+                      <p className="font-body text-caption uppercase text-muted-soft">
+                        Driver
+                      </p>
+                      <p className="font-body text-body-md text-ink">
+                        {order.assignedDriver.name}
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
               </Card>
             ))}

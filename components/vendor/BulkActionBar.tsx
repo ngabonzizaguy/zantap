@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/primitives";
 interface BulkActionBarProps {
   selectedCount: number;
   busy: boolean;
+  canAssignDriver?: boolean;
   onClear: () => void;
   onBulkAdvance: (stage: KitchenStage) => void;
+  onBulkAssign?: () => void;
 }
 
 const BULK_ACTIONS: { stage: KitchenStage; label: string }[] = [
@@ -20,8 +22,10 @@ const BULK_ACTIONS: { stage: KitchenStage; label: string }[] = [
 export function BulkActionBar({
   selectedCount,
   busy,
+  canAssignDriver = false,
   onClear,
   onBulkAdvance,
+  onBulkAssign,
 }: BulkActionBarProps) {
   if (selectedCount === 0) return null;
 
@@ -43,10 +47,23 @@ export function BulkActionBar({
           </div>
           <div className="font-body text-caption text-muted">
             Bulk advance kitchen stage
+            {canAssignDriver ? " or assign a driver" : ""}
           </div>
         </div>
       </div>
       <div className="mt-3 flex gap-2 overflow-x-auto pb-0.5">
+        {canAssignDriver && onBulkAssign ? (
+          <Button
+            type="button"
+            variant="primary"
+            size="kds"
+            disabled={busy}
+            onClick={onBulkAssign}
+            className="flex-none rounded-pill px-4 font-body text-caption-uppercase uppercase tracking-wide"
+          >
+            Assign driver
+          </Button>
+        ) : null}
         {BULK_ACTIONS.map(({ stage, label }) => (
           <Button
             key={stage}

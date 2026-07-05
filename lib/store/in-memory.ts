@@ -8,6 +8,7 @@ import type {
   CreatePaymentInput,
   CreatePaymentResult,
   CreateVendorInput,
+  CreateDriverInput,
   Driver,
   KitchenStage,
   MenuImage,
@@ -20,6 +21,7 @@ import type {
   RecordRecoveryEventInput,
   ResumableManualOrder,
   UpdateMenuItemInput,
+  UpdateDriverInput,
   UpdateVendorInput,
   Vendor,
   VendorRecoveryEvent,
@@ -66,6 +68,12 @@ import {
   seedVendor,
 } from "@/lib/store/seed-data";
 import { normalizeVendorSlug } from "@/lib/vendor/slug";
+import { canonicalizePhone } from "@/lib/format";
+import {
+  deriveDriverHue,
+  deriveDriverInitials,
+  normalizeDriverName,
+} from "@/lib/vendor/driver-display";
 import { buildKdsSnapshotRevision } from "@/lib/kds/revision";
 import { filterKdsQueueOrders } from "@/lib/kds/visible-orders";
 
@@ -86,6 +94,7 @@ function cloneOrder(order: Order): Order {
       ? new Date(order.updatedAt)
       : new Date(order.paidAt ?? createdAt),
     paidAt: order.paidAt ? new Date(order.paidAt) : undefined,
+    assignedDriver: order.assignedDriver ? { ...order.assignedDriver } : undefined,
     orderItems: order.orderItems.map((item) => ({
       ...item,
       menuItem: item.menuItem
@@ -121,6 +130,7 @@ export function createInMemoryStore(): ResettableStore {
   let payments: Payment[] = [];
   let vendors: StoredVendor[] = [];
   let recoveryEvents: VendorRecoveryEvent[] = [];
+  let drivers: Driver[] = [];
   let kitchenOpen = true;
   let orderCounter = 0;
   let orderItemCounter = 0;
@@ -129,6 +139,7 @@ export function createInMemoryStore(): ResettableStore {
   let menuImageCounter = 0;
   let vendorCounter = 0;
   let recoveryEventCounter = 0;
+  let driverCounter = 0;
 
   function cloneVendor(vendor: StoredVendor): Vendor {
     // Strip the server-only owner-token hash — it must never leave the Store.
@@ -191,12 +202,14 @@ export function createInMemoryStore(): ResettableStore {
       { ...seedVendor, ownerTokenHash: DEMO_OWNER_TOKEN_HASH },
     ];
     recoveryEvents = [];
+    drivers = seedDrivers.map((driver) => ({ ...driver }));
     kitchenOpen = true;
     orderCounter = 0;
     orderItemCounter = 0;
     paymentCounter = 0;
     vendorCounter = 0;
     recoveryEventCounter = 0;
+    driverCounter = 0;
   }
 
   load();
@@ -892,9 +905,143 @@ export function createInMemoryStore(): ResettableStore {
   async function getDrivers(vendorSlug: string): Promise<Driver[]> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return [];
-    return seedDrivers
+    return drivers
       .filter((d) => d.vendorId === vendor.id)
       .map((d) => ({ ...d }));
+  }
+
+  function normalizeDriverPhone(phone: string): string | null {
+    return canonicalizePhone(phone, "250");
+  }
+
+  async function createDriver(
+    vendorSlug: string,
+    input: CreateDriverInput
+  ): Promise<Driver> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) {
+      throw new Error("Vendor not found");
+    }
+
+    const name = normalizeDriverName(input.name);
+    if (!name) {
+      throw new Error("Driver name is required");
+    }
+
+    const phone = normalizeDriverPhone(input.phone);
+    if (!phone) {
+      throw new Error("Valid driver phone is required");
+    }
+
+    const existingCount = drivers.filter((d) => d.vendorId === vendor.id).length;
+    const driver: Driver = {
+      id: `drv_${++driverCounter}_${Date.now()}`,
+      vendorId: vendor.id,
+      name,
+      phone,
+      initials: deriveDriverInitials(name),
+      hue: deriveDriverHue(existingCount),
+    };
+    drivers.push(driver);
+    return { ...driver };
+  }
+
+  async function updateDriver(
+    vendorSlug: string,
+    driverId: string,
+    input: UpdateDriverInput
+  ): Promise<Driver | null> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return null;
+
+    const index = drivers.findIndex(
+      (driver) => driver.id === driverId && driver.vendorId === vendor.id
+    );
+    if (index < 0) return null;
+
+    const existing = drivers[index];
+    const name =
+      input.name !== undefined ? normalizeDriverName(input.name) : existing.name;
+    if (!name) {
+      throw new Error("Driver name is required");
+    }
+
+    const phone =
+      input.phone !== undefined
+        ? normalizeDriverPhone(input.phone)
+        : existing.phone;
+    if (!phone) {
+      throw new Error("Valid driver phone is required");
+    }
+
+    const updated: Driver = {
+      ...existing,
+      name,
+      phone,
+      initials: deriveDriverInitials(name),
+    };
+    drivers[index] = updated;
+    orders = orders.map((order) =>
+      order.driverId === driverId
+        ? { ...order, assignedDriver: { ...updated } }
+        : order
+    );
+    return { ...updated };
+  }
+
+  async function deleteDriver(
+    vendorSlug: string,
+    driverId: string
+  ): Promise<boolean> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return false;
+
+    const before = drivers.length;
+    drivers = drivers.filter(
+      (driver) => !(driver.id === driverId && driver.vendorId === vendor.id)
+    );
+    if (drivers.length === before) return false;
+
+    orders = orders.map((order) =>
+      order.driverId === driverId
+        ? { ...order, driverId: undefined, assignedDriver: undefined }
+        : order
+    );
+    return true;
+  }
+
+  async function assignOrderDriver(
+    orderId: string,
+    driverId: string
+  ): Promise<Order | null> {
+    const index = orders.findIndex((order) => order.id === orderId);
+    if (index < 0) return null;
+
+    const order = orders[index];
+    const driver = drivers.find(
+      (row) => row.id === driverId && row.vendorId === order.vendorId
+    );
+    if (!driver) return null;
+
+    const updated: Order = {
+      ...order,
+      driverId,
+      assignedDriver: { ...driver },
+    };
+    orders[index] = updated;
+    return cloneOrder(updated);
+  }
+
+  async function bulkAssignOrderDriver(
+    orderIds: string[],
+    driverId: string
+  ): Promise<Order[]> {
+    const updated: Order[] = [];
+    for (const orderId of orderIds) {
+      const order = await assignOrderDriver(orderId, driverId);
+      if (order) updated.push(order);
+    }
+    return updated;
   }
 
   function grossForDatePreset(
@@ -1191,6 +1338,11 @@ export function createInMemoryStore(): ResettableStore {
     updateKitchenStage,
     bulkUpdateKitchenStage,
     getDrivers,
+    createDriver,
+    updateDriver,
+    deleteDriver,
+    assignOrderDriver,
+    bulkAssignOrderDriver,
     getTodayGross,
     getYesterdayGross,
     isKitchenOpen,

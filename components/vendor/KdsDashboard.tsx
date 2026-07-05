@@ -10,6 +10,10 @@ import {
   setKitchen,
   toggleItem,
 } from "@/lib/actions/vendor";
+import {
+  assignOrderDriver,
+  bulkAssignOrderDriver,
+} from "@/lib/actions/vendor-drivers";
 import { loadOnboardingState } from "@/lib/actions/vendor-guides";
 import {
   kitchenStageForOrderStatus,
@@ -22,28 +26,42 @@ import { useKdsLiveSnapshot } from "@/lib/kds/useKdsLiveSnapshot";
 import { usePeekVisibility } from "@/lib/kds/usePeekVisibility";
 import type { KdsSnapshot } from "@/lib/kds/types";
 import type { KitchenStage } from "@/lib/types";
-import { buildDeliverySlip } from "@/lib/whatsapp";
 import { deriveOnboardingState } from "@/lib/vendor/onboarding";
+import {
+  incrementSetupVisitCount,
+  shouldAutoOpenSetupDrawer,
+} from "@/lib/vendor/setup-visit-cap";
+import { useOwnerToken } from "@/lib/vendor/useOwnerToken";
 import { MetricsBanner } from "@/components/vendor/MetricsBanner";
 import { Tabs, type KdsTab } from "@/components/vendor/Tabs";
 import { OrdersList } from "@/components/vendor/OrderTicket";
 import { BulkActionBar } from "@/components/vendor/BulkActionBar";
 import { MenuSection } from "@/components/vendor/MenuSection";
 import { HistoryPanel } from "@/components/vendor/HistoryPanel";
-import { DispatchModal } from "@/components/vendor/DispatchModal";
+import { AssignDriverModal } from "@/components/vendor/AssignDriverModal";
+import { DriversPanel } from "@/components/vendor/DriversPanel";
 import { SetupDrawer, type StorefrontProfile, type VendorBusinessProfile, type VendorPaymentProfile } from "@/components/vendor/SetupDrawer";
 import { HelpModal } from "@/components/vendor/HelpModal";
 import { Coachmark } from "@/components/vendor/Coachmark";
 import { Card, GradientOrbs } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 
-const KDS_TABS = new Set<KdsTab>(["orders", "menu", "history", "setup"]);
+const KDS_TABS = new Set<KdsTab>(["orders", "menu", "history", "drivers"]);
 
 function parseInitialTab(tab?: string): KdsTab {
+  if (tab === "setup") return "drivers";
   if (tab && KDS_TABS.has(tab as KdsTab)) {
     return tab as KdsTab;
   }
   return "orders";
+}
+
+function resolveOrderStage(order: Order): KitchenStage {
+  return (
+    order.kitchenStage ??
+    kitchenStageForOrderStatus(order.status) ??
+    "NEW"
+  );
 }
 
 interface KdsDashboardProps {
@@ -70,15 +88,17 @@ export function KdsDashboard({
   const [tab, setTab] = useState<KdsTab>(() => parseInitialTab(initialTab));
   const [orders, setOrders] = useState(initialOrders);
   const [menu, setMenu] = useState(initialMenu);
-  const [drivers] = useState(initialDrivers);
+  const [drivers, setDrivers] = useState(initialDrivers);
   const [todayGross, setTodayGross] = useState(initialTodayGross);
   const [yesterdayGross, setYesterdayGross] = useState(initialYesterdayGross);
   const [kitchenOpen, setKitchenOpenState] = useState(initialKitchenOpen);
   const [expandedId, setExpandedId] = useState<string | null>(
     initialOrders[0]?.id ?? null
   );
-  const [dispatchId, setDispatchId] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [assignOrderIds, setAssignOrderIds] = useState<string[]>([]);
+  const [assignBusy, setAssignBusy] = useState(false);
+  const [setupAutoOpened, setSetupAutoOpened] = useState(false);
+  const { token: ownerToken } = useOwnerToken(vendor.slug);
   const [setupOpen, setSetupOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [storefrontProfile, setStorefrontProfile] = useState<StorefrontProfile>(
@@ -187,10 +207,13 @@ export function KdsDashboard({
   }, [sortedOrders, stageFilter]);
 
   useEffect(() => {
-    if (tab === "setup") {
+    if (setupAutoOpened) return;
+    if (shouldAutoOpenSetupDrawer(vendor.slug, checklist)) {
+      incrementSetupVisitCount(vendor.slug);
       setSetupOpen(true);
     }
-  }, [tab]);
+    setSetupAutoOpened(true);
+  }, [vendor.slug, checklist, setupAutoOpened]);
 
   const openSetup = useCallback(() => {
     setSetupOpen(true);
@@ -198,10 +221,7 @@ export function KdsDashboard({
 
   const closeSetup = useCallback(() => {
     setSetupOpen(false);
-    if (tab === "setup") {
-      setTab("orders");
-    }
-  }, [tab]);
+  }, []);
   const refresh = useCallback(async () => {
     const snapshot = await loadKdsSnapshot(vendor.slug);
     applySnapshot(snapshot);
@@ -211,7 +231,45 @@ export function KdsDashboard({
     (o) => o.status === "PAID" || o.status === "DISPATCHED"
   ).length;
 
-  const dispatchOrder = orders.find((o) => o.id === dispatchId) ?? null;
+  const selectedOrders = useMemo(
+    () => orders.filter((order) => selectedIds.has(order.id)),
+    [orders, selectedIds]
+  );
+  const canBulkAssign =
+    selectedOrders.length > 0 &&
+    selectedOrders.every((order) => resolveOrderStage(order) === "READY");
+
+  const handleAssignDriver = async (driverId: string) => {
+    if (!ownerToken || assignOrderIds.length === 0) return;
+    setAssignBusy(true);
+    try {
+      if (assignOrderIds.length === 1) {
+        await assignOrderDriver(
+          ownerToken,
+          vendor.slug,
+          assignOrderIds[0]!,
+          driverId
+        );
+      } else {
+        await bulkAssignOrderDriver(
+          ownerToken,
+          vendor.slug,
+          assignOrderIds,
+          driverId
+        );
+      }
+      setAssignOrderIds([]);
+      if (assignOrderIds.length > 1) {
+        setSelectedIds(new Set());
+        setBulkMode(false);
+      }
+      await refresh();
+    } catch {
+      await refresh();
+    } finally {
+      setAssignBusy(false);
+    }
+  };
 
   const handleToggleKitchen = async () => {
     const next = !kitchenOpen;
@@ -303,27 +361,6 @@ export function KdsDashboard({
     });
   };
 
-  const handleShareWhatsApp = async () => {
-    if (!dispatchOrder) return;
-    const slip = buildDeliverySlip(dispatchOrder, vendorName);
-    try {
-      await navigator.clipboard.writeText(slip);
-    } catch {
-      // ignore clipboard failures in unsupported browsers
-    }
-    try {
-      applyKitchenStageOptimistic(dispatchOrder.id, "OUT_FOR_DELIVERY");
-      await advanceKitchenStage(dispatchOrder.id, "OUT_FOR_DELIVERY");
-      setDispatchId(null);
-      setExpandedId(null);
-      setCopied(false);
-      await refresh();
-    } catch {
-      await refresh();
-      // leave the modal open so the vendor can retry the dispatch
-    }
-  };
-
   return (
     <div className="kds-dark kds-surface min-h-screen w-full bg-canvas text-ink">
       <div className="kds-surface relative mx-auto min-h-screen w-full max-w-kds overflow-hidden border-x border-hairline bg-canvas pb-10">
@@ -345,10 +382,7 @@ export function KdsDashboard({
           onOrders={() => setTab("orders")}
           onMenu={() => setTab("menu")}
           onHistory={() => setTab("history")}
-          onSetup={() => {
-            setTab("setup");
-            setSetupOpen(true);
-          }}
+          onDrivers={() => setTab("drivers")}
         />
         <div className="relative z-[1] px-[18px] pt-3.5">
           {tab === "orders" ? (
@@ -368,10 +402,7 @@ export function KdsDashboard({
               onSortDirection={setSortDirection}
               onToggle={(id) => setExpandedId((prev) => (prev === id ? null : id))}
               onSelect={handleToggleSelect}
-              onDispatch={(id) => {
-                setDispatchId(id);
-                setCopied(false);
-              }}
+              onAssign={(id) => setAssignOrderIds([id])}
               onAdvanceStage={handleAdvanceStage}
               onToggleBulkMode={() => {
                 setBulkMode((prev) => {
@@ -391,16 +422,13 @@ export function KdsDashboard({
           ) : tab === "history" ? (
             <HistoryPanel vendorSlug={vendor.slug} />
           ) : (
-            <Card padding="md" className="text-center">
-              <p className="font-display text-display-sm text-ink">
-                Setup guide
-              </p>
-              <p className="mt-2 font-body text-body-sm text-muted">
-                Your checklist opens in the panel on the right. Use the menu icon in
-                the header anytime to reopen it.
-              </p>
-            </Card>
-          )}        </div>
+            <DriversPanel
+              vendorSlug={vendor.slug}
+              drivers={drivers}
+              onDriversChange={setDrivers}
+            />
+          )}
+        </div>
       </div>
 
       <button
@@ -457,31 +485,27 @@ export function KdsDashboard({
       <Coachmark
         id="dispatch-button"
         targetSelector='[data-coachmark-target="dispatch-button"]'
-        title="Dispatch to driver"
-        body="When an order is paid, expand the ticket and dispatch the moto driver with the delivery slip."
+        title="Assign a driver"
+        body="When an order is ready, expand the ticket and assign a driver to keep delivery records."
         enabled={tab === "orders" && !!expandedId}
       />
 
-      <DispatchModal        open={!!dispatchId}
-        order={dispatchOrder}
-        vendorName={vendorName}
+      <AssignDriverModal
+        open={assignOrderIds.length > 0}
+        orderIds={assignOrderIds}
         drivers={drivers}
-        copied={copied}
-        onClose={() => setDispatchId(null)}
-        onCopy={() => {
-          if (!dispatchOrder) return;
-          const slip = buildDeliverySlip(dispatchOrder, vendorName);
-          navigator.clipboard?.writeText(slip).catch(() => undefined);
-          setCopied(true);
-        }}
-        onShareWhatsApp={handleShareWhatsApp}
+        busy={assignBusy}
+        onClose={() => setAssignOrderIds([])}
+        onAssign={(driverId) => void handleAssignDriver(driverId)}
       />
 
       <BulkActionBar
         selectedCount={selectedIds.size}
-        busy={bulkBusy}
+        busy={bulkBusy || assignBusy}
+        canAssignDriver={canBulkAssign}
         onClear={() => setSelectedIds(new Set())}
         onBulkAdvance={handleBulkAdvance}
+        onBulkAssign={() => setAssignOrderIds(Array.from(selectedIds))}
       />
     </div>
   );

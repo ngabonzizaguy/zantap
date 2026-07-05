@@ -13,6 +13,12 @@ Last verified against the codebase: 2026-07-05.
 
 ## Recommended next (2026-07-05)
 
+**Candidate #22 — Storefront share + menu lightbox + KDS drivers**
+— ✅ **Feature-complete · build green 2026-07-05** — deploy + prod smoke pending.
+Storefront share + menu lightbox; setup auto-open cap 2×; Drivers tab + CRUD;
+`Order.driverId` assignment (stays READY, call-only, bulk one-driver). ADR-0038.
+Migration `20260705180000_order_driver_assignment`. `npm test` 248/74; `npm run build` clean.
+
 **Candidate #21 — Storefront customize slim-down + vendor profile edits + MoMo phone fix**
 — ✅ **DONE · deployed · prod-smoked 2026-07-05** (`5ad7a92` → alias `zantap-psi.vercel.app`).
 MoMo payout phone read-time + normalize-on-write (ADR-0034); customize modal images + notes only
@@ -122,6 +128,10 @@ If a session ends without doing both, the handoff is incomplete.
 | 18 | Supabase pooler egress — KDS snapshot optimization | Strong | Store + KDS SSE | ✅ Done 2026-07-01 | `.scratch/pooler-egress-audit/issue-01-kds-snapshot-egress.md` |
 | 19 | KDS + Storefront polish batch (recovery, dashboard, images, help, onboarding, storefront sync, domain) | Owner request | Store + KDS + onboarding + customer UI + config | ✅ Done · deployed · prod-smoked 2026-07-02 | `.scratch/kds-storefront-polish/PRD.md` |
 | 21 | Storefront customize slim-down + vendor profile edits + MoMo phone fix | Owner request | customer modal + KDS Setup + MoMo USSD | ✅ Done · deployed · prod-smoked 2026-07-05 (`5ad7a92`) | `.scratch/candidate-21/PRD.md` |
+| 22 | Storefront share + menu lightbox + KDS drivers | Owner request | customer UI + KDS drivers tab + Order.driverId | ✅ Feature-complete · build green 2026-07-05 · deploy pending | `.scratch/candidate-22/PRD.md` |
+
+**#22 feature-complete 2026-07-05** — build + tests green; migration
+`20260705180000_order_driver_assignment` + ADR-0038; prod smoke pending.
 
 **#18 closed 2026-07-01** — revision-first SSE poll, scoped `listKdsOrders`, narrow includes, seed remote guard. ADR-0023.
 
