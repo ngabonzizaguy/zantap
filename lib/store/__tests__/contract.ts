@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { ResettableStore } from "@/lib/store/types";
 import { DEMO_VENDOR_SLUG } from "@/lib/store/seed-data";
 import { MOMO_SIM_VALID_PIN } from "@/lib/momo/constants";
+import { manualPaymentRef } from "@/lib/momo/ussd-dial";
 import { DEFAULT_ORDER_HISTORY_PAGE_SIZE } from "@/lib/orders/history-filters";
 import { mintOwnerToken } from "@/lib/vendor/owner-token";
 
@@ -1088,6 +1089,76 @@ export function runPaymentContract(
         expect(result.ok).toBe(false);
         if (result.ok) return;
         expect(result.code).toBe("NOT_FOUND");
+      });
+    });
+
+    describe("manual MoMo payment (ADR-0033)", () => {
+      it("confirmManualPayment marks order PAID with matching phone", async () => {
+        const order = await placeOrderFromMenu();
+        const ref = manualPaymentRef(order.id);
+
+        await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: ref,
+        });
+
+        const confirmed = await store.confirmManualPayment(
+          order.id,
+          order.customerPhone
+        );
+        expect(confirmed.ok).toBe(true);
+        if (!confirmed.ok) return;
+        expect(confirmed.payment.status).toBe("SUCCESS");
+        expect(confirmed.order.status).toBe("PAID");
+      });
+
+      it("abandonManualPayment cancels order and fails payment", async () => {
+        const order = await placeOrderFromMenu();
+        await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: manualPaymentRef(order.id),
+        });
+
+        const abandoned = await store.abandonManualPayment(
+          order.id,
+          order.customerPhone
+        );
+        expect(abandoned.ok).toBe(true);
+        if (!abandoned.ok) return;
+        expect(abandoned.payment.status).toBe("FAILED");
+        expect(abandoned.order.status).toBe("CANCELLED");
+      });
+
+      it("confirmManualPayment rejects phone mismatch", async () => {
+        const order = await placeOrderFromMenu();
+        await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: manualPaymentRef(order.id),
+        });
+
+        const result = await store.confirmManualPayment(order.id, "0788000000");
+        expect(result.ok).toBe(false);
+        if (result.ok) return;
+        expect(result.code).toBe("PHONE_MISMATCH");
+      });
+
+      it("findResumableManualOrder returns pending checkout for same phone", async () => {
+        const order = await placeOrderFromMenu();
+        await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: manualPaymentRef(order.id),
+        });
+
+        const resumable = await store.findResumableManualOrder(
+          slug,
+          order.customerPhone
+        );
+        expect(resumable?.order.id).toBe(order.id);
+        expect(resumable?.ussdDial).toContain("*182*");
       });
     });
   });

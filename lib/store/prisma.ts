@@ -14,6 +14,11 @@ import type {
 } from "@prisma/client";
 
 import { MOMO_SIM_VALID_PIN } from "@/lib/momo/constants";
+import { PAYMENT_WINDOW_MS, isWithinPaymentWindow } from "@/lib/momo/payment-window";
+import {
+  buildMomoUssdDial,
+  orderPhoneMatches,
+} from "@/lib/momo/ussd-dial";
 import {
   isForwardKitchenTransition,
   kitchenStageForOrderStatus,
@@ -32,7 +37,9 @@ import {
 import { prisma as defaultPrisma } from "@/lib/prisma";
 import type { Store } from "@/lib/store/types";
 import type {
+  AbandonManualPaymentResult,
   AddMenuImageInput,
+  ConfirmManualPaymentResult,
   ConfirmPaymentResult,
   CreateMenuItemInput,
   CreateOrderInput,
@@ -50,6 +57,7 @@ import type {
   Payment,
   PayoutMethod,
   RecordRecoveryEventInput,
+  ResumableManualOrder,
   UpdateMenuItemInput,
   UpdateVendorInput,
   Vendor,
@@ -1284,6 +1292,180 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     return { ok: true, payment: mapPayment(updated) };
   }
 
+  async function confirmManualPayment(
+    orderId: string,
+    customerPhone: string
+  ): Promise<ConfirmManualPaymentResult> {
+    const orderRow = await client.order.findUnique({
+      where: { id: orderId },
+      include: orderInclude,
+    });
+    if (!orderRow) {
+      return { ok: false, code: "NOT_FOUND" };
+    }
+
+    const order = mapOrder(orderRow);
+    if (!orderPhoneMatches(order.customerPhone, customerPhone)) {
+      return { ok: false, code: "PHONE_MISMATCH" };
+    }
+
+    const paymentRow = await client.payment.findUnique({
+      where: { orderId },
+    });
+    if (!paymentRow) {
+      return { ok: false, code: "NOT_FOUND" };
+    }
+
+    const payment = mapPayment(paymentRow);
+
+    if (payment.status === "SUCCESS" && order.status === "PAID") {
+      return { ok: true, payment, order };
+    }
+
+    if (order.status === "CANCELLED" || payment.status === "FAILED") {
+      return { ok: false, code: "WINDOW_EXPIRED" };
+    }
+
+    if (order.status !== "PENDING") {
+      return { ok: false, code: "ORDER_NOT_PENDING" };
+    }
+
+    if (!isWithinPaymentWindow(order.createdAt)) {
+      return { ok: false, code: "WINDOW_EXPIRED" };
+    }
+
+    if (payment.status !== "PENDING") {
+      return { ok: false, code: "PAYMENT_TERMINALLY_FAILED" };
+    }
+
+    const updated = await client.$transaction(async (tx) => {
+      const [paymentUpdated, orderUpdated] = await Promise.all([
+        tx.payment.update({
+          where: { id: payment.id },
+          data: { status: "SUCCESS" },
+        }),
+        tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: "PAID",
+            kitchenStage: "NEW",
+            paidAt: new Date(),
+          },
+          include: orderInclude,
+        }),
+      ]);
+      return { paymentUpdated, orderUpdated };
+    });
+
+    return {
+      ok: true,
+      payment: mapPayment(updated.paymentUpdated),
+      order: mapOrder(updated.orderUpdated),
+    };
+  }
+
+  async function abandonManualPayment(
+    orderId: string,
+    customerPhone: string
+  ): Promise<AbandonManualPaymentResult> {
+    const orderRow = await client.order.findUnique({
+      where: { id: orderId },
+      include: orderInclude,
+    });
+    if (!orderRow) {
+      return { ok: false, code: "NOT_FOUND" };
+    }
+
+    const order = mapOrder(orderRow);
+    if (!orderPhoneMatches(order.customerPhone, customerPhone)) {
+      return { ok: false, code: "PHONE_MISMATCH" };
+    }
+
+    if (order.status === "PAID") {
+      return { ok: false, code: "ALREADY_PAID" };
+    }
+
+    const paymentRow = await client.payment.findUnique({
+      where: { orderId },
+    });
+    if (!paymentRow) {
+      return { ok: false, code: "NOT_FOUND" };
+    }
+
+    const payment = mapPayment(paymentRow);
+
+    if (order.status === "CANCELLED" && payment.status === "FAILED") {
+      return { ok: true, payment, order };
+    }
+
+    const updated = await client.$transaction(async (tx) => {
+      const [paymentUpdated, orderUpdated] = await Promise.all([
+        tx.payment.update({
+          where: { id: payment.id },
+          data: { status: "FAILED" },
+        }),
+        tx.order.update({
+          where: { id: orderId },
+          data: { status: "CANCELLED" },
+          include: orderInclude,
+        }),
+      ]);
+      return { paymentUpdated, orderUpdated };
+    });
+
+    return {
+      ok: true,
+      payment: mapPayment(updated.paymentUpdated),
+      order: mapOrder(updated.orderUpdated),
+    };
+  }
+
+  async function findResumableManualOrder(
+    vendorSlug: string,
+    customerPhone: string
+  ): Promise<ResumableManualOrder | null> {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: vendorSlug },
+      select: {
+        id: true,
+        payoutMethod: true,
+        momoCode: true,
+      },
+    });
+    if (!vendor) return null;
+
+    const windowStart = new Date(Date.now() - PAYMENT_WINDOW_MS);
+    const candidates = await client.order.findMany({
+      where: {
+        vendorId: vendor.id,
+        status: "PENDING",
+        createdAt: { gte: windowStart },
+        payment: { status: "PENDING" },
+      },
+      include: orderInclude,
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    });
+
+    for (const row of candidates) {
+      const order = mapOrder(row);
+      if (!orderPhoneMatches(order.customerPhone, customerPhone)) continue;
+
+      const dial = buildMomoUssdDial(
+        {
+          payoutMethod: vendor.payoutMethod as PayoutMethod,
+          momoCode: vendor.momoCode,
+        },
+        order.totalAmount
+      );
+      if (!dial.ok) continue;
+
+      return { order, ussdDial: dial.ussd };
+    }
+
+    return null;
+  }
+
   return {
     getVendorBySlug,
     isSlugAvailable,
@@ -1329,5 +1511,8 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     getPaymentByRef,
     getPaymentForOrder,
     confirmPayment,
+    confirmManualPayment,
+    abandonManualPayment,
+    findResumableManualOrder,
   };
 }

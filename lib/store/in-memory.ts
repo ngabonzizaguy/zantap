@@ -1,5 +1,7 @@
 import type {
+  AbandonManualPaymentResult,
   AddMenuImageInput,
+  ConfirmManualPaymentResult,
   ConfirmPaymentResult,
   CreateMenuItemInput,
   CreateOrderInput,
@@ -16,6 +18,7 @@ import type {
   Pagination,
   Payment,
   RecordRecoveryEventInput,
+  ResumableManualOrder,
   UpdateMenuItemInput,
   UpdateVendorInput,
   Vendor,
@@ -44,6 +47,11 @@ import {
   validateUpdateMenuItemInput,
 } from "@/lib/menu/validation";
 import { MOMO_SIM_VALID_PIN } from "@/lib/momo/constants";
+import { isWithinPaymentWindow } from "@/lib/momo/payment-window";
+import {
+  buildMomoUssdDial,
+  orderPhoneMatches,
+} from "@/lib/momo/ussd-dial";
 import {
   isForwardKitchenTransition,
   kitchenStageForOrderStatus,
@@ -998,6 +1006,136 @@ export function createInMemoryStore(): ResettableStore {
     return { ok: true, payment: clonePayment(payments[index]) };
   }
 
+  async function confirmManualPayment(
+    orderId: string,
+    customerPhone: string
+  ): Promise<ConfirmManualPaymentResult> {
+    const orderIndex = orders.findIndex((o) => o.id === orderId);
+    if (orderIndex === -1) {
+      return { ok: false, code: "NOT_FOUND" };
+    }
+
+    const order = orders[orderIndex];
+    if (!orderPhoneMatches(order.customerPhone, customerPhone)) {
+      return { ok: false, code: "PHONE_MISMATCH" };
+    }
+
+    const paymentIndex = payments.findIndex((p) => p.orderId === orderId);
+    if (paymentIndex === -1) {
+      return { ok: false, code: "NOT_FOUND" };
+    }
+
+    const payment = payments[paymentIndex];
+
+    if (payment.status === "SUCCESS" && order.status === "PAID") {
+      return {
+        ok: true,
+        payment: clonePayment(payment),
+        order: cloneOrder(order),
+      };
+    }
+
+    if (order.status === "CANCELLED" || payment.status === "FAILED") {
+      return { ok: false, code: "WINDOW_EXPIRED" };
+    }
+
+    if (order.status !== "PENDING") {
+      return { ok: false, code: "ORDER_NOT_PENDING" };
+    }
+
+    if (!isWithinPaymentWindow(order.createdAt)) {
+      return { ok: false, code: "WINDOW_EXPIRED" };
+    }
+
+    if (payment.status !== "PENDING") {
+      return { ok: false, code: "PAYMENT_TERMINALLY_FAILED" };
+    }
+
+    payments[paymentIndex] = { ...payment, status: "SUCCESS" };
+    await updateOrderStatus(orderId, "PAID");
+    const updatedOrder = orders.find((o) => o.id === orderId);
+
+    return {
+      ok: true,
+      payment: clonePayment(payments[paymentIndex]),
+      order: cloneOrder(updatedOrder ?? order),
+    };
+  }
+
+  async function abandonManualPayment(
+    orderId: string,
+    customerPhone: string
+  ): Promise<AbandonManualPaymentResult> {
+    const orderIndex = orders.findIndex((o) => o.id === orderId);
+    if (orderIndex === -1) {
+      return { ok: false, code: "NOT_FOUND" };
+    }
+
+    const order = orders[orderIndex];
+    if (!orderPhoneMatches(order.customerPhone, customerPhone)) {
+      return { ok: false, code: "PHONE_MISMATCH" };
+    }
+
+    if (order.status === "PAID") {
+      return { ok: false, code: "ALREADY_PAID" };
+    }
+
+    const paymentIndex = payments.findIndex((p) => p.orderId === orderId);
+    if (paymentIndex === -1) {
+      return { ok: false, code: "NOT_FOUND" };
+    }
+
+    const payment = payments[paymentIndex];
+
+    if (order.status === "CANCELLED" && payment.status === "FAILED") {
+      return {
+        ok: true,
+        payment: clonePayment(payment),
+        order: cloneOrder(order),
+      };
+    }
+
+    payments[paymentIndex] = { ...payment, status: "FAILED" };
+    await updateOrderStatus(orderId, "CANCELLED");
+    const updatedOrder = orders.find((o) => o.id === orderId);
+
+    return {
+      ok: true,
+      payment: clonePayment(payments[paymentIndex]),
+      order: cloneOrder(updatedOrder ?? order),
+    };
+  }
+
+  async function findResumableManualOrder(
+    vendorSlug: string,
+    customerPhone: string
+  ): Promise<ResumableManualOrder | null> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return null;
+
+    const candidates = orders
+      .filter(
+        (order) =>
+          order.vendorId === vendor.id &&
+          order.status === "PENDING" &&
+          isWithinPaymentWindow(order.createdAt)
+      )
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    for (const order of candidates) {
+      if (!orderPhoneMatches(order.customerPhone, customerPhone)) continue;
+      const payment = paymentForOrder(order.id);
+      if (!payment || payment.status !== "PENDING") continue;
+
+      const dial = buildMomoUssdDial(vendor, order.totalAmount);
+      if (!dial.ok) continue;
+
+      return { order: cloneOrder(order), ussdDial: dial.ussd };
+    }
+
+    return null;
+  }
+
   function reset(): void {
     load();
   }
@@ -1047,6 +1185,9 @@ export function createInMemoryStore(): ResettableStore {
     getPaymentByRef,
     getPaymentForOrder,
     confirmPayment,
+    confirmManualPayment,
+    abandonManualPayment,
+    findResumableManualOrder,
     reset,
   };
 }

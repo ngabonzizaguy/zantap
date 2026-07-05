@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { MenuItem, Vendor } from "@/lib/types";
+import type { MenuItem, MomoMode, Vendor } from "@/lib/types";
 import { Orbs } from "@/components/ui/Orbs";
 import { TopBar } from "@/components/customer/TopBar";
 import { Hero } from "@/components/customer/Hero";
@@ -13,6 +13,7 @@ import { CheckoutSheet } from "@/components/customer/CheckoutSheet";
 import type { CustomizationSelection } from "@/lib/menu/customization";
 import { useCheckout } from "@/lib/checkout/useCheckout";
 import { UssdModal } from "@/components/customer/UssdModal";
+import { ManualMomoSheet } from "@/components/customer/ManualMomoSheet";
 import { SuccessReceipt } from "@/components/customer/SuccessReceipt";
 import { CartProvider, useCart } from "@/components/customer/CartContext";
 
@@ -21,6 +22,7 @@ interface StorefrontProps {
   menu: MenuItem[];
   categories: string[];
   fromKds?: boolean;
+  momoMode?: MomoMode;
 }
 
 function StorefrontInner({
@@ -28,12 +30,13 @@ function StorefrontInner({
   menu,
   categories,
   fromKds = false,
+  momoMode = "simulate",
 }: StorefrontProps) {
   const [activeCategory, setActiveCategory] = useState("All");
   const [sectorOpen, setSectorOpen] = useState(false);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const { cart, addItem, removeItem, resetCart } = useCart();
-  const checkout = useCheckout(vendor, menu);
+  const checkout = useCheckout(vendor, menu, { momoMode });
 
   const activeItem = useMemo(
     () => menu.find((item) => item.id === activeItemId) ?? null,
@@ -143,6 +146,7 @@ function StorefrontInner({
         landmark={checkout.landmark}
         sectorOpen={sectorOpen}
         canPay={checkout.canPay}
+        payError={checkout.payError}
         onClose={() => checkout.applyStage("close_cart")}
         onPhoneChange={checkout.setPhone}
         onSectorToggle={() => setSectorOpen(!sectorOpen)}
@@ -160,7 +164,7 @@ function StorefrontInner({
       />
 
       <UssdModal
-        open={checkout.stage === "ussd"}
+        open={!checkout.isManualFlow && checkout.stage === "ussd"}
         amount={checkout.total}
         vendorName={vendor.name}
         pin={checkout.pin}
@@ -170,6 +174,29 @@ function StorefrontInner({
           checkout.applyStage("cancel_ussd");
         }}
         onSend={checkout.confirmPin}
+      />
+
+      <ManualMomoSheet
+        open={
+          checkout.isManualFlow &&
+          (checkout.stage === "momo_dial" ||
+            checkout.stage === "awaiting_confirmation")
+        }
+        stage={
+          checkout.stage === "momo_dial"
+            ? "momo_dial"
+            : "awaiting_confirmation"
+        }
+        amount={checkout.total}
+        vendorName={vendor.name}
+        orderId={checkout.orderId}
+        ussdDial={checkout.ussdDial}
+        countdownLabel={checkout.countdownLabel}
+        busy={checkout.manualBusy}
+        error={checkout.manualError}
+        onOpenMomo={checkout.openMomoDialer}
+        onConfirmPaid={checkout.confirmManualPaid}
+        onDidntPay={checkout.abandonManual}
       />
 
       <SuccessReceipt

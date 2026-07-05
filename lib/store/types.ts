@@ -1,5 +1,7 @@
 import type {
+  AbandonManualPaymentResult,
   AddMenuImageInput,
+  ConfirmManualPaymentResult,
   ConfirmPaymentResult,
   CreateMenuItemInput,
   CreateOrderInput,
@@ -17,6 +19,7 @@ import type {
   Pagination,
   Payment,
   RecordRecoveryEventInput,
+  ResumableManualOrder,
   UpdateMenuItemInput,
   UpdateVendorInput,
   Vendor,
@@ -150,6 +153,18 @@ export interface Store {
   getPaymentByRef(ref: string): Promise<Payment | null>;
   getPaymentForOrder(orderId: string): Promise<Payment | null>;
   confirmPayment(ref: string, pin: string): Promise<ConfirmPaymentResult>;
+  confirmManualPayment(
+    orderId: string,
+    customerPhone: string
+  ): Promise<ConfirmManualPaymentResult>;
+  abandonManualPayment(
+    orderId: string,
+    customerPhone: string
+  ): Promise<AbandonManualPaymentResult>;
+  findResumableManualOrder(
+    vendorSlug: string,
+    customerPhone: string
+  ): Promise<ResumableManualOrder | null>;
 }
 
 /**

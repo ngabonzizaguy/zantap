@@ -9,6 +9,8 @@ import type { Order } from "@/lib/types";
 const validPayInput = {
   vendorSlug: "simba-grill",
   vendorName: "Simba Grill",
+  vendor: { payoutMethod: "MERCHANT_CODE" as const, momoCode: "123456" },
+  momoMode: "simulate" as const,
   lines: [{ menuItemId: "item-1", name: "Brochettes", qty: 2, lineTotal: 4000 }],
   phone: "0788123456",
   sector: "Kicukiro",
@@ -108,6 +110,41 @@ describe("executePay", () => {
     );
 
     expect(result).toEqual({ kind: "skipped" });
+    expect(placeOrder).not.toHaveBeenCalled();
+  });
+
+  it("manual mode returns ussd dial string after placeOrder", async () => {
+    const placeOrder = vi.fn().mockResolvedValue(mockOrder);
+    const momoClient = createMomoClient();
+    const initManualPayment = vi.fn().mockResolvedValue({ ok: true });
+
+    const result = await executePay(
+      { ...validPayInput, momoMode: "manual" },
+      { placeOrder, momoClient, initManualPayment }
+    );
+
+    expect(result.kind).toBe("manual_success");
+    if (result.kind !== "manual_success") return;
+    expect(result.orderId).toBe("order-1");
+    expect(result.ussdDial).toBe("*182*8*1*123456*4000#");
+    expect(momoClient.initiateStkPush).not.toHaveBeenCalled();
+    expect(initManualPayment).toHaveBeenCalledWith("order-1", 4000);
+  });
+
+  it("manual mode blocks invalid vendor payout before placeOrder", async () => {
+    const placeOrder = vi.fn();
+    const momoClient = createMomoClient();
+
+    const result = await executePay(
+      {
+        ...validPayInput,
+        momoMode: "manual",
+        vendor: { payoutMethod: "MERCHANT_CODE", momoCode: "12" },
+      },
+      { placeOrder, momoClient }
+    );
+
+    expect(result).toEqual({ kind: "payout_invalid" });
     expect(placeOrder).not.toHaveBeenCalled();
   });
 });

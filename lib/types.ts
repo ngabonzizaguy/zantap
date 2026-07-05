@@ -1,6 +1,11 @@
 import type { ItemCustomization } from "@/lib/menu/customization";
 
-export type OrderStatus = "PENDING" | "PAID" | "DISPATCHED" | "COMPLETED";
+export type OrderStatus =
+  | "PENDING"
+  | "PAID"
+  | "DISPATCHED"
+  | "COMPLETED"
+  | "CANCELLED";
 
 export type KitchenStage =
   | "NEW"
@@ -236,6 +241,30 @@ export type ConfirmPaymentResult =
       payment?: Payment;
     };
 
+export type ConfirmManualPaymentResult =
+  | { ok: true; payment: Payment; order: Order }
+  | {
+      ok: false;
+      code:
+        | "NOT_FOUND"
+        | "PHONE_MISMATCH"
+        | "PAYMENT_TERMINALLY_FAILED"
+        | "WINDOW_EXPIRED"
+        | "ORDER_NOT_PENDING";
+    };
+
+export type AbandonManualPaymentResult =
+  | { ok: true; payment: Payment; order: Order }
+  | {
+      ok: false;
+      code: "NOT_FOUND" | "PHONE_MISMATCH" | "ALREADY_PAID";
+    };
+
+export type ResumableManualOrder = {
+  order: Order;
+  ussdDial: string;
+};
+
 export interface StkPushRequest {
   orderId: string;
   phone: string;
@@ -254,7 +283,16 @@ export interface ConfirmPinRequest {
   pin: string;
 }
 
-export type CheckoutStage = "menu" | "cart" | "loading" | "ussd" | "success";
+export type CheckoutStage =
+  | "menu"
+  | "cart"
+  | "loading"
+  | "ussd"
+  | "momo_dial"
+  | "awaiting_confirmation"
+  | "success";
+
+export type MomoMode = "simulate" | "manual";
 
 export const KIGALI_SECTORS = [
   "Kicukiro",

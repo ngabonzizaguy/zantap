@@ -6,12 +6,20 @@ export type StageEvent =
   | "pay_start"
   | "stk_success"
   | "stk_failed"
+  | "manual_pay_success"
+  | "momo_dial_opened"
+  | "manual_confirm_success"
+  | "manual_abandon"
+  | "manual_expired"
   | "pin_success"
   | "pin_failed"
   | "cancel_ussd"
   | "reset";
 
-const transitions: Record<CheckoutStage, Partial<Record<StageEvent, CheckoutStage>>> = {
+const transitions: Record<
+  CheckoutStage,
+  Partial<Record<StageEvent, CheckoutStage>>
+> = {
   menu: {
     open_cart: "cart",
     reset: "menu",
@@ -24,12 +32,25 @@ const transitions: Record<CheckoutStage, Partial<Record<StageEvent, CheckoutStag
   loading: {
     stk_success: "ussd",
     stk_failed: "cart",
+    manual_pay_success: "momo_dial",
     reset: "menu",
   },
   ussd: {
     pin_success: "success",
     pin_failed: "ussd",
     cancel_ussd: "cart",
+    reset: "menu",
+  },
+  momo_dial: {
+    momo_dial_opened: "awaiting_confirmation",
+    manual_abandon: "cart",
+    reset: "menu",
+  },
+  awaiting_confirmation: {
+    manual_confirm_success: "success",
+    manual_abandon: "cart",
+    manual_expired: "cart",
+    momo_dial_opened: "awaiting_confirmation",
     reset: "menu",
   },
   success: {

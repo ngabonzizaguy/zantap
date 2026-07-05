@@ -16,6 +16,7 @@ interface CheckoutSheetProps {
   landmark: string;
   sectorOpen: boolean;
   canPay: boolean;
+  payError?: string | null;
   onClose: () => void;
   onPhoneChange: (value: string) => void;
   onSectorToggle: () => void;
@@ -36,6 +37,7 @@ export function CheckoutSheet({
   landmark,
   sectorOpen,
   canPay,
+  payError,
   onClose,
   onPhoneChange,
   onSectorToggle,
@@ -202,6 +204,12 @@ export function CheckoutSheet({
                 />
               </div>
             </div>
+
+            {payError ? (
+              <p className="mt-4 rounded-2xl bg-[#fff0ee] px-4 py-3 text-sm font-semibold text-[#b42318]">
+                {payError}
+              </p>
+            ) : null}
 
             <button
               type="button"

@@ -188,6 +188,7 @@ const ORDER_STATUSES = new Set([
   "PAID",
   "DISPATCHED",
   "COMPLETED",
+  "CANCELLED",
 ] as const);
 
 const PAYMENT_STATUSES = new Set(["ALL", "PENDING", "SUCCESS", "FAILED"] as const);

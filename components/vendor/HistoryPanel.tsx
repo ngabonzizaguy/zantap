@@ -65,6 +65,7 @@ function statusBadgeVariant(
 ): "default" | "success" | "muted" {
   if (status === "COMPLETED" || status === "DISPATCHED") return "muted";
   if (status === "PAID") return "success";
+  if (status === "CANCELLED") return "muted";
   return "default";
 }
 

@@ -17,16 +17,24 @@ The vendor-facing screen at `/vendor/[slug]` for accepting, preparing, and dispa
 _Avoid_: dashboard, admin, backend UI
 
 **Order**:
-A Customer's basket committed for a Vendor. **Payment/dispatch lifecycle** moves through `PENDING → PAID → DISPATCHED → COMPLETED`. **Kitchen progress** (`kitchenStage`) is tracked separately once paid: `NEW → ACCEPTED → PREPARING → READY → OUT FOR DELIVERY → COMPLETED`. See ADR-0013.
+A Customer's basket committed for a Vendor. **Payment/dispatch lifecycle** moves through `PENDING → PAID → DISPATCHED → COMPLETED`, or `PENDING → CANCELLED` when checkout is abandoned (customer declined payment or the payment window expired). **Kitchen progress** (`kitchenStage`) is tracked separately once paid: `NEW → ACCEPTED → PREPARING → READY → OUT FOR DELIVERY → COMPLETED`. See ADR-0013.
 _Avoid_: cart, basket, purchase
+
+**Cancelled order**:
+An Order whose checkout was abandoned before MoMo payment succeeded — either the Customer tapped "Didn't pay" or the ten-minute payment window expired. `Payment` is `FAILED`; the Order is `CANCELLED`. It never reaches the KDS queue but appears in vendor History and exports; it is excluded from gross and metrics.
+_Avoid_: expired order, abandoned cart
 
 **Kitchen stage**:
 Where an Order sits in the vendor's prep-and-handoff workflow on the KDS, independent of whether MoMo payment succeeded. The KDS surfaces kitchen stage as the primary status; payment remains visible but secondary.
 _Avoid_: order status (when you mean kitchen progress), workflow step
 
 **MoMo** (MTN Mobile Money):
-The mobile-money payment rail. Checkout simulates an STK push and PIN confirmation; a real callback integration is future work.
+The mobile-money payment rail. In production, checkout hands off to MTN USSD (*182# dial strings) and the Customer self-confirms payment; locally, checkout simulates an STK push and PIN confirmation. A real MTN API callback integration is future work.
 _Avoid_: mobile money, payment provider (when you specifically mean MTN MoMo)
+
+**Manual MoMo payment**:
+The interim production checkout path where the Customer dials a prefilled MTN USSD string, returns to the storefront, and self-declares whether payment succeeded (honor system until API access exists). A ten-minute **payment window** applies from order creation; after that, or if the Customer taps "Didn't pay", the Order is **Cancelled**. An in-window order can be resumed via stored checkout state or by re-entering the same phone at checkout. Confirming payment after the window closes is rejected — the Customer must start again.
+_Avoid_: STK push (when you mean the real or simulated prompt flow), fake payment
 
 **STK push**:
 The prompt sent to a Customer's phone to authorize a MoMo payment, confirmed with a PIN.
@@ -37,7 +45,7 @@ The server-only data module that owns all persistent reads and mutations (Vendor
 _Avoid_: data layer, repository, db, service
 
 **Payment**:
-A durable record of money moving for an Order, keyed by a stable `transactionRef` (the STK token in sandbox mode). Moves through `PENDING → SUCCESS` on valid PIN confirm (which also marks the Order `PAID`), or stays `PENDING` on a wrong PIN. `FAILED` is terminal abandonment only — not a typoed PIN.
+A durable record of money moving for an Order, keyed by a stable `transactionRef` (the STK token in sandbox mode; `manual-{orderId}` in production manual MoMo). Moves through `PENDING → SUCCESS` on valid confirm (which also marks the Order `PAID`), or `PENDING → FAILED` on abandonment. `FAILED` is terminal — not a typoed PIN (sandbox wrong PIN keeps `PENDING`). Manual confirm requires the Customer's phone to match the Order.
 _Avoid_: transaction, charge, txn
 
 **Checkout**:

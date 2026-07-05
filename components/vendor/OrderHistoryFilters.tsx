@@ -19,6 +19,7 @@ const ORDER_STATUSES: { value: Filters["status"]; label: string }[] = [
   { value: "PAID", label: "Paid" },
   { value: "DISPATCHED", label: "Dispatched" },
   { value: "COMPLETED", label: "Completed" },
+  { value: "CANCELLED", label: "Cancelled" },
 ];
 
 const PAYMENT_STATUSES: { value: Filters["paymentStatus"]; label: string }[] = [

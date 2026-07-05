@@ -14,8 +14,28 @@ describe("checkout stage transitions", () => {
     expect(transition("loading", "stk_success")).toBe("ussd");
   });
 
+  it("loading → momo_dial on manual_pay_success", () => {
+    expect(transition("loading", "manual_pay_success")).toBe("momo_dial");
+  });
+
   it("loading → cart on stk_failed", () => {
     expect(transition("loading", "stk_failed")).toBe("cart");
+  });
+
+  it("momo_dial → awaiting_confirmation on momo_dial_opened", () => {
+    expect(transition("momo_dial", "momo_dial_opened")).toBe(
+      "awaiting_confirmation"
+    );
+  });
+
+  it("awaiting_confirmation → success on manual_confirm_success", () => {
+    expect(transition("awaiting_confirmation", "manual_confirm_success")).toBe(
+      "success"
+    );
+  });
+
+  it("awaiting_confirmation → cart on manual_abandon", () => {
+    expect(transition("awaiting_confirmation", "manual_abandon")).toBe("cart");
   });
 
   it("ussd → success on pin_success", () => {
@@ -35,7 +55,15 @@ describe("checkout stage transitions", () => {
   });
 
   it("any active stage → menu on reset", () => {
-    for (const stage of ["menu", "cart", "loading", "ussd", "success"] as const) {
+    for (const stage of [
+      "menu",
+      "cart",
+      "loading",
+      "ussd",
+      "momo_dial",
+      "awaiting_confirmation",
+      "success",
+    ] as const) {
       expect(transition(stage, "reset")).toBe("menu");
     }
   });

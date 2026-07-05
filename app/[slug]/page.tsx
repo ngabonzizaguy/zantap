@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getStore } from "@/lib/store";
+import { getMomoMode } from "@/lib/momo/mode";
 import { Storefront } from "@/components/customer/Storefront";
 
 interface PageProps {
@@ -28,6 +29,7 @@ export default async function CustomerStorefrontPage({
       menu={menu}
       categories={categories}
       fromKds={from === "kds"}
+      momoMode={getMomoMode()}
     />
   );
 }

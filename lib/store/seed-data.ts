@@ -19,7 +19,7 @@ export const seedVendor: Vendor = {
   name: "Inka Steakhouse",
   slug: DEMO_VENDOR_SLUG,
   phoneNumber: "0788123456",
-  momoCode: "INKA001",
+  momoCode: "880001",
   isActive: true,
   tagline: "Premium grills",
   location: "Kigali, Rwanda",

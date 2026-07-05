@@ -140,6 +140,7 @@ enum OrderStatus {
   PAID
   DISPATCHED
   COMPLETED
+  CANCELLED
 }
 
 enum KitchenStage {
