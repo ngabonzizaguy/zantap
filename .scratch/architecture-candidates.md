@@ -14,10 +14,14 @@ Last verified against the codebase: 2026-07-05.
 ## Recommended next (2026-07-05)
 
 **Candidate #21 — Storefront customize slim-down + vendor profile edits + MoMo phone fix**
-— **feature-complete** (Issues 21-01–21-04 ✅ done 2026-07-05). MoMo payout phone
-read-time + normalize-on-write (ADR-0034); customize modal images + notes only
-(ADR-0035); notes cart → order → KDS (ADR-0036); KDS Setup business/payments/slug
-edit (ADR-0037). **Next: `db:deploy` (21-03 notes migration) → deploy → prod smoke.**
+— ✅ **DONE · deployed · prod-smoked 2026-07-05** (`5ad7a92` → alias `zantap-psi.vercel.app`).
+MoMo payout phone read-time + normalize-on-write (ADR-0034); customize modal images + notes only
+(ADR-0035); notes cart → order → KDS (ADR-0036, migration `20260705140000_order_item_notes`);
+KDS Setup business/payments/slug edit (ADR-0037). Hotfix `5ad7a92`: `canonicalizePhone` strips
+double-zero national on Setup save. Playwright prod smoke **16/16 PASS**
+(`.scratch/candidate-21/prod-smoke.mjs`): customize note → Pay → italic note on KDS ticket;
+Setup business/payments save; USSD `*182*8*1*880001*`; slug rename + revert + collision block.
+`npm test` 242/73; migration applied pre-deploy.
 
 **Candidate #20 — Manual MTN MoMo USSD checkout** — ✅ **DONE · deployed · prod-smoked 2026-07-05**
 (`712101d` → `dpl_8zVJC98E2oEs7Du8eHKx5sTta8C5` → alias `zantap-psi.vercel.app`).
@@ -117,7 +121,7 @@ If a session ends without doing both, the handoff is incomplete.
 | 17 | ZanTap operator/admin panel (vendor system-of-record + recovery verification) | Owner design | server + admin UI | ⏸ Deferred — owner design; consumes #16 recovery events | — |
 | 18 | Supabase pooler egress — KDS snapshot optimization | Strong | Store + KDS SSE | ✅ Done 2026-07-01 | `.scratch/pooler-egress-audit/issue-01-kds-snapshot-egress.md` |
 | 19 | KDS + Storefront polish batch (recovery, dashboard, images, help, onboarding, storefront sync, domain) | Owner request | Store + KDS + onboarding + customer UI + config | ✅ Done · deployed · prod-smoked 2026-07-02 | `.scratch/kds-storefront-polish/PRD.md` |
-| 21 | Storefront customize slim-down + vendor profile edits + MoMo phone fix | Owner request | customer modal + KDS Setup + MoMo USSD | ◑ Feature-complete (21-01–21-04 ✅) · deploy pending | `.scratch/candidate-21/PRD.md` |
+| 21 | Storefront customize slim-down + vendor profile edits + MoMo phone fix | Owner request | customer modal + KDS Setup + MoMo USSD | ✅ Done · deployed · prod-smoked 2026-07-05 (`5ad7a92`) | `.scratch/candidate-21/PRD.md` |
 
 **#18 closed 2026-07-01** — revision-first SSE poll, scoped `listKdsOrders`, narrow includes, seed remote guard. ADR-0023.
 
