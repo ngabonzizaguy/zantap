@@ -1,22 +1,34 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import type { MenuItem } from "@/lib/types";
-import { Button, Card, Input } from "@/components/ui/primitives";
+import type { MenuItem, PayoutMethod } from "@/lib/types";
+import { Button, Card, Input, Select } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
+import { splitPhoneForDisplay } from "@/lib/format";
+import { checkSlugAvailable } from "@/lib/actions/vendor-provision";
 import { updateVendorProfile, uploadBrandingImage } from "@/lib/actions/vendor-profile";
+import { getDisplayHostPrefix } from "@/lib/base-url";
 import {
   countCompletedSteps,
   ONBOARDING_STEPS,
   type OnboardingChecklist,
 } from "@/lib/vendor/onboarding";
 import {
+  BUSINESS_CATEGORIES,
+  DIAL_CODE_SELECT_OPTIONS,
+} from "@/lib/vendor/onboard-options";
+import {
   countOptionalCompleted,
   deriveOptionalChecklist,
   OPTIONAL_CHECKLIST_ITEMS,
 } from "@/lib/vendor/optional-checklist";
-import { useOwnerToken } from "@/lib/vendor/useOwnerToken";
+import { isValidVendorSlug, normalizeVendorSlug } from "@/lib/vendor/slug";
+import {
+  transferOwnerTokenCache,
+  useOwnerToken,
+} from "@/lib/vendor/useOwnerToken";
 import { resetCoachmarks } from "@/components/vendor/Coachmark";
 import { StorefrontQr } from "@/components/onboard/StorefrontQr";
 import { getStorefrontUrl } from "@/lib/vendor/storefront-url";
@@ -31,14 +43,70 @@ export interface StorefrontProfile {
   description?: string;
 }
 
+export interface VendorBusinessProfile {
+  name: string;
+  slug: string;
+  phoneNumber: string;
+  businessCategory?: string;
+}
+
+export interface VendorPaymentProfile {
+  payoutMethod: PayoutMethod;
+  momoCode: string;
+}
+
+type SlugAvailability = "idle" | "checking" | "available" | "taken" | "invalid";
+
+const SLUG_DEBOUNCE_MS = 400;
+
+function slugStatusMessage(status: SlugAvailability): string | null {
+  switch (status) {
+    case "checking":
+      return "Checking availability…";
+    case "available":
+      return "Available!";
+    case "taken":
+      return "This URL is already taken";
+    case "invalid":
+      return "Use lowercase letters, numbers, and hyphens only";
+    case "idle":
+      return null;
+    default: {
+      const _exhaustive: never = status;
+      return _exhaustive;
+    }
+  }
+}
+
+function slugStatusClass(status: SlugAvailability): string {
+  switch (status) {
+    case "available":
+      return "text-success";
+    case "taken":
+    case "invalid":
+      return "text-error";
+    case "checking":
+    case "idle":
+      return "text-muted";
+    default: {
+      const _exhaustive: never = status;
+      return _exhaustive;
+    }
+  }
+}
+
 interface SetupDrawerProps {
   open: boolean;
   onClose: () => void;
   checklist: OnboardingChecklist;
   vendorSlug: string;
+  business: VendorBusinessProfile;
+  payments: VendorPaymentProfile;
   profile: StorefrontProfile;
   menu: MenuItem[];
   onProfileSaved?: (profile: StorefrontProfile) => void;
+  onBusinessSaved?: (business: VendorBusinessProfile) => void;
+  onPaymentsSaved?: (payments: VendorPaymentProfile) => void;
   onRefresh?: () => void;
 }
 
@@ -47,11 +115,16 @@ export function SetupDrawer({
   onClose,
   checklist,
   vendorSlug,
+  business,
+  payments,
   profile,
   menu,
   onProfileSaved,
+  onBusinessSaved,
+  onPaymentsSaved,
   onRefresh,
 }: SetupDrawerProps) {
+  const router = useRouter();
   const titleId = useId();
   const panelRef = useRef<HTMLElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
@@ -72,6 +145,25 @@ export function SetupDrawer({
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
 
+  const [nameDraft, setNameDraft] = useState("");
+  const [slugDraft, setSlugDraft] = useState("");
+  const [slugStatus, setSlugStatus] = useState<SlugAvailability>("idle");
+  const [phoneDialCodeDraft, setPhoneDialCodeDraft] = useState("+250");
+  const [phoneLocalDraft, setPhoneLocalDraft] = useState("");
+  const [categoryDraft, setCategoryDraft] = useState("");
+  const [businessSaving, setBusinessSaving] = useState(false);
+  const [businessSaved, setBusinessSaved] = useState(false);
+  const [businessError, setBusinessError] = useState<string | null>(null);
+
+  const [payoutMethodDraft, setPayoutMethodDraft] =
+    useState<PayoutMethod>("MERCHANT_CODE");
+  const [merchantCodeDraft, setMerchantCodeDraft] = useState("");
+  const [payoutPhoneDraft, setPayoutPhoneDraft] = useState("");
+  const [payoutSameAsBusiness, setPayoutSameAsBusiness] = useState(true);
+  const [paymentsSaving, setPaymentsSaving] = useState(false);
+  const [paymentsSaved, setPaymentsSaved] = useState(false);
+  const [paymentsError, setPaymentsError] = useState<string | null>(null);
+
   const completed = countCompletedSteps(checklist);
   const total = ONBOARDING_STEPS.length;
 
@@ -89,9 +181,41 @@ export function SetupDrawer({
   );
   const optionalProgress = countOptionalCompleted(optionalChecklist);
   const storefrontUrl = useMemo(
-    () => getStorefrontUrl(vendorSlug),
-    [vendorSlug]
+    () => getStorefrontUrl(slugDraft || vendorSlug),
+    [slugDraft, vendorSlug]
   );
+  const normalizedSlugDraft = normalizeVendorSlug(slugDraft);
+  const hostPrefix = getDisplayHostPrefix();
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (!normalizedSlugDraft) {
+      setSlugStatus("idle");
+      return;
+    }
+    if (normalizedSlugDraft === normalizeVendorSlug(vendorSlug)) {
+      setSlugStatus("available");
+      return;
+    }
+    if (!isValidVendorSlug(slugDraft)) {
+      setSlugStatus("invalid");
+      return;
+    }
+
+    setSlugStatus("checking");
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void checkSlugAvailable(normalizedSlugDraft).then((available) => {
+        if (!cancelled) setSlugStatus(available ? "available" : "taken");
+      });
+    }, SLUG_DEBOUNCE_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [open, normalizedSlugDraft, slugDraft, vendorSlug]);
 
   useEffect(() => {
     if (!open) return;
@@ -129,7 +253,30 @@ export function SetupDrawer({
     setDescriptionDraft(profile.description ?? "");
     setProfileError(null);
     setProfileSaved(false);
-  }, [open, profile]);
+
+    setNameDraft(business.name);
+    setSlugDraft(business.slug);
+    const { dialCode, local } = splitPhoneForDisplay(business.phoneNumber);
+    setPhoneDialCodeDraft(dialCode);
+    setPhoneLocalDraft(local);
+    setCategoryDraft(business.businessCategory ?? BUSINESS_CATEGORIES[0]);
+    setBusinessError(null);
+    setBusinessSaved(false);
+
+    setPayoutMethodDraft(payments.payoutMethod);
+    if (payments.payoutMethod === "MERCHANT_CODE") {
+      setMerchantCodeDraft(payments.momoCode);
+      setPayoutPhoneDraft("");
+      setPayoutSameAsBusiness(true);
+    } else {
+      setMerchantCodeDraft("");
+      setPayoutPhoneDraft(payments.momoCode);
+      const payoutLocal = splitPhoneForDisplay(payments.momoCode).local;
+      setPayoutSameAsBusiness(payoutLocal === local);
+    }
+    setPaymentsError(null);
+    setPaymentsSaved(false);
+  }, [open, profile, business, payments]);
 
   const handleShowTipsAgain = () => {
     resetCoachmarks();
@@ -251,8 +398,123 @@ export function SetupDrawer({
     }
   };
 
+  const handleSaveBusiness = async () => {
+    if (!token) {
+      setBusinessError(
+        "This device isn't unlocked. Recover access to edit your profile."
+      );
+      return;
+    }
+
+    if (!nameDraft.trim()) {
+      setBusinessError("Business name is required.");
+      return;
+    }
+    if (slugStatus !== "available") {
+      setBusinessError("Choose an available storefront URL before saving.");
+      return;
+    }
+    if (phoneLocalDraft.trim().length < 6) {
+      setBusinessError("A valid phone number is required.");
+      return;
+    }
+
+    setBusinessSaving(true);
+    setBusinessError(null);
+    setBusinessSaved(false);
+
+    try {
+      const phoneNumber = `${phoneDialCodeDraft} ${phoneLocalDraft}`.trim();
+      const updated = await updateVendorProfile(token, vendorSlug, {
+        name: nameDraft,
+        slug: slugDraft,
+        phoneNumber,
+        businessCategory: categoryDraft,
+      });
+      const savedBusiness: VendorBusinessProfile = {
+        name: updated.name,
+        slug: updated.slug,
+        phoneNumber: updated.phoneNumber,
+        businessCategory: updated.businessCategory,
+      };
+      onBusinessSaved?.(savedBusiness);
+
+      const slugChanged = updated.slug !== vendorSlug;
+      if (slugChanged) {
+        transferOwnerTokenCache(vendorSlug, updated.slug);
+        router.replace(`/vendor/${updated.slug}?tab=setup`);
+        return;
+      }
+
+      setBusinessSaved(true);
+      window.setTimeout(() => setBusinessSaved(false), 2000);
+    } catch (error) {
+      setBusinessError(mapOwnerTokenError(error));
+    } finally {
+      setBusinessSaving(false);
+    }
+  };
+
+  const handleSavePayments = async () => {
+    if (!token) {
+      setPaymentsError(
+        "This device isn't unlocked. Recover access to edit your profile."
+      );
+      return;
+    }
+
+    const payoutLocal = payoutSameAsBusiness
+      ? phoneLocalDraft.trim()
+      : payoutPhoneDraft.trim();
+    const momoCode =
+      payoutMethodDraft === "MERCHANT_CODE"
+        ? merchantCodeDraft.trim()
+        : payoutSameAsBusiness
+          ? `${phoneDialCodeDraft} ${phoneLocalDraft}`.trim()
+          : `${phoneDialCodeDraft} ${payoutPhoneDraft}`.trim();
+
+    if (payoutMethodDraft === "MERCHANT_CODE" && !/^\d{6}$/.test(momoCode)) {
+      setPaymentsError("MoMo merchant code must be exactly 6 digits.");
+      return;
+    }
+    if (payoutMethodDraft === "PHONE" && payoutLocal.length < 6) {
+      setPaymentsError("A valid MoMo payout phone number is required.");
+      return;
+    }
+
+    setPaymentsSaving(true);
+    setPaymentsError(null);
+    setPaymentsSaved(false);
+
+    try {
+      const updated = await updateVendorProfile(token, vendorSlug, {
+        payoutMethod: payoutMethodDraft,
+        momoCode,
+      });
+      onPaymentsSaved?.({
+        payoutMethod: updated.payoutMethod,
+        momoCode: updated.momoCode,
+      });
+      setPaymentsSaved(true);
+      window.setTimeout(() => setPaymentsSaved(false), 2000);
+    } catch (error) {
+      setPaymentsError(mapOwnerTokenError(error));
+    } finally {
+      setPaymentsSaving(false);
+    }
+  };
+
   const brandingBusy = logoUploadBusy || coverUploadBusy;
-  const profileFieldsDisabled = profileSaving || brandingBusy;
+  const profileFieldsDisabled =
+    profileSaving || brandingBusy || businessSaving || paymentsSaving;
+  const businessFieldsDisabled = businessSaving || paymentsSaving || brandingBusy;
+  const paymentsFieldsDisabled = paymentsSaving || businessSaving || brandingBusy;
+  const slugMessage = slugStatusMessage(slugStatus);
+  const merchantCodeValid = /^\d{6}$/.test(merchantCodeDraft.trim());
+  const payoutPhoneLocal = payoutSameAsBusiness
+    ? phoneLocalDraft.trim()
+    : payoutPhoneDraft.trim();
+  const payoutPhoneValid = payoutPhoneLocal.length >= 6;
 
   if (!open) return null;
 
@@ -409,13 +671,299 @@ export function SetupDrawer({
 
           <section className="mt-8">
             <h3 className="font-display text-display-sm text-ink">
+              Business settings
+            </h3>
+            <p className="mt-1 font-body text-body-sm text-muted">
+              Your storefront URL, contact number, and category.
+            </p>
+            <div className="mt-4 flex flex-col gap-3">
+              <Input
+                label="Business name"
+                value={nameDraft}
+                onChange={(event) => setNameDraft(event.target.value)}
+                placeholder="Inka Steakhouse"
+                maxLength={80}
+                disabled={businessFieldsDisabled}
+              />
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="setup-slug"
+                  className="font-body text-body-sm font-medium text-ink"
+                >
+                  Storefront URL
+                </label>
+                <div className="flex items-stretch overflow-hidden rounded-brand-md border border-hairline-strong bg-surface-card focus-within:border-2 focus-within:border-ink">
+                  {hostPrefix ? (
+                    <span className="flex items-center whitespace-nowrap border-r border-hairline-strong bg-canvas-soft px-3 font-body text-body-sm text-muted">
+                      {hostPrefix}
+                    </span>
+                  ) : null}
+                  <input
+                    id="setup-slug"
+                    className="h-12 min-w-0 flex-1 bg-transparent px-3 font-body text-body-md text-ink placeholder:text-muted-soft focus:outline-none disabled:cursor-not-allowed disabled:text-muted-soft"
+                    value={slugDraft}
+                    onChange={(event) => setSlugDraft(event.target.value)}
+                    placeholder="inka-steakhouse"
+                    autoComplete="off"
+                    spellCheck={false}
+                    disabled={businessFieldsDisabled}
+                  />
+                  {slugStatus === "available" ? (
+                    <span
+                      className="flex items-center pr-3 text-success"
+                      aria-hidden="true"
+                    >
+                      ✓
+                    </span>
+                  ) : null}
+                </div>
+                {slugMessage ? (
+                  <p
+                    className={`font-body text-caption ${slugStatusClass(slugStatus)}`}
+                    role="status"
+                  >
+                    {slugMessage}
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="setup-phone"
+                  className="font-body text-body-sm font-medium text-ink"
+                >
+                  Phone number
+                </label>
+                <div className="flex items-stretch gap-2">
+                  <Select
+                    ariaLabel="Country code"
+                    value={phoneDialCodeDraft}
+                    onChange={setPhoneDialCodeDraft}
+                    options={DIAL_CODE_SELECT_OPTIONS}
+                    className="shrink-0"
+                    triggerClassName="h-12 w-[6.75rem] px-2"
+                    disabled={businessFieldsDisabled}
+                  />
+                  <input
+                    id="setup-phone"
+                    type="tel"
+                    className={cn(
+                      "h-12 min-w-0 flex-1 rounded-brand-md border border-hairline-strong bg-surface-card px-4 font-body text-body-md text-ink placeholder:text-muted-soft focus:border-2 focus:border-ink focus:outline-none",
+                      businessFieldsDisabled &&
+                        "cursor-not-allowed bg-canvas-soft text-muted-soft"
+                    )}
+                    value={phoneLocalDraft}
+                    onChange={(event) => setPhoneLocalDraft(event.target.value)}
+                    placeholder="781 234 567"
+                    autoComplete="tel-national"
+                    disabled={businessFieldsDisabled}
+                  />
+                </div>
+                <p className="font-body text-caption text-muted">
+                  Used for customer contact, account recovery, and your
+                  storefront call button.
+                </p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="setup-category"
+                  className="font-body text-body-sm font-medium text-ink"
+                >
+                  Business category
+                </label>
+                <select
+                  id="setup-category"
+                  className={cn(
+                    "h-12 w-full rounded-brand-md border border-hairline-strong bg-surface-card px-4 font-body text-body-md text-ink focus:border-2 focus:border-ink focus:outline-none",
+                    businessFieldsDisabled &&
+                      "cursor-not-allowed bg-canvas-soft text-muted-soft"
+                  )}
+                  value={categoryDraft}
+                  onChange={(event) => setCategoryDraft(event.target.value)}
+                  disabled={businessFieldsDisabled}
+                >
+                  {BUSINESS_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button
+                size="default"
+                onClick={() => void handleSaveBusiness()}
+                disabled={businessFieldsDisabled || !hasToken}
+              >
+                {businessSaving ? "Saving…" : "Save business"}
+              </Button>
+              {businessSaved ? (
+                <p className="font-body text-body-sm text-primary">
+                  Business settings saved.
+                </p>
+              ) : null}
+              {businessError ? (
+                <p className="font-body text-body-sm text-error" role="alert">
+                  {businessError}
+                </p>
+              ) : null}
+            </div>
+          </section>
+
+          <section className="mt-8">
+            <h3 className="font-display text-display-sm text-ink">
+              Payment settings
+            </h3>
+            <p className="mt-1 font-body text-body-sm text-muted">
+              Where MoMo payments land for your storefront.
+            </p>
+            <div className="mt-4 flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPayoutMethodDraft("MERCHANT_CODE")}
+                  disabled={paymentsFieldsDisabled}
+                  className={cn(
+                    "rounded-brand-lg border px-4 py-3 text-left transition-colors",
+                    payoutMethodDraft === "MERCHANT_CODE"
+                      ? "border-primary bg-primary/5"
+                      : "border-hairline bg-surface-card"
+                  )}
+                >
+                  <span className="font-body text-body-md font-medium text-ink">
+                    MoMo merchant code
+                  </span>
+                  <span className="mt-0.5 block font-body text-body-sm text-muted">
+                    Receive payments to your MoMo Pay merchant code.
+                  </span>
+                </button>
+                {payoutMethodDraft === "MERCHANT_CODE" ? (
+                  <Input
+                    label="Merchant code"
+                    value={merchantCodeDraft}
+                    onChange={(event) =>
+                      setMerchantCodeDraft(event.target.value)
+                    }
+                    placeholder="123456"
+                    inputMode="numeric"
+                    maxLength={6}
+                    disabled={paymentsFieldsDisabled}
+                  />
+                ) : null}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPayoutMethodDraft("PHONE")}
+                  disabled={paymentsFieldsDisabled}
+                  className={cn(
+                    "rounded-brand-lg border px-4 py-3 text-left transition-colors",
+                    payoutMethodDraft === "PHONE"
+                      ? "border-primary bg-primary/5"
+                      : "border-hairline bg-surface-card"
+                  )}
+                >
+                  <span className="font-body text-body-md font-medium text-ink">
+                    Receive to phone number
+                  </span>
+                  <span className="mt-0.5 block font-body text-body-sm text-muted">
+                    Receive payments to your MoMo registered phone.
+                  </span>
+                </button>
+                {payoutMethodDraft === "PHONE" ? (
+                  <div className="flex flex-col gap-3 rounded-brand-lg border border-hairline px-4 py-3">
+                    <label className="flex cursor-pointer items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={payoutSameAsBusiness}
+                        onChange={(event) =>
+                          setPayoutSameAsBusiness(event.target.checked)
+                        }
+                        disabled={paymentsFieldsDisabled}
+                        className="mt-1 h-4 w-4 shrink-0 rounded border-hairline-strong accent-primary"
+                      />
+                      <span className="font-body text-body-sm text-ink">
+                        Payment number is the same as my business number
+                      </span>
+                    </label>
+                    {payoutSameAsBusiness ? (
+                      <p className="rounded-brand-md border border-hairline bg-canvas-soft px-3 py-2 font-body text-body-sm text-ink">
+                        {phoneDialCodeDraft} {phoneLocalDraft.trim() || "—"}
+                      </p>
+                    ) : (
+                      <div className="flex flex-col gap-1.5">
+                        <label
+                          htmlFor="setup-payout-phone"
+                          className="font-body text-body-sm font-medium text-ink"
+                        >
+                          Payout phone number
+                        </label>
+                        <div className="flex items-stretch gap-2">
+                          <Select
+                            ariaLabel="Country code"
+                            value={phoneDialCodeDraft}
+                            onChange={setPhoneDialCodeDraft}
+                            options={DIAL_CODE_SELECT_OPTIONS}
+                            className="shrink-0"
+                            triggerClassName="h-12 w-[6.75rem] px-2"
+                            disabled={paymentsFieldsDisabled}
+                          />
+                          <input
+                            id="setup-payout-phone"
+                            type="tel"
+                            className={cn(
+                              "h-12 min-w-0 flex-1 rounded-brand-md border border-hairline-strong bg-surface-card px-4 font-body text-body-md text-ink placeholder:text-muted-soft focus:border-2 focus:border-ink focus:outline-none",
+                              paymentsFieldsDisabled &&
+                                "cursor-not-allowed bg-canvas-soft text-muted-soft"
+                            )}
+                            value={payoutPhoneDraft}
+                            onChange={(event) =>
+                              setPayoutPhoneDraft(event.target.value)
+                            }
+                            placeholder="781 234 567"
+                            disabled={paymentsFieldsDisabled}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+
+              <Button
+                size="default"
+                onClick={() => void handleSavePayments()}
+                disabled={
+                  paymentsFieldsDisabled ||
+                  !hasToken ||
+                  (payoutMethodDraft === "MERCHANT_CODE"
+                    ? !merchantCodeValid
+                    : !payoutPhoneValid)
+                }
+              >
+                {paymentsSaving ? "Saving…" : "Save payments"}
+              </Button>
+              {paymentsSaved ? (
+                <p className="font-body text-body-sm text-primary">
+                  Payment settings saved.
+                </p>
+              ) : null}
+              {paymentsError ? (
+                <p className="font-body text-body-sm text-error" role="alert">
+                  {paymentsError}
+                </p>
+              ) : null}
+            </div>
+          </section>
+
+          <section className="mt-8">
+            <h3 className="font-display text-display-sm text-ink">
               Storefront profile
             </h3>
             <p className="mt-1 font-body text-body-sm text-muted">
               Shown on your customer menu page.
             </p>
             <Link
-              href={`/${vendorSlug}?from=kds`}
+              href={`/${slugDraft || vendorSlug}?from=kds`}
               className="mt-4 inline-flex h-10 min-h-10 w-full items-center justify-center rounded-brand-lg border border-hairline bg-canvas-soft px-5 font-body text-button font-medium text-ink transition-colors hover:bg-canvas"
             >
               Preview storefront
@@ -637,7 +1185,7 @@ export function SetupDrawer({
             <div className="mt-4">
               <StorefrontQr
                 url={storefrontUrl}
-                slug={vendorSlug}
+                slug={slugDraft || vendorSlug}
                 showActions
               />
             </div>

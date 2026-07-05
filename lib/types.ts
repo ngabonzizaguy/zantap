@@ -61,6 +61,7 @@ export interface CreateVendorInput {
 
 export interface UpdateVendorInput {
   name?: string;
+  slug?: string;
   phoneNumber?: string;
   momoCode?: string;
   tagline?: string;
@@ -149,6 +150,8 @@ export interface OrderItem {
   menuItem?: MenuItem;
   quantity: number;
   unitPriceRwf: number;
+  /** Special instructions from the customize modal (one per line item). */
+  notes?: string;
 }
 
 export interface Order {
@@ -219,7 +222,7 @@ export interface CreateOrderInput {
   customerPhone: string;
   deliverySector: string;
   landmark: string;
-  items: { menuItemId: string; quantity: number }[];
+  items: { menuItemId: string; quantity: number; notes?: string }[];
 }
 
 export interface CreatePaymentInput {

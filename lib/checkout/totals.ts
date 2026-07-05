@@ -1,5 +1,5 @@
 import type { MenuItem } from "@/lib/types";
-import type { CartQuantities, CheckoutLine } from "./types";
+import type { CartNotes, CartQuantities, CheckoutLine } from "./types";
 
 export function computeCount(cart: CartQuantities): number {
   return Object.values(cart).reduce((a, b) => a + b, 0);
@@ -14,14 +14,19 @@ export function computeTotal(cart: CartQuantities, menu: MenuItem[]): number {
 
 export function computeLines(
   cart: CartQuantities,
-  menu: MenuItem[]
+  menu: MenuItem[],
+  itemNotes: CartNotes = {}
 ): CheckoutLine[] {
   return menu
     .filter((item) => (cart[item.id] ?? 0) > 0)
-    .map((item) => ({
-      menuItemId: item.id,
-      name: item.name,
-      qty: cart[item.id] ?? 0,
-      lineTotal: (cart[item.id] ?? 0) * item.priceRwf,
-    }));
+    .map((item) => {
+      const notes = itemNotes[item.id];
+      return {
+        menuItemId: item.id,
+        name: item.name,
+        qty: cart[item.id] ?? 0,
+        lineTotal: (cart[item.id] ?? 0) * item.priceRwf,
+        ...(notes ? { notes } : {}),
+      };
+    });
 }

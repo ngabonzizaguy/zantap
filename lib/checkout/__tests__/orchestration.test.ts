@@ -53,7 +53,21 @@ describe("executePay", () => {
     const placeOrder = vi.fn().mockResolvedValue(mockOrder);
     const momoClient = createMomoClient();
 
-    const result = await executePay(validPayInput, { placeOrder, momoClient });
+    const result = await executePay(
+      {
+        ...validPayInput,
+        lines: [
+          {
+            menuItemId: "item-1",
+            name: "Brochettes",
+            qty: 2,
+            lineTotal: 4000,
+            notes: "Well done",
+          },
+        ],
+      },
+      { placeOrder, momoClient }
+    );
 
     expect(result).toEqual({
       kind: "success",
@@ -65,7 +79,7 @@ describe("executePay", () => {
       customerPhone: "0788123456",
       deliverySector: "Kicukiro",
       landmark: "Near Simba",
-      items: [{ menuItemId: "item-1", quantity: 2 }],
+      items: [{ menuItemId: "item-1", quantity: 2, notes: "Well done" }],
     });
     expect(momoClient.initiateStkPush).toHaveBeenCalledWith({
       orderId: "order-1",

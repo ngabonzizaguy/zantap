@@ -13,6 +13,20 @@ export function orderPhoneMatches(stored: string, entered: string): boolean {
   return phonesMatchForRecovery(stored, entered);
 }
 
+/** Rwanda E.164 digits (`250…`) → local `07[2389]…` (handles double-zero national). */
+function rwandaE164DigitsToLocal(e164Digits: string): string | null {
+  if (!e164Digits.startsWith(RWANDA_DIAL)) return null;
+
+  let national = e164Digits.slice(RWANDA_DIAL.length);
+  if (national.startsWith("0")) {
+    national = national.slice(1);
+  }
+  if (national.length !== 9) return null;
+
+  const local = `0${national}`;
+  return LOCAL_MOBILE_PATTERN.test(local) ? local : null;
+}
+
 /** Strip vendor payout phone to local `078…` form for USSD dial strings. */
 export function toLocalMomoPhone(raw: string): string | null {
   const digits = normalizePhone(raw);
@@ -22,13 +36,22 @@ export function toLocalMomoPhone(raw: string): string | null {
     return digits;
   }
 
+  const fromE164 = rwandaE164DigitsToLocal(digits);
+  if (fromE164) return fromE164;
+
   const canonical = canonicalizePhone(raw, RWANDA_DIAL);
-  if (canonical.startsWith(RWANDA_DIAL) && canonical.length === 12) {
-    const local = `0${canonical.slice(RWANDA_DIAL.length)}`;
-    return LOCAL_MOBILE_PATTERN.test(local) ? local : null;
+  if (canonical.startsWith(RWANDA_DIAL)) {
+    return rwandaE164DigitsToLocal(canonical);
   }
 
   return null;
+}
+
+/** Persist `momoCode` as local `07[2389]…` when payout is to a phone (ADR-0034). */
+export function normalizeMomoPayoutPhoneForStorage(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  return toLocalMomoPhone(trimmed);
 }
 
 export function normalizeMerchantCode(raw: string): string | null {

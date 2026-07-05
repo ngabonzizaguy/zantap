@@ -1,6 +1,7 @@
 "use server";
 
 import { normalizePhone, phonesMatchForRecovery } from "@/lib/format";
+import { normalizeMomoPayoutPhoneForStorage } from "@/lib/momo/ussd-dial";
 import { getStore } from "@/lib/store";
 import type { CreateVendorInput, MenuItem, Vendor } from "@/lib/types";
 import { mintOwnerToken } from "@/lib/vendor/owner-token";
@@ -61,17 +62,24 @@ export async function provisionVendor(
 
   const { token: ownerToken, hash: ownerTokenHash } = mintOwnerToken();
 
+  const payoutMethod = input.payoutMethod ?? "MERCHANT_CODE";
+  const momoCodeRaw = input.momoCode.trim();
+  const momoCode =
+    payoutMethod === "PHONE"
+      ? normalizeMomoPayoutPhoneForStorage(momoCodeRaw)!
+      : momoCodeRaw;
+
   const vendor = await store.createVendor({
     ...input,
     name: input.name.trim(),
     slug: normalizedSlug,
     phoneNumber: normalizePhone(input.phoneNumber),
-    momoCode: input.momoCode.trim(),
+    momoCode,
     tagline: input.tagline?.trim() || undefined,
     location: input.location?.trim() || undefined,
     deliveryTime: input.deliveryTime?.trim() || undefined,
     businessCategory: input.businessCategory?.trim() || undefined,
-    payoutMethod: input.payoutMethod ?? "MERCHANT_CODE",
+    payoutMethod,
     ownerTokenHash,
   });
 

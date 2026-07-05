@@ -1,4 +1,5 @@
 import { normalizePhone } from "@/lib/format";
+import { normalizeMomoPayoutPhoneForStorage } from "@/lib/momo/ussd-dial";
 import type { CreateVendorInput } from "@/lib/types";
 import { normalizeVendorSlug } from "@/lib/vendor/slug";
 
@@ -14,8 +15,17 @@ export function validateProvisionVendorInput(
   if (!normalizeVendorSlug(input.slug)) {
     return "Storefront URL is required";
   }
+  const payoutMethod = input.payoutMethod ?? "MERCHANT_CODE";
   if (!input.momoCode?.trim()) {
-    return "MoMo merchant code is required";
+    return payoutMethod === "PHONE"
+      ? "MoMo payout phone number is required"
+      : "MoMo merchant code is required";
+  }
+  if (
+    payoutMethod === "PHONE" &&
+    !normalizeMomoPayoutPhoneForStorage(input.momoCode)
+  ) {
+    return "A valid MoMo payout phone number is required";
   }
   if (normalizePhone(input.phoneNumber).length < 10) {
     return "A valid phone number is required";

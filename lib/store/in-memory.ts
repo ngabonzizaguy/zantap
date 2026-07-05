@@ -32,6 +32,7 @@ import {
   resolveDateRange,
 } from "@/lib/orders/history-filters";
 import { putMenuImageBlob } from "@/lib/menu/blob-storage";
+import { sanitizeItemNotes } from "@/lib/menu/customization";
 import { thumbGradientForId } from "@/lib/menu/gradients";
 import {
   assertCanAddMenuImage,
@@ -252,8 +253,19 @@ export function createInMemoryStore(): ResettableStore {
     if (index === -1) return null;
 
     const current = vendors[index];
+    if (input.slug !== undefined) {
+      const newSlug = normalizeVendorSlug(input.slug);
+      if (!newSlug) return null;
+      if (newSlug !== current.slug && !(await isSlugAvailable(newSlug))) {
+        throw new Error("Slug already taken");
+      }
+    }
+
     const updated: StoredVendor = {
       ...current,
+      ...(input.slug !== undefined
+        ? { slug: normalizeVendorSlug(input.slug)! }
+        : {}),
       ...(input.name !== undefined ? { name: input.name } : {}),
       ...(input.phoneNumber !== undefined
         ? { phoneNumber: input.phoneNumber }
@@ -751,6 +763,7 @@ export function createInMemoryStore(): ResettableStore {
       if (!menuItem || !menuItem.isAvailable) {
         throw new Error(`Item unavailable: ${line.menuItemId}`);
       }
+      const notes = line.notes ? sanitizeItemNotes(line.notes) : undefined;
       return {
         id: `oi_${++orderItemCounter}_${Date.now()}`,
         orderId: id,
@@ -758,6 +771,7 @@ export function createInMemoryStore(): ResettableStore {
         menuItem: hydrateMenuItem(menuItem),
         quantity: line.quantity,
         unitPriceRwf: menuItem.priceRwf,
+        ...(notes ? { notes } : {}),
       };
     });
 

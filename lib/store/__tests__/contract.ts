@@ -174,6 +174,41 @@ export function runStoreContract(
         expect(fetched?.logoUrl).toBe("https://cdn.example.com/logo.png");
         expect(fetched?.payoutMethod).toBe("PHONE");
       });
+
+      it("updateVendor renames slug when the new slug is available", async () => {
+        const created = await store.createVendor({
+          name: "Rename Vendor",
+          slug: "rename-vendor-a",
+          phoneNumber: "0788777777",
+          momoCode: "REN001",
+        });
+
+        const updated = await store.updateVendor(created.slug, {
+          slug: "rename-vendor-b",
+        });
+        expect(updated?.slug).toBe("rename-vendor-b");
+        expect(await store.getVendorBySlug("rename-vendor-a")).toBeNull();
+        expect(await store.getVendorBySlug("rename-vendor-b")).not.toBeNull();
+      });
+
+      it("updateVendor throws when renaming to a taken slug", async () => {
+        await store.createVendor({
+          name: "Holder",
+          slug: "slug-holder",
+          phoneNumber: "0788888881",
+          momoCode: "HLD001",
+        });
+        const target = await store.createVendor({
+          name: "Target",
+          slug: "slug-target",
+          phoneNumber: "0788888882",
+          momoCode: "TGT001",
+        });
+
+        await expect(
+          store.updateVendor(target.slug, { slug: "slug-holder" })
+        ).rejects.toThrow(/Slug already taken/);
+      });
     });
 
     describe("owner token", () => {
@@ -522,6 +557,40 @@ export function runStoreContract(
 
         const listed = await store.listOrders(slug);
         expect(listed.find((o) => o.id === created.id)).toBeDefined();
+      });
+
+      it("persists special-instructions notes on order line items", async () => {
+        const available = await store.getAvailableMenu(slug);
+        const item = available[0];
+
+        const created = await store.createOrder({
+          vendorSlug: slug,
+          customerPhone: "0788000111",
+          deliverySector: "Kicukiro",
+          landmark: "Test landmark",
+          items: [
+            {
+              menuItemId: item.id,
+              quantity: 2,
+              notes: "  No onions please  ",
+            },
+          ],
+        });
+
+        expect(created.orderItems[0]?.notes).toBe("No onions please");
+
+        const fetched = await store.getOrder(created.id);
+        expect(fetched?.orderItems[0]?.notes).toBe("No onions please");
+
+        const kdsOrders = await store.listKdsOrders(slug);
+        const onKds = kdsOrders.find((o) => o.id === created.id);
+        expect(onKds).toBeUndefined();
+
+        await store.updateOrderStatus(created.id, "PAID");
+        const visible = await store.listKdsOrders(slug);
+        expect(
+          visible.find((o) => o.id === created.id)?.orderItems[0]?.notes
+        ).toBe("No onions please");
       });
 
       it("a PENDING order is not active until it is PAID", async () => {

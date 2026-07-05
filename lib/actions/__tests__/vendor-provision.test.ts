@@ -91,11 +91,13 @@ describe("vendor-provision actions", () => {
         slug: "payout-phone-cafe",
         businessCategory: "Coffee",
         payoutMethod: "PHONE",
+        momoCode: "+250 788 123 456",
       });
 
       const fetched = await getStore().getVendorBySlug("payout-phone-cafe");
       expect(fetched?.businessCategory).toBe("Coffee");
       expect(vendor.payoutMethod).toBe("PHONE");
+      expect(vendor.momoCode).toBe("0788123456");
     });
 
     it("returns a token that unlocks that vendor's guarded writes", async () => {
@@ -231,11 +233,11 @@ describe("vendor-provision actions", () => {
       await provisionVendor({
         ...validInput,
         phoneNumber: "+250 788 123 456",
-        momoCode: "0700999888",
+        momoCode: "+250 780 999 888",
         payoutMethod: "PHONE",
       });
 
-      const result = await recoverOwnerToken("sunrise-cafe", "0700999888");
+      const result = await recoverOwnerToken("sunrise-cafe", "0780999888");
       expect(result.ok).toBe(false);
     });
 

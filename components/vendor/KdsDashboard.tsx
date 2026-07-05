@@ -31,7 +31,7 @@ import { BulkActionBar } from "@/components/vendor/BulkActionBar";
 import { MenuSection } from "@/components/vendor/MenuSection";
 import { HistoryPanel } from "@/components/vendor/HistoryPanel";
 import { DispatchModal } from "@/components/vendor/DispatchModal";
-import { SetupDrawer, type StorefrontProfile } from "@/components/vendor/SetupDrawer";
+import { SetupDrawer, type StorefrontProfile, type VendorBusinessProfile, type VendorPaymentProfile } from "@/components/vendor/SetupDrawer";
 import { HelpModal } from "@/components/vendor/HelpModal";
 import { Coachmark } from "@/components/vendor/Coachmark";
 import { Card, GradientOrbs } from "@/components/ui/primitives";
@@ -92,6 +92,22 @@ export function KdsDashboard({
       description: vendor.description,
     })
   );
+  const [businessProfile, setBusinessProfile] = useState<VendorBusinessProfile>(
+    () => ({
+      name: vendor.name,
+      slug: vendor.slug,
+      phoneNumber: vendor.phoneNumber,
+      businessCategory: vendor.businessCategory,
+    })
+  );
+  const [paymentProfile, setPaymentProfile] = useState<VendorPaymentProfile>(
+    () => ({
+      payoutMethod: vendor.payoutMethod,
+      momoCode: vendor.momoCode,
+    })
+  );
+  const [vendorName, setVendorName] = useState(vendor.name);
+  const [vendorPhone, setVendorPhone] = useState(vendor.phoneNumber);
   const [onboardingOverride, setOnboardingOverride] = useState<
     ReturnType<typeof deriveOnboardingState> | null
   >(null);
@@ -289,7 +305,7 @@ export function KdsDashboard({
 
   const handleShareWhatsApp = async () => {
     if (!dispatchOrder) return;
-    const slip = buildDeliverySlip(dispatchOrder, vendor.name);
+    const slip = buildDeliverySlip(dispatchOrder, vendorName);
     try {
       await navigator.clipboard.writeText(slip);
     } catch {
@@ -314,7 +330,7 @@ export function KdsDashboard({
         <GradientOrbs className="opacity-25" />
 
         <MetricsBanner
-          vendorName={vendor.name}
+          vendorName={vendorName}
           todayGross={todayGross}
           yesterdayGross={yesterdayGross}
           activeCount={activeCount}
@@ -338,8 +354,8 @@ export function KdsDashboard({
           {tab === "orders" ? (
             <OrdersList
               orders={visibleOrders}
-              vendorPhone={vendor.phoneNumber}
-              vendorName={vendor.name}
+              vendorPhone={vendorPhone}
+              vendorName={vendorName}
               expandedId={expandedId}
               selectedIds={selectedIds}
               bulkMode={bulkMode}
@@ -411,9 +427,17 @@ export function KdsDashboard({
         onClose={closeSetup}
         checklist={checklist}
         vendorSlug={vendor.slug}
+        business={businessProfile}
+        payments={paymentProfile}
         profile={storefrontProfile}
         menu={menu}
         onProfileSaved={setStorefrontProfile}
+        onBusinessSaved={(saved) => {
+          setBusinessProfile(saved);
+          setVendorName(saved.name);
+          setVendorPhone(saved.phoneNumber);
+        }}
+        onPaymentsSaved={setPaymentProfile}
         onRefresh={refreshOnboarding}
       />
 
@@ -440,13 +464,13 @@ export function KdsDashboard({
 
       <DispatchModal        open={!!dispatchId}
         order={dispatchOrder}
-        vendorName={vendor.name}
+        vendorName={vendorName}
         drivers={drivers}
         copied={copied}
         onClose={() => setDispatchId(null)}
         onCopy={() => {
           if (!dispatchOrder) return;
-          const slip = buildDeliverySlip(dispatchOrder, vendor.name);
+          const slip = buildDeliverySlip(dispatchOrder, vendorName);
           navigator.clipboard?.writeText(slip).catch(() => undefined);
           setCopied(true);
         }}

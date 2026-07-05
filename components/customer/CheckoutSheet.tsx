@@ -109,6 +109,11 @@ export function CheckoutSheet({
                 >
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-bold text-zt-brown">{line.name}</div>
+                    {line.notes && (
+                      <div className="mt-0.5 text-[12px] font-medium italic text-zt-warm">
+                        &ldquo;{line.notes}&rdquo;
+                      </div>
+                    )}
                     <div className="mt-0.5 text-[13px] font-bold text-zt-accent">
                       {formatRwf(line.lineTotal)}
                     </div>

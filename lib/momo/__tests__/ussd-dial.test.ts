@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildMomoUssdDial,
   manualPaymentRef,
+  normalizeMomoPayoutPhoneForStorage,
   toLocalMomoPhone,
   validateVendorPayout,
 } from "@/lib/momo/ussd-dial";
@@ -33,8 +34,34 @@ describe("buildMomoUssdDial", () => {
 });
 
 describe("toLocalMomoPhone", () => {
-  it("normalizes international Rwanda mobile to local form", () => {
-    expect(toLocalMomoPhone("250788123456")).toBe("0788123456");
+  it.each([
+    ["0788123456", "0788123456"],
+    ["+250788123456", "0788123456"],
+    ["250788123456", "0788123456"],
+    ["+250 788 123 456", "0788123456"],
+    ["250 788 123 456", "0788123456"],
+    ["+2500788123456", "0788123456"],
+    ["2500788123456", "0788123456"],
+    ["+250 078 812 3456", "0788123456"],
+  ])("normalizes %s to local %s", (input, expected) => {
+    expect(toLocalMomoPhone(input)).toBe(expected);
+  });
+
+  it("rejects invalid merchant-style input", () => {
+    expect(toLocalMomoPhone("123456")).toBeNull();
+  });
+});
+
+describe("normalizeMomoPayoutPhoneForStorage", () => {
+  it("stores local form from international onboarding input", () => {
+    expect(normalizeMomoPayoutPhoneForStorage("+250 788 123 456")).toBe(
+      "0788123456"
+    );
+  });
+
+  it("returns null for blank or invalid input", () => {
+    expect(normalizeMomoPayoutPhoneForStorage("")).toBeNull();
+    expect(normalizeMomoPayoutPhoneForStorage("880001")).toBeNull();
   });
 });
 

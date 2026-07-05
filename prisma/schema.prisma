@@ -106,6 +106,7 @@ model OrderItem {
   menuItem      MenuItem @relation(fields: [menuItemId], references: [id])
   quantity      Int
   unitPriceRwf  Int
+  notes         String?
 
   @@index([orderId])
 }

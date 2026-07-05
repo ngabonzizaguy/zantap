@@ -13,25 +13,35 @@ Last verified against the codebase: 2026-07-05.
 
 ## Recommended next (2026-07-05)
 
+**Candidate #21 — Storefront customize slim-down + vendor profile edits + MoMo phone fix**
+— **feature-complete** (Issues 21-01–21-04 ✅ done 2026-07-05). MoMo payout phone
+read-time + normalize-on-write (ADR-0034); customize modal images + notes only
+(ADR-0035); notes cart → order → KDS (ADR-0036); KDS Setup business/payments/slug
+edit (ADR-0037). **Next: `db:deploy` (21-03 notes migration) → deploy → prod smoke.**
+
 **Candidate #20 — Manual MTN MoMo USSD checkout** — ✅ **DONE · deployed · prod-smoked 2026-07-05**
 (`712101d` → `dpl_8zVJC98E2oEs7Du8eHKx5sTta8C5` → alias `zantap-psi.vercel.app`).
 Playwright smoke 9/9 PASS (`.scratch/manual-momo-ussd/prod-smoke.mjs`). Migration
 `20260705120000_order_status_cancelled` applied; prod `inka-steakhouse` `momoCode` fixed
 `INKA001` → `880001`. ADR-0033. `MOMO_MODE` unset in Production (= manual USSD).
 
-**Mobile UX polish (owner screenshots) — implemented locally, not yet committed/deployed:**
-1. Storefront KDS preview back nav → integrated into `TopBar` (removed floating `BackToKdsChip`).
-2. KDS `HelpModal` + all `Modal` panels → mobile bottom-sheet layout, scrollable body, safe-area padding; help sections start collapsed.
-3. `MenuItemModal` description focus jump → Modal autofocus only on open; form reset keyed on `item.id` not object reference.
-4. Onboarding review → dish photo preview on Menu card (`useDishPhotoPreview`); Live step "View my storefront" → `?from=kds` for Back to KDS; photo File persists menu → review → post-provision upload.
-5. Localhost images → dev in-memory blob fallback (`lib/menu/local-blob-store.ts` + `/api/local-blob/[...path]`) replaces dead `https://blob.local/…` URLs when `BLOB_READ_WRITE_TOKEN` unset.
-6. Modal primitive → golden touch-revealed drag handle (swipe-down dismiss), 92dvh cap, sticky `footer` prop, X close button in title bar.
-7. Menu tab → mockup "Variation 3" compact list (thumb + gold price + category badge + status pill + kebab menu: Edit/Duplicate/Toggle/Archive; Restore for archived) + dashed bottom "Add item" card. Duplicate = `createMenuItem` copy. Drag-reorder NOT implemented (needs MenuItem sortOrder schema — deferred).
-8. Menu item edit modal → mockup redesign: item preview card, Dish name with N/60 counter, Category+Price side-by-side, Status row with availability switch (wired to existing toggle), Photos gallery, collapsible Description row, Ingredients/Add-ons/Options rows shown disabled with "Soon" badge (no schema).
-9. Modal stacking fix (owner "tucked inside header" report) → Modal now portals to `document.body` at `z-[70]` (the KDS tab wrapper's `relative z-[1]` context trapped it under the sticky `z-30` header); centered dialog on all viewports (design "B"), 90dvh cap, darker scrim.
-10. Photos section → design "B": square thumb tiles + dashed "Add photo" tile (tap = file picker); removed full-width Upload button AND the Image URL / Add URL section from the gallery (server action `addMenuImageByUrl` kept, UI removed).
+**Mobile UX polish (owner screenshots) — ✅ DONE · deployed · prod-smoked 2026-07-05**
+(`bac91e7` → included in `dpl_AwjU54mUH8ddzMTvgVPj7zeZ7R35` / alias `zantap-psi.vercel.app`).
+Playwright mobile smoke **16/16 PASS** (`.scratch/mobile-ux-polish/prod-smoke.mjs`, 390×844):
+TopBar `?from=kds` Back chip, Help modal scroll + collapsed accordions + not tucked under header (`y=42`),
+menu edit description typing stable (owner-token recovery), edit modal stacking OK, Variation 3 list + Add item card.
 
-**Next:** commit → deploy → mobile smoke on prod (preview `?from=kds`, `?` help scroll, menu edit description typing).
+Shipped items 1–10:
+1. Storefront KDS preview back nav → integrated into `TopBar` (removed floating `BackToKdsChip`).
+2. KDS `HelpModal` + all `Modal` panels → scrollable body, safe-area padding; help sections start collapsed.
+3. `MenuItemModal` description focus jump → Modal autofocus only on open; form reset keyed on `item.id` not object reference.
+4. Onboarding review → dish photo preview on Menu card (`useDishPhotoPreview`); Live step `?from=kds`; photo File persists menu → review → post-provision upload.
+5. Localhost images → dev in-memory blob fallback (`lib/menu/local-blob-store.ts` + `/api/local-blob/[...path]`).
+6. Modal primitive → golden touch-revealed drag handle, 90dvh cap, sticky `footer` prop, X close in title bar.
+7. Menu tab → Variation 3 compact list + kebab (Edit/Duplicate/Toggle/Archive) + dashed "Add item" card.
+8. Menu item edit modal → mockup redesign (preview card, N/60 counter, Status switch, collapsible Description, Soon rows).
+9. Modal stacking fix → portals to `document.body` at `z-[70]` (escapes KDS `relative z-[1]` trap under sticky header).
+10. Photos section → square thumb tiles + dashed "Add photo" tile; URL paste UI removed (action kept).
 
 **Candidate #19 — KDS + Storefront polish batch** — ✅ **DONE · deployed · prod-smoked**
 (`31c33c7` → `dpl_Aq8HQ3Hivdm3r1txwmKSLG2ygkUP` → alias `zantap-psi.vercel.app`).
@@ -107,6 +117,7 @@ If a session ends without doing both, the handoff is incomplete.
 | 17 | ZanTap operator/admin panel (vendor system-of-record + recovery verification) | Owner design | server + admin UI | ⏸ Deferred — owner design; consumes #16 recovery events | — |
 | 18 | Supabase pooler egress — KDS snapshot optimization | Strong | Store + KDS SSE | ✅ Done 2026-07-01 | `.scratch/pooler-egress-audit/issue-01-kds-snapshot-egress.md` |
 | 19 | KDS + Storefront polish batch (recovery, dashboard, images, help, onboarding, storefront sync, domain) | Owner request | Store + KDS + onboarding + customer UI + config | ✅ Done · deployed · prod-smoked 2026-07-02 | `.scratch/kds-storefront-polish/PRD.md` |
+| 21 | Storefront customize slim-down + vendor profile edits + MoMo phone fix | Owner request | customer modal + KDS Setup + MoMo USSD | ◑ Feature-complete (21-01–21-04 ✅) · deploy pending | `.scratch/candidate-21/PRD.md` |
 
 **#18 closed 2026-07-01** — revision-first SSE poll, scoped `listKdsOrders`, narrow includes, seed remote guard. ADR-0023.
 

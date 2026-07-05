@@ -34,6 +34,37 @@ function inferDialCodeDigits(digits: string): string | undefined {
   return undefined;
 }
 
+/** Split a stored phone into dial code (`+250`) and local digits for edit forms. */
+export function splitPhoneForDisplay(
+  stored: string,
+  defaultDialCode: string = DEFAULT_COUNTRY.dialCode
+): { dialCode: string; local: string } {
+  const digits = normalizePhone(stored);
+  const fallbackDial = defaultDialCode.startsWith("+")
+    ? defaultDialCode
+    : `+${normalizePhone(defaultDialCode)}`;
+
+  if (!digits) {
+    return { dialCode: fallbackDial, local: "" };
+  }
+
+  const dialDigits = inferDialCodeDigits(digits);
+  if (dialDigits) {
+    const national = digits.slice(dialDigits.length);
+    const dialCode = `+${dialDigits}`;
+    if (dialDigits === DEFAULT_DIAL_CODE && national.length === 9) {
+      return { dialCode, local: `0${national}` };
+    }
+    return { dialCode, local: national };
+  }
+
+  if (digits.startsWith("0") && digits.length >= 9) {
+    return { dialCode: fallbackDial, local: digits };
+  }
+
+  return { dialCode: fallbackDial, local: digits };
+}
+
 /**
  * Canonicalize a phone to E.164 digits (no leading +) for comparison. Handles
  * local (`07…`), national (`2507…`), and intl (`+2507…`) forms. Scoped to

@@ -3,6 +3,8 @@ export interface CheckoutLine {
   name: string;
   qty: number;
   lineTotal: number;
+  notes?: string;
 }
 
 export type CartQuantities = Record<string, number>;
+export type CartNotes = Record<string, string>;

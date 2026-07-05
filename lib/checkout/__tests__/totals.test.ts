@@ -71,4 +71,18 @@ describe("computeLines", () => {
       },
     ]);
   });
+
+  it("includes per-item notes when present", () => {
+    expect(
+      computeLines({ "item-a": 2 }, menu, { "item-a": "Extra spicy" })
+    ).toEqual([
+      {
+        menuItemId: "item-a",
+        name: "Brochettes",
+        qty: 2,
+        lineTotal: 6000,
+        notes: "Extra spicy",
+      },
+    ]);
+  });
 });

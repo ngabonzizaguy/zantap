@@ -35,7 +35,8 @@ function StorefrontInner({
   const [activeCategory, setActiveCategory] = useState("All");
   const [sectorOpen, setSectorOpen] = useState(false);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
-  const { cart, addItem, removeItem, resetCart } = useCart();
+  const { cart, itemNotes, addItem, addFromCustomization, removeItem, resetCart } =
+    useCart();
   const checkout = useCheckout(vendor, menu, { momoMode });
 
   const activeItem = useMemo(
@@ -44,15 +45,11 @@ function StorefrontInner({
   );
 
   /**
-   * The single chokepoint where the customize modal touches the cart. Today it
-   * adds N base items and discards the modifier/notes parts of the selection
-   * (visual-only slice, ADR-0019). The future line-item cart swaps ONLY this
-   * function — do not scatter addItem calls elsewhere.
+   * The single chokepoint where the customize modal touches the cart. Persists
+   * qty + special-instructions notes (one per menuItemId, last-write-wins).
    */
   const handleAddToOrder = (selection: CustomizationSelection) => {
-    for (let i = 0; i < selection.qty; i++) {
-      addItem(selection.menuItemId);
-    }
+    addFromCustomization(selection);
     setActiveItemId(null);
   };
 

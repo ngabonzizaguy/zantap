@@ -234,13 +234,20 @@ export function OrderTicket({
 
           <div className="flex flex-col gap-2 border-t border-dashed border-hairline pt-3.5">
             {order.orderItems.map((item) => (
-              <div key={item.id} className="flex items-baseline gap-2.5">
-                <span className="min-w-[42px] font-display text-display-sm text-ink">
-                  {item.quantity}x
-                </span>
-                <span className="font-body text-body-md font-medium text-ink">
-                  {item.menuItem?.name ?? "Item"}
-                </span>
+              <div key={item.id} className="flex flex-col gap-0.5">
+                <div className="flex items-baseline gap-2.5">
+                  <span className="min-w-[42px] font-display text-display-sm text-ink">
+                    {item.quantity}x
+                  </span>
+                  <span className="font-body text-body-md font-medium text-ink">
+                    {item.menuItem?.name ?? "Item"}
+                  </span>
+                </div>
+                {item.notes && (
+                  <p className="pl-[52px] font-body text-body-sm italic text-muted">
+                    &ldquo;{item.notes}&rdquo;
+                  </p>
+                )}
               </div>
             ))}
           </div>

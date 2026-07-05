@@ -32,6 +32,19 @@ export function cacheOwnerToken(vendorSlug: string, token: string): void {
   }
 }
 
+/** Move a cached owner token when a vendor renames their storefront slug. */
+export function transferOwnerTokenCache(fromSlug: string, toSlug: string): void {
+  if (fromSlug === toSlug) return;
+  try {
+    const token = localStorage.getItem(ownerTokenStorageKey(fromSlug));
+    if (!token) return;
+    localStorage.setItem(ownerTokenStorageKey(toSlug), token);
+    localStorage.removeItem(ownerTokenStorageKey(fromSlug));
+  } catch {
+    // ignore quota / private-mode failures
+  }
+}
+
 export function useOwnerToken(vendorSlug: string) {
   const [token, setTokenState] = useState<string | null>(null);
   const [ready, setReady] = useState(false);

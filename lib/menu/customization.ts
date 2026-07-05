@@ -50,6 +50,19 @@ export interface CustomizationSelection {
 /** Max characters for the special-instructions note. */
 export const CUSTOMIZATION_NOTES_MAX = 200;
 
+/** Trim and cap notes for cart / order persistence; empty → undefined. */
+export function sanitizeItemNotes(notes: string): string | undefined {
+  const trimmed = notes.trim();
+  if (!trimmed) return undefined;
+  return trimmed.slice(0, CUSTOMIZATION_NOTES_MAX);
+}
+
+/**
+ * When false, the customize modal shows images + notes only (candidate #21).
+ * Types, fallback catalog, and pricing helpers stay for a future modifiers epic.
+ */
+export const INGREDIENTS_UI_ENABLED = false;
+
 /**
  * Generic, item-agnostic fallback so every item's modal looks complete even
  * though no item carries a real `customization` field yet. This is the seam a

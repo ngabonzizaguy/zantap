@@ -8,6 +8,7 @@ import { getMenuItemGalleryUrls } from "@/lib/menu/media";
 import {
   CUSTOMIZATION_NOTES_MAX,
   computeCustomizeTotal,
+  INGREDIENTS_UI_ENABLED,
   resolveCustomization,
   type CustomizationSelection,
 } from "@/lib/menu/customization";
@@ -58,8 +59,10 @@ export function MenuItemCustomizeSheet({
     if (item) {
       setRenderItem(item);
       setQty(1);
-      setRemoved(new Set());
-      setAddOnQty({});
+      if (INGREDIENTS_UI_ENABLED) {
+        setRemoved(new Set());
+        setAddOnQty({});
+      }
       setNotes("");
       setPhotoIndex(0);
       setDragY(0);
@@ -67,7 +70,10 @@ export function MenuItemCustomizeSheet({
   }, [item]);
 
   const customization = useMemo(
-    () => (renderItem ? resolveCustomization(renderItem) : null),
+    () =>
+      renderItem && INGREDIENTS_UI_ENABLED
+        ? resolveCustomization(renderItem)
+        : null,
     [renderItem]
   );
 
@@ -76,10 +82,12 @@ export function MenuItemCustomizeSheet({
     return {
       menuItemId: renderItem.id,
       qty,
-      removedIncludedIds: [...removed],
-      addOns: Object.entries(addOnQty)
-        .filter(([, n]) => n > 0)
-        .map(([id, n]) => ({ id, qty: n })),
+      removedIncludedIds: INGREDIENTS_UI_ENABLED ? [...removed] : [],
+      addOns: INGREDIENTS_UI_ENABLED
+        ? Object.entries(addOnQty)
+            .filter(([, n]) => n > 0)
+            .map(([id, n]) => ({ id, qty: n }))
+        : [],
       notes,
     };
   }, [renderItem, qty, removed, addOnQty, notes]);
@@ -168,7 +176,7 @@ export function MenuItemCustomizeSheet({
           <div className="h-[5px] w-[42px] rounded-full bg-[rgba(120,90,80,0.3)]" />
         </div>
 
-        {renderItem && customization && (
+        {renderItem && (
           <>
             <div className="zt-hidescroll flex-1 overflow-y-auto px-[22px] pb-4 pt-1">
               {/* Header: square image + meta + stepper (mockup two-zone layout) */}
@@ -233,102 +241,104 @@ export function MenuItemCustomizeSheet({
                 </button>
               </div>
 
-              <GlassPanel className="mt-5 p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-serif text-[20px] leading-none text-zt-brown">
-                    Ingredients
-                  </h3>
-                  <span className="rounded-full bg-[rgba(120,90,80,0.1)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.6px] text-zt-warm">
-                    Optional
-                  </span>
-                </div>
-                <p className="mt-1 text-[12px] font-medium text-zt-warm">
-                  {customizeSubtitle(renderItem.name)}
-                </p>
+              {INGREDIENTS_UI_ENABLED && customization && (
+                <GlassPanel className="mt-5 p-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-serif text-[20px] leading-none text-zt-brown">
+                      Ingredients
+                    </h3>
+                    <span className="rounded-full bg-[rgba(120,90,80,0.1)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.6px] text-zt-warm">
+                      Optional
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[12px] font-medium text-zt-warm">
+                    {customizeSubtitle(renderItem.name)}
+                  </p>
 
-                <div className="mt-3 flex flex-col gap-2">
-                  {customization.included.map((inc) => {
-                    const kept = !removed.has(inc.id);
-                    return (
-                      <button
-                        key={inc.id}
-                        type="button"
-                        onClick={() => toggleRemoved(inc.id)}
-                        className="flex items-center gap-3 rounded-[16px] border border-white/60 bg-white/55 p-2.5 text-left transition active:scale-[0.99]"
-                      >
-                        <CheckBox checked={kept} />
-                        <RowThumb icon={inc.icon} />
-                        <div className="min-w-0 flex-1">
-                          <div
+                  <div className="mt-3 flex flex-col gap-2">
+                    {customization.included.map((inc) => {
+                      const kept = !removed.has(inc.id);
+                      return (
+                        <button
+                          key={inc.id}
+                          type="button"
+                          onClick={() => toggleRemoved(inc.id)}
+                          className="flex items-center gap-3 rounded-[16px] border border-white/60 bg-white/55 p-2.5 text-left transition active:scale-[0.99]"
+                        >
+                          <CheckBox checked={kept} />
+                          <RowThumb icon={inc.icon} />
+                          <div className="min-w-0 flex-1">
+                            <div
+                              className={cn(
+                                "truncate text-[14px] font-bold text-zt-brown",
+                                !kept && "line-through opacity-50"
+                              )}
+                            >
+                              {inc.name}
+                            </div>
+                            {inc.description && (
+                              <div className="truncate text-[12px] font-medium text-zt-warm">
+                                {inc.description}
+                              </div>
+                            )}
+                          </div>
+                          <span
                             className={cn(
-                              "truncate text-[14px] font-bold text-zt-brown",
-                              !kept && "line-through opacity-50"
+                              "flex-none rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.4px]",
+                              kept
+                                ? "bg-[rgba(120,90,80,0.08)] text-zt-warm"
+                                : "bg-[rgba(176,90,70,0.12)] text-[#b05a46]"
                             )}
                           >
-                            {inc.name}
-                          </div>
-                          {inc.description && (
-                            <div className="truncate text-[12px] font-medium text-zt-warm">
-                              {inc.description}
-                            </div>
-                          )}
-                        </div>
-                        <span
+                            {kept ? "Included" : "Removed"}
+                          </span>
+                        </button>
+                      );
+                    })}
+
+                    {customization.addOns.map((addOn) => {
+                      const active = (addOnQty[addOn.id] ?? 0) > 0;
+                      return (
+                        <button
+                          key={addOn.id}
+                          type="button"
+                          onClick={() => toggleAddOn(addOn.id)}
                           className={cn(
-                            "flex-none rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.4px]",
-                            kept
-                              ? "bg-[rgba(120,90,80,0.08)] text-zt-warm"
-                              : "bg-[rgba(176,90,70,0.12)] text-[#b05a46]"
+                            "flex items-center gap-3 rounded-[16px] border p-2.5 text-left transition active:scale-[0.99]",
+                            active
+                              ? "border-zt-brown/30 bg-white/80"
+                              : "border-white/60 bg-white/45"
                           )}
                         >
-                          {kept ? "Included" : "Removed"}
-                        </span>
-                      </button>
-                    );
-                  })}
-
-                  {customization.addOns.map((addOn) => {
-                    const active = (addOnQty[addOn.id] ?? 0) > 0;
-                    return (
-                      <button
-                        key={addOn.id}
-                        type="button"
-                        onClick={() => toggleAddOn(addOn.id)}
-                        className={cn(
-                          "flex items-center gap-3 rounded-[16px] border p-2.5 text-left transition active:scale-[0.99]",
-                          active
-                            ? "border-zt-brown/30 bg-white/80"
-                            : "border-white/60 bg-white/45"
-                        )}
-                      >
-                        <CheckBox checked={active} />
-                        <RowThumb icon={addOn.icon} />
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-[14px] font-bold text-zt-brown">
-                            {addOn.name}
-                          </div>
-                          {addOn.description && (
-                            <div className="truncate text-[12px] font-medium text-zt-warm">
-                              {addOn.description}
+                          <CheckBox checked={active} />
+                          <RowThumb icon={addOn.icon} />
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-[14px] font-bold text-zt-brown">
+                              {addOn.name}
                             </div>
-                          )}
-                        </div>
-                        <span className="flex-none text-[13px] font-extrabold text-zt-accent">
-                          + {formatRwf(addOn.priceRwf)}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                            {addOn.description && (
+                              <div className="truncate text-[12px] font-medium text-zt-warm">
+                                {addOn.description}
+                              </div>
+                            )}
+                          </div>
+                          <span className="flex-none text-[13px] font-extrabold text-zt-accent">
+                            + {formatRwf(addOn.priceRwf)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
 
-                <div className="mt-3 flex items-center gap-1.5 text-[11px] font-medium text-zt-warm-lighter">
-                  <Icon name="check" size={13} strokeWidth={2.4} />
-                  You can always add more in the notes
-                </div>
-              </GlassPanel>
+                  <div className="mt-3 flex items-center gap-1.5 text-[11px] font-medium text-zt-warm-lighter">
+                    <Icon name="check" size={13} strokeWidth={2.4} />
+                    You can always add more in the notes
+                  </div>
+                </GlassPanel>
+              )}
 
               {galleryUrls.length >= 2 && (
-                <div className="mt-4">
+                <div className={cn(INGREDIENTS_UI_ENABLED ? "mt-4" : "mt-5")}>
                   <h3 className="mb-2.5 font-serif text-[20px] leading-none text-zt-brown">
                     Photos
                   </h3>

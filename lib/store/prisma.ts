@@ -25,6 +25,7 @@ import {
   orderStatusForKitchenStage,
 } from "@/lib/kds/kitchen-stage";
 import { deleteMenuImageBlob, putMenuImageBlob } from "@/lib/menu/blob-storage";
+import { sanitizeItemNotes } from "@/lib/menu/customization";
 import {
   assertCanAddMenuImage,
   buildMenuBlobPathname,
@@ -245,6 +246,7 @@ function mapOrder(order: PrismaOrderWithItems): Order {
       menuItem: mapMenuItem(item.menuItem),
       quantity: item.quantity,
       unitPriceRwf: item.unitPriceRwf,
+      notes: item.notes ?? undefined,
     })),
   };
 }
@@ -328,10 +330,21 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     input: UpdateVendorInput
   ): Promise<Vendor | null> {
     const slug = normalizeVendorSlug(vendorSlug);
+    if (input.slug !== undefined) {
+      const newSlug = normalizeVendorSlug(input.slug);
+      if (!newSlug) return null;
+      if (newSlug !== slug && !(await isSlugAvailable(newSlug))) {
+        throw new Error("Slug already taken");
+      }
+    }
+
     try {
       const vendor = await client.vendor.update({
         where: { slug },
         data: {
+          ...(input.slug !== undefined
+            ? { slug: normalizeVendorSlug(input.slug)! }
+            : {}),
           ...(input.name !== undefined ? { name: input.name } : {}),
           ...(input.phoneNumber !== undefined
             ? { phoneNumber: input.phoneNumber }
@@ -361,6 +374,9 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       return mapVendor(vendor);
     } catch (error) {
       if (isNotFoundError(error)) return null;
+      if (isUniqueConstraintError(error)) {
+        throw new Error("Slug already taken");
+      }
       throw error;
     }
   }
@@ -993,10 +1009,12 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       if (!menuItem || !menuItem.isAvailable) {
         throw new Error(`Item unavailable: ${line.menuItemId}`);
       }
+      const notes = line.notes ? sanitizeItemNotes(line.notes) : undefined;
       return {
         menuItemId: menuItem.id,
         quantity: line.quantity,
         unitPriceRwf: menuItem.priceRwf,
+        ...(notes ? { notes } : {}),
       };
     });
 

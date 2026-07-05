@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { MenuItem } from "@/lib/types";
 import {
   computeCustomizeTotal,
+  CUSTOMIZATION_NOTES_MAX,
   emptySelection,
+  INGREDIENTS_UI_ENABLED,
   resolveCustomization,
+  sanitizeItemNotes,
   type CustomizationSelection,
   type ItemCustomization,
 } from "@/lib/menu/customization";
@@ -31,6 +34,30 @@ const customItem: MenuItem = {
     ],
   },
 };
+
+describe("INGREDIENTS_UI_ENABLED", () => {
+  it("is false so the customize modal shows images + notes only", () => {
+    expect(INGREDIENTS_UI_ENABLED).toBe(false);
+  });
+});
+
+describe("CUSTOMIZATION_NOTES_MAX", () => {
+  it("caps special-instructions length", () => {
+    expect(CUSTOMIZATION_NOTES_MAX).toBe(200);
+  });
+});
+
+describe("sanitizeItemNotes", () => {
+  it("trims whitespace and drops empty strings", () => {
+    expect(sanitizeItemNotes("  no onions  ")).toBe("no onions");
+    expect(sanitizeItemNotes("   ")).toBeUndefined();
+  });
+
+  it("caps at CUSTOMIZATION_NOTES_MAX characters", () => {
+    const long = "a".repeat(CUSTOMIZATION_NOTES_MAX + 50);
+    expect(sanitizeItemNotes(long)?.length).toBe(CUSTOMIZATION_NOTES_MAX);
+  });
+});
 
 describe("resolveCustomization", () => {
   it("returns the item's own customization when present", () => {

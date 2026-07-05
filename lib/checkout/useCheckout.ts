@@ -73,7 +73,7 @@ export function useCheckout(
   options?: UseCheckoutOptions
 ) {
   const momoMode = options?.momoMode ?? "simulate";
-  const { cart } = useCart();
+  const { cart, itemNotes } = useCart();
   const placeOrderFn = options?.deps?.placeOrder ?? defaultPlaceOrder;
   const momoClient = options?.deps?.momoClient ?? defaultMomoClient;
   const initManualPaymentFn =
@@ -105,7 +105,10 @@ export function useCheckout(
 
   const count = useMemo(() => computeCount(cart), [cart]);
   const total = useMemo(() => computeTotal(cart, menu), [cart, menu]);
-  const lines = useMemo(() => computeLines(cart, menu), [cart, menu]);
+  const lines = useMemo(
+    () => computeLines(cart, menu, itemNotes),
+    [cart, menu, itemNotes]
+  );
   const canPay = canProceedToPay(count, phone, sector, landmark);
   const isManualFlow = momoMode === "manual";
 
