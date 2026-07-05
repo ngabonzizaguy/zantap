@@ -81,6 +81,10 @@ export function canonicalizePhone(
 
   const inferred = inferDialCodeDigits(digits);
   if (inferred) {
+    const national = digits.slice(inferred.length);
+    if (national.startsWith("0") && national.length > 1) {
+      return inferred + national.slice(1);
+    }
     return digits;
   }
 

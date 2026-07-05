@@ -78,6 +78,16 @@ describe("updateVendorProfile", () => {
     ).rejects.toThrow(/already taken/);
   });
 
+  it("canonicalizes business phone on write (no double-zero national)", async () => {
+    const { vendor, ownerToken } = await provisionTestVendor();
+
+    const updated = await updateVendorProfile(ownerToken, vendor.slug, {
+      phoneNumber: "+250 0788123456",
+    });
+
+    expect(updated.phoneNumber).toBe("250788123456");
+  });
+
   it("normalizes PHONE payout momoCode on write", async () => {
     const { vendor, ownerToken } = await provisionTestVendor();
 
