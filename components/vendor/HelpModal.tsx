@@ -82,7 +82,7 @@ interface HelpModalProps {
 }
 
 export function HelpModal({ open, onClose, vendorSlug }: HelpModalProps) {
-  const [expandedId, setExpandedId] = useState<string>(HELP_SECTIONS[0]!.id);
+  const [expandedId, setExpandedId] = useState<string>("");
   const [question, setQuestion] = useState("");
 
   const handleAsk = () => {

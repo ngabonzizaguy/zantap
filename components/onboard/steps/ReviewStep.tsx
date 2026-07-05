@@ -3,6 +3,7 @@
 import { formatStorefrontDisplayPath } from "@/lib/base-url";
 import { formatRwf } from "@/lib/format";
 import { normalizeVendorSlug } from "@/lib/vendor/slug";
+import { useDishPhotoPreview } from "@/components/onboard/useDishPhotoPreview";
 import { Button } from "@/components/ui/primitives";
 import type { WizardData, WizardStep } from "@/components/onboard/types";
 
@@ -55,6 +56,7 @@ export function ReviewStep({
   const price = Number.parseInt(data.dishPriceRwf, 10);
   const priceValid = Number.isInteger(price) && price > 0;
   const fullPhone = `${data.countryDialCode} ${data.phoneLocal}`.trim();
+  const photoPreview = useDishPhotoPreview(data.dishPhoto);
 
   return (
     <div className="flex flex-col gap-6">
@@ -104,12 +106,21 @@ export function ReviewStep({
 
         <ReviewCard title="Menu" meta="(1 item)" onEdit={() => onEdit("menu")}>
           <div className="flex items-center gap-3">
-            <span
-              className="flex h-12 w-12 flex-none items-center justify-center rounded-brand-md bg-surface-strong text-lg"
-              aria-hidden="true"
-            >
-              🍽️
-            </span>
+            {photoPreview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={photoPreview}
+                alt=""
+                className="h-12 w-12 flex-none rounded-brand-md object-cover"
+              />
+            ) : (
+              <span
+                className="flex h-12 w-12 flex-none items-center justify-center rounded-brand-md bg-surface-strong text-lg"
+                aria-hidden="true"
+              >
+                🍽️
+              </span>
+            )}
             <div className="min-w-0">
               <p className="truncate font-body text-body-md font-semibold text-ink">
                 {data.dishName}

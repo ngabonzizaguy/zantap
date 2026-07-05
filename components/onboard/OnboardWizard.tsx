@@ -162,6 +162,7 @@ export function OnboardWizard() {
   const progressCurrent = PROGRESS_STEPS.indexOf(step) + 1;
   const showProgress = progressCurrent > 0;
   const storefrontPath = created ? `/${created.slug}` : "/";
+  const storefrontPreviewPath = created ? `/${created.slug}?from=kds` : "/";
   const storefrontUrl = created ? getStorefrontUrl(created.slug) : storefrontPath;
 
   return (
@@ -233,7 +234,7 @@ export function OnboardWizard() {
             vendorName={created.name}
             slug={created.slug}
             storefrontUrl={storefrontUrl}
-            storefrontPath={storefrontPath}
+            storefrontPreviewPath={storefrontPreviewPath}
           />
         ) : null}
       </div>

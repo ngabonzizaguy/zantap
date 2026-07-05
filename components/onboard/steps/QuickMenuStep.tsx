@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { formatRwf } from "@/lib/format";
 import { MENU_CATEGORIES } from "@/lib/vendor/onboard-options";
+import { useDishPhotoPreview } from "@/components/onboard/useDishPhotoPreview";
 import { Button, Combobox } from "@/components/ui/primitives";
 import type { WizardData } from "@/components/onboard/types";
 
@@ -18,17 +19,7 @@ const fieldControlClass =
 
 export function QuickMenuStep({ data, update, onContinue }: QuickMenuStepProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!data.dishPhoto) {
-      setPhotoPreview(null);
-      return;
-    }
-    const url = URL.createObjectURL(data.dishPhoto);
-    setPhotoPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [data.dishPhoto]);
+  const photoPreview = useDishPhotoPreview(data.dishPhoto);
 
   const price = Number.parseInt(data.dishPriceRwf, 10);
   const priceValid = Number.isInteger(price) && price > 0;

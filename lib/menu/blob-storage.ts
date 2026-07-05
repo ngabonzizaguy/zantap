@@ -1,6 +1,10 @@
 import "server-only";
 
 import { del, put } from "@vercel/blob";
+import {
+  deleteLocalBlob,
+  putLocalBlob,
+} from "@/lib/menu/local-blob-store";
 
 /** Server-side Vercel Blob put for menu media (ADR-0007). */
 export async function putMenuImageBlob(
@@ -11,7 +15,7 @@ export async function putMenuImageBlob(
   const token = process.env.BLOB_READ_WRITE_TOKEN;
   if (!token) {
     return {
-      url: `https://blob.local/${pathname}`,
+      url: putLocalBlob(pathname, body, contentType),
       pathname,
     };
   }
@@ -36,6 +40,9 @@ export async function putBrandingBlob(
 /** Deletes a stored blob when a MenuImage row with blobPath is removed. */
 export async function deleteMenuImageBlob(pathname: string): Promise<void> {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) return;
+  if (!token) {
+    deleteLocalBlob(pathname);
+    return;
+  }
   await del(pathname, { token });
 }

@@ -28,6 +28,7 @@ import {
   paymentMatchesFilter,
   resolveDateRange,
 } from "@/lib/orders/history-filters";
+import { putMenuImageBlob } from "@/lib/menu/blob-storage";
 import { thumbGradientForId } from "@/lib/menu/gradients";
 import {
   assertCanAddMenuImage,
@@ -517,8 +518,9 @@ export function createInMemoryStore(): ResettableStore {
     }
 
     const pathname = buildMenuBlobPathname(vendorSlug, itemId, mime);
+    const uploaded = await putMenuImageBlob(pathname, file, mime);
     return addMenuImage(vendorSlug, itemId, {
-      url: `https://blob.local/${pathname}`,
+      url: uploaded.url,
     }).then((image) => {
       const index = menuImages.findIndex((row) => row.id === image.id);
       if (index !== -1) {

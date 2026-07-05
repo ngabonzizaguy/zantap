@@ -11,7 +11,8 @@ interface LiveStepProps {
   vendorName: string;
   slug: string;
   storefrontUrl: string;
-  storefrontPath: string;
+  /** Vendor preview path — includes back navigation to the KDS. */
+  storefrontPreviewPath: string;
 }
 
 const actionButtonClass =
@@ -21,7 +22,7 @@ export function LiveStep({
   vendorName,
   slug,
   storefrontUrl,
-  storefrontPath,
+  storefrontPreviewPath,
 }: LiveStepProps) {
   const [copied, setCopied] = useState(false);
   const kdsPath = `/vendor/${slug}?tab=setup`;
@@ -129,7 +130,7 @@ export function LiveStep({
       </Link>
 
       <Link
-        href={storefrontPath}
+        href={storefrontPreviewPath}
         className="font-body text-body-sm text-muted underline-offset-4 transition-colors hover:text-ink hover:underline"
       >
         View my storefront

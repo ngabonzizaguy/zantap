@@ -14,7 +14,6 @@ import type { CustomizationSelection } from "@/lib/menu/customization";
 import { useCheckout } from "@/lib/checkout/useCheckout";
 import { UssdModal } from "@/components/customer/UssdModal";
 import { SuccessReceipt } from "@/components/customer/SuccessReceipt";
-import { BackToKdsChip } from "@/components/customer/BackToKdsChip";
 import { CartProvider, useCart } from "@/components/customer/CartContext";
 
 interface StorefrontProps {
@@ -74,10 +73,14 @@ function StorefrontInner({
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden bg-gradient-to-b from-zt-blush-50 via-zt-blush-100 to-zt-blush-200">
-      {fromKds ? <BackToKdsChip vendorSlug={vendor.slug} /> : null}
       <Orbs />
       <div className="zt-hidescroll relative z-[1] mx-auto min-h-screen w-full max-w-customer px-5 pb-40 pt-4">
-        <TopBar location={vendor.location ?? "Kigali, Rwanda"} />
+        <TopBar
+          location={vendor.location ?? "Kigali, Rwanda"}
+          kdsBackHref={
+            fromKds ? `/vendor/${vendor.slug}?tab=setup` : undefined
+          }
+        />
 
         <div className="mt-5">
           <Hero

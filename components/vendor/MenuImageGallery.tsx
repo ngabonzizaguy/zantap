@@ -4,13 +4,12 @@ import { useRef, useState } from "react";
 import type { MenuImage } from "@/lib/types";
 import { MAX_MENU_IMAGES } from "@/lib/menu/media";
 import {
-  addMenuImageByUrl,
   removeMenuImage,
   reorderMenuImages,
   setPrimaryMenuImage,
   uploadMenuImage,
 } from "@/lib/actions/vendor-menu";
-import { Button, Input, Modal } from "@/components/ui/primitives";
+import { Button, Modal } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 
 interface MenuImageGalleryProps {
@@ -33,7 +32,6 @@ export function MenuImageGallery({
   disabled = false,
 }: MenuImageGalleryProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [urlInput, setUrlInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
@@ -62,15 +60,6 @@ export function MenuImageGallery({
       uploadMenuImage(ownerToken, vendorSlug, itemId, formData)
     );
     if (!result) return;
-    onImagesChange([...sorted, result]);
-  };
-
-  const handleAddUrl = async () => {
-    const result = await run(() =>
-      addMenuImageByUrl(ownerToken, vendorSlug, itemId, urlInput)
-    );
-    if (!result) return;
-    setUrlInput("");
     onImagesChange([...sorted, result]);
   };
 
@@ -126,103 +115,83 @@ export function MenuImageGallery({
         </p>
       </div>
 
-      {sorted.length > 0 ? (
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-3">
-          {sorted.map((image) => (
-            <div
-              key={image.id}
-              draggable={!disabled && !busy}
-              onDragStart={() => setDraggingId(image.id)}
-              onDragEnd={() => setDraggingId(null)}
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={() => void handleDrop(image.id)}
-              className={cn(
-                "group relative aspect-square overflow-hidden rounded-brand-md border",
-                image.isPrimary ? "border-ink" : "border-hairline",
-                draggingId === image.id && "opacity-60"
-              )}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={image.url}
-                alt=""
-                className="h-full w-full object-cover object-center"
-                draggable={false}
-              />
-              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-ink/55 p-1">
-                <button
-                  type="button"
-                  aria-label={image.isPrimary ? "Primary photo" : "Set as primary"}
-                  disabled={disabled || busy || image.isPrimary}
-                  onClick={() => void handleSetPrimary(image.id)}
-                  className={cn(
-                    "rounded-brand-sm px-1.5 py-0.5 font-body text-caption",
-                    image.isPrimary
-                      ? "text-gradient-mint"
-                      : "text-white/80 hover:text-white"
-                  )}
-                >
-                  {image.isPrimary ? "★" : "☆"}
-                </button>
-                <button
-                  type="button"
-                  aria-label="Remove photo"
-                  disabled={disabled || busy}
-                  onClick={() => setConfirmRemoveId(image.id)}
-                  className="rounded-brand-sm px-1.5 py-0.5 font-body text-caption text-white/90 hover:text-white"
-                >
-                  Remove
-                </button>
-              </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (file) void handleUpload(file);
+        }}
+      />
+
+      <div className="grid grid-cols-3 gap-2.5 min-[420px]:grid-cols-4">
+        {sorted.map((image) => (
+          <div
+            key={image.id}
+            draggable={!disabled && !busy}
+            onDragStart={() => setDraggingId(image.id)}
+            onDragEnd={() => setDraggingId(null)}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={() => void handleDrop(image.id)}
+            className={cn(
+              "group relative aspect-square overflow-hidden rounded-brand-md border",
+              image.isPrimary ? "border-primary" : "border-hairline",
+              draggingId === image.id && "opacity-60"
+            )}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={image.url}
+              alt=""
+              className="h-full w-full object-cover object-center"
+              draggable={false}
+            />
+            <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-ink/55 px-1.5 py-1">
+              <button
+                type="button"
+                aria-label={image.isPrimary ? "Primary photo" : "Set as primary"}
+                disabled={disabled || busy || image.isPrimary}
+                onClick={() => void handleSetPrimary(image.id)}
+                className={cn(
+                  "font-body text-caption",
+                  image.isPrimary
+                    ? "text-primary"
+                    : "text-white/80 hover:text-white"
+                )}
+              >
+                {image.isPrimary ? "★" : "☆"}
+              </button>
+              <button
+                type="button"
+                aria-label="Remove photo"
+                disabled={disabled || busy}
+                onClick={() => setConfirmRemoveId(image.id)}
+                className="font-body text-caption text-white/90 hover:text-white"
+              >
+                ✕
+              </button>
             </div>
-          ))}
-        </div>
-      ) : (
-        <p className="rounded-brand-md border border-dashed border-hairline-strong px-3 py-4 text-center font-body text-body-sm text-muted">
-          No photos yet — upload or paste a URL.
-        </p>
-      )}
+          </div>
+        ))}
 
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="hidden"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = "";
-            if (file) void handleUpload(file);
-          }}
-        />
-        <Button
-          size="default"
-          variant="outline"
-          className="flex-1"
-          disabled={disabled || busy || atLimit}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          Upload photo
-        </Button>
-      </div>
-
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-        <Input
-          label="Image URL"
-          value={urlInput}
-          onChange={(event) => setUrlInput(event.target.value)}
-          disabled={disabled || busy || atLimit}
-          placeholder="https://…"
-          className="flex-1"
-        />
-        <Button
-          size="default"
-          variant="outline"
-          disabled={disabled || busy || atLimit || !urlInput.trim()}
-          onClick={() => void handleAddUrl()}
-        >
-          Add URL
-        </Button>
+        {!atLimit ? (
+          <button
+            type="button"
+            disabled={disabled || busy}
+            onClick={() => fileInputRef.current?.click()}
+            className="flex aspect-square flex-col items-center justify-center gap-1 rounded-brand-md border border-dashed border-hairline-strong text-muted transition-colors hover:border-primary hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span className="text-xl leading-none" aria-hidden="true">
+              +
+            </span>
+            <span className="font-body text-caption">
+              {busy ? "Uploading…" : "Add photo"}
+            </span>
+          </button>
+        ) : null}
       </div>
 
       {atLimit ? (
