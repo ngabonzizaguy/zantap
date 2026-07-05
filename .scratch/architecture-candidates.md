@@ -9,9 +9,29 @@ is never lost again.
 > convention — local markdown, no GitHub round-trips). It persists on this machine
 > across sessions, but does **not** sync via git to other clones/machines.
 
-Last verified against the codebase: 2026-07-02.
+Last verified against the codebase: 2026-07-05.
 
-## Recommended next (2026-07-02)
+## Recommended next (2026-07-05)
+
+**Candidate #20 — Manual MTN MoMo USSD checkout** — ✅ **DONE · deployed · prod-smoked 2026-07-05**
+(`712101d` → `dpl_8zVJC98E2oEs7Du8eHKx5sTta8C5` → alias `zantap-psi.vercel.app`).
+Playwright smoke 9/9 PASS (`.scratch/manual-momo-ussd/prod-smoke.mjs`). Migration
+`20260705120000_order_status_cancelled` applied; prod `inka-steakhouse` `momoCode` fixed
+`INKA001` → `880001`. ADR-0033. `MOMO_MODE` unset in Production (= manual USSD).
+
+**Mobile UX polish (owner screenshots) — implemented locally, not yet committed/deployed:**
+1. Storefront KDS preview back nav → integrated into `TopBar` (removed floating `BackToKdsChip`).
+2. KDS `HelpModal` + all `Modal` panels → mobile bottom-sheet layout, scrollable body, safe-area padding; help sections start collapsed.
+3. `MenuItemModal` description focus jump → Modal autofocus only on open; form reset keyed on `item.id` not object reference.
+4. Onboarding review → dish photo preview on Menu card (`useDishPhotoPreview`); Live step "View my storefront" → `?from=kds` for Back to KDS; photo File persists menu → review → post-provision upload.
+5. Localhost images → dev in-memory blob fallback (`lib/menu/local-blob-store.ts` + `/api/local-blob/[...path]`) replaces dead `https://blob.local/…` URLs when `BLOB_READ_WRITE_TOKEN` unset.
+6. Modal primitive → golden touch-revealed drag handle (swipe-down dismiss), 92dvh cap, sticky `footer` prop, X close button in title bar.
+7. Menu tab → mockup "Variation 3" compact list (thumb + gold price + category badge + status pill + kebab menu: Edit/Duplicate/Toggle/Archive; Restore for archived) + dashed bottom "Add item" card. Duplicate = `createMenuItem` copy. Drag-reorder NOT implemented (needs MenuItem sortOrder schema — deferred).
+8. Menu item edit modal → mockup redesign: item preview card, Dish name with N/60 counter, Category+Price side-by-side, Status row with availability switch (wired to existing toggle), Photos gallery, collapsible Description row, Ingredients/Add-ons/Options rows shown disabled with "Soon" badge (no schema).
+9. Modal stacking fix (owner "tucked inside header" report) → Modal now portals to `document.body` at `z-[70]` (the KDS tab wrapper's `relative z-[1]` context trapped it under the sticky `z-30` header); centered dialog on all viewports (design "B"), 90dvh cap, darker scrim.
+10. Photos section → design "B": square thumb tiles + dashed "Add photo" tile (tap = file picker); removed full-width Upload button AND the Image URL / Add URL section from the gallery (server action `addMenuImageByUrl` kept, UI removed).
+
+**Next:** commit → deploy → mobile smoke on prod (preview `?from=kds`, `?` help scroll, menu edit description typing).
 
 **Candidate #19 — KDS + Storefront polish batch** — ✅ **DONE · deployed · prod-smoked**
 (`31c33c7` → `dpl_Aq8HQ3Hivdm3r1txwmKSLG2ygkUP` → alias `zantap-psi.vercel.app`).
@@ -77,7 +97,8 @@ If a session ends without doing both, the handoff is incomplete.
 | 8 | Storefront menu image carousel | Strong | customer UI only | ✅ Done · deployed · prod-smoked 2026-06-27 | `.scratch/storefront-image-carousel/PRD.md` |
 | 9 | Vendor WhatsApp PAID notification | Worth exploring | KDS UI + lib/whatsapp | ✅ Done · deployed · prod-smoked 2026-07-02 | `.scratch/vendor-whatsapp-paid-notification/PRD.md` |
 | 10 | Customer storefront → DESIGN.md | Strong | customer UI | ⏸ Owner designs pending | — |
-| 11 | Live MTN MoMo integration | Strong | server + payments | ⏸ Requires `/grill-with-docs` | — |
+| 11 | Live MTN MoMo integration | Strong | server + payments | ⏸ API blocked — interim **#20 manual USSD** ✅ deployed 2026-07-05 | — |
+| 20 | Manual MTN MoMo USSD checkout (interim) | Strong | checkout + Store | ✅ Done · deployed · prod-smoked 2026-07-05 | `.scratch/manual-momo-ussd/issue-01-manual-ussd-checkout.md` |
 | 12 | Vendor authentication | Strong | server + KDS | ⏸ Requires `/grill-with-docs` | — |
 | 13 | Ops / security hardening | Worth exploring | docs + infra | ⏸ Probe — deferred | — |
 | 14 | Storefront item customization modal (visual-only) | Owner request | customer UI only | ✅ Done · prod-smoked 2026-06-29 | `.scratch/storefront-customization-modal/PRD.md` |
