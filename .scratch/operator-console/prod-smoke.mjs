@@ -39,7 +39,7 @@ async function runViewport({ name, width, height }) {
     await page.waitForURL("**/ops", { timeout: 15000 });
     await shot(page, `${name}-02-vendors`);
 
-    const hasVendors = await page.getByText("Vendors").first().isVisible();
+    const hasVendors = await page.getByRole("heading", { name: "Vendors" }).isVisible();
     results.push({ name, step: "vendors", ok: hasVendors });
 
     await page.goto(`${BASE}/ops/recovery`, { waitUntil: "networkidle" });

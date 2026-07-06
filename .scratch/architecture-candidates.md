@@ -322,7 +322,7 @@ which now holds alias `zantap-psi.vercel.app` — no behavior change; post-merge
 
 ---
 
-## #17 · ZanTap operator console — ✅ IMPLEMENTED 2026-07-06 (deploy pending)
+## #17 · ZanTap operator console — ✅ DONE · deployed · prod-smoked 2026-07-06
 
 Grilled 2026-07-06 — decisions in `.scratch/operator-console/grill-decisions.md`.
 Control API at `/api/operator/v1/*`, Ops UI at `/ops` (ElevenLabs light, desktop + mobile).
@@ -332,9 +332,14 @@ Extractable client in `lib/operator-client/`. ADR-0039.
 vendor directory, recovery inbox, vendor detail tabs (profile/menu/orders/audit),
 token revoke/reissue, operator audit log. Tests 253/330; `npm run build` clean.
 
-**Deploy cutover:** set `OPERATOR_API_KEY` + `OPERATOR_UI_SECRET` on Vercel Production;
-run `npm run db:deploy` for migration `20260706180000_operator_console`;
-prod smoke: `.scratch/operator-console/prod-smoke.mjs`.
+**Deployed 2026-07-06** (`0c44d41` → `dpl_8R8L4Mq42qvT1rTVSXoTwv4oqhLm` → alias
+`zantap-psi.vercel.app`): migration `20260706180000_operator_console` applied;
+Production env `OPERATOR_API_KEY`, `OPERATOR_UI_SECRET`, `ZANTAP_OPERATOR_API_URL`
+(same-origin alias — required because `NEXT_PUBLIC_BASE_URL=zantap.ai` is unmapped
+and per-deployment `VERCEL_URL` is SSO-gated). Playwright prod smoke **4/4 PASS**
+(`.scratch/operator-console/prod-smoke.mjs`, 1280×800 + 390×844): login → vendors →
+recovery inbox. Halting curl smoke: suspend `inka-steakhouse` → suspended storefront +
+KDS banner → reactivate → storefront restored.
 
 - PRD: `.scratch/operator-console/PRD.md`
 - ADR: `docs/adr/0039-operator-console-and-halting-controls.md`
