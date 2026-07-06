@@ -16,10 +16,9 @@ export function getOperatorApiBaseUrl(): string {
   if (configured) {
     return configured.replace(/\/$/, "");
   }
-  const appUrl = process.env.NEXT_PUBLIC_BASE_URL?.trim();
-  if (appUrl) {
-    return `${appUrl.replace(/\/$/, "")}/api/operator/v1`;
-  }
+  // Co-located Ops: same-origin relative path. operatorFetch resolves the origin
+  // via VERCEL_URL (prod) or localhost in dev — not NEXT_PUBLIC_BASE_URL, which
+  // is the public storefront domain and may differ from the deployment host.
   return "/api/operator/v1";
 }
 
