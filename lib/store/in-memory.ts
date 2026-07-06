@@ -19,6 +19,15 @@ import type {
   Pagination,
   Payment,
   RecordRecoveryEventInput,
+  RecordOperatorActionInput,
+  OperatorAction,
+  OperatorOrderPatch,
+  OperatorReissueTokenResult,
+  OperatorUpdateVendorInput,
+  OperatorVendorDetail,
+  RecoveryEventFilters,
+  VendorListEntry,
+  VendorListFilters,
   ResumableManualOrder,
   UpdateMenuItemInput,
   UpdateDriverInput,
@@ -68,6 +77,7 @@ import {
   seedVendor,
 } from "@/lib/store/seed-data";
 import { normalizeVendorSlug } from "@/lib/vendor/slug";
+import { mintOwnerToken } from "@/lib/vendor/owner-token";
 import { canonicalizePhone } from "@/lib/format";
 import {
   deriveDriverHue,
@@ -130,6 +140,7 @@ export function createInMemoryStore(): ResettableStore {
   let payments: Payment[] = [];
   let vendors: StoredVendor[] = [];
   let recoveryEvents: VendorRecoveryEvent[] = [];
+  let operatorActions: OperatorAction[] = [];
   let drivers: Driver[] = [];
   let kitchenOpen = true;
   let orderCounter = 0;
@@ -139,6 +150,7 @@ export function createInMemoryStore(): ResettableStore {
   let menuImageCounter = 0;
   let vendorCounter = 0;
   let recoveryEventCounter = 0;
+  let operatorActionCounter = 0;
   let driverCounter = 0;
 
   function cloneVendor(vendor: StoredVendor): Vendor {
@@ -148,7 +160,15 @@ export function createInMemoryStore(): ResettableStore {
   }
 
   function cloneRecoveryEvent(event: VendorRecoveryEvent): VendorRecoveryEvent {
-    return { ...event, at: new Date(event.at) };
+    return {
+      ...event,
+      at: new Date(event.at),
+      reviewedAt: event.reviewedAt ? new Date(event.reviewedAt) : undefined,
+    };
+  }
+
+  function cloneOperatorAction(action: OperatorAction): OperatorAction {
+    return { ...action, at: new Date(action.at) };
   }
 
   function isActiveItem(item: MenuItem): boolean {
@@ -202,6 +222,7 @@ export function createInMemoryStore(): ResettableStore {
       { ...seedVendor, ownerTokenHash: DEMO_OWNER_TOKEN_HASH },
     ];
     recoveryEvents = [];
+    operatorActions = [];
     drivers = seedDrivers.map((driver) => ({ ...driver }));
     kitchenOpen = true;
     orderCounter = 0;
@@ -348,6 +369,213 @@ export function createInMemoryStore(): ResettableStore {
       .filter((event) => event.vendorId === vendorId)
       .map(cloneRecoveryEvent)
       .sort((a, b) => b.at.getTime() - a.at.getTime());
+  }
+
+  async function listAllRecoveryEvents(
+    filters?: RecoveryEventFilters
+  ): Promise<VendorRecoveryEvent[]> {
+    let rows = recoveryEvents.map(cloneRecoveryEvent);
+    if (filters?.vendorSlug) {
+      const vendor = vendors.find(
+        (v) => v.slug === normalizeVendorSlug(filters.vendorSlug!)
+      );
+      if (!vendor) return [];
+      rows = rows.filter((e) => e.vendorId === vendor.id);
+    }
+    if (filters?.unreviewedOnly) {
+      rows = rows.filter((e) => !e.reviewedAt);
+    }
+    rows.sort((a, b) => b.at.getTime() - a.at.getTime());
+    const limit = filters?.limit ?? 100;
+    return rows.slice(0, limit).map((event) => {
+      const vendor = vendors.find((v) => v.id === event.vendorId);
+      return {
+        ...event,
+        vendorSlug: vendor?.slug,
+        vendorName: vendor?.name,
+      };
+    });
+  }
+
+  async function reviewRecoveryEvent(
+    eventId: string,
+    reviewNote?: string
+  ): Promise<VendorRecoveryEvent | null> {
+    const index = recoveryEvents.findIndex((e) => e.id === eventId);
+    if (index === -1) return null;
+    recoveryEvents[index] = {
+      ...recoveryEvents[index],
+      reviewedAt: new Date(),
+      reviewNote: reviewNote?.trim() || undefined,
+    };
+    return cloneRecoveryEvent(recoveryEvents[index]);
+  }
+
+  async function listVendors(
+    filters?: VendorListFilters
+  ): Promise<VendorListEntry[]> {
+    let rows = vendors.map((vendor) => {
+      const vendorEvents = recoveryEvents.filter(
+        (e) => e.vendorId === vendor.id
+      );
+      const lastRecovery = vendorEvents.sort(
+        (a, b) => b.at.getTime() - a.at.getTime()
+      )[0];
+      return {
+        id: vendor.id,
+        name: vendor.name,
+        slug: vendor.slug,
+        phoneNumber: vendor.phoneNumber,
+        isActive: vendor.isActive,
+        kitchenOpen: kitchenOpen && vendor.isActive,
+        createdAt: new Date(vendor.createdAt),
+        recoveryEventCount: vendorEvents.length,
+        lastRecoveryAt: lastRecovery ? new Date(lastRecovery.at) : undefined,
+      };
+    });
+
+    if (filters?.search) {
+      const q = filters.search.toLowerCase();
+      rows = rows.filter(
+        (v) =>
+          v.name.toLowerCase().includes(q) ||
+          v.slug.toLowerCase().includes(q) ||
+          v.phoneNumber.includes(q)
+      );
+    }
+    if (filters?.isActive !== undefined) {
+      rows = rows.filter((v) => v.isActive === filters.isActive);
+    }
+    return rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async function getOperatorVendorDetail(
+    vendorSlug: string
+  ): Promise<OperatorVendorDetail | null> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return null;
+    const menu = await getMenu(vendorSlug);
+    const vendorOrders = orders.filter((o) => o.vendorId === vendor.id);
+    const activeOrderCount = vendorOrders.filter((o) =>
+      ["PAID", "DISPATCHED", "PENDING"].includes(o.status)
+    ).length;
+    const vendorRecovery = recoveryEvents.filter(
+      (e) => e.vendorId === vendor.id
+    );
+    const recentOrders = vendorOrders
+      .map(cloneOrder)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, 20);
+    return {
+      vendor,
+      menuItemCount: menu.length,
+      activeOrderCount,
+      recoveryEventCount: vendorRecovery.length,
+      recentOrders,
+    };
+  }
+
+  async function setVendorActive(
+    vendorSlug: string,
+    active: boolean,
+    _reason?: string
+  ): Promise<Vendor | null> {
+    const normalized = normalizeVendorSlug(vendorSlug);
+    const index = vendors.findIndex((row) => row.slug === normalized);
+    if (index === -1) return null;
+    vendors[index] = { ...vendors[index], isActive: active };
+    if (!active) {
+      kitchenOpen = false;
+    }
+    return cloneVendor(vendors[index]);
+  }
+
+  async function operatorUpdateVendor(
+    vendorSlug: string,
+    input: OperatorUpdateVendorInput
+  ): Promise<Vendor | null> {
+    const { isActive: nextActive, kitchenOpen: nextKitchenOpen, ...rest } =
+      input;
+    const updated = await updateVendor(vendorSlug, rest);
+    if (!updated) return null;
+    if (nextActive !== undefined) {
+      return setVendorActive(vendorSlug, nextActive);
+    }
+    if (nextKitchenOpen !== undefined) {
+      kitchenOpen = nextKitchenOpen;
+    }
+    return getVendorBySlug(vendorSlug);
+  }
+
+  async function operatorRevokeOwnerToken(
+    vendorSlug: string
+  ): Promise<Vendor | null> {
+    return setVendorOwnerToken(vendorSlug, "");
+  }
+
+  async function operatorReissueOwnerToken(
+    vendorSlug: string
+  ): Promise<OperatorReissueTokenResult | null> {
+    const { token, hash } = mintOwnerToken();
+    const updated = await setVendorOwnerToken(vendorSlug, hash);
+    if (!updated) return null;
+    return { ownerToken: token };
+  }
+
+  async function operatorUpdateOrder(
+    orderId: string,
+    patch: OperatorOrderPatch
+  ): Promise<Order | null> {
+    const index = orders.findIndex((o) => o.id === orderId);
+    if (index === -1) return null;
+    let order = orders[index];
+    if (patch.status !== undefined) {
+      order = {
+        ...order,
+        status: patch.status,
+        updatedAt: new Date(),
+        ...(patch.status === "PAID" && !order.paidAt
+          ? { paidAt: new Date(), kitchenStage: "NEW" as KitchenStage }
+          : {}),
+      };
+    }
+    if (patch.kitchenStage !== undefined) {
+      order = {
+        ...order,
+        kitchenStage: patch.kitchenStage,
+        updatedAt: new Date(),
+      };
+    }
+    orders[index] = order;
+    return cloneOrder(order);
+  }
+
+  async function recordOperatorAction(
+    input: RecordOperatorActionInput
+  ): Promise<OperatorAction> {
+    const action: OperatorAction = {
+      id: `op_${++operatorActionCounter}_${Date.now()}`,
+      vendorId: input.vendorId,
+      action: input.action,
+      detail: input.detail,
+      operatorId: input.operatorId ?? "platform",
+      at: new Date(),
+    };
+    operatorActions.push(action);
+    return cloneOperatorAction(action);
+  }
+
+  async function listOperatorActions(
+    vendorSlug: string,
+    limit = 50
+  ): Promise<OperatorAction[]> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return [];
+    return operatorActions
+      .filter((a) => a.vendorId === vendor.id)
+      .map(cloneOperatorAction)
+      .sort((a, b) => b.at.getTime() - a.at.getTime())
+      .slice(0, limit);
   }
 
   async function getMenu(vendorSlug: string): Promise<MenuItem[]> {
@@ -767,6 +995,9 @@ export function createInMemoryStore(): ResettableStore {
   async function createOrder(input: CreateOrderInput): Promise<Order> {
     const vendor = await getVendorBySlug(input.vendorSlug);
     if (!vendor) throw new Error("Vendor not found");
+    if (!vendor.isActive) {
+      throw new Error("This storefront is temporarily unavailable");
+    }
 
     const menu = await getMenu(input.vendorSlug);
     const id = `ord_${++orderCounter}_${Date.now()}`;
@@ -1177,6 +1408,11 @@ export function createInMemoryStore(): ResettableStore {
     }
 
     const order = orders[orderIndex];
+    const vendorRow = vendors.find((v) => v.id === order.vendorId);
+    if (!vendorRow?.isActive) {
+      return { ok: false, code: "ORDER_NOT_PENDING" };
+    }
+
     if (!orderPhoneMatches(order.customerPhone, customerPhone)) {
       return { ok: false, code: "PHONE_MISMATCH" };
     }
@@ -1310,6 +1546,17 @@ export function createInMemoryStore(): ResettableStore {
     setVendorOwnerToken,
     recordRecoveryEvent,
     listRecoveryEvents,
+    listAllRecoveryEvents,
+    reviewRecoveryEvent,
+    listVendors,
+    getOperatorVendorDetail,
+    setVendorActive,
+    operatorUpdateVendor,
+    operatorRevokeOwnerToken,
+    operatorReissueOwnerToken,
+    operatorUpdateOrder,
+    recordOperatorAction,
+    listOperatorActions,
     getMenu,
     getAvailableMenu,
     getArchivedMenu,

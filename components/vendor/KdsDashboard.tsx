@@ -377,6 +377,12 @@ export function KdsDashboard({
           onOpenMenu={openSetup}
         />
 
+        {!vendor.isActive ? (
+          <div className="relative z-[2] mx-[18px] mt-3 rounded-xl border border-red-500/30 bg-red-950/40 px-4 py-3 text-sm text-red-100">
+            This storefront is suspended by ZanTap. Customers cannot place orders.
+          </div>
+        ) : null}
+
         <Tabs
           active={tab}
           onOrders={() => setTab("orders")}

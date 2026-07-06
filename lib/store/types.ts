@@ -20,6 +20,15 @@ import type {
   Pagination,
   Payment,
   RecordRecoveryEventInput,
+  RecordOperatorActionInput,
+  OperatorAction,
+  OperatorOrderPatch,
+  OperatorReissueTokenResult,
+  OperatorUpdateVendorInput,
+  OperatorVendorDetail,
+  RecoveryEventFilters,
+  VendorListEntry,
+  VendorListFilters,
   ResumableManualOrder,
   UpdateMenuItemInput,
   UpdateDriverInput,
@@ -57,6 +66,38 @@ export interface Store {
     input: RecordRecoveryEventInput
   ): Promise<VendorRecoveryEvent>;
   listRecoveryEvents(vendorId: string): Promise<VendorRecoveryEvent[]>;
+  listAllRecoveryEvents(
+    filters?: RecoveryEventFilters
+  ): Promise<VendorRecoveryEvent[]>;
+  reviewRecoveryEvent(
+    eventId: string,
+    reviewNote?: string
+  ): Promise<VendorRecoveryEvent | null>;
+
+  // Operator console (ADR-0039) — only callable from lib/operator-control/
+  listVendors(filters?: VendorListFilters): Promise<VendorListEntry[]>;
+  getOperatorVendorDetail(vendorSlug: string): Promise<OperatorVendorDetail | null>;
+  setVendorActive(
+    vendorSlug: string,
+    active: boolean,
+    reason?: string
+  ): Promise<Vendor | null>;
+  operatorUpdateVendor(
+    vendorSlug: string,
+    input: OperatorUpdateVendorInput
+  ): Promise<Vendor | null>;
+  operatorRevokeOwnerToken(vendorSlug: string): Promise<Vendor | null>;
+  operatorReissueOwnerToken(
+    vendorSlug: string
+  ): Promise<OperatorReissueTokenResult | null>;
+  operatorUpdateOrder(
+    orderId: string,
+    patch: OperatorOrderPatch
+  ): Promise<Order | null>;
+  recordOperatorAction(
+    input: RecordOperatorActionInput
+  ): Promise<OperatorAction>;
+  listOperatorActions(vendorSlug: string, limit?: number): Promise<OperatorAction[]>;
 
   // Menu reads + availability mutation
   getMenu(vendorSlug: string): Promise<MenuItem[]>;

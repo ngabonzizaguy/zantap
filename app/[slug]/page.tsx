@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getStore } from "@/lib/store";
 import { getMomoMode } from "@/lib/momo/mode";
 import { Storefront } from "@/components/customer/Storefront";
+import { SuspendedStorefront } from "@/components/customer/SuspendedStorefront";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -17,6 +18,10 @@ export default async function CustomerStorefrontPage({
   const store = getStore();
   const vendor = await store.getVendorBySlug(slug);
   if (!vendor) notFound();
+
+  if (!vendor.isActive) {
+    return <SuspendedStorefront vendor={vendor} />;
+  }
 
   const [menu, categories] = await Promise.all([
     store.getAvailableMenu(slug),

@@ -30,18 +30,34 @@ model Vendor {
   orders          Order[]
   drivers         Driver[]
   recoveryEvents  VendorRecoveryEvent[]
+  operatorActions OperatorAction[]
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
 }
 
 model VendorRecoveryEvent {
-  id        String   @id @default(cuid())
-  vendorId  String
-  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  context   String?
-  at        DateTime @default(now())
+  id         String    @id @default(cuid())
+  vendorId   String
+  vendor     Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  context    String?
+  reviewedAt DateTime?
+  reviewNote String?
+  at         DateTime  @default(now())
 
   @@index([vendorId])
+}
+
+model OperatorAction {
+  id         String   @id @default(cuid())
+  vendorId   String?
+  vendor     Vendor?  @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  action     String
+  detail     String?
+  operatorId String   @default("platform")
+  at         DateTime @default(now())
+
+  @@index([vendorId])
+  @@index([at])
 }
 
 model MenuItem {

@@ -124,7 +124,7 @@ If a session ends without doing both, the handoff is incomplete.
 | 14 | Storefront item customization modal (visual-only) | Owner request | customer UI only | ✅ Done · prod-smoked 2026-06-29 | `.scratch/storefront-customization-modal/PRD.md` |
 | 15 | Vendor onboarding (~1 min go-live) | Strong | Store + KDS + provisioning | ✅ Done · deployed · prod-smoked 2026-06-30 | `.scratch/vendor-onboarding/PRD.md` |
 | 16 | Onboarding redesign (dark, self-serve, owner token) | Owner request | Store + Prisma + onboarding + KDS Setup | ✅ DONE · deployed · prod-smoked 2026-07-02 (Playwright real-browser harness + human confirmation; `abc` vendor + profile fields verified in prod DB; organic vendor `lilys` self-served 2026-07-01; merged to `main` 2026-07-02) | `.scratch/onboarding-redesign/PRD.md` |
-| 17 | ZanTap operator/admin panel (vendor system-of-record + recovery verification) | Owner design | server + admin UI | ⏸ Deferred — owner design; consumes #16 recovery events | — |
+| 17 | ZanTap operator/admin panel (Control API + `/ops`) | Owner design | server + ops UI | ✅ Implemented 2026-07-06 · deploy + prod smoke pending | `.scratch/operator-console/PRD.md` |
 | 18 | Supabase pooler egress — KDS snapshot optimization | Strong | Store + KDS SSE | ✅ Done 2026-07-01 | `.scratch/pooler-egress-audit/issue-01-kds-snapshot-egress.md` |
 | 19 | KDS + Storefront polish batch (recovery, dashboard, images, help, onboarding, storefront sync, domain) | Owner request | Store + KDS + onboarding + customer UI + config | ✅ Done · deployed · prod-smoked 2026-07-02 | `.scratch/kds-storefront-polish/PRD.md` |
 | 21 | Storefront customize slim-down + vendor profile edits + MoMo phone fix | Owner request | customer modal + KDS Setup + MoMo USSD | ✅ Done · deployed · prod-smoked 2026-07-05 (`5ad7a92`) | `.scratch/candidate-21/PRD.md` |
@@ -322,13 +322,23 @@ which now holds alias `zantap-psi.vercel.app` — no behavior change; post-merge
 
 ---
 
-## #17 · ZanTap operator/admin panel — ⏸ DEFERRED (owner design)
+## #17 · ZanTap operator console — ✅ IMPLEMENTED 2026-07-06 (deploy pending)
 
-Owner's design. System-of-record for every vendor's details; consumes the recovery events emitted by
-#16. On a recovery / new-device trigger (fires on both vendor + admin side), the operator reviews
-current-vs-original details asynchronously and verifies via a WhatsApp message or a triggered KDS
-verification modal — **never halting the vendor**. Long-term replacement for #16's phone-based recovery
-stopgap and a precursor to real auth (#12). Not started; no PRD yet — will get its own `/grill-with-docs`.
+Grilled 2026-07-06 — decisions in `.scratch/operator-console/grill-decisions.md`.
+Control API at `/api/operator/v1/*`, Ops UI at `/ops` (ElevenLabs light, desktop + mobile).
+Extractable client in `lib/operator-client/`. ADR-0039.
+
+**Shipped:** Store operator verbs, halting (suspended storefront, blocked checkout),
+vendor directory, recovery inbox, vendor detail tabs (profile/menu/orders/audit),
+token revoke/reissue, operator audit log. Tests 253/330; `npm run build` clean.
+
+**Deploy cutover:** set `OPERATOR_API_KEY` + `OPERATOR_UI_SECRET` on Vercel Production;
+run `npm run db:deploy` for migration `20260706180000_operator_console`;
+prod smoke: `.scratch/operator-console/prod-smoke.mjs`.
+
+- PRD: `.scratch/operator-console/PRD.md`
+- ADR: `docs/adr/0039-operator-console-and-halting-controls.md`
+- Extraction: `.scratch/operator-console/EXTRACTION.md`
 
 ---
 

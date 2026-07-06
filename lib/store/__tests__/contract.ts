@@ -304,6 +304,44 @@ export function runStoreContract(
       });
     });
 
+    describe("operator console", () => {
+      it("lists vendors including the seed vendor", async () => {
+        const vendors = await store.listVendors();
+        expect(vendors.some((v) => v.slug === slug)).toBe(true);
+      });
+
+      it("suspends a vendor and blocks new orders", async () => {
+        await store.setVendorActive(slug, false, "test");
+        const vendor = await store.getVendorBySlug(slug);
+        expect(vendor?.isActive).toBe(false);
+
+        await expect(
+          store.createOrder({
+            vendorSlug: slug,
+            customerPhone: "0788000111",
+            deliverySector: "Kicukiro",
+            landmark: "Blocked",
+            items: [{ menuItemId: (await store.getAvailableMenu(slug))[0].id, quantity: 1 }],
+          })
+        ).rejects.toThrow(/unavailable/i);
+
+        await store.setVendorActive(slug, true);
+      });
+
+      it("records operator actions", async () => {
+        const vendor = await store.getVendorBySlug(slug);
+        expect(vendor).not.toBeNull();
+        const action = await store.recordOperatorAction({
+          vendorId: vendor!.id,
+          action: "TEST",
+          detail: '{"ok":true}',
+        });
+        expect(action.action).toBe("TEST");
+        const audit = await store.listOperatorActions(slug);
+        expect(audit.some((row) => row.id === action.id)).toBe(true);
+      });
+    });
+
     describe("menu", () => {
       it("exposes categories and a non-empty menu", async () => {
         expect((await store.getCategories(slug)).length).toBeGreaterThan(0);

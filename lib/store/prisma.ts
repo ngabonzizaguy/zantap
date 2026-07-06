@@ -65,6 +65,15 @@ import type {
   Payment,
   PayoutMethod,
   RecordRecoveryEventInput,
+  RecordOperatorActionInput,
+  OperatorAction,
+  OperatorOrderPatch,
+  OperatorReissueTokenResult,
+  OperatorUpdateVendorInput,
+  OperatorVendorDetail,
+  RecoveryEventFilters,
+  VendorListEntry,
+  VendorListFilters,
   ResumableManualOrder,
   UpdateMenuItemInput,
   UpdateDriverInput,
@@ -73,6 +82,7 @@ import type {
   VendorRecoveryEvent,
 } from "@/lib/types";
 import { normalizeVendorSlug } from "@/lib/vendor/slug";
+import { mintOwnerToken } from "@/lib/vendor/owner-token";
 import { thumbGradientForId } from "@/lib/menu/gradients";
 import {
   normalizePagination,
@@ -172,13 +182,38 @@ function mapVendor(vendor: PrismaVendor): Vendor {
 }
 
 function mapRecoveryEvent(
-  event: PrismaVendorRecoveryEvent
+  event: PrismaVendorRecoveryEvent,
+  vendor?: { slug: string; name: string }
 ): VendorRecoveryEvent {
   return {
     id: event.id,
     vendorId: event.vendorId,
     context: event.context ?? undefined,
     at: event.at,
+    reviewedAt: event.reviewedAt ?? undefined,
+    reviewNote: event.reviewNote ?? undefined,
+    vendorSlug: vendor?.slug,
+    vendorName: vendor?.name,
+  };
+}
+
+function mapOperatorAction(
+  row: {
+    id: string;
+    vendorId: string | null;
+    action: string;
+    detail: string | null;
+    operatorId: string;
+    at: Date;
+  }
+): OperatorAction {
+  return {
+    id: row.id,
+    vendorId: row.vendorId ?? undefined,
+    action: row.action,
+    detail: row.detail ?? undefined,
+    operatorId: row.operatorId,
+    at: row.at,
   };
 }
 
@@ -439,7 +474,252 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       where: { vendorId },
       orderBy: { at: "desc" },
     });
-    return events.map(mapRecoveryEvent);
+    return events.map((event) => mapRecoveryEvent(event));
+  }
+
+  async function listAllRecoveryEvents(
+    filters?: RecoveryEventFilters
+  ): Promise<VendorRecoveryEvent[]> {
+    const where: Prisma.VendorRecoveryEventWhereInput = {};
+    if (filters?.vendorSlug) {
+      where.vendor = { slug: normalizeVendorSlug(filters.vendorSlug) };
+    }
+    if (filters?.unreviewedOnly) {
+      where.reviewedAt = null;
+    }
+    const events = await client.vendorRecoveryEvent.findMany({
+      where,
+      include: { vendor: { select: { slug: true, name: true } } },
+      orderBy: { at: "desc" },
+      take: filters?.limit ?? 100,
+    });
+    return events.map((event) =>
+      mapRecoveryEvent(event, {
+        slug: event.vendor.slug,
+        name: event.vendor.name,
+      })
+    );
+  }
+
+  async function reviewRecoveryEvent(
+    eventId: string,
+    reviewNote?: string
+  ): Promise<VendorRecoveryEvent | null> {
+    try {
+      const event = await client.vendorRecoveryEvent.update({
+        where: { id: eventId },
+        data: {
+          reviewedAt: new Date(),
+          reviewNote: reviewNote?.trim() || null,
+        },
+      });
+      return mapRecoveryEvent(event);
+    } catch (error) {
+      if (isNotFoundError(error)) return null;
+      throw error;
+    }
+  }
+
+  async function listVendors(
+    filters?: VendorListFilters
+  ): Promise<VendorListEntry[]> {
+    const where: Prisma.VendorWhereInput = {};
+    if (filters?.search) {
+      where.OR = [
+        { name: { contains: filters.search, mode: "insensitive" } },
+        { slug: { contains: filters.search, mode: "insensitive" } },
+        { phoneNumber: { contains: filters.search } },
+      ];
+    }
+    if (filters?.isActive !== undefined) {
+      where.isActive = filters.isActive;
+    }
+    const rows = await client.vendor.findMany({
+      where,
+      include: {
+        _count: { select: { recoveryEvents: true } },
+        recoveryEvents: {
+          orderBy: { at: "desc" },
+          take: 1,
+          select: { at: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    return rows.map((vendor) => ({
+      id: vendor.id,
+      name: vendor.name,
+      slug: vendor.slug,
+      phoneNumber: vendor.phoneNumber,
+      isActive: vendor.isActive,
+      kitchenOpen: vendor.kitchenOpen && vendor.isActive,
+      createdAt: vendor.createdAt,
+      recoveryEventCount: vendor._count.recoveryEvents,
+      lastRecoveryAt: vendor.recoveryEvents[0]?.at,
+    }));
+  }
+
+  async function getOperatorVendorDetail(
+    vendorSlug: string
+  ): Promise<OperatorVendorDetail | null> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return null;
+    const [menuItemCount, activeOrderCount, recoveryEventCount, recentOrders] =
+      await Promise.all([
+        client.menuItem.count({
+          where: { vendorId: vendor.id, archivedAt: null },
+        }),
+        client.order.count({
+          where: {
+            vendorId: vendor.id,
+            status: { in: ["PENDING", "PAID", "DISPATCHED"] },
+          },
+        }),
+        client.vendorRecoveryEvent.count({ where: { vendorId: vendor.id } }),
+        client.order.findMany({
+          where: { vendorId: vendor.id },
+          include: kdsOrderInclude,
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        }),
+      ]);
+    return {
+      vendor,
+      menuItemCount,
+      activeOrderCount,
+      recoveryEventCount,
+      recentOrders: recentOrders.map(mapOrder),
+    };
+  }
+
+  async function setVendorActive(
+    vendorSlug: string,
+    active: boolean,
+    _reason?: string
+  ): Promise<Vendor | null> {
+    try {
+      const vendor = await client.vendor.update({
+        where: { slug: normalizeVendorSlug(vendorSlug) },
+        data: {
+          isActive: active,
+          ...(!active ? { kitchenOpen: false } : {}),
+        },
+      });
+      return mapVendor(vendor);
+    } catch (error) {
+      if (isNotFoundError(error)) return null;
+      throw error;
+    }
+  }
+
+  async function operatorUpdateVendor(
+    vendorSlug: string,
+    input: OperatorUpdateVendorInput
+  ): Promise<Vendor | null> {
+    const { isActive, kitchenOpen: nextKitchenOpen, ...rest } = input;
+    const updated = await updateVendor(vendorSlug, rest);
+    if (!updated) return null;
+    if (isActive !== undefined) {
+      return setVendorActive(vendorSlug, isActive);
+    }
+    if (nextKitchenOpen !== undefined) {
+      try {
+        const vendor = await client.vendor.update({
+          where: { slug: normalizeVendorSlug(vendorSlug) },
+          data: { kitchenOpen: nextKitchenOpen },
+        });
+        return mapVendor(vendor);
+      } catch (error) {
+        if (isNotFoundError(error)) return null;
+        throw error;
+      }
+    }
+    return updated;
+  }
+
+  async function operatorRevokeOwnerToken(
+    vendorSlug: string
+  ): Promise<Vendor | null> {
+    try {
+      const vendor = await client.vendor.update({
+        where: { slug: normalizeVendorSlug(vendorSlug) },
+        data: { ownerTokenHash: null },
+      });
+      return mapVendor(vendor);
+    } catch (error) {
+      if (isNotFoundError(error)) return null;
+      throw error;
+    }
+  }
+
+  async function operatorReissueOwnerToken(
+    vendorSlug: string
+  ): Promise<OperatorReissueTokenResult | null> {
+    const { token, hash } = mintOwnerToken();
+    const updated = await setVendorOwnerToken(vendorSlug, hash);
+    if (!updated) return null;
+    return { ownerToken: token };
+  }
+
+  async function operatorUpdateOrder(
+    orderId: string,
+    patch: OperatorOrderPatch
+  ): Promise<Order | null> {
+    const existing = await client.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, paidAt: true },
+    });
+    if (!existing) return null;
+
+    const data: Prisma.OrderUpdateInput = { updatedAt: new Date() };
+    if (patch.status !== undefined) {
+      data.status = patch.status;
+      if (patch.status === "PAID" && !existing.paidAt) {
+        data.paidAt = new Date();
+        data.kitchenStage = "NEW";
+      }
+    }
+    if (patch.kitchenStage !== undefined) {
+      data.kitchenStage = patch.kitchenStage;
+    }
+
+    const order = await client.order.update({
+      where: { id: orderId },
+      include: kdsOrderInclude,
+      data,
+    });
+    return mapOrder(order);
+  }
+
+  async function recordOperatorAction(
+    input: RecordOperatorActionInput
+  ): Promise<OperatorAction> {
+    const row = await client.operatorAction.create({
+      data: {
+        vendorId: input.vendorId ?? null,
+        action: input.action,
+        detail: input.detail ?? null,
+        operatorId: input.operatorId ?? "platform",
+      },
+    });
+    return mapOperatorAction(row);
+  }
+
+  async function listOperatorActions(
+    vendorSlug: string,
+    limit = 50
+  ): Promise<OperatorAction[]> {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: normalizeVendorSlug(vendorSlug) },
+      select: { id: true },
+    });
+    if (!vendor) return [];
+    const rows = await client.operatorAction.findMany({
+      where: { vendorId: vendor.id },
+      orderBy: { at: "desc" },
+      take: limit,
+    });
+    return rows.map(mapOperatorAction);
   }
 
   async function getMenu(vendorSlug: string): Promise<MenuItem[]> {
@@ -1008,9 +1288,12 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function createOrder(input: CreateOrderInput): Promise<Order> {
     const vendor = await client.vendor.findUnique({
       where: { slug: input.vendorSlug },
-      select: { id: true },
+      select: { id: true, isActive: true },
     });
     if (!vendor) throw new Error("Vendor not found");
+    if (!vendor.isActive) {
+      throw new Error("This storefront is temporarily unavailable");
+    }
 
     const menuItems = await client.menuItem.findMany({
       where: { vendorId: vendor.id, ...activeMenuWhere },
@@ -1463,13 +1746,19 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   ): Promise<ConfirmManualPaymentResult> {
     const orderRow = await client.order.findUnique({
       where: { id: orderId },
-      include: orderInclude,
+      include: {
+        ...orderInclude,
+        vendor: { select: { isActive: true } },
+      },
     });
     if (!orderRow) {
       return { ok: false, code: "NOT_FOUND" };
     }
 
     const order = mapOrder(orderRow);
+    if (!orderRow.vendor.isActive) {
+      return { ok: false, code: "ORDER_NOT_PENDING" };
+    }
     if (!orderPhoneMatches(order.customerPhone, customerPhone)) {
       return { ok: false, code: "PHONE_MISMATCH" };
     }
@@ -1640,6 +1929,17 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     setVendorOwnerToken,
     recordRecoveryEvent,
     listRecoveryEvents,
+    listAllRecoveryEvents,
+    reviewRecoveryEvent,
+    listVendors,
+    getOperatorVendorDetail,
+    setVendorActive,
+    operatorUpdateVendor,
+    operatorRevokeOwnerToken,
+    operatorReissueOwnerToken,
+    operatorUpdateOrder,
+    recordOperatorAction,
+    listOperatorActions,
     getMenu,
     getAvailableMenu,
     getArchivedMenu,

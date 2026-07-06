@@ -86,11 +86,78 @@ export interface VendorRecoveryEvent {
   vendorId: string;
   at: Date;
   context?: string;
+  reviewedAt?: Date;
+  reviewNote?: string;
+  /** Populated on cross-vendor list queries. */
+  vendorSlug?: string;
+  vendorName?: string;
 }
 
 export interface RecordRecoveryEventInput {
   vendorId: string;
   context?: string;
+}
+
+export interface OperatorAction {
+  id: string;
+  vendorId?: string;
+  action: string;
+  detail?: string;
+  operatorId: string;
+  at: Date;
+}
+
+export interface RecordOperatorActionInput {
+  vendorId?: string;
+  action: string;
+  detail?: string;
+  operatorId?: string;
+}
+
+export interface VendorListEntry {
+  id: string;
+  name: string;
+  slug: string;
+  phoneNumber: string;
+  isActive: boolean;
+  kitchenOpen: boolean;
+  createdAt: Date;
+  recoveryEventCount: number;
+  lastRecoveryAt?: Date;
+}
+
+export interface VendorListFilters {
+  search?: string;
+  isActive?: boolean;
+}
+
+export interface RecoveryEventFilters {
+  vendorSlug?: string;
+  unreviewedOnly?: boolean;
+  limit?: number;
+}
+
+export interface OperatorVendorDetail {
+  vendor: Vendor;
+  menuItemCount: number;
+  activeOrderCount: number;
+  recoveryEventCount: number;
+  recentOrders: Order[];
+}
+
+export interface OperatorUpdateVendorInput extends UpdateVendorInput {
+  isActive?: boolean;
+  kitchenOpen?: boolean;
+}
+
+export interface OperatorOrderPatch {
+  status?: OrderStatus;
+  kitchenStage?: KitchenStage;
+  reason?: string;
+}
+
+export interface OperatorReissueTokenResult {
+  ownerToken: string;
 }
 
 export interface MenuImage {

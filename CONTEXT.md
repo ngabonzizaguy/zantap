@@ -77,8 +77,24 @@ A per-vendor capability token minted at provision, cached in that vendor's brows
 _Avoid_: password, api key, write-secret, session (it has no identity or revocation UX)
 
 **Recovery event** (ADR-0022):
-A server-side log entry (`VendorRecoveryEvent`) emitted each time a Vendor recovers their Owner token via phone-based recovery (storefront slug + signup phone → the token is **immediately re-issued**, never halting the vendor). It exists purely as the seam the future ZanTap operator/admin panel (candidate #17) will consume for async verification. No admin UI reads it yet.
+A server-side log entry (`VendorRecoveryEvent`) emitted each time a Vendor recovers their Owner token via phone-based recovery (storefront slug + signup phone → the token is **immediately re-issued**, not halting the vendor). Operators may review these in the Ops console (ADR-0039). No admin UI reads it yet.
 _Avoid_: audit log, recovery request, verification (it does not itself verify anything)
+
+**Operator** (ADR-0039):
+ZanTap platform staff with cross-vendor authority via the Operator Control API and `/ops` UI. Not a Vendor. Distinct from the kitchen user on the KDS.
+_Avoid_: admin, superuser, vendor
+
+**Operator action** (ADR-0039):
+A durable audit record (`OperatorAction`) of an operator intervention — who acted, which vendor, what changed, when. Written on every Control API mutation.
+_Avoid_: recovery event (vendor-initiated)
+
+**Suspended vendor** (ADR-0039):
+A Vendor with `isActive = false`. Storefront checkout is blocked, kitchen is forced closed, KDS shows a suspended banner. Distinct from an archived menu item.
+_Avoid_: deleted, archived
+
+**Operator override** (ADR-0039):
+A mutation performed by an Operator through the Control API, bypassing the owner-token guard because operator API auth was validated server-side.
+_Avoid_: owner token write, vendor self-service edit
 
 **Adapter**:
 A concrete implementation satisfying the Store interface at its seam. Two exist: an in-memory adapter (tests/local dev) and a Prisma/Postgres adapter (production).
