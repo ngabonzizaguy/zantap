@@ -39,15 +39,15 @@ async function operatorFetch<T>(
 
   let url = relative;
   if (!relative.startsWith("http")) {
+    // Server-side co-located Ops must call this deployment's host (VERCEL_URL),
+    // not NEXT_PUBLIC_BASE_URL (public storefront domain, may be unmapped).
     const origin =
-      process.env.NEXT_PUBLIC_BASE_URL?.trim()?.replace(/\/$/, "") ??
-      (process.env.VERCEL_URL
+      typeof window === "undefined" && process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL}`
-        : "http://localhost:3000");
+        : (process.env.NEXT_PUBLIC_BASE_URL?.trim()?.replace(/\/$/, "") ??
+          "http://localhost:3000");
     url =
-      typeof window === "undefined"
-        ? `${origin}${relative}`
-        : relative;
+      typeof window === "undefined" ? `${origin}${relative}` : relative;
   }
 
   const response = await fetch(url, {
