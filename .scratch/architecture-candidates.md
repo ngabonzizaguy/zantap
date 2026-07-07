@@ -17,8 +17,11 @@ Last verified against the codebase: 2026-07-07.
 storefront #10 uses **ElevenLabs `DESIGN.md`** — no custom mockups (ADR-0041).
 **#12 deferred** — ops/vendor auth unchanged (ADR-0040).
 
-**Pick one (no code queued on `main` — #10 Issues 01–04 done locally, not deployed):**
-- **Deploy #10 slices** — commit + push + prod curl smoke (storefront 200, zero `zt-*` palette on customer routes, no `kds-dark`)
+**Pick one (no code queued on `main`):**
+- **Optional human smoke** — storefront customize sheet → add note → manual MoMo I've paid → KDS ticket (Playwright harness exists at `.scratch/candidate-21/prod-smoke.mjs` for reference)
+- **Next backlog candidate** — all open items gated (#11 API blocked, #12/#13 deferred, #5 audited-deferred); await owner direction on new domain or live MoMo API
+
+**Housekeeping ✅ done 2026-07-07** — removed dead `zt` color block + unused `zt*` animations from `tailwind.config.ts` (ADR-0042); `zt-hidescroll` / confetti CSS utilities retained; `npm run build` green.
 
 **Candidate #21 — Storefront customize slim-down + vendor profile edits + MoMo phone fix**
 — ✅ **DONE · deployed · prod-smoked 2026-07-05** (`5ad7a92` → alias `zantap-psi.vercel.app`).
@@ -64,8 +67,7 @@ Playwright smoke 15/15 PASS (`.scratch/kds-storefront-polish/prod-smoke.mjs`).
 smoke 8/8 PASS on prod (MoMo PIN `12345` → expand ticket → `wa.me/250788123456` + slip URL;
 dispatch modal phoneless share unchanged).
 
-All other open candidates are gated (#10/#17 owner design, #11/#12 grill, #13 probe,
-#5 deferred).
+All other open candidates are gated (#11/#12 grill, #13 probe, #5 deferred).
 
 Housekeeping (non-blocking): delete merged branch `feat/onboarding-redesign` (local only —
 no `origin/feat/onboarding-redesign`); rotate Supabase DB password per `AGENTS.md` Security
@@ -117,7 +119,7 @@ If a session ends without doing both, the handoff is incomplete.
 | 7 | KDS workflow optimization (kitchen stage, aging, bulk) | Strong | ports & adapters + KDS UI | ✅ Done & deployed · smoke complete | `.scratch/kds-workflow-optimization/PRD.md` |
 | 8 | Storefront menu image carousel | Strong | customer UI only | ✅ Done · deployed · prod-smoked 2026-06-27 | `.scratch/storefront-image-carousel/PRD.md` |
 | 9 | Vendor WhatsApp PAID notification | Worth exploring | KDS UI + lib/whatsapp | ✅ Done · deployed · prod-smoked 2026-07-02 | `.scratch/vendor-whatsapp-paid-notification/PRD.md` |
-| 10 | Customer storefront → DESIGN.md | Strong | customer UI | ◑ Issues 01–04 done locally (full customer `zt-*` palette retired; only `zt-hidescroll` utility remains) | `.scratch/customer-storefront-design/` |
+| 10 | Customer storefront → DESIGN.md | Strong | customer UI | ✅ Done · deployed · curl-smoked 2026-07-07 (`9473ccc` → `dpl_B9zuaxYf72mgJGPbJ4vXJ6LDAWZy` → alias `zantap-psi.vercel.app`) | `.scratch/customer-storefront-design/` |
 | 11 | Live MTN MoMo integration | Strong | server + payments | ⏸ API blocked — interim **#20 manual USSD** ✅ deployed 2026-07-05 | — |
 | 20 | Manual MTN MoMo USSD checkout (interim) | Strong | checkout + Store | ✅ Done · deployed · prod-smoked 2026-07-05 | `.scratch/manual-momo-ussd/issue-01-manual-ussd-checkout.md` |
 | 12 | Vendor + operator authentication | Strong | server + KDS + `/ops` | ⏸ Grilled 2026-07-06 · **deferred** (ADR-0040) | `.scratch/vendor-authentication/grill-decisions.md` |
@@ -572,7 +574,8 @@ empty/degraded states, dispatch wired to `advanceKitchenStage(…, OUT_FOR_DELIV
 | KDS Orders tab → DESIGN.md | ✅ Done · committed `199048e` · deployed `dpl_G4kS89FBo71KhZLn43hvuSGZD4Wg` → `zantap-psi.vercel.app` 2026-06-24 | `.scratch/kds-orders-design-migration/issue-01-orders-tab-tokens.md` |
 | Delivery slip page → DESIGN.md | ✅ Done · committed `b08a3ca` · deployed `dpl_2p7RSEAgq5WbQevuuaJokFpL6uDL` → `zantap-psi.vercel.app` 2026-06-24 | `.scratch/kds-orders-design-migration/issue-02-delivery-slip-tokens.md` |
 | Remove dead `zk-*` Tailwind palette | ✅ Done · committed `4553388` · deployed `dpl_8Q52wTnGTXU57RB7yiEDLc9jX3BU` → `zantap-psi.vercel.app` 2026-06-24 | ADR-0016 consequences |
-| Customer storefront redesign | ◑ Ready to deploy (#10 Issues 01–04 local) | ElevenLabs `DESIGN.md`; all customer palette `zt-*` migrated (ADR-0041) |
+| Customer storefront redesign | ✅ Done · deployed · curl-smoked 2026-07-07 (`9473ccc` → `dpl_B9zuaxYf72mgJGPbJ4vXJ6LDAWZy`) | ElevenLabs `DESIGN.md`; all customer palette `zt-*` migrated; only `zt-hidescroll` utility remains (ADR-0041) |
+| Remove dead `zt-*` Tailwind palette | ✅ Done 2026-07-07 (local; deploy pending) | ADR-0042 — `zt` color block + `zt*` animations removed from `tailwind.config.ts`; build green |
 | `/to-prd` post-backlog probe | ✅ Done 2026-06-24 | Candidate #8 PRD + issue; #9–#13 probe table below |
 | KDS dark operational theme restore | ✅ Done · committed `4440d2d` · deployed `dpl_6VfQnfy66KGdoJxYNbourWgvJBoD` → `zantap-psi.vercel.app` · prod-smoked 2026-06-27 | `.scratch/kds-dark-identity-restore/grill-decisions.md`, ADR-0017 |
 
@@ -693,7 +696,7 @@ Options B (server auto-send / WhatsApp Business API) and C (customer success cop
 | # | Candidate | Readiness | Gate / notes |
 |---|-----------|-----------|--------------|
 | 9 | Vendor WhatsApp PAID notification | ✅ Done · deployed · prod-smoked 2026-07-02 | wa.me deep-link on KDS ticket; ADR-0028; Playwright smoke 8/8 |
-| 10 | Customer storefront → DESIGN.md | ◑ Deploy pending | Issues 01–04 done locally; prod curl smoke next. New domain = env cutover only (ADR-0041). |
+| 10 | Customer storefront → DESIGN.md | ✅ Done · deployed · curl-smoked 2026-07-07 | ADR-0041; palette cleanup ADR-0042 (local, deploy pending) |
 | 11 | Live MTN MoMo | High risk | Simulated STK in `lib/momo/simulate.ts` + `/api/momo/stk`. Payment module (#2) ✅. **Requires `/grill-with-docs` before PRD.** |
 | 12 | Vendor authentication | Deferred per AGENTS.md | Write-secret interim (ADR-0009). Real auth = separate grill + PRD. |
 | 13 | Ops / security | Mixed | `README.md` stale (still references `lib/data/*`, Phase 2 deferrals). Write-secret rotation playbook. Export/upload already guarded; rate limits not audited. |

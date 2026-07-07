@@ -39,7 +39,7 @@ export function Orbs({ theme = "Blush" }: OrbsProps) {
       {positions.map((pos, index) => (
         <div
           key={index}
-          className="absolute animate-ztfloat rounded-full opacity-[0.62] blur-[54px]"
+          className="absolute animate-brandfloat rounded-full opacity-[0.62] blur-[54px]"
           style={{
             top: pos.top,
             left: pos.left,

@@ -52,35 +52,6 @@ const config: Config = {
         "gradient-rose": "#e8b8c4",
         success: "#16a34a",
         error: "#dc2626",
-        // DEPRECATED — legacy storefront blush palette. Do not use in new UI.
-        zt: {
-          blush: {
-            50: "#f3e0d6",
-            100: "#ecd2cf",
-            200: "#e7d4e4",
-            bg: "#efd9ce",
-          },
-          brown: {
-            DEFAULT: "#33241d",
-            dark: "#3a2c26",
-            muted: "#5a463c",
-          },
-          warm: {
-            DEFAULT: "#8a7268",
-            light: "#b59d92",
-            lighter: "#a08b80",
-          },
-          accent: {
-            DEFAULT: "#b5773f",
-            gold: "#F5A623",
-            goldLight: "#FFD24C",
-          },
-          success: {
-            DEFAULT: "#0a6b3b",
-            light: "#0f9a55",
-            glow: "#7ee2a8",
-          },
-        },
         momo: {
           DEFAULT: "#F5A623",
           light: "#FFD24C",
@@ -192,30 +163,11 @@ const config: Config = {
       },
       animation: {
         brandfloat: "brandfloat 14s ease-in-out infinite",
-        ztfloat: "ztfloat 14s ease-in-out infinite",
-        ztspin: "ztspin 0.9s linear infinite",
-        ztshim: "ztshim 1.3s ease-in-out infinite",
-        ztpulse: "ztpulse 1.4s ease-in-out infinite",
       },
       keyframes: {
         brandfloat: {
           "0%, 100%": { transform: "translate3d(0,0,0) scale(1)" },
           "50%": { transform: "translate3d(0,-26px,0) scale(1.06)" },
-        },
-        ztfloat: {
-          "0%, 100%": { transform: "translate3d(0,0,0) scale(1)" },
-          "50%": { transform: "translate3d(0,-26px,0) scale(1.06)" },
-        },
-        ztspin: {
-          to: { transform: "rotate(360deg)" },
-        },
-        ztshim: {
-          "0%, 100%": { opacity: "0.5" },
-          "50%": { opacity: "1" },
-        },
-        ztpulse: {
-          "0%, 100%": { opacity: "1", transform: "scale(1)" },
-          "50%": { opacity: "0.4", transform: "scale(0.8)" },
         },
       },
       maxWidth: {

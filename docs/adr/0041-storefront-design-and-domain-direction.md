@@ -37,7 +37,7 @@ KDS shell (light) and Ops UI.
 - Next engineering work can slice #10 vertically without waiting on design assets.
 - Display copy and share URLs follow `getBaseUrl()` once env is updated at cutover.
 - After full migration, `zt` palette block may be removed from `tailwind.config.ts`
-  (mirror ADR-0016 `zk-*` removal).
+  (mirror ADR-0016 `zk-*` removal). **Done 2026-07-07** — see ADR-0042.
 
 ## Alternatives considered
 
