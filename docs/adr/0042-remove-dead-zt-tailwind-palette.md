@@ -37,8 +37,10 @@ does not reference a removed animation if revived.
 
 - No new `bg-zt-*` / `text-zt-*` utilities can be accidentally introduced.
 - `npm run build` must stay green after removal.
-- Optional follow-up: delete unused `Orbs.tsx` and blush-era `shadow-glass` /
-  `shadow-cart` box shadows (also zero references).
+- ~~Optional follow-up: delete unused `Orbs.tsx` and blush-era `shadow-glass` /
+  `shadow-cart` box shadows (also zero references).~~ **Done 2026-07-07** — deleted
+  `components/ui/Orbs.tsx`; removed dead `glass` / `glass-lg` / `cart` box shadows
+  from `tailwind.config.ts` (zero TS/TSX references; `shadow-brand-soft` retained).
 
 ## Alternatives considered
 

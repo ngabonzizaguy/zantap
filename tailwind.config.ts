@@ -156,9 +156,6 @@ const config: Config = {
       },
       boxShadow: {
         "brand-soft": "0 4px 16px rgba(0, 0, 0, 0.04)",
-        glass: "0 12px 30px rgba(176,116,104,0.16), inset 0 1px 0 rgba(255,255,255,0.65)",
-        "glass-lg": "0 18px 44px rgba(176,116,104,0.22), inset 0 1px 0 rgba(255,255,255,0.7)",
-        cart: "0 16px 40px rgba(150,90,80,0.3), inset 0 1px 0 rgba(255,255,255,0.8)",
         kds: "0 10px 28px rgba(0,0,0,0.42)",
       },
       animation: {
