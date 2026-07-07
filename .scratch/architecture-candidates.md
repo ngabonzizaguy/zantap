@@ -21,7 +21,7 @@ storefront #10 uses **ElevenLabs `DESIGN.md`** — no custom mockups (ADR-0041).
 - **Optional human smoke** — storefront customize sheet → add note → manual MoMo I've paid → KDS ticket (Playwright harness exists at `.scratch/candidate-21/prod-smoke.mjs` for reference)
 - **Next backlog candidate** — all open items gated (#11 API blocked, #12/#13 deferred, #5 audited-deferred); await owner direction on new domain or live MoMo API
 
-**Housekeeping ✅ done 2026-07-07** — removed dead `zt` color block + unused `zt*` animations from `tailwind.config.ts` (ADR-0042); `zt-hidescroll` / confetti CSS utilities retained; `npm run build` green.
+**Housekeeping ✅ done · deployed · curl-smoked 2026-07-07** — removed dead `zt` color block + unused `zt*` animations from `tailwind.config.ts` (ADR-0042, `8117fe5` → `dpl_6wacM85XfVdhDXYenhRmHyrYuLGg`); `zt-hidescroll` / confetti CSS utilities retained.
 
 **Candidate #21 — Storefront customize slim-down + vendor profile edits + MoMo phone fix**
 — ✅ **DONE · deployed · prod-smoked 2026-07-05** (`5ad7a92` → alias `zantap-psi.vercel.app`).
@@ -575,7 +575,7 @@ empty/degraded states, dispatch wired to `advanceKitchenStage(…, OUT_FOR_DELIV
 | Delivery slip page → DESIGN.md | ✅ Done · committed `b08a3ca` · deployed `dpl_2p7RSEAgq5WbQevuuaJokFpL6uDL` → `zantap-psi.vercel.app` 2026-06-24 | `.scratch/kds-orders-design-migration/issue-02-delivery-slip-tokens.md` |
 | Remove dead `zk-*` Tailwind palette | ✅ Done · committed `4553388` · deployed `dpl_8Q52wTnGTXU57RB7yiEDLc9jX3BU` → `zantap-psi.vercel.app` 2026-06-24 | ADR-0016 consequences |
 | Customer storefront redesign | ✅ Done · deployed · curl-smoked 2026-07-07 (`9473ccc` → `dpl_B9zuaxYf72mgJGPbJ4vXJ6LDAWZy`) | ElevenLabs `DESIGN.md`; all customer palette `zt-*` migrated; only `zt-hidescroll` utility remains (ADR-0041) |
-| Remove dead `zt-*` Tailwind palette | ✅ Done 2026-07-07 (local; deploy pending) | ADR-0042 — `zt` color block + `zt*` animations removed from `tailwind.config.ts`; build green |
+| Remove dead `zt-*` Tailwind palette | ✅ Done · deployed · curl-smoked 2026-07-07 (`8117fe5` → `dpl_6wacM85XfVdhDXYenhRmHyrYuLGg`) | ADR-0042 — `zt` color block + `zt*` animations removed from `tailwind.config.ts` |
 | `/to-prd` post-backlog probe | ✅ Done 2026-06-24 | Candidate #8 PRD + issue; #9–#13 probe table below |
 | KDS dark operational theme restore | ✅ Done · committed `4440d2d` · deployed `dpl_6VfQnfy66KGdoJxYNbourWgvJBoD` → `zantap-psi.vercel.app` · prod-smoked 2026-06-27 | `.scratch/kds-dark-identity-restore/grill-decisions.md`, ADR-0017 |
 
@@ -696,7 +696,7 @@ Options B (server auto-send / WhatsApp Business API) and C (customer success cop
 | # | Candidate | Readiness | Gate / notes |
 |---|-----------|-----------|--------------|
 | 9 | Vendor WhatsApp PAID notification | ✅ Done · deployed · prod-smoked 2026-07-02 | wa.me deep-link on KDS ticket; ADR-0028; Playwright smoke 8/8 |
-| 10 | Customer storefront → DESIGN.md | ✅ Done · deployed · curl-smoked 2026-07-07 | ADR-0041; palette cleanup ADR-0042 (local, deploy pending) |
+| 10 | Customer storefront → DESIGN.md | ✅ Done · deployed · curl-smoked 2026-07-07 | ADR-0041; palette cleanup ADR-0042 deployed (`8117fe5` → `dpl_6wacM85XfVdhDXYenhRmHyrYuLGg`) |
 | 11 | Live MTN MoMo | High risk | Simulated STK in `lib/momo/simulate.ts` + `/api/momo/stk`. Payment module (#2) ✅. **Requires `/grill-with-docs` before PRD.** |
 | 12 | Vendor authentication | Deferred per AGENTS.md | Write-secret interim (ADR-0009). Real auth = separate grill + PRD. |
 | 13 | Ops / security | Mixed | `README.md` stale (still references `lib/data/*`, Phase 2 deferrals). Write-secret rotation playbook. Export/upload already guarded; rate limits not audited. |
