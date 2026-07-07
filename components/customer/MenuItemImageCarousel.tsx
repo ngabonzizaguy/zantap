@@ -1,17 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/cn";
 import { Icon } from "@/components/ui/Icon";
 
 const SHELL_CHROME =
-  "overflow-hidden border border-white/70 shadow-[inset_0_2px_6px_rgba(255,255,255,0.5),0_6px_14px_rgba(170,110,100,0.16)]";
+  "overflow-hidden border border-hairline shadow-brand-soft";
 
 export type CarouselVariant = "thumb" | "header" | "hero";
 
 const VARIANT_SHELL: Record<CarouselVariant, string> = {
-  thumb: "h-[72px] w-[72px] rounded-2xl",
-  header: "h-[88px] w-[88px] rounded-[20px]",
-  hero: "h-[200px] w-full rounded-[22px]",
+  thumb: "h-[72px] w-[72px] rounded-brand-lg",
+  header: "h-[88px] w-[88px] rounded-brand-xl",
+  hero: "h-[200px] w-full rounded-brand-xl",
 };
 
 const VARIANT_ICON_SIZE: Record<CarouselVariant, number> = {
@@ -159,7 +160,7 @@ export function MenuItemImageCarousel({
 
       {indicatorKind === "count" ? (
         <div
-          className="pointer-events-none absolute bottom-1.5 left-1.5 rounded-full bg-black/45 px-2 py-0.5 text-[11px] font-bold text-white backdrop-blur-sm"
+          className="pointer-events-none absolute bottom-1.5 left-1.5 rounded-pill bg-ink/55 px-2 py-0.5 font-body text-caption font-medium text-on-primary backdrop-blur-sm"
           aria-hidden
         >
           {activeIndex + 1}/{urls.length}
@@ -172,11 +173,12 @@ export function MenuItemImageCarousel({
           {urls.map((_, index) => (
             <span
               key={index}
-              className={`h-1.5 rounded-full transition-all ${
+              className={cn(
+                "h-1.5 rounded-full transition-all",
                 index === activeIndex
                   ? "w-4 bg-white opacity-100"
                   : "w-1.5 bg-white/60 opacity-80"
-              }`}
+              )}
             />
           ))}
         </div>
@@ -209,11 +211,12 @@ export function MenuItemPhotoStrip({
             aria-label={`View photo ${index + 1} of ${urls.length}`}
             aria-current={index === activeIndex ? "true" : undefined}
             onClick={() => onSelect(index)}
-            className={`relative h-[72px] w-[72px] flex-none overflow-hidden rounded-[16px] border-2 transition ${
+            className={cn(
+              "relative h-[72px] w-[72px] flex-none overflow-hidden rounded-brand-lg border-2 transition",
               index === activeIndex
-                ? "border-zt-accent shadow-[0_4px_12px_rgba(170,110,100,0.25)]"
-                : "border-white/70 opacity-85"
-            }`}
+                ? "border-primary shadow-brand-soft"
+                : "border-hairline opacity-85"
+            )}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -229,11 +232,12 @@ export function MenuItemPhotoStrip({
         {urls.map((_, index) => (
           <span
             key={index}
-            className={`h-1.5 rounded-full transition-all ${
+            className={cn(
+              "h-1.5 rounded-full transition-all",
               index === activeIndex
-                ? "w-4 bg-zt-brown"
-                : "w-1.5 bg-[rgba(120,90,80,0.25)]"
-            }`}
+                ? "w-4 bg-primary"
+                : "w-1.5 bg-hairline-strong"
+            )}
           />
         ))}
       </div>

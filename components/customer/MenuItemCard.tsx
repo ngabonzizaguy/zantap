@@ -7,7 +7,7 @@ import { getMenuItemGalleryUrls } from "@/lib/menu/media";
 import { MenuItemImageCarousel } from "@/components/customer/MenuItemImageCarousel";
 import { MenuImageLightbox } from "@/components/customer/MenuImageLightbox";
 import { Icon } from "@/components/ui/Icon";
-import { GlassPanel } from "@/components/ui/GlassPanel";
+import { Card } from "@/components/ui/primitives";
 
 interface MenuItemCardProps {
   item: MenuItem;
@@ -24,79 +24,80 @@ export function MenuItemCard({ item, qty, onAdd, onOpen }: MenuItemCardProps) {
 
   return (
     <>
-    <GlassPanel
-      role="button"
-      tabIndex={0}
-      aria-label={`Customize ${item.name}`}
-      onClick={onOpen}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onOpen();
-        }
-      }}
-      className="relative flex cursor-pointer items-center gap-4 p-3.5 transition active:scale-[0.99]"
-    >
-      <div
-        className="relative flex-none"
-        onClick={(e) => {
-          if (!hasPhotos) return;
-          e.stopPropagation();
-          setLightboxOpen(true);
-        }}
+      <Card
+        padding="none"
+        role="button"
+        tabIndex={0}
+        aria-label={`Customize ${item.name}`}
+        onClick={onOpen}
         onKeyDown={(e) => {
-          if (!hasPhotos) return;
           if (e.key === "Enter" || e.key === " ") {
-            e.stopPropagation();
             e.preventDefault();
-            setLightboxOpen(true);
+            onOpen();
           }
         }}
-        role={hasPhotos ? "button" : undefined}
-        tabIndex={hasPhotos ? 0 : undefined}
-        aria-label={hasPhotos ? `View photos of ${item.name}` : undefined}
+        className="relative flex cursor-pointer items-center gap-4 p-3.5 transition active:scale-[0.99]"
       >
-        <MenuItemImageCarousel urls={galleryUrls} fallbackBg={thumbBg} />
-        {qty > 0 && (
-          <div className="absolute -left-2 -top-2 z-10 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-[#fbeee6] bg-zt-brown px-1.5 text-xs font-extrabold text-white shadow-[0_4px_10px_rgba(0,0,0,0.22)]">
-            {qty}
+        <div
+          className="relative flex-none"
+          onClick={(e) => {
+            if (!hasPhotos) return;
+            e.stopPropagation();
+            setLightboxOpen(true);
+          }}
+          onKeyDown={(e) => {
+            if (!hasPhotos) return;
+            if (e.key === "Enter" || e.key === " ") {
+              e.stopPropagation();
+              e.preventDefault();
+              setLightboxOpen(true);
+            }
+          }}
+          role={hasPhotos ? "button" : undefined}
+          tabIndex={hasPhotos ? 0 : undefined}
+          aria-label={hasPhotos ? `View photos of ${item.name}` : undefined}
+        >
+          <MenuItemImageCarousel urls={galleryUrls} fallbackBg={thumbBg} />
+          {qty > 0 && (
+            <div className="absolute -left-2 -top-2 z-10 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-surface-card bg-primary px-1.5 font-body text-caption font-medium text-on-primary shadow-brand-soft">
+              {qty}
+            </div>
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1 py-0.5">
+          <div className="truncate font-body text-body-strong text-ink">
+            {item.name}
           </div>
-        )}
-      </div>
-
-      <div className="min-w-0 flex-1 py-0.5">
-        <div className="truncate text-[16px] font-bold leading-snug text-zt-brown">
-          {item.name}
+          <div className="mt-1 line-clamp-2 font-body text-body-sm text-muted">
+            {item.description}
+          </div>
+          <div className="mt-2.5 font-body text-body-md font-medium text-ink">
+            {formatRwf(item.priceRwf)}
+          </div>
         </div>
-        <div className="mt-1 line-clamp-2 text-[13px] font-medium leading-snug text-zt-warm">
-          {item.description}
-        </div>
-        <div className="mt-2.5 text-[15px] font-extrabold tracking-[0.2px] text-zt-accent">
-          {formatRwf(item.priceRwf)}
-        </div>
-      </div>
 
-      <button
-        type="button"
-        aria-label={`Add ${item.name}`}
-        onClick={(e) => {
-          e.stopPropagation();
-          onAdd();
-        }}
-        className="flex h-11 w-11 flex-none items-center justify-center rounded-[14px] border-none bg-zt-brown text-white shadow-[0_8px_18px_rgba(58,44,38,0.32)] transition-transform active:scale-95"
-      >
-        <Icon name="plus" size={20} strokeWidth={2.2} />
-      </button>
-    </GlassPanel>
+        <button
+          type="button"
+          aria-label={`Add ${item.name}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onAdd();
+          }}
+          className="flex h-11 w-11 flex-none items-center justify-center rounded-brand-lg bg-primary text-on-primary shadow-brand-soft transition-transform hover:bg-primary-active active:scale-95"
+        >
+          <Icon name="plus" size={20} strokeWidth={2.2} />
+        </button>
+      </Card>
 
-    {hasPhotos ? (
-      <MenuImageLightbox
-        open={lightboxOpen}
-        urls={galleryUrls}
-        itemName={item.name}
-        onClose={() => setLightboxOpen(false)}
-      />
-    ) : null}
+      {hasPhotos ? (
+        <MenuImageLightbox
+          open={lightboxOpen}
+          urls={galleryUrls}
+          itemName={item.name}
+          onClose={() => setLightboxOpen(false)}
+        />
+      ) : null}
     </>
   );
 }

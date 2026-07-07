@@ -16,8 +16,8 @@ import {
   MenuItemImageCarousel,
   MenuItemPhotoStrip,
 } from "@/components/customer/MenuItemImageCarousel";
-import { GlassPanel } from "@/components/ui/GlassPanel";
 import { Icon, type IconName } from "@/components/ui/Icon";
+import { Badge, Button, Card } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 
 const DRAG_CLOSE_PX = 130;
@@ -149,7 +149,7 @@ export function MenuItemCustomizeSheet({
       className={cn(
         "fixed inset-0 z-[60] flex items-end justify-center transition-all duration-300",
         isOpen
-          ? "pointer-events-auto bg-[rgba(50,30,24,0.4)] backdrop-blur-[7px]"
+          ? "pointer-events-auto bg-canvas-deep/40 backdrop-blur-sm"
           : "pointer-events-none bg-transparent backdrop-blur-none"
       )}
       onClick={onClose}
@@ -157,7 +157,7 @@ export function MenuItemCustomizeSheet({
       <div
         ref={sheetRef}
         className={cn(
-          "relative flex max-h-[92vh] w-full max-w-customer flex-col rounded-t-[34px] border border-white/70 border-b-0 bg-gradient-to-b from-[rgba(252,240,233,0.94)] to-[rgba(248,231,228,0.97)] shadow-[0_-20px_60px_rgba(120,70,60,0.3)] backdrop-blur-[40px] transition-transform duration-[420ms] ease-[cubic-bezier(.22,1,.36,1)]",
+          "relative flex max-h-[92vh] w-full max-w-customer flex-col rounded-t-brand-xxl border border-hairline border-b-0 bg-surface-card shadow-brand-soft transition-transform duration-[420ms] ease-[cubic-bezier(.22,1,.36,1)]",
           isOpen ? "translate-y-0" : "translate-y-[101%]"
         )}
         style={{
@@ -167,13 +167,13 @@ export function MenuItemCustomizeSheet({
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className="flex flex-none cursor-grab touch-none justify-center pb-3 pt-3 active:cursor-grabbing"
+          className="flex flex-none cursor-grab touch-none justify-center pb-3 pt-2.5 active:cursor-grabbing"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerEnd}
           onPointerCancel={onPointerEnd}
         >
-          <div className="h-[5px] w-[42px] rounded-full bg-[rgba(120,90,80,0.3)]" />
+          <div className="h-1 w-10 rounded-full bg-hairline-strong" />
         </div>
 
         {renderItem && (
@@ -193,37 +193,37 @@ export function MenuItemCustomizeSheet({
 
                 <div className="min-w-0 flex-1 pt-0.5">
                   <div className="pr-9">
-                    <h2 className="font-serif text-[22px] leading-tight text-zt-brown">
+                    <h2 className="font-display text-display-md text-ink">
                       {renderItem.name}
                     </h2>
                     {renderItem.description && (
-                      <p className="mt-0.5 line-clamp-2 text-[12px] font-medium leading-snug text-zt-warm">
+                      <p className="mt-0.5 line-clamp-2 font-body text-caption leading-snug text-muted">
                         {renderItem.description}
                       </p>
                     )}
                   </div>
                   <div className="mt-2 flex w-full items-center">
-                    <span className="flex-none text-[17px] font-extrabold tracking-[0.2px] text-zt-accent">
+                    <span className="flex-none font-body text-title-sm font-medium text-ink">
                       {formatRwf(renderItem.priceRwf)}
                     </span>
-                    <div className="ml-auto flex items-center gap-0.5 rounded-full border border-white/80 bg-white/70 p-0.5 shadow-[0_2px_10px_rgba(120,70,60,0.1)]">
+                    <div className="ml-auto flex items-center gap-0.5 rounded-pill border border-hairline bg-surface-card p-0.5 shadow-brand-soft">
                       <button
                         type="button"
                         aria-label="Decrease quantity"
                         onClick={() => setQty((q) => Math.max(1, q - 1))}
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-xl text-zt-brown-muted disabled:opacity-40"
+                        className="flex h-8 w-8 items-center justify-center rounded-full font-body text-xl text-muted disabled:opacity-40"
                         disabled={qty <= 1}
                       >
                         −
                       </button>
-                      <span className="min-w-[22px] text-center text-[15px] font-extrabold text-zt-brown">
+                      <span className="min-w-[22px] text-center font-body text-body-sm font-medium text-ink">
                         {qty}
                       </span>
                       <button
                         type="button"
                         aria-label="Increase quantity"
                         onClick={() => setQty((q) => q + 1)}
-                        className="flex h-8 w-8 items-center justify-center rounded-full bg-zt-brown text-lg text-white"
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-primary font-body text-lg text-on-primary"
                       >
                         +
                       </button>
@@ -235,23 +235,21 @@ export function MenuItemCustomizeSheet({
                   type="button"
                   aria-label="Close"
                   onClick={onClose}
-                  className="absolute right-0 top-0 flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[rgba(120,90,80,0.12)] backdrop-blur-sm"
+                  className="absolute right-0 top-0 flex h-[34px] w-[34px] items-center justify-center rounded-full bg-surface-strong text-muted transition-colors hover:text-ink"
                 >
-                  <Icon name="close" size={16} strokeWidth={2} className="text-zt-brown-muted" />
+                  <Icon name="close" size={16} strokeWidth={2} />
                 </button>
               </div>
 
               {INGREDIENTS_UI_ENABLED && customization && (
-                <GlassPanel className="mt-5 p-4">
+                <Card padding="sm" className="mt-5 shadow-none">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-serif text-[20px] leading-none text-zt-brown">
+                    <h3 className="font-display text-display-sm text-ink">
                       Ingredients
                     </h3>
-                    <span className="rounded-full bg-[rgba(120,90,80,0.1)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.6px] text-zt-warm">
-                      Optional
-                    </span>
+                    <Badge variant="muted">Optional</Badge>
                   </div>
-                  <p className="mt-1 text-[12px] font-medium text-zt-warm">
+                  <p className="mt-1 font-body text-caption text-muted">
                     {customizeSubtitle(renderItem.name)}
                   </p>
 
@@ -263,35 +261,37 @@ export function MenuItemCustomizeSheet({
                           key={inc.id}
                           type="button"
                           onClick={() => toggleRemoved(inc.id)}
-                          className="flex items-center gap-3 rounded-[16px] border border-white/60 bg-white/55 p-2.5 text-left transition active:scale-[0.99]"
+                          className="flex items-center gap-3 rounded-brand-lg border border-hairline bg-canvas-soft p-2.5 text-left transition active:scale-[0.99]"
                         >
                           <CheckBox checked={kept} />
                           <RowThumb icon={inc.icon} />
                           <div className="min-w-0 flex-1">
                             <div
                               className={cn(
-                                "truncate text-[14px] font-bold text-zt-brown",
+                                "truncate font-body text-body-sm font-medium text-ink",
                                 !kept && "line-through opacity-50"
                               )}
                             >
                               {inc.name}
                             </div>
                             {inc.description && (
-                              <div className="truncate text-[12px] font-medium text-zt-warm">
+                              <div className="truncate font-body text-caption text-muted">
                                 {inc.description}
                               </div>
                             )}
                           </div>
-                          <span
-                            className={cn(
-                              "flex-none rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.4px]",
-                              kept
-                                ? "bg-[rgba(120,90,80,0.08)] text-zt-warm"
-                                : "bg-[rgba(176,90,70,0.12)] text-[#b05a46]"
-                            )}
-                          >
-                            {kept ? "Included" : "Removed"}
-                          </span>
+                          {kept ? (
+                            <Badge variant="muted" className="flex-none">
+                              Included
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="default"
+                              className="flex-none bg-error/10 text-error"
+                            >
+                              Removed
+                            </Badge>
+                          )}
                         </button>
                       );
                     })}
@@ -304,25 +304,25 @@ export function MenuItemCustomizeSheet({
                           type="button"
                           onClick={() => toggleAddOn(addOn.id)}
                           className={cn(
-                            "flex items-center gap-3 rounded-[16px] border p-2.5 text-left transition active:scale-[0.99]",
+                            "flex items-center gap-3 rounded-brand-lg border p-2.5 text-left transition active:scale-[0.99]",
                             active
-                              ? "border-zt-brown/30 bg-white/80"
-                              : "border-white/60 bg-white/45"
+                              ? "border-hairline-strong bg-surface-card"
+                              : "border-hairline bg-canvas-soft"
                           )}
                         >
                           <CheckBox checked={active} />
                           <RowThumb icon={addOn.icon} />
                           <div className="min-w-0 flex-1">
-                            <div className="truncate text-[14px] font-bold text-zt-brown">
+                            <div className="truncate font-body text-body-sm font-medium text-ink">
                               {addOn.name}
                             </div>
                             {addOn.description && (
-                              <div className="truncate text-[12px] font-medium text-zt-warm">
+                              <div className="truncate font-body text-caption text-muted">
                                 {addOn.description}
                               </div>
                             )}
                           </div>
-                          <span className="flex-none text-[13px] font-extrabold text-zt-accent">
+                          <span className="flex-none font-body text-body-sm font-medium text-ink">
                             + {formatRwf(addOn.priceRwf)}
                           </span>
                         </button>
@@ -330,16 +330,16 @@ export function MenuItemCustomizeSheet({
                     })}
                   </div>
 
-                  <div className="mt-3 flex items-center gap-1.5 text-[11px] font-medium text-zt-warm-lighter">
+                  <div className="mt-3 flex items-center gap-1.5 font-body text-caption text-muted-soft">
                     <Icon name="check" size={13} strokeWidth={2.4} />
                     You can always add more in the notes
                   </div>
-                </GlassPanel>
+                </Card>
               )}
 
               {galleryUrls.length >= 2 && (
                 <div className={cn(INGREDIENTS_UI_ENABLED ? "mt-4" : "mt-5")}>
-                  <h3 className="mb-2.5 font-serif text-[20px] leading-none text-zt-brown">
+                  <h3 className="mb-2.5 font-display text-display-sm text-ink">
                     Photos
                   </h3>
                   <MenuItemPhotoStrip
@@ -351,7 +351,7 @@ export function MenuItemCustomizeSheet({
               )}
 
               <div className="mt-4">
-                <label className="mb-[7px] block text-xs font-bold uppercase tracking-wide text-zt-warm">
+                <label className="mb-1.5 block font-body text-body-sm font-medium text-ink">
                   Special instructions
                 </label>
                 <textarea
@@ -362,26 +362,27 @@ export function MenuItemCustomizeSheet({
                   maxLength={CUSTOMIZATION_NOTES_MAX}
                   rows={2}
                   placeholder="No onions, extra spicy, pack separately…"
-                  className="zt-hidescroll w-full resize-none rounded-2xl border-[1.5px] border-[rgba(120,90,80,0.18)] bg-white/70 px-4 py-3 text-[15px] font-medium text-zt-brown placeholder:text-[#b59d92] focus:border-2 focus:border-zt-brown-dark focus:outline-none"
+                  className="zt-hidescroll w-full resize-none rounded-brand-md border border-hairline-strong bg-surface-card px-4 py-3 font-body text-body-md text-ink placeholder:text-muted-soft focus:border-2 focus:border-ink focus:px-[15px] focus:outline-none"
                 />
-                <div className="mt-1 text-right text-[11px] font-medium text-zt-warm-lighter">
+                <div className="mt-1 text-right font-body text-caption text-muted-soft">
                   {notes.length}/{CUSTOMIZATION_NOTES_MAX}
                 </div>
               </div>
             </div>
 
-            <div className="flex-none border-t border-white/50 bg-[rgba(252,240,233,0.6)] px-[22px] py-3.5 backdrop-blur-sm">
-              <button
+            <div className="flex-none border-t border-hairline bg-surface-card px-[22px] py-3.5">
+              <Button
                 type="button"
+                radius="lg"
                 onClick={handleConfirm}
-                className="flex h-14 w-full items-center justify-between rounded-[18px] bg-zt-brown px-5 text-[16px] font-extrabold text-white shadow-[0_14px_30px_rgba(58,44,38,0.32)] transition active:scale-[0.98]"
+                className="flex h-14 w-full items-center justify-between px-5 shadow-brand-soft active:scale-[0.98]"
               >
                 <span className="flex items-center gap-2.5">
                   <Icon name="cart" size={20} strokeWidth={2} />
                   Add to order
                 </span>
-                <span className="tracking-[0.2px]">{formatRwf(displayTotal)}</span>
-              </button>
+                <span>{formatRwf(displayTotal)}</span>
+              </Button>
             </div>
           </>
         )}
@@ -394,10 +395,10 @@ function CheckBox({ checked }: { checked: boolean }) {
   return (
     <span
       className={cn(
-        "flex h-6 w-6 flex-none items-center justify-center rounded-[8px] border-2 transition",
+        "flex h-6 w-6 flex-none items-center justify-center rounded-brand-md border-2 transition",
         checked
-          ? "border-zt-brown bg-zt-brown text-white"
-          : "border-[rgba(120,90,80,0.3)] bg-white/70 text-transparent"
+          ? "border-primary bg-primary text-on-primary"
+          : "border-hairline-strong bg-surface-card text-transparent"
       )}
     >
       <Icon name="check" size={14} strokeWidth={3} />
@@ -407,7 +408,7 @@ function CheckBox({ checked }: { checked: boolean }) {
 
 function RowThumb({ icon }: { icon?: string }) {
   return (
-    <span className="flex h-9 w-9 flex-none items-center justify-center rounded-[12px] bg-gradient-to-br from-[#ffd9c2] to-[#f5a87f] text-white shadow-[inset_0_1px_3px_rgba(255,255,255,0.5)]">
+    <span className="flex h-9 w-9 flex-none items-center justify-center rounded-brand-md bg-gradient-to-br from-gradient-peach/50 to-gradient-rose/40 text-muted shadow-brand-soft">
       <Icon name={(icon as IconName) ?? "plate"} size={16} strokeWidth={2} />
     </span>
   );

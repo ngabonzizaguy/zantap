@@ -9,15 +9,16 @@ is never lost again.
 > convention — local markdown, no GitHub round-trips). It persists on this machine
 > across sessions, but does **not** sync via git to other clones/machines.
 
-Last verified against the codebase: 2026-07-05.
+Last verified against the codebase: 2026-07-07.
 
-## Recommended next (2026-07-05)
+## Recommended next (2026-07-07)
 
-**Candidate #22 — Storefront share + menu lightbox + KDS drivers**
-— ✅ **Feature-complete · build green 2026-07-05** — deploy + prod smoke pending.
-Storefront share + menu lightbox; setup auto-open cap 2×; Drivers tab + CRUD;
-`Order.driverId` assignment (stays READY, call-only, bulk one-driver). ADR-0038.
-Migration `20260705180000_order_driver_assignment`. `npm test` 248/74; `npm run build` clean.
+**Owner direction (2026-07-07):** new public domain TBD (not `zantap.ai`); customer
+storefront #10 uses **ElevenLabs `DESIGN.md`** — no custom mockups (ADR-0041).
+**#12 deferred** — ops/vendor auth unchanged (ADR-0040).
+
+**Pick one (no code queued on `main` — #10 Issues 01–04 done locally, not deployed):**
+- **Deploy #10 slices** — commit + push + prod curl smoke (storefront 200, zero `zt-*` palette on customer routes, no `kds-dark`)
 
 **Candidate #21 — Storefront customize slim-down + vendor profile edits + MoMo phone fix**
 — ✅ **DONE · deployed · prod-smoked 2026-07-05** (`5ad7a92` → alias `zantap-psi.vercel.app`).
@@ -116,22 +117,25 @@ If a session ends without doing both, the handoff is incomplete.
 | 7 | KDS workflow optimization (kitchen stage, aging, bulk) | Strong | ports & adapters + KDS UI | ✅ Done & deployed · smoke complete | `.scratch/kds-workflow-optimization/PRD.md` |
 | 8 | Storefront menu image carousel | Strong | customer UI only | ✅ Done · deployed · prod-smoked 2026-06-27 | `.scratch/storefront-image-carousel/PRD.md` |
 | 9 | Vendor WhatsApp PAID notification | Worth exploring | KDS UI + lib/whatsapp | ✅ Done · deployed · prod-smoked 2026-07-02 | `.scratch/vendor-whatsapp-paid-notification/PRD.md` |
-| 10 | Customer storefront → DESIGN.md | Strong | customer UI | ⏸ Owner designs pending | — |
+| 10 | Customer storefront → DESIGN.md | Strong | customer UI | ◑ Issues 01–04 done locally (full customer `zt-*` palette retired; only `zt-hidescroll` utility remains) | `.scratch/customer-storefront-design/` |
 | 11 | Live MTN MoMo integration | Strong | server + payments | ⏸ API blocked — interim **#20 manual USSD** ✅ deployed 2026-07-05 | — |
 | 20 | Manual MTN MoMo USSD checkout (interim) | Strong | checkout + Store | ✅ Done · deployed · prod-smoked 2026-07-05 | `.scratch/manual-momo-ussd/issue-01-manual-ussd-checkout.md` |
-| 12 | Vendor authentication | Strong | server + KDS | ⏸ Requires `/grill-with-docs` | — |
+| 12 | Vendor + operator authentication | Strong | server + KDS + `/ops` | ⏸ Grilled 2026-07-06 · **deferred** (ADR-0040) | `.scratch/vendor-authentication/grill-decisions.md` |
 | 13 | Ops / security hardening | Worth exploring | docs + infra | ⏸ Probe — deferred | — |
 | 14 | Storefront item customization modal (visual-only) | Owner request | customer UI only | ✅ Done · prod-smoked 2026-06-29 | `.scratch/storefront-customization-modal/PRD.md` |
 | 15 | Vendor onboarding (~1 min go-live) | Strong | Store + KDS + provisioning | ✅ Done · deployed · prod-smoked 2026-06-30 | `.scratch/vendor-onboarding/PRD.md` |
 | 16 | Onboarding redesign (dark, self-serve, owner token) | Owner request | Store + Prisma + onboarding + KDS Setup | ✅ DONE · deployed · prod-smoked 2026-07-02 (Playwright real-browser harness + human confirmation; `abc` vendor + profile fields verified in prod DB; organic vendor `lilys` self-served 2026-07-01; merged to `main` 2026-07-02) | `.scratch/onboarding-redesign/PRD.md` |
-| 17 | ZanTap operator/admin panel (Control API + `/ops`) | Owner design | server + ops UI | ✅ Implemented 2026-07-06 · deploy + prod smoke pending | `.scratch/operator-console/PRD.md` |
+| 17 | ZanTap operator/admin panel (Control API + `/ops`) | Owner design | server + ops UI | ✅ Done · deployed · prod-smoked 2026-07-06 | `.scratch/operator-console/PRD.md` |
 | 18 | Supabase pooler egress — KDS snapshot optimization | Strong | Store + KDS SSE | ✅ Done 2026-07-01 | `.scratch/pooler-egress-audit/issue-01-kds-snapshot-egress.md` |
 | 19 | KDS + Storefront polish batch (recovery, dashboard, images, help, onboarding, storefront sync, domain) | Owner request | Store + KDS + onboarding + customer UI + config | ✅ Done · deployed · prod-smoked 2026-07-02 | `.scratch/kds-storefront-polish/PRD.md` |
 | 21 | Storefront customize slim-down + vendor profile edits + MoMo phone fix | Owner request | customer modal + KDS Setup + MoMo USSD | ✅ Done · deployed · prod-smoked 2026-07-05 (`5ad7a92`) | `.scratch/candidate-21/PRD.md` |
-| 22 | Storefront share + menu lightbox + KDS drivers | Owner request | customer UI + KDS drivers tab + Order.driverId | ✅ Feature-complete · build green 2026-07-05 · deploy pending | `.scratch/candidate-22/PRD.md` |
+| 22 | Storefront share + menu lightbox + KDS drivers | Owner request | customer UI + KDS drivers tab + Order.driverId | ✅ Done · deployed · prod-smoked 2026-07-06 | `.scratch/candidate-22/PRD.md` |
 
-**#22 feature-complete 2026-07-05** — build + tests green; migration
-`20260705180000_order_driver_assignment` + ADR-0038; prod smoke pending.
+**#22 closed 2026-07-06** — code shipped `e734387` (live on `zantap-psi.vercel.app`
+since #17 deploy); migration `20260705180000_order_driver_assignment` applied.
+Playwright prod smoke **22/22 PASS** (`.scratch/candidate-22/prod-smoke.mjs`):
+share URL, menu lightbox, Drivers CRUD, bulk assign (2 orders), single assign + Call
+`tel:`, no WhatsApp in assign modal, setup drawer auto-open cap ≤2×. ADR-0038.
 
 **#18 closed 2026-07-01** — revision-first SSE poll, scoped `listKdsOrders`, narrow includes, seed remote guard. ADR-0023.
 
@@ -568,7 +572,7 @@ empty/degraded states, dispatch wired to `advanceKitchenStage(…, OUT_FOR_DELIV
 | KDS Orders tab → DESIGN.md | ✅ Done · committed `199048e` · deployed `dpl_G4kS89FBo71KhZLn43hvuSGZD4Wg` → `zantap-psi.vercel.app` 2026-06-24 | `.scratch/kds-orders-design-migration/issue-01-orders-tab-tokens.md` |
 | Delivery slip page → DESIGN.md | ✅ Done · committed `b08a3ca` · deployed `dpl_2p7RSEAgq5WbQevuuaJokFpL6uDL` → `zantap-psi.vercel.app` 2026-06-24 | `.scratch/kds-orders-design-migration/issue-02-delivery-slip-tokens.md` |
 | Remove dead `zk-*` Tailwind palette | ✅ Done · committed `4553388` · deployed `dpl_8Q52wTnGTXU57RB7yiEDLc9jX3BU` → `zantap-psi.vercel.app` 2026-06-24 | ADR-0016 consequences |
-| Customer storefront redesign | ⏸ deferred | Owner: new designs later — do not migrate `zt-*` yet |
+| Customer storefront redesign | ◑ Ready to deploy (#10 Issues 01–04 local) | ElevenLabs `DESIGN.md`; all customer palette `zt-*` migrated (ADR-0041) |
 | `/to-prd` post-backlog probe | ✅ Done 2026-06-24 | Candidate #8 PRD + issue; #9–#13 probe table below |
 | KDS dark operational theme restore | ✅ Done · committed `4440d2d` · deployed `dpl_6VfQnfy66KGdoJxYNbourWgvJBoD` → `zantap-psi.vercel.app` · prod-smoked 2026-06-27 | `.scratch/kds-dark-identity-restore/grill-decisions.md`, ADR-0017 |
 
@@ -689,7 +693,7 @@ Options B (server auto-send / WhatsApp Business API) and C (customer success cop
 | # | Candidate | Readiness | Gate / notes |
 |---|-----------|-----------|--------------|
 | 9 | Vendor WhatsApp PAID notification | ✅ Done · deployed · prod-smoked 2026-07-02 | wa.me deep-link on KDS ticket; ADR-0028; Playwright smoke 8/8 |
-| 10 | Customer storefront → DESIGN.md | Blocked | ~60+ `zt-*` refs across 9 customer components; `zt` palette still in `tailwind.config.ts`. **Do not start without owner designs.** |
+| 10 | Customer storefront → DESIGN.md | ◑ Deploy pending | Issues 01–04 done locally; prod curl smoke next. New domain = env cutover only (ADR-0041). |
 | 11 | Live MTN MoMo | High risk | Simulated STK in `lib/momo/simulate.ts` + `/api/momo/stk`. Payment module (#2) ✅. **Requires `/grill-with-docs` before PRD.** |
 | 12 | Vendor authentication | Deferred per AGENTS.md | Write-secret interim (ADR-0009). Real auth = separate grill + PRD. |
 | 13 | Ops / security | Mixed | `README.md` stale (still references `lib/data/*`, Phase 2 deferrals). Write-secret rotation playbook. Export/upload already guarded; rate limits not audited. |

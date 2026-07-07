@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Modal } from "@/components/ui/primitives";
+import { Button, Modal } from "@/components/ui/primitives";
+import { cn } from "@/lib/cn";
 
 interface MenuImageLightboxProps {
   open: boolean;
@@ -41,7 +42,7 @@ export function MenuImageLightbox({
   return (
     <Modal open={open} onClose={onClose} title={itemName} className="max-w-customer">
       <div className="relative flex min-h-[50vh] flex-col">
-        <div className="relative mx-auto aspect-square w-full max-w-[min(100%,420px)] overflow-hidden rounded-[20px] border border-white/60 bg-zt-blush-100 shadow-[0_12px_32px_rgba(58,44,38,0.18)]">
+        <div className="relative mx-auto aspect-square w-full max-w-[min(100%,420px)] overflow-hidden rounded-brand-xl border border-hairline bg-canvas-soft shadow-brand-soft">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={activeUrl}
@@ -59,34 +60,37 @@ export function MenuImageLightbox({
               {urls.map((_, index) => (
                 <span
                   key={index}
-                  className={`h-1.5 rounded-full transition-all ${
+                  className={cn(
+                    "h-1.5 rounded-full transition-all",
                     index === activeIndex
-                      ? "w-4 bg-zt-brown opacity-100"
-                      : "w-1.5 bg-zt-brown/40 opacity-80"
-                  }`}
+                      ? "w-4 bg-primary opacity-100"
+                      : "w-1.5 bg-muted opacity-80"
+                  )}
                 />
               ))}
             </div>
             <div className="mt-4 flex items-center justify-between gap-3">
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={goPrev}
                 disabled={activeIndex === 0}
-                className="rounded-full border border-zt-blush-300 bg-white/80 px-4 py-2 text-sm font-semibold text-zt-brown disabled:opacity-40"
+                className="px-4"
               >
                 Previous
-              </button>
-              <span className="text-sm font-medium text-zt-warm">
+              </Button>
+              <span className="font-body text-body-sm text-muted">
                 {activeIndex + 1} / {urls.length}
               </span>
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={goNext}
                 disabled={activeIndex >= urls.length - 1}
-                className="rounded-full border border-zt-blush-300 bg-white/80 px-4 py-2 text-sm font-semibold text-zt-brown disabled:opacity-40"
+                className="px-4"
               >
                 Next
-              </button>
+              </Button>
             </div>
           </>
         ) : null}

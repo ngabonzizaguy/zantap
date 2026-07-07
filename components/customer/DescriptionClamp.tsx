@@ -27,7 +27,7 @@ export function DescriptionClamp({ text }: DescriptionClampProps) {
     <div className="mt-3 px-0.5">
       <p
         ref={ref}
-        className={`text-[14px] font-medium leading-snug text-zt-warm ${
+        className={`font-body text-body-sm text-muted ${
           expanded ? "" : "line-clamp-2"
         }`}
       >
@@ -37,7 +37,7 @@ export function DescriptionClamp({ text }: DescriptionClampProps) {
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="mt-1 text-[13px] font-semibold text-zt-accent-gold transition-colors hover:text-zt-accent"
+          className="mt-1 font-body text-body-sm font-medium text-primary transition-opacity hover:opacity-80"
         >
           {expanded ? "less" : "more"}
         </button>

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { MenuItem, MomoMode, Vendor } from "@/lib/types";
-import { Orbs } from "@/components/ui/Orbs";
+import { GradientOrbs } from "@/components/ui/primitives";
 import { TopBar } from "@/components/customer/TopBar";
 import { Hero } from "@/components/customer/Hero";
 import { CategoryChips } from "@/components/customer/CategoryChips";
@@ -72,8 +72,8 @@ function StorefrontInner({
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-x-hidden bg-gradient-to-b from-zt-blush-50 via-zt-blush-100 to-zt-blush-200">
-      <Orbs />
+    <div className="relative min-h-screen w-full overflow-x-hidden bg-canvas text-ink">
+      <GradientOrbs />
       <div className="zt-hidescroll relative z-[1] mx-auto min-h-screen w-full max-w-customer px-5 pb-40 pt-4">
         <TopBar
           location={vendor.location ?? "Kigali, Rwanda"}
@@ -98,8 +98,8 @@ function StorefrontInner({
 
         <div className="mt-8">
           <div className="mb-4 flex items-baseline justify-between px-0.5">
-            <h2 className="font-serif text-[24px] leading-none text-zt-brown">Menu</h2>
-            <span className="text-[12px] font-semibold uppercase tracking-[0.8px] text-zt-warm">
+            <h2 className="font-display text-display-sm font-light text-ink">Menu</h2>
+            <span className="font-body text-caption-uppercase uppercase text-muted">
               {filteredMenu.length}{" "}
               {filteredMenu.length === 1 ? "dish" : "dishes"}
             </span>

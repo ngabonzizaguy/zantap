@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { formatRwf, orderDisplayId } from "@/lib/format";
 import { ussdTelHref } from "@/lib/momo/ussd-dial";
 import { Icon } from "@/components/ui/Icon";
+import { Button } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 
 interface ManualMomoSheetProps {
@@ -59,53 +60,53 @@ export function ManualMomoSheet({
       className={cn(
         "fixed inset-0 z-[70] flex items-end justify-center transition-all duration-300",
         open
-          ? "pointer-events-auto bg-[rgba(50,30,24,0.45)] backdrop-blur-[7px]"
+          ? "pointer-events-auto bg-canvas-deep/40 backdrop-blur-sm"
           : "pointer-events-none bg-transparent backdrop-blur-none"
       )}
     >
       <div
         className={cn(
-          "w-full max-w-customer rounded-t-[28px] bg-white px-5 pb-8 pt-6 shadow-[0_-20px_60px_rgba(0,0,0,0.18)] transition-transform duration-300",
+          "w-full max-w-customer rounded-t-brand-xxl border border-hairline border-b-0 bg-surface-card px-5 pb-8 pt-6 shadow-brand-soft transition-transform duration-300",
           open ? "translate-y-0" : "translate-y-full"
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-[#e8e0da]" />
+        <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-hairline-strong" />
 
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 flex-none items-center justify-center rounded-[14px] bg-gradient-to-br from-[#FFD24C] to-momo">
+          <div className="flex h-11 w-11 flex-none items-center justify-center rounded-brand-lg bg-gradient-to-br from-gold to-momo">
             <Icon name="momo" size={22} className="text-momo-dark" strokeWidth={2} />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="font-serif text-[22px] leading-tight text-zt-brown">
+            <h2 className="font-display text-display-sm leading-tight text-ink">
               Pay with MoMo
             </h2>
-            <p className="text-[13px] font-medium text-zt-warm">
+            <p className="font-body text-caption text-muted">
               {formatRwf(amount)} to {vendorName}
             </p>
           </div>
         </div>
 
         {isAwaiting ? (
-          <div className="mt-4 rounded-[14px] border border-[#eee4dc] bg-[#faf7f4] px-4 py-3">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.6px] text-zt-warm">
+          <div className="mt-4 rounded-brand-lg border border-hairline bg-canvas-soft px-4 py-3">
+            <p className="font-body text-caption-uppercase text-muted">
               Waiting for payment
             </p>
-            <p className="mt-1 text-[14px] font-semibold text-zt-brown">
+            <p className="mt-1 font-body text-body-sm font-medium text-ink">
               {orderDisplayId(orderId)} · {countdownLabel}
             </p>
-            <p className="mt-2 text-[13px] leading-relaxed text-zt-warm">
+            <p className="mt-2 font-body text-body-sm leading-relaxed text-muted">
               Finish on your phone, then come back here.
             </p>
           </div>
         ) : (
-          <p className="mt-4 text-[14px] leading-relaxed text-zt-warm">
+          <p className="mt-4 font-body text-body-sm leading-relaxed text-muted">
             Tap Open MoMo, complete payment on your phone, then return here.
           </p>
         )}
 
         {error ? (
-          <p className="mt-4 rounded-[12px] bg-[#fff0ee] px-3 py-2 text-[13px] font-semibold text-[#b42318]">
+          <p className="mt-4 rounded-brand-lg bg-error/10 px-3 py-2 font-body text-body-sm font-medium text-error">
             {error}
           </p>
         ) : null}
@@ -113,48 +114,56 @@ export function ManualMomoSheet({
         <div className="mt-5 flex flex-col gap-3">
           {isAwaiting ? (
             <>
-              <button
+              <Button
                 type="button"
                 disabled={busy}
                 onClick={() => void onConfirmPaid()}
-                className="h-[52px] w-full rounded-[16px] bg-zt-brown text-[15px] font-bold text-white disabled:opacity-60"
+                radius="lg"
+                className="h-[52px] w-full text-button"
               >
                 {busy ? "Confirming…" : "I've paid"}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
                 disabled={busy}
                 onClick={() => void onDidntPay()}
-                className="h-[48px] w-full rounded-[16px] border border-[#e8e0da] bg-white text-[14px] font-semibold text-zt-warm"
+                radius="lg"
+                className="h-12 w-full text-body-sm"
               >
-                Didn't pay
-              </button>
-              <button
+                Didn&apos;t pay
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
                 disabled={busy}
                 onClick={handleOpenMomo}
-                className="h-[48px] w-full rounded-[16px] bg-[#faf7f4] text-[14px] font-semibold text-zt-brown"
+                radius="lg"
+                className="h-12 w-full border-hairline bg-canvas-soft text-body-sm"
               >
                 Open MoMo again
-              </button>
+              </Button>
             </>
           ) : (
             <>
-              <button
+              <Button
                 type="button"
                 onClick={handleOpenMomo}
-                className="h-[52px] w-full rounded-[16px] bg-zt-brown text-[15px] font-bold text-white"
+                radius="lg"
+                className="h-[52px] w-full text-button"
               >
                 Open MoMo
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => void handleCopy()}
-                className="h-[48px] w-full rounded-[16px] border border-[#e8e0da] bg-white text-[14px] font-semibold text-zt-brown"
+                radius="lg"
+                className="h-12 w-full text-body-sm"
               >
                 {copied ? "Copied!" : "Copy USSD code"}
-              </button>
-              <code className="block break-all rounded-[12px] bg-[#faf7f4] px-3 py-2 text-center text-[13px] font-semibold text-zt-brown">
+              </Button>
+              <code className="block break-all rounded-brand-md bg-canvas-soft px-3 py-2 text-center font-body text-body-sm font-medium text-ink">
                 {ussdDial}
               </code>
             </>

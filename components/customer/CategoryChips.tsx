@@ -8,6 +8,9 @@ interface CategoryChipsProps {
   onSelect: (category: string) => void;
 }
 
+const chipBase =
+  "h-10 flex-none rounded-pill px-[18px] font-body text-body-sm font-medium transition-colors duration-200";
+
 export function CategoryChips({
   categories,
   active,
@@ -23,10 +26,10 @@ export function CategoryChips({
             type="button"
             onClick={() => onSelect(cat)}
             className={cn(
-              "h-10 flex-none rounded-full px-[18px] text-[14px] font-semibold tracking-[0.1px] transition-all duration-200",
+              chipBase,
               isActive
-                ? "bg-zt-brown text-white shadow-[0_6px_16px_rgba(58,44,38,0.28)]"
-                : "glass-pill text-zt-brown-muted hover:text-zt-brown"
+                ? "border border-primary bg-primary text-on-primary shadow-brand-soft"
+                : "border border-hairline bg-surface-card/90 text-muted shadow-brand-soft hover:text-ink"
             )}
           >
             {cat}

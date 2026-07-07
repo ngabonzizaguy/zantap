@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
+import { cn } from "@/lib/cn";
 
 interface TopBarProps {
   location: string;
@@ -7,13 +8,19 @@ interface TopBarProps {
   kdsBackHref?: string;
 }
 
+const chipClass =
+  "border border-hairline bg-surface-card/90 shadow-brand-soft backdrop-blur-sm";
+
 export function TopBar({ location, kdsBackHref }: TopBarProps) {
   return (
     <div className="flex items-center justify-between gap-3">
       {kdsBackHref ? (
         <Link
           href={kdsBackHref}
-          className="glass-pill flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 font-body text-[13px] font-semibold text-zt-brown transition-opacity hover:opacity-90 active:opacity-80"
+          className={cn(
+            chipClass,
+            "flex h-10 shrink-0 items-center gap-1.5 rounded-pill px-3.5 font-body text-body-sm font-medium text-ink transition-opacity hover:opacity-90 active:opacity-80"
+          )}
         >
           <span aria-hidden className="text-[15px] leading-none">
             ←
@@ -21,13 +28,23 @@ export function TopBar({ location, kdsBackHref }: TopBarProps) {
           Back to KDS
         </Link>
       ) : (
-        <div className="glass-pill flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px]">
-          <Icon name="menu" size={20} className="text-zt-brown-dark" />
+        <div
+          className={cn(
+            chipClass,
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-brand-lg"
+          )}
+        >
+          <Icon name="menu" size={20} className="text-ink" />
         </div>
       )}
-      <div className="glass-pill flex h-10 min-w-0 items-center gap-2 rounded-full px-3.5">
-        <Icon name="location" size={14} className="shrink-0 text-red-700" />
-        <span className="truncate text-[13px] font-semibold text-zt-brown">
+      <div
+        className={cn(
+          chipClass,
+          "flex h-10 min-w-0 items-center gap-2 rounded-pill px-3.5"
+        )}
+      >
+        <Icon name="location" size={14} className="shrink-0 text-muted" />
+        <span className="truncate font-body text-body-sm font-medium text-ink">
           {location}
         </span>
       </div>
