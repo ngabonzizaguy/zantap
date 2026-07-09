@@ -31,6 +31,22 @@ Replace the card-based hero with an immersive, full-bleed cover zone:
 - **Neutral:** `Hero` gains optional `header?: ReactNode` prop (only `Storefront` uses it today).
 - **Follow-up:** Deploy + visual smoke on prod vendor with and without cover image (`inka-steakhouse`).
 
+## Addendum: dark liquid-glass surface + metallic gold accents
+
+Extended on the same branch:
+
+1. **Dark canvas** — `.storefront-dark` scope remaps the editorial tokens to a warm
+   near-black (`#0c0a09`) surface, mirroring the `.kds-dark` remap pattern (ADR-0017).
+   KDS and onboarding are unaffected.
+2. **Liquid glass** — `.glass-liquid`, `.glass-liquid-strong`, `.glass-liquid-pill`
+   utilities replace the light `glass-panel` set on the storefront: low-opacity white
+   gradients, heavy backdrop blur, deep shadows with an inset top highlight.
+3. **Metallic gold differentiator** — quantity badges, the `+` add buttons, prices, the
+   active category chip, and the cart-bar CTA use a `#d4af37`-family metallic ramp
+   (`.glass-gold`, `.glass-gold-badge`, `.glass-gold-pill`, plus a scoped `.text-gold`
+   remap to `#e0be55`). Deliberately richer/deeper than the KDS's flat `#ffd24c` gold so
+   the customer surface reads premium rather than operational.
+
 ## References
 
 - `components/customer/Hero.tsx`

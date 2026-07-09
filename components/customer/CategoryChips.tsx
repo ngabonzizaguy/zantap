@@ -28,7 +28,7 @@ export function CategoryChips({
             className={cn(
               chipBase,
               isActive
-                ? "glass-liquid-pill-active text-ink"
+                ? "glass-gold-pill"
                 : "glass-liquid-pill text-muted hover:text-ink"
             )}
           >

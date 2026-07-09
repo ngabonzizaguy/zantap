@@ -74,7 +74,7 @@ export function MenuItemCard({ item, qty, onAdd, onOpen }: MenuItemCardProps) {
           <div className="mt-1 line-clamp-2 font-body text-body-sm text-muted">
             {item.description}
           </div>
-          <div className="mt-2.5 font-body text-body-md font-medium text-ink">
+          <div className="mt-2.5 font-body text-body-md font-medium text-gold">
             {formatRwf(item.priceRwf)}
           </div>
         </div>
