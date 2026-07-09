@@ -9,7 +9,13 @@ is never lost again.
 > convention — local markdown, no GitHub round-trips). It persists on this machine
 > across sessions, but does **not** sync via git to other clones/machines.
 
-Last verified against the codebase: 2026-07-07.
+Last verified against the codebase: 2026-07-10.
+
+## Recommended next (2026-07-10)
+
+**Storefront immersive hero (#23)** — branch `feat/storefront-hero-editorial` (build green, not deployed).
+Full-bleed cover hero replaces floating `Card`; glass logo/actions; vendor metadata on page surface.
+ADR-0043. Next: deploy → visual prod smoke on `inka-steakhouse` (with/without cover).
 
 ## Recommended next (2026-07-07)
 

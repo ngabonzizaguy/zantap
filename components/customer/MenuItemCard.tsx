@@ -7,7 +7,7 @@ import { getMenuItemGalleryUrls } from "@/lib/menu/media";
 import { MenuItemImageCarousel } from "@/components/customer/MenuItemImageCarousel";
 import { MenuImageLightbox } from "@/components/customer/MenuImageLightbox";
 import { Icon } from "@/components/ui/Icon";
-import { Card } from "@/components/ui/primitives";
+import { cn } from "@/lib/cn";
 
 interface MenuItemCardProps {
   item: MenuItem;
@@ -24,8 +24,7 @@ export function MenuItemCard({ item, qty, onAdd, onOpen }: MenuItemCardProps) {
 
   return (
     <>
-      <Card
-        padding="none"
+      <div
         role="button"
         tabIndex={0}
         aria-label={`Customize ${item.name}`}
@@ -36,7 +35,10 @@ export function MenuItemCard({ item, qty, onAdd, onOpen }: MenuItemCardProps) {
             onOpen();
           }
         }}
-        className="relative flex cursor-pointer items-center gap-4 p-3.5 transition active:scale-[0.99]"
+        className={cn(
+          "glass-liquid relative flex cursor-pointer items-center gap-4 p-3.5",
+          "transition active:scale-[0.99] hover:border-white/20"
+        )}
       >
         <div
           className="relative flex-none"
@@ -59,7 +61,7 @@ export function MenuItemCard({ item, qty, onAdd, onOpen }: MenuItemCardProps) {
         >
           <MenuItemImageCarousel urls={galleryUrls} fallbackBg={thumbBg} />
           {qty > 0 && (
-            <div className="absolute -left-2 -top-2 z-10 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-surface-card bg-primary px-1.5 font-body text-caption font-medium text-on-primary shadow-brand-soft">
+            <div className="glass-gold-badge absolute -left-2 -top-2 z-10 flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 font-body text-caption font-semibold">
               {qty}
             </div>
           )}
@@ -84,11 +86,11 @@ export function MenuItemCard({ item, qty, onAdd, onOpen }: MenuItemCardProps) {
             e.stopPropagation();
             onAdd();
           }}
-          className="flex h-11 w-11 flex-none items-center justify-center rounded-brand-lg bg-primary text-on-primary shadow-brand-soft transition-transform hover:bg-primary-active active:scale-95"
+          className="glass-gold flex h-11 w-11 flex-none items-center justify-center rounded-brand-lg transition-transform hover:brightness-110 active:scale-95"
         >
           <Icon name="plus" size={20} strokeWidth={2.2} />
         </button>
-      </Card>
+      </div>
 
       {hasPhotos ? (
         <MenuImageLightbox

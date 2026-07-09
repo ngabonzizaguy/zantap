@@ -72,29 +72,28 @@ function StorefrontInner({
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-x-hidden bg-canvas text-ink">
-      <GradientOrbs />
-      <div className="zt-hidescroll relative z-[1] mx-auto min-h-screen w-full max-w-customer px-5 pb-40 pt-4">
-        <TopBar
-          location={vendor.location ?? "Kigali, Rwanda"}
-          kdsBackHref={
-            fromKds ? `/vendor/${vendor.slug}?tab=orders` : undefined
+    <div className="storefront-dark relative min-h-screen w-full overflow-x-hidden bg-canvas text-ink">
+      <GradientOrbs className="opacity-25" />
+      <div className="zt-hidescroll relative z-[1] mx-auto min-h-screen w-full max-w-customer px-5 pb-40">
+        <Hero
+          vendorSlug={vendor.slug}
+          tagline={vendor.tagline ?? "Premium grills"}
+          restaurantName={vendor.name}
+          deliveryTime={vendor.deliveryTime ?? "30–40 min"}
+          rating={vendor.rating}
+          logoUrl={vendor.logoUrl}
+          coverImageUrl={vendor.coverImageUrl}
+          description={vendor.description}
+          phoneNumber={vendor.phoneNumber}
+          header={
+            <TopBar
+              location={vendor.location ?? "Kigali, Rwanda"}
+              kdsBackHref={
+                fromKds ? `/vendor/${vendor.slug}?tab=orders` : undefined
+              }
+            />
           }
         />
-
-        <div className="mt-5">
-          <Hero
-            vendorSlug={vendor.slug}
-            tagline={vendor.tagline ?? "Premium grills"}
-            restaurantName={vendor.name}
-            deliveryTime={vendor.deliveryTime ?? "30–40 min"}
-            rating={vendor.rating}
-            logoUrl={vendor.logoUrl}
-            coverImageUrl={vendor.coverImageUrl}
-            description={vendor.description}
-            phoneNumber={vendor.phoneNumber}
-          />
-        </div>
 
         <div className="mt-8">
           <div className="mb-4 flex items-baseline justify-between px-0.5">
