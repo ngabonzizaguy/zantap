@@ -97,6 +97,30 @@
   }
 
   /*
+   * Floating dark-glass layers (bottom sheets, dropdown menus). Unlike in-page
+   * cards, these hover over other content, so the surface must be near-opaque
+   * for legibility — the glass feel comes from the backdrop blur and the faint
+   * white sheen, not from transparency.
+   */
+  .glass-liquid-sheet {
+    @apply backdrop-blur-[28px];
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)),
+      rgba(19, 16, 14, 0.92);
+    box-shadow:
+      0 -12px 48px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-liquid-menu {
+    @apply backdrop-blur-[24px];
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+      rgba(24, 21, 18, 0.97);
+    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.55);
+  }
+
+  /*
    * Hero dissolve (ADR-0043). Two rules make the cover-to-canvas transition
    * seamless on real photos:
    * 1. The image mask reaches fully transparent at 92% — before the container's
