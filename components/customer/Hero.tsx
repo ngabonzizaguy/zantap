@@ -44,9 +44,10 @@ function PlaceholderLogo() {
   );
 }
 
-/** Solid ink pills — always legible on any cover (matches reference mockup). */
+/** Liquid-glass pills matching the TopBar chips; the backdrop blur keeps the
+ * icons legible on any vendor-uploaded cover. */
 const actionButtonClass =
-  "flex h-11 w-11 flex-none items-center justify-center rounded-full bg-primary text-on-primary shadow-[0_4px_16px_rgba(0,0,0,0.22)] transition-all duration-200 hover:bg-primary-active hover:scale-[1.04] active:scale-[0.97]";
+  "glass-liquid-pill flex h-11 w-11 flex-none items-center justify-center rounded-full text-ink transition-all duration-200 hover:scale-[1.04] active:scale-[0.97]";
 
 const logoTileClass =
   "glass-liquid-strong flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-brand-xl";
