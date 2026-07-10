@@ -389,3 +389,87 @@
     opacity: 0;
   }
 }
+
+/*
+ * Surface motion (mobile fluidity pass). Dialogs rise+fade in and fade out on
+ * unmount; overlays only ever animate opacity — a backdrop-filter blur radius
+ * is never transitioned, because re-rasterizing a changing blur every frame
+ * is the most expensive effect a mobile GPU can be asked to do.
+ */
+@keyframes zt-fade-in {
+  from { opacity: 0; }
+}
+
+@keyframes zt-fade-out {
+  to { opacity: 0; }
+}
+
+@keyframes zt-dialog-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.96);
+  }
+}
+
+@keyframes zt-rise-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+}
+
+.zt-overlay-enter {
+  animation: zt-fade-in 220ms ease-out both;
+}
+
+.zt-dialog-enter {
+  animation: zt-dialog-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Keep in sync with EXIT_MS in components/ui/primitives/Modal.tsx */
+.zt-surface-exit {
+  animation: zt-fade-out 160ms ease-in both;
+}
+
+.zt-list-in {
+  animation: zt-rise-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes zt-sheet-in {
+  from { transform: translate3d(0, 100%, 0); }
+}
+
+.zt-sheet-enter {
+  animation: zt-sheet-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes zt-drawer-in {
+  from { transform: translate3d(100%, 0, 0); }
+}
+
+.zt-drawer-enter {
+  animation: zt-drawer-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Bottom bars centered with -translate-x-1/2 need the X offset baked into
+   the keyframes, otherwise the animation's transform would drop it. */
+@keyframes zt-bar-in {
+  from { transform: translate(-50%, 110%); }
+  to { transform: translate(-50%, 0); }
+}
+
+.zt-bar-enter {
+  animation: zt-bar-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zt-overlay-enter,
+  .zt-dialog-enter,
+  .zt-surface-exit,
+  .zt-list-in,
+  .zt-sheet-enter,
+  .zt-drawer-enter,
+  .zt-bar-enter {
+    animation-duration: 1ms;
+  }
+}

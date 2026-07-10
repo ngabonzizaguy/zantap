@@ -523,7 +523,7 @@ export function SetupDrawer({
       <button
         type="button"
         aria-label="Close setup guide"
-        className="absolute inset-0 bg-canvas-deep/40 backdrop-blur-sm"
+        className="zt-overlay-enter absolute inset-0 bg-canvas-deep/40 backdrop-blur-sm"
         onClick={onClose}
       />
       <aside
@@ -533,7 +533,7 @@ export function SetupDrawer({
         aria-modal="true"
         aria-labelledby={titleId}
         className={cn(
-          "relative z-10 flex h-full w-full max-w-md flex-col border-l border-hairline bg-surface-card shadow-brand-soft"
+          "zt-drawer-enter relative z-10 flex h-full w-full max-w-md flex-col border-l border-hairline bg-surface-card shadow-brand-soft"
         )}
       >
         <header className="border-b border-hairline px-6 py-5">

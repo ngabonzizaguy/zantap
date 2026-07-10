@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { MenuItem, MomoMode, Vendor } from "@/lib/types";
 import { TopBar } from "@/components/customer/TopBar";
 import { Hero } from "@/components/customer/Hero";
@@ -41,6 +41,12 @@ function StorefrontInner({
   const activeItem = useMemo(
     () => menu.find((item) => item.id === activeItemId) ?? null,
     [menu, activeItemId]
+  );
+
+  // Stable reference so memoized menu cards don't re-render on cart changes.
+  const handleOpenItem = useCallback(
+    (item: MenuItem) => setActiveItemId(item.id),
+    []
   );
 
   /**
@@ -108,12 +114,14 @@ function StorefrontInner({
             onSelect={setActiveCategory}
           />
 
-          <div className="mt-5">
+          {/* Keyed by category so switching chips replays the rise-in, making
+              the filter swap feel fluid instead of an instant list swap. */}
+          <div key={activeCategory} className="zt-list-in mt-5">
             <MenuList
               items={filteredMenu}
               cart={cart}
               onAdd={addItem}
-              onOpen={(item) => setActiveItemId(item.id)}
+              onOpen={handleOpenItem}
             />
           </div>
         </div>

@@ -8,8 +8,11 @@ interface CategoryChipsProps {
   onSelect: (category: string) => void;
 }
 
+// Transition only compositor-friendly properties — `transition-all` also
+// animates layout properties and stutters on mobile. The active:scale gives
+// taps immediate tactile feedback while the category content loads in.
 const chipBase =
-  "h-10 flex-none px-[18px] font-body text-body-sm font-medium transition-all duration-200";
+  "h-10 flex-none px-[18px] font-body text-body-sm font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-200 active:scale-[0.96]";
 
 export function CategoryChips({
   categories,

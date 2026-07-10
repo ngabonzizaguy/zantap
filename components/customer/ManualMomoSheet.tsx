@@ -58,15 +58,15 @@ export function ManualMomoSheet({
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[70] flex items-end justify-center transition-all duration-300",
-        open
-          ? "pointer-events-auto bg-canvas-deep/40 backdrop-blur-sm"
-          : "pointer-events-none bg-transparent backdrop-blur-none"
+        // Blur stays constant and only opacity/visibility animate: transitioning
+        // the blur radius itself forces a re-blur every frame on mobile GPUs.
+        "fixed inset-0 z-[70] flex items-end justify-center bg-canvas-deep/40 backdrop-blur-sm transition-[opacity,visibility] duration-300",
+        open ? "visible opacity-100" : "invisible opacity-0 pointer-events-none"
       )}
     >
       <div
         className={cn(
-          "glass-liquid-sheet w-full max-w-customer rounded-t-brand-xxl border border-hairline border-b-0 px-5 pb-8 pt-6 transition-transform duration-300",
+          "glass-liquid-sheet w-full max-w-customer rounded-t-brand-xxl border border-hairline border-b-0 px-5 pb-8 pt-6 transition-transform duration-300 ease-[cubic-bezier(.22,1,.36,1)]",
           open ? "translate-y-0" : "translate-y-full"
         )}
         onClick={(e) => e.stopPropagation()}

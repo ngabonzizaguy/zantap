@@ -27,10 +27,10 @@ export function SuccessReceipt({
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[90] flex flex-col bg-canvas transition-all duration-500",
+        "fixed inset-0 z-[90] flex flex-col bg-canvas transition-[transform,opacity,visibility] duration-500",
         open
-          ? "pointer-events-auto translate-y-0 opacity-100"
-          : "pointer-events-none translate-y-4 opacity-0"
+          ? "visible translate-y-0 opacity-100"
+          : "invisible pointer-events-none translate-y-4 opacity-0"
       )}
     >
       <GradientOrbs />

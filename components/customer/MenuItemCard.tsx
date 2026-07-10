@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import type { MenuItem } from "@/lib/types";
 import { formatRwf } from "@/lib/format";
 import { getMenuItemGalleryUrls } from "@/lib/menu/media";
@@ -12,11 +12,18 @@ import { cn } from "@/lib/cn";
 interface MenuItemCardProps {
   item: MenuItem;
   qty: number;
-  onAdd: () => void;
-  onOpen: () => void;
+  onAdd: (id: string) => void;
+  onOpen: (item: MenuItem) => void;
 }
 
-export function MenuItemCard({ item, qty, onAdd, onOpen }: MenuItemCardProps) {
+// Memoized so a cart change (or any parent re-render) only re-renders the
+// card whose qty actually changed — tapping "+" used to re-render every card.
+export const MenuItemCard = memo(function MenuItemCard({
+  item,
+  qty,
+  onAdd,
+  onOpen,
+}: MenuItemCardProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const thumbBg = `radial-gradient(circle at 32% 28%, ${item.thumbFrom ?? "#ffd2b0"}, ${item.thumbTo ?? "#f5945f"})`;
   const galleryUrls = getMenuItemGalleryUrls(item);
@@ -28,11 +35,11 @@ export function MenuItemCard({ item, qty, onAdd, onOpen }: MenuItemCardProps) {
         role="button"
         tabIndex={0}
         aria-label={`Customize ${item.name}`}
-        onClick={onOpen}
+        onClick={() => onOpen(item)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            onOpen();
+            onOpen(item);
           }
         }}
         className={cn(
@@ -84,7 +91,7 @@ export function MenuItemCard({ item, qty, onAdd, onOpen }: MenuItemCardProps) {
           aria-label={`Add ${item.name}`}
           onClick={(e) => {
             e.stopPropagation();
-            onAdd();
+            onAdd(item.id);
           }}
           className="glass-gold flex h-11 w-11 flex-none items-center justify-center rounded-brand-lg transition-transform hover:brightness-110 active:scale-95"
         >
@@ -102,7 +109,7 @@ export function MenuItemCard({ item, qty, onAdd, onOpen }: MenuItemCardProps) {
       ) : null}
     </>
   );
-}
+});
 
 interface MenuListProps {
   items: MenuItem[];
@@ -119,8 +126,8 @@ export function MenuList({ items, cart, onAdd, onOpen }: MenuListProps) {
           key={item.id}
           item={item}
           qty={cart[item.id] ?? 0}
-          onAdd={() => onAdd(item.id)}
-          onOpen={() => onOpen(item)}
+          onAdd={onAdd}
+          onOpen={onOpen}
         />
       ))}
     </div>

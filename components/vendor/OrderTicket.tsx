@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { KitchenStage, Order } from "@/lib/types";
 import {
   formatKitchenStageLabel,
@@ -34,6 +35,48 @@ const URGENCY_RING: Record<
   warning: "ring-1 ring-amber-500/45",
   critical: "ring-1 ring-error/55",
 };
+
+const COLLAPSE_MS = 300;
+
+/**
+ * Height-animated disclosure via the grid-rows 0fr→1fr technique — no
+ * measuring, no layout thrash. Children stay mounted through the collapse
+ * so the close animates instead of the content vanishing in one frame.
+ */
+function Collapse({
+  open,
+  children,
+}: {
+  open: boolean;
+  children: React.ReactNode;
+}) {
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [closing, setClosing] = useState(false);
+
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    setClosing(!open);
+  }
+
+  useEffect(() => {
+    if (!closing) return;
+    const timer = setTimeout(() => setClosing(false), COLLAPSE_MS);
+    return () => clearTimeout(timer);
+  }, [closing]);
+
+  return (
+    <div
+      className={cn(
+        "grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(.22,1,.36,1)]",
+        open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+      )}
+    >
+      <div className="min-h-0 overflow-hidden">
+        {open || closing ? children : null}
+      </div>
+    </div>
+  );
+}
 
 function resolveKitchenStage(order: Order): KitchenStage {
   return (
@@ -213,7 +256,7 @@ export function OrderTicket({
         </button>
       </div>
 
-      {expanded && (
+      <Collapse open={expanded}>
         <div className="px-4 pb-4 pt-0.5">
           {forwardStages.length > 0 && (
             <div className="mb-3 flex flex-wrap gap-2">
@@ -394,7 +437,7 @@ export function OrderTicket({
             </button>
           )}
         </div>
-      )}
+      </Collapse>
     </Card>
   );
 }

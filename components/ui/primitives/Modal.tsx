@@ -26,6 +26,8 @@ const FOCUSABLE =
 
 const HANDLE_HIDE_MS = 1400;
 const DRAG_CLOSE_PX = 120;
+/* Keep in sync with .zt-surface-exit in app/globals.css */
+const EXIT_MS = 160;
 
 export function Modal({
   open,
@@ -45,10 +47,23 @@ export function Modal({
   const dragRef = useRef<{ startY: number; startT: number } | null>(null);
 
   const [handleVisible, setHandleVisible] = useState(false);
-  const [dragY, setDragY] = useState(0);
-  const [dragging, setDragging] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [prevOpen, setPrevOpen] = useState(open);
 
   onCloseRef.current = onClose;
+
+  // Keep rendering briefly after `open` flips false so the exit fade can
+  // play ("adjust state during render" pattern — no effect, no extra paint).
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    setClosing(!open);
+  }
+
+  useEffect(() => {
+    if (!closing) return;
+    const timer = setTimeout(() => setClosing(false), EXIT_MS);
+    return () => clearTimeout(timer);
+  }, [closing]);
 
   const revealHandle = useCallback(() => {
     setHandleVisible(true);
@@ -64,8 +79,6 @@ export function Modal({
     if (!open) {
       wasOpenRef.current = false;
       setHandleVisible(false);
-      setDragY(0);
-      setDragging(false);
       if (hideHandleTimerRef.current) {
         clearTimeout(hideHandleTimerRef.current);
       }
@@ -121,16 +134,22 @@ export function Modal({
     };
   }, [open]);
 
+  // Drag writes go straight to the DOM node: routing every pointermove
+  // through React state re-renders the whole dialog tree per frame, which
+  // is exactly the drag jank this avoids on mid-range phones.
   const onHandlePointerDown = (event: ReactPointerEvent) => {
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = { startY: event.clientY, startT: Date.now() };
-    setDragging(true);
+    const panel = panelRef.current;
+    if (panel) panel.style.transition = "none";
     revealHandle();
   };
 
   const onHandlePointerMove = (event: ReactPointerEvent) => {
     if (!dragRef.current) return;
-    setDragY(Math.max(0, event.clientY - dragRef.current.startY));
+    const dy = Math.max(0, event.clientY - dragRef.current.startY);
+    const panel = panelRef.current;
+    if (panel) panel.style.transform = dy > 0 ? `translateY(${dy}px)` : "";
   };
 
   const finishDrag = (event: ReactPointerEvent) => {
@@ -140,30 +159,37 @@ export function Modal({
     const dy = Math.max(0, event.clientY - start.startY);
     const velocity = dy / Math.max(Date.now() - start.startT, 1);
     dragRef.current = null;
-    setDragging(false);
 
     if (dy > DRAG_CLOSE_PX || velocity > 0.55) {
+      // Leave the panel where the finger released; the exit fade plays and
+      // unmounting discards the inline styles.
       onCloseRef.current();
-      setDragY(0);
     } else {
-      setDragY(0);
+      const panel = panelRef.current;
+      if (panel) {
+        panel.style.transition = "";
+        panel.style.transform = "";
+      }
     }
   };
 
-  if (!open || typeof document === "undefined") return null;
+  if ((!open && !closing) || typeof document === "undefined") return null;
 
   // Portal to <body>: the KDS tab content lives in a `relative z-[1]` wrapper,
   // which would trap the dialog's z-index beneath the sticky z-30 header.
   // Wrap in `.kds-dark` so editorial tokens remap to the KDS charcoal palette.
   return createPortal(
     <div
-      className="kds-dark fixed inset-0 z-[70] flex items-center justify-center p-4 text-ink"
+      className={cn(
+        "kds-dark fixed inset-0 z-[70] flex items-center justify-center p-4 text-ink",
+        closing && "zt-surface-exit pointer-events-none"
+      )}
       role="presentation"
     >
       <button
         type="button"
         aria-label="Close dialog"
-        className="absolute inset-0 bg-canvas/80 backdrop-blur-sm"
+        className="zt-overlay-enter absolute inset-0 bg-canvas/80 backdrop-blur-sm"
         onClick={onClose}
       />
       <div
@@ -171,13 +197,10 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
-        style={{
-          transform: dragY > 0 ? `translateY(${dragY}px)` : undefined,
-          transition: dragging ? "none" : undefined,
-        }}
         className={cn(
-          "relative z-10 flex w-full max-w-md flex-col overflow-hidden rounded-brand-xl border border-hairline bg-surface-card shadow-brand-soft",
+          "zt-dialog-enter relative z-10 flex w-full max-w-md flex-col overflow-hidden rounded-brand-xl border border-hairline bg-surface-card shadow-brand-soft",
           "max-h-[min(90dvh,calc(100dvh-2rem))]",
+          "transition-transform duration-300 ease-[cubic-bezier(.22,1,.36,1)]",
           className
         )}
         onPointerDown={revealHandle}

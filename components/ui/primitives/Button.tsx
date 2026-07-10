@@ -43,7 +43,9 @@ export function Button({
       type={type}
       disabled={disabled}
       className={cn(
-        "inline-flex items-center justify-center font-body font-medium transition-colors",
+        // Compositor-only transitions + press scale: every button gets
+        // immediate tactile feedback without animating layout properties.
+        "inline-flex items-center justify-center font-body font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-150 active:scale-[0.98] disabled:active:scale-100",
         radiusStyles[radius],
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
         "disabled:cursor-not-allowed disabled:opacity-50",

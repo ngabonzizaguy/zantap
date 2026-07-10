@@ -50,8 +50,6 @@ export function MenuItemCustomizeSheet({
   const [notes, setNotes] = useState("");
   const [photoIndex, setPhotoIndex] = useState(0);
 
-  const [dragY, setDragY] = useState(0);
-  const [dragging, setDragging] = useState(false);
   const dragRef = useRef<{ startY: number; startT: number } | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
 
@@ -65,7 +63,12 @@ export function MenuItemCustomizeSheet({
       }
       setNotes("");
       setPhotoIndex(0);
-      setDragY(0);
+      // Clear inline drag styles a cancelled gesture may have left behind.
+      const el = sheetRef.current;
+      if (el) {
+        el.style.transition = "";
+        el.style.transform = "";
+      }
     }
   }, [item]);
 
@@ -117,15 +120,21 @@ export function MenuItemCustomizeSheet({
     if (selection) onAddToOrder(selection);
   };
 
+  // Drag writes go straight to the DOM node: routing every pointermove
+  // through React state re-renders the whole sheet tree per frame, which is
+  // exactly the finger-tracking jank this avoids on mid-range phones.
   const onPointerDown = (e: ReactPointerEvent) => {
     e.currentTarget.setPointerCapture(e.pointerId);
     dragRef.current = { startY: e.clientY, startT: Date.now() };
-    setDragging(true);
+    const el = sheetRef.current;
+    if (el) el.style.transition = "none";
   };
 
   const onPointerMove = (e: ReactPointerEvent) => {
     if (!dragRef.current) return;
-    setDragY(Math.max(0, e.clientY - dragRef.current.startY));
+    const dy = Math.max(0, e.clientY - dragRef.current.startY);
+    const el = sheetRef.current;
+    if (el) el.style.transform = `translateY(${dy}px)`;
   };
 
   const onPointerEnd = (e: ReactPointerEvent) => {
@@ -134,23 +143,30 @@ export function MenuItemCustomizeSheet({
     const dy = Math.max(0, e.clientY - start.startY);
     const velocity = dy / Math.max(Date.now() - start.startT, 1);
     dragRef.current = null;
-    setDragging(false);
 
-    const sheetHeight = sheetRef.current?.offsetHeight ?? 600;
+    // Restoring the class-driven transform in the same frame as the state
+    // change makes the sheet transition from the released finger position —
+    // down and out on close, or springing back up on release.
+    const el = sheetRef.current;
+    const sheetHeight = el?.offsetHeight ?? 600;
+    if (el) {
+      el.style.transition = "";
+      el.style.transform = "";
+    }
     if (dy > Math.min(DRAG_CLOSE_PX, sheetHeight * 0.25) || velocity > FLICK_VELOCITY) {
       onClose();
-    } else {
-      setDragY(0);
     }
   };
 
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[60] flex items-end justify-center transition-all duration-300",
+        // Blur stays constant and only opacity/visibility animate: transitioning
+        // the blur radius itself forces a re-blur every frame on mobile GPUs.
+        "fixed inset-0 z-[60] flex items-end justify-center bg-canvas-deep/40 backdrop-blur-sm transition-[opacity,visibility] duration-[420ms]",
         isOpen
-          ? "pointer-events-auto bg-canvas-deep/40 backdrop-blur-sm"
-          : "pointer-events-none bg-transparent backdrop-blur-none"
+          ? "visible opacity-100"
+          : "invisible opacity-0 pointer-events-none"
       )}
       onClick={onClose}
     >
@@ -160,10 +176,6 @@ export function MenuItemCustomizeSheet({
           "glass-liquid-sheet relative flex max-h-[92vh] w-full max-w-customer flex-col rounded-t-brand-xxl border border-hairline border-b-0 transition-transform duration-[420ms] ease-[cubic-bezier(.22,1,.36,1)]",
           isOpen ? "translate-y-0" : "translate-y-[101%]"
         )}
-        style={{
-          transform: isOpen ? `translateY(${dragY}px)` : undefined,
-          transition: dragging ? "none" : undefined,
-        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div

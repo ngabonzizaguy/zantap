@@ -30,7 +30,7 @@ export function BulkActionBar({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-kds -translate-x-1/2 border-t border-hairline bg-canvas/95 px-[18px] py-3.5 shadow-brand-soft backdrop-blur-md">
+    <div className="zt-bar-enter fixed bottom-0 left-1/2 z-50 w-full max-w-kds -translate-x-1/2 border-t border-hairline bg-canvas/95 px-[18px] py-3.5 shadow-brand-soft backdrop-blur-md">
       <div className="flex items-center gap-3">
         <button
           type="button"
