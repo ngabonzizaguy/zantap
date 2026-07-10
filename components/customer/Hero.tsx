@@ -1,9 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
-import { Card } from "@/components/ui/primitives";
 import { DescriptionClamp } from "@/components/customer/DescriptionClamp";
 import { getStorefrontUrl } from "@/lib/base-url";
 import { cn } from "@/lib/cn";
@@ -18,6 +17,8 @@ interface HeroProps {
   coverImageUrl?: string;
   description?: string;
   phoneNumber?: string;
+  /** Top navigation rendered over the immersive cover (e.g. TopBar). */
+  header?: ReactNode;
 }
 
 function PlaceholderLogo() {
@@ -43,11 +44,20 @@ function PlaceholderLogo() {
   );
 }
 
+/** Solid ink pills — always legible on any cover (matches reference mockup). */
 const actionButtonClass =
-  "flex h-10 w-10 flex-none items-center justify-center rounded-full border border-hairline bg-surface-card text-muted shadow-brand-soft transition-colors hover:text-ink";
+  "flex h-11 w-11 flex-none items-center justify-center rounded-full bg-primary text-on-primary shadow-[0_4px_16px_rgba(0,0,0,0.22)] transition-all duration-200 hover:bg-primary-active hover:scale-[1.04] active:scale-[0.97]";
 
-const metaPillClass =
-  "flex h-9 items-center gap-1.5 rounded-pill border border-hairline bg-canvas-soft px-3.5";
+const logoTileClass =
+  "glass-liquid-strong flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-brand-xl";
+
+const metaPillClass = "glass-liquid-pill flex h-9 items-center gap-1.5 px-3.5";
+
+const heroBleedClass = cn(
+  "relative h-[36vh] min-h-[13.75rem] max-h-[22.5rem]",
+  "-mx-5 w-[calc(100%+2.5rem)]",
+  "min-[480px]:left-1/2 min-[480px]:w-screen min-[480px]:max-w-[100vw] min-[480px]:-translate-x-1/2"
+);
 
 export function Hero({
   vendorSlug,
@@ -59,6 +69,7 @@ export function Hero({
   coverImageUrl,
   description,
   phoneNumber,
+  header,
 }: HeroProps) {
   const [copied, setCopied] = useState(false);
   const trimmedDescription = description?.trim();
@@ -92,29 +103,95 @@ export function Hero({
   };
 
   return (
-    <>
-      <Card padding="lg" className="relative overflow-hidden">
-        {coverImageUrl ? (
-          <>
+    <section className="relative">
+      {/* Cover zone — overflow visible so logo can float below the image edge */}
+      <div className={heroBleedClass}>
+        {/* Clipped image stack only */}
+        <div className="absolute inset-0 overflow-hidden">
+          {coverImageUrl ? (
             <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: `url(${coverImageUrl})` }}
+              className="absolute inset-0 [mask-image:linear-gradient(to_bottom,#000_0%,#000_48%,rgba(0,0,0,0.85)_62%,rgba(0,0,0,0.45)_78%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,#000_0%,#000_48%,rgba(0,0,0,0.85)_62%,rgba(0,0,0,0.45)_78%,transparent_100%)] [mask-size:100%_100%] [-webkit-mask-size:100%_100%]"
+              aria-hidden
+            >
+              <Image
+                src={coverImageUrl}
+                alt=""
+                fill
+                priority
+                unoptimized
+                sizes="100vw"
+                className="object-cover object-center"
+              />
+            </div>
+          ) : (
+            <div
+              className="absolute inset-0 bg-gradient-to-br from-gradient-mint/40 via-canvas to-gradient-peach/35 [mask-image:linear-gradient(to_bottom,#000_0%,#000_55%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,#000_0%,#000_55%,transparent_100%)]"
               aria-hidden
             />
-            <div
-              className="absolute inset-0 bg-gradient-to-br from-canvas/92 via-surface-card/88 to-canvas-soft/90"
-              aria-hidden
-            />
-          </>
+          )}
+
+          {/* Light top vignette for TopBar legibility — does not wash out the image */}
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-ink/25 to-transparent"
+            aria-hidden
+          />
+
+          {/* Long bottom feather — dissolves into dark storefront canvas */}
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-[58%] bg-gradient-to-t from-[#0c0a09] from-[8%] via-[rgba(12,10,9,0.72)] via-45% to-transparent"
+            aria-hidden
+          />
+        </div>
+
+        {/* Extra feather below the hero edge to kill any residual seam */}
+        <div
+          className="pointer-events-none absolute inset-x-0 -bottom-10 h-20 bg-gradient-to-b from-transparent via-[rgba(12,10,9,0.55)] to-[#0c0a09]"
+          aria-hidden
+        />
+
+        {/* Top navigation */}
+        {header ? (
+          <div className="absolute inset-x-0 top-0 z-20 px-5 pt-4">{header}</div>
         ) : null}
 
-        <div className="relative flex items-start justify-between gap-4">
-          <div
-            className={cn(
-              "relative flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-brand-xl border border-hairline bg-surface-card shadow-brand-soft",
-              coverImageUrl && "bg-surface-card/95 backdrop-blur-sm"
-            )}
+        {/* Call + share — solid ink, upper-right of cover */}
+        <div className="absolute right-5 top-[4.5rem] z-20 flex items-center gap-2.5">
+          {trimmedPhone ? (
+            <a
+              href={`tel:${trimmedPhone}`}
+              aria-label={`Call ${restaurantName}`}
+              className={actionButtonClass}
+            >
+              <Icon name="phone" size={18} />
+            </a>
+          ) : null}
+          <button
+            type="button"
+            aria-label={copied ? "Link copied" : "Share storefront"}
+            onClick={() => void shareStore()}
+            className={actionButtonClass}
           >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Logo — floats over the dissolve, not clipped by the image stack */}
+        <div className="absolute bottom-0 left-5 z-30 translate-y-1/2">
+          <div className={logoTileClass}>
             {logoUrl ? (
               <Image
                 src={logoUrl}
@@ -128,52 +205,19 @@ export function Hero({
               <PlaceholderLogo />
             )}
           </div>
-
-          <div className="flex flex-none items-center gap-2">
-            {trimmedPhone ? (
-              <a
-                href={`tel:${trimmedPhone}`}
-                aria-label={`Call ${restaurantName}`}
-                className={actionButtonClass}
-              >
-                <Icon name="phone" size={18} />
-              </a>
-            ) : null}
-            <button
-              type="button"
-              aria-label={copied ? "Link copied" : "Share storefront"}
-              onClick={() => void shareStore()}
-              className={actionButtonClass}
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="18" cy="5" r="3" />
-                <circle cx="6" cy="12" r="3" />
-                <circle cx="18" cy="19" r="3" />
-                <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
-              </svg>
-            </button>
-          </div>
         </div>
+      </div>
 
-        <div className="relative mt-5">
-          <p className="font-body text-caption-uppercase uppercase text-muted">
-            {tagline}
-          </p>
-          <h1 className="mt-1 font-display text-display-lg font-light tracking-tight text-ink">
-            {restaurantName}
-          </h1>
-        </div>
+      {/* Vendor identity — on page surface below the floating logo */}
+      <div className="relative z-10 mt-12 px-0.5">
+        <p className="font-body text-caption-uppercase uppercase tracking-[0.08em] text-muted">
+          {tagline}
+        </p>
+        <h1 className="mt-2 font-display text-display-lg font-light tracking-tight text-ink">
+          {restaurantName}
+        </h1>
 
-        <div className="relative mt-5 flex flex-wrap items-center gap-2">
+        <div className="mt-5 flex flex-wrap items-center gap-2.5">
           <div className={metaPillClass}>
             <Icon name="clock" size={14} className="text-muted" />
             <span className="font-body text-body-sm font-medium text-ink">
@@ -188,11 +232,11 @@ export function Hero({
             <span className="font-body text-body-sm text-muted">· Free delivery</span>
           </div>
         </div>
-      </Card>
+      </div>
 
       {trimmedDescription ? (
         <DescriptionClamp text={trimmedDescription} />
       ) : null}
-    </>
+    </section>
   );
 }

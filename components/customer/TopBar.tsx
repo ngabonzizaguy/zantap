@@ -8,8 +8,7 @@ interface TopBarProps {
   kdsBackHref?: string;
 }
 
-const chipClass =
-  "border border-hairline bg-surface-card/90 shadow-brand-soft backdrop-blur-sm";
+const chipClass = "glass-liquid-pill shadow-brand-soft";
 
 export function TopBar({ location, kdsBackHref }: TopBarProps) {
   return (
@@ -19,7 +18,7 @@ export function TopBar({ location, kdsBackHref }: TopBarProps) {
           href={kdsBackHref}
           className={cn(
             chipClass,
-            "flex h-10 shrink-0 items-center gap-1.5 rounded-pill px-3.5 font-body text-body-sm font-medium text-ink transition-opacity hover:opacity-90 active:opacity-80"
+            "flex h-10 shrink-0 items-center gap-1.5 px-3.5 font-body text-body-sm font-medium text-ink transition-opacity hover:opacity-90 active:opacity-80"
           )}
         >
           <span aria-hidden className="text-[15px] leading-none">
@@ -40,7 +39,7 @@ export function TopBar({ location, kdsBackHref }: TopBarProps) {
       <div
         className={cn(
           chipClass,
-          "flex h-10 min-w-0 items-center gap-2 rounded-pill px-3.5"
+          "flex h-10 min-w-0 items-center gap-2 px-3.5"
         )}
       >
         <Icon name="location" size={14} className="shrink-0 text-muted" />

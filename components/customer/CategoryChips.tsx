@@ -9,7 +9,7 @@ interface CategoryChipsProps {
 }
 
 const chipBase =
-  "h-10 flex-none rounded-pill px-[18px] font-body text-body-sm font-medium transition-colors duration-200";
+  "h-10 flex-none px-[18px] font-body text-body-sm font-medium transition-all duration-200";
 
 export function CategoryChips({
   categories,
@@ -28,8 +28,8 @@ export function CategoryChips({
             className={cn(
               chipBase,
               isActive
-                ? "border border-primary bg-primary text-on-primary shadow-brand-soft"
-                : "border border-hairline bg-surface-card/90 text-muted shadow-brand-soft hover:text-ink"
+                ? "glass-liquid-pill-active text-ink"
+                : "glass-liquid-pill text-muted hover:text-ink"
             )}
           >
             {cat}
