@@ -390,7 +390,9 @@ export function KdsDashboard({
           onHistory={() => setTab("history")}
           onDrivers={() => setTab("drivers")}
         />
-        <div className="relative z-[1] px-[18px] pt-3.5">
+        {/* Keyed by tab so switching replays the rise-in instead of an
+            instant content swap. */}
+        <div key={tab} className="zt-list-in relative z-[1] px-[18px] pt-3.5">
           {tab === "orders" ? (
             <OrdersList
               orders={visibleOrders}

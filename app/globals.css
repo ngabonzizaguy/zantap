@@ -443,12 +443,33 @@
   animation: zt-sheet-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+@keyframes zt-drawer-in {
+  from { transform: translate3d(100%, 0, 0); }
+}
+
+.zt-drawer-enter {
+  animation: zt-drawer-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Bottom bars centered with -translate-x-1/2 need the X offset baked into
+   the keyframes, otherwise the animation's transform would drop it. */
+@keyframes zt-bar-in {
+  from { transform: translate(-50%, 110%); }
+  to { transform: translate(-50%, 0); }
+}
+
+.zt-bar-enter {
+  animation: zt-bar-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .zt-overlay-enter,
   .zt-dialog-enter,
   .zt-surface-exit,
   .zt-list-in,
-  .zt-sheet-enter {
+  .zt-sheet-enter,
+  .zt-drawer-enter,
+  .zt-bar-enter {
     animation-duration: 1ms;
   }
 }
