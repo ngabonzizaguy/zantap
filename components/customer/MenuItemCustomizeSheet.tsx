@@ -157,7 +157,7 @@ export function MenuItemCustomizeSheet({
       <div
         ref={sheetRef}
         className={cn(
-          "relative flex max-h-[92vh] w-full max-w-customer flex-col rounded-t-brand-xxl border border-hairline border-b-0 bg-surface-card shadow-brand-soft transition-transform duration-[420ms] ease-[cubic-bezier(.22,1,.36,1)]",
+          "glass-liquid-sheet relative flex max-h-[92vh] w-full max-w-customer flex-col rounded-t-brand-xxl border border-hairline border-b-0 transition-transform duration-[420ms] ease-[cubic-bezier(.22,1,.36,1)]",
           isOpen ? "translate-y-0" : "translate-y-[101%]"
         )}
         style={{

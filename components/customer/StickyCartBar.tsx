@@ -29,7 +29,7 @@ export function StickyCartBar({ count, total, onOpen }: StickyCartBarProps) {
           <div className="font-body text-caption text-muted">
             {count === 1 ? "1 item" : `${count} items`}
           </div>
-          <div className="font-body text-title-sm font-medium leading-tight text-ink">
+          <div className="font-body text-title-sm font-medium leading-tight text-gold">
             {formatRwf(total)}
           </div>
         </div>

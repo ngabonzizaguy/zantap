@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import type { MenuItem, MomoMode, Vendor } from "@/lib/types";
-import { GradientOrbs } from "@/components/ui/primitives";
 import { TopBar } from "@/components/customer/TopBar";
 import { Hero } from "@/components/customer/Hero";
 import { CategoryChips } from "@/components/customer/CategoryChips";
@@ -73,7 +72,6 @@ function StorefrontInner({
 
   return (
     <div className="storefront-dark relative min-h-screen w-full overflow-x-hidden bg-canvas text-ink">
-      <GradientOrbs className="opacity-25" />
       <div className="zt-hidescroll relative z-[1] mx-auto min-h-screen w-full max-w-customer px-5 pb-40">
         <Hero
           vendorSlug={vendor.slug}

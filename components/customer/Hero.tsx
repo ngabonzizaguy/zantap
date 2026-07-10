@@ -44,9 +44,10 @@ function PlaceholderLogo() {
   );
 }
 
-/** Solid ink pills — always legible on any cover (matches reference mockup). */
+/** Liquid-glass pills matching the TopBar chips; the backdrop blur keeps the
+ * icons legible on any vendor-uploaded cover. */
 const actionButtonClass =
-  "flex h-11 w-11 flex-none items-center justify-center rounded-full bg-primary text-on-primary shadow-[0_4px_16px_rgba(0,0,0,0.22)] transition-all duration-200 hover:bg-primary-active hover:scale-[1.04] active:scale-[0.97]";
+  "glass-liquid-pill flex h-11 w-11 flex-none items-center justify-center rounded-full text-ink transition-all duration-200 hover:scale-[1.04] active:scale-[0.97]";
 
 const logoTileClass =
   "glass-liquid-strong flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-brand-xl";
@@ -110,7 +111,7 @@ export function Hero({
         <div className="absolute inset-0 overflow-hidden">
           {coverImageUrl ? (
             <div
-              className="absolute inset-0 [mask-image:linear-gradient(to_bottom,#000_0%,#000_48%,rgba(0,0,0,0.85)_62%,rgba(0,0,0,0.45)_78%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,#000_0%,#000_48%,rgba(0,0,0,0.85)_62%,rgba(0,0,0,0.45)_78%,transparent_100%)] [mask-size:100%_100%] [-webkit-mask-size:100%_100%]"
+              className="zt-hero-mask absolute inset-0"
               aria-hidden
             >
               <Image
@@ -136,18 +137,12 @@ export function Hero({
             aria-hidden
           />
 
-          {/* Long bottom feather — dissolves into dark storefront canvas */}
+          {/* Single eased bottom feather — dissolves into dark storefront canvas */}
           <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-[58%] bg-gradient-to-t from-[#0c0a09] from-[8%] via-[rgba(12,10,9,0.72)] via-45% to-transparent"
+            className="zt-hero-feather pointer-events-none absolute inset-x-0 bottom-0 h-[64%]"
             aria-hidden
           />
         </div>
-
-        {/* Extra feather below the hero edge to kill any residual seam */}
-        <div
-          className="pointer-events-none absolute inset-x-0 -bottom-10 h-20 bg-gradient-to-b from-transparent via-[rgba(12,10,9,0.55)] to-[#0c0a09]"
-          aria-hidden
-        />
 
         {/* Top navigation */}
         {header ? (

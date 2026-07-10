@@ -62,7 +62,7 @@ export function CheckoutSheet({
     >
       <div
         className={cn(
-          "zt-hidescroll max-h-[90vh] w-full max-w-customer overflow-y-auto rounded-t-brand-xxl border border-hairline border-b-0 bg-surface-card shadow-brand-soft transition-transform duration-[420ms] ease-[cubic-bezier(.22,1,.36,1)]",
+          "glass-liquid-sheet zt-hidescroll max-h-[90vh] w-full max-w-customer overflow-y-auto rounded-t-brand-xxl border border-hairline border-b-0 transition-transform duration-[420ms] ease-[cubic-bezier(.22,1,.36,1)]",
           isOpen ? "translate-y-0" : "translate-y-[101%]"
         )}
         onClick={(e) => e.stopPropagation()}
@@ -176,7 +176,7 @@ export function CheckoutSheet({
                 </button>
                 <div
                   className={cn(
-                    "absolute left-0 right-0 top-[82px] z-[5] overflow-hidden rounded-brand-lg border border-hairline bg-surface-card shadow-brand-soft transition-all",
+                    "glass-liquid-menu absolute left-0 right-0 top-[82px] z-[5] overflow-hidden rounded-brand-lg border border-hairline transition-all",
                     sectorOpen ? "max-h-80 opacity-100" : "pointer-events-none max-h-0 opacity-0"
                   )}
                 >

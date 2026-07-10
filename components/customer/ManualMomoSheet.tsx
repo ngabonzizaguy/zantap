@@ -66,7 +66,7 @@ export function ManualMomoSheet({
     >
       <div
         className={cn(
-          "w-full max-w-customer rounded-t-brand-xxl border border-hairline border-b-0 bg-surface-card px-5 pb-8 pt-6 shadow-brand-soft transition-transform duration-300",
+          "glass-liquid-sheet w-full max-w-customer rounded-t-brand-xxl border border-hairline border-b-0 px-5 pb-8 pt-6 transition-transform duration-300",
           open ? "translate-y-0" : "translate-y-full"
         )}
         onClick={(e) => e.stopPropagation()}
