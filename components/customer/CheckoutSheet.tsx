@@ -53,10 +53,12 @@ export function CheckoutSheet({
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[60] flex items-end justify-center transition-all duration-300",
+        // Blur stays constant and only opacity/visibility animate: transitioning
+        // the blur radius itself forces a re-blur every frame on mobile GPUs.
+        "fixed inset-0 z-[60] flex items-end justify-center bg-canvas-deep/40 backdrop-blur-sm transition-[opacity,visibility] duration-[420ms]",
         isOpen
-          ? "pointer-events-auto bg-canvas-deep/40 backdrop-blur-sm"
-          : "pointer-events-none bg-transparent backdrop-blur-none"
+          ? "visible opacity-100"
+          : "invisible opacity-0 pointer-events-none"
       )}
       onClick={onClose}
     >
@@ -176,7 +178,7 @@ export function CheckoutSheet({
                 </button>
                 <div
                   className={cn(
-                    "glass-liquid-menu absolute left-0 right-0 top-[82px] z-[5] overflow-hidden rounded-brand-lg border border-hairline transition-all",
+                    "glass-liquid-menu absolute left-0 right-0 top-[82px] z-[5] overflow-hidden rounded-brand-lg border border-hairline transition-[max-height,opacity] duration-200 ease-out",
                     sectorOpen ? "max-h-80 opacity-100" : "pointer-events-none max-h-0 opacity-0"
                   )}
                 >

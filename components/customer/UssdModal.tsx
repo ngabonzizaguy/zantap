@@ -29,16 +29,16 @@ export function UssdModal({
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[80] flex items-center justify-center p-6 transition-all duration-300",
-        open
-          ? "pointer-events-auto bg-[rgba(20,12,10,0.55)] backdrop-blur-sm"
-          : "pointer-events-none bg-transparent backdrop-blur-none"
+        // Blur stays constant and only opacity/visibility animate: transitioning
+        // the blur radius itself forces a re-blur every frame on mobile GPUs.
+        "fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(20,12,10,0.55)] p-6 backdrop-blur-sm transition-[opacity,visibility] duration-300",
+        open ? "visible opacity-100" : "invisible opacity-0 pointer-events-none"
       )}
       onClick={onCancel}
     >
       <div
         className={cn(
-          "w-full max-w-[322px] overflow-hidden rounded-[18px] bg-white shadow-[0_30px_80px_rgba(0,0,0,0.45)] transition-all duration-300",
+          "w-full max-w-[322px] overflow-hidden rounded-[18px] bg-white shadow-[0_30px_80px_rgba(0,0,0,0.45)] transition-[transform,opacity] duration-300 ease-[cubic-bezier(.22,1,.36,1)]",
           open ? "translate-y-0 scale-100 opacity-100" : "translate-y-3 scale-95 opacity-0"
         )}
         onClick={(e) => e.stopPropagation()}

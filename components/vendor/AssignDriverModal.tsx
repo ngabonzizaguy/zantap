@@ -64,14 +64,14 @@ export function AssignDriverModal({
       <button
         type="button"
         aria-label="Close assign driver dialog"
-        className="absolute inset-0 bg-canvas-deep/40 backdrop-blur-sm"
+        className="zt-overlay-enter absolute inset-0 bg-canvas-deep/40 backdrop-blur-sm"
         onClick={onClose}
       />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="zt-hidescroll relative z-10 max-h-[92vh] w-full max-w-kds overflow-y-auto rounded-t-brand-xl border border-b-0 border-hairline bg-surface-card shadow-brand-soft"
+        className="zt-sheet-enter zt-hidescroll relative z-10 max-h-[92vh] w-full max-w-kds overflow-y-auto rounded-t-brand-xl border border-b-0 border-hairline bg-surface-card shadow-brand-soft"
       >
         <div className="flex justify-center pt-3">
           <div className="h-1 w-10 rounded-full bg-muted-soft" aria-hidden />
