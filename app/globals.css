@@ -169,22 +169,22 @@
 
   /*
    * Metallic-gold accents — glassy differentiator on the dark storefront.
-   * Richer than the KDS's flat #ffd24c: a light metallic ramp (highlight
-   * #f8e9a0 → base #e6c765 → deep #bd9743) so the surfaces read as brushed
-   * metal under glass rather than a flat yellow fill.
+   * Saturation matches the KDS's amber accent (#f5a623) but stays gold:
+   * a warm ramp (highlight #ffdf8a → base #f2bd45 → deep #c48f28) so the
+   * surfaces read as brushed metal under glass rather than a flat fill.
    */
   .glass-gold {
     @apply backdrop-blur-[20px];
-    border: 1px solid rgba(242, 216, 124, 0.55);
+    border: 1px solid rgba(255, 214, 110, 0.55);
     background: linear-gradient(
       145deg,
-      rgba(238, 210, 112, 0.66),
-      rgba(189, 151, 67, 0.48)
+      rgba(250, 200, 80, 0.68),
+      rgba(196, 143, 40, 0.5)
     );
     color: #211703;
     box-shadow:
-      0 8px 26px rgba(190, 150, 55, 0.35),
-      inset 0 1px 0 rgba(253, 241, 185, 0.7);
+      0 8px 26px rgba(215, 155, 40, 0.35),
+      inset 0 1px 0 rgba(255, 232, 160, 0.7);
   }
 
   .glass-gold-badge {
@@ -192,27 +192,27 @@
     border: 2px solid var(--sf-bg, #0c0a09);
     background: linear-gradient(
       145deg,
-      rgba(246, 223, 130, 0.97),
-      rgba(206, 169, 78, 0.92)
+      rgba(252, 208, 92, 0.97),
+      rgba(216, 158, 48, 0.94)
     );
     color: #211703;
     box-shadow:
-      0 4px 14px rgba(190, 150, 55, 0.4),
-      inset 0 1px 0 rgba(255, 247, 205, 0.6);
+      0 4px 14px rgba(215, 155, 40, 0.4),
+      inset 0 1px 0 rgba(255, 240, 185, 0.6);
   }
 
   .glass-gold-pill {
     @apply rounded-pill backdrop-blur-[18px];
-    border: 1px solid rgba(242, 216, 124, 0.6);
+    border: 1px solid rgba(255, 214, 110, 0.6);
     background: linear-gradient(
       145deg,
-      rgba(242, 215, 122, 0.7),
-      rgba(198, 160, 72, 0.52)
+      rgba(252, 205, 88, 0.72),
+      rgba(206, 150, 44, 0.55)
     );
     color: #211703;
     box-shadow:
-      0 3px 12px rgba(190, 150, 55, 0.25),
-      inset 0 1px 0 rgba(253, 241, 185, 0.65);
+      0 3px 12px rgba(215, 155, 40, 0.25),
+      inset 0 1px 0 rgba(255, 232, 160, 0.65);
   }
 }
 
@@ -343,8 +343,8 @@
 .storefront-dark .text-on-primary { color: #0c0a09; }
 .storefront-dark .text-primary { color: #f4f4f3; }
 
-/* Metallic gold for price text — distinct from the KDS's flat #ffd24c */
-.storefront-dark .text-gold { color: #ebcd72; }
+/* Metallic gold for price text — KDS-warm but still gold */
+.storefront-dark .text-gold { color: #f4c657; }
 
 .storefront-dark .shadow-brand-soft {
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
