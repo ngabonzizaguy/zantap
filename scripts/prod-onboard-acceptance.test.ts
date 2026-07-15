@@ -1,6 +1,6 @@
 /**
  * Candidate #15 prod acceptance — live zantap-psi.vercel.app + prod Postgres.
- * Run: RUN_PROD_SMOKE=1 PROVISION_SECRET=... npx vitest run scripts/prod-onboard-acceptance.test.ts
+ * Run: RUN_PROD_SMOKE=1 npx vitest run scripts/prod-onboard-acceptance.test.ts
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";

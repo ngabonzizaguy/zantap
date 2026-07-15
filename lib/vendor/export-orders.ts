@@ -1,8 +1,9 @@
 import ExcelJS from "exceljs";
 import type { Store } from "@/lib/store/types";
 import type { OrderHistoryFilters, OrderHistoryItem } from "@/lib/types";
-import { ORDER_HISTORY_TIMEZONE } from "@/lib/orders/history-filters";
+import { hydrateOrderHistoryFilters } from "@/lib/orders/history-filters";
 import {
+  formatKigaliDateTime,
   formatPhoneDisplay,
   formatRwf,
   orderDisplayId,
@@ -34,17 +35,6 @@ export const EXPORT_CSV_HEADERS = [
   "Items",
 ] as const;
 
-function formatExportDate(date: Date): string {
-  return date.toLocaleString("en-GB", {
-    timeZone: ORDER_HISTORY_TIMEZONE,
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 function paymentStatusLabel(
   status: OrderHistoryItem["paymentStatus"]
 ): string {
@@ -69,7 +59,7 @@ export function orderHistoryItemToRow(
   const { order, paymentStatus } = item;
   return {
     "Order ID": orderDisplayId(order.id),
-    Date: formatExportDate(order.createdAt),
+    Date: formatKigaliDateTime(order.createdAt),
     "Order Status": order.status,
     "Payment Status": paymentStatusLabel(paymentStatus),
     Phone: formatPhoneDisplay(order.customerPhone),
@@ -128,14 +118,6 @@ export async function buildXlsxBuffer(
   return Buffer.from(arrayBuffer);
 }
 
-function hydrateFilters(filters: OrderHistoryFilters): OrderHistoryFilters {
-  return {
-    ...filters,
-    dateFrom: filters.dateFrom ? new Date(filters.dateFrom) : undefined,
-    dateTo: filters.dateTo ? new Date(filters.dateTo) : undefined,
-  };
-}
-
 /**
  * Fetches every row matching the History filters (not just the current page).
  * Throws {@link ExportRowCapError} when `total` exceeds {@link EXPORT_MAX_ROWS}.
@@ -146,7 +128,7 @@ export async function fetchAllFilteredOrders(
   filters: OrderHistoryFilters,
   maxRows: number = EXPORT_MAX_ROWS
 ): Promise<OrderHistoryItem[]> {
-  const hydrated = hydrateFilters(filters);
+  const hydrated = hydrateOrderHistoryFilters(filters);
   const probe = await store.listOrdersFiltered(vendorSlug, hydrated, {
     page: 1,
     pageSize: 1,

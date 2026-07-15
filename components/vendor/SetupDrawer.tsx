@@ -31,7 +31,7 @@ import {
 } from "@/lib/vendor/useOwnerToken";
 import { resetCoachmarks } from "@/components/vendor/Coachmark";
 import { StorefrontQr } from "@/components/onboard/StorefrontQr";
-import { getStorefrontUrl } from "@/lib/vendor/storefront-url";
+import { getStorefrontUrl } from "@/lib/base-url";
 
 export interface StorefrontProfile {
   tagline?: string;

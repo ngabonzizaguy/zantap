@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { provisionVendor } from "@/lib/actions/vendor-provision";
 import { updateMenuItem, uploadMenuImage } from "@/lib/actions/vendor-menu";
 import { cacheOwnerToken } from "@/lib/vendor/useOwnerToken";
-import { getStorefrontUrl } from "@/lib/vendor/storefront-url";
+import { getStorefrontUrl } from "@/lib/base-url";
 import {
   BUSINESS_CATEGORIES,
   DEFAULT_COUNTRY,

@@ -4,7 +4,7 @@ import { assertCanAdvanceKitchenStage } from "@/lib/kds/kitchen-stage";
 import { fetchKdsSnapshot } from "@/lib/kds/snapshot";
 import type { KdsSnapshot } from "@/lib/kds/types";
 import { getStore } from "@/lib/store";
-import type { KitchenStage, MenuItem, Order, OrderStatus } from "@/lib/types";
+import type { KitchenStage, MenuItem, Order } from "@/lib/types";
 
 // NOTE: a "use server" module may export only async server actions. Do NOT
 // re-export types from here — Next.js registers every export as a server
@@ -36,13 +36,6 @@ export async function setKitchen(
   open: boolean
 ): Promise<boolean> {
   return getStore().setKitchenOpen(vendorSlug, open);
-}
-
-export async function advanceOrderStatus(
-  orderId: string,
-  status: OrderStatus
-): Promise<Order | null> {
-  return getStore().updateOrderStatus(orderId, status);
 }
 
 /** Single-order kitchen stage advance — forward-only; throws on backward moves. */

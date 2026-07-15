@@ -2,7 +2,6 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./lib/**/*.{js,ts,jsx,tsx,mdx}",
@@ -37,14 +36,8 @@ const config: Config = {
         surface: {
           card: "#ffffff",
           strong: "#f0efed",
-          dark: "#0c0a09",
-          "dark-elevated": "#1c1917",
         },
         "on-primary": "#ffffff",
-        "on-dark": {
-          DEFAULT: "#ffffff",
-          soft: "#a8a29e",
-        },
         "gradient-mint": "#a7e5d3",
         "gradient-peach": "#f4c5a8",
         "gradient-lavender": "#c8b8e0",
@@ -67,18 +60,9 @@ const config: Config = {
         display: ["var(--font-display)", "Georgia", "Times New Roman", "serif"],
         body: ["var(--font-body)", "system-ui", "sans-serif"],
         sans: ["var(--font-manrope)", "system-ui", "sans-serif"],
-        serif: ["var(--font-display)", "Georgia", "serif"],
         mono: ["var(--font-jetbrains-mono)", "monospace"],
       },
       fontSize: {
-        "display-mega": [
-          "64px",
-          { lineHeight: "1.05", letterSpacing: "-1.92px", fontWeight: "300" },
-        ],
-        "display-xl": [
-          "48px",
-          { lineHeight: "1.08", letterSpacing: "-0.96px", fontWeight: "300" },
-        ],
         "display-lg": [
           "36px",
           { lineHeight: "1.17", letterSpacing: "-0.36px", fontWeight: "300" },
@@ -127,13 +111,8 @@ const config: Config = {
           "15px",
           { lineHeight: "1", letterSpacing: "0", fontWeight: "500" },
         ],
-        "nav-link": [
-          "15px",
-          { lineHeight: "1.4", letterSpacing: "0", fontWeight: "500" },
-        ],
       },
       spacing: {
-        xxs: "4px",
         xs: "8px",
         sm: "12px",
         base: "16px",
@@ -141,7 +120,6 @@ const config: Config = {
         lg: "24px",
         xl: "32px",
         xxl: "48px",
-        section: "96px",
       },
       borderRadius: {
         "brand-xs": "4px",
@@ -151,8 +129,6 @@ const config: Config = {
         "brand-xl": "16px",
         "brand-xxl": "24px",
         pill: "9999px",
-        "4xl": "2rem",
-        "5xl": "2.125rem",
       },
       boxShadow: {
         "brand-soft": "0 4px 16px rgba(0, 0, 0, 0.04)",

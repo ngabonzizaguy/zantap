@@ -15,6 +15,7 @@ import {
 } from "@/lib/vendor/export-orders";
 import { useOwnerToken } from "@/lib/vendor/useOwnerToken";
 import {
+  formatKigaliDateTime,
   formatPhoneDisplay,
   formatRwf,
   orderDisplayId,
@@ -47,17 +48,6 @@ function hydrateOrderHistoryItem(row: OrderHistoryItem): OrderHistoryItem {
       createdAt: new Date(row.order.createdAt),
     },
   };
-}
-
-function formatCreatedAt(date: Date): string {
-  return date.toLocaleString("en-GB", {
-    timeZone: "Africa/Kigali",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function statusBadgeVariant(
@@ -270,7 +260,7 @@ export function HistoryPanel({ vendorSlug }: HistoryPanelProps) {
                       {orderDisplayId(order.id)}
                     </p>
                     <p className="mt-1 font-body text-body-sm text-muted">
-                      {formatCreatedAt(order.createdAt)}
+                      {formatKigaliDateTime(order.createdAt)}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">

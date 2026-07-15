@@ -2,27 +2,16 @@ import { notFound } from "next/navigation";
 import { getStore } from "@/lib/store";
 import type { Order, Payment, Vendor } from "@/lib/types";
 import {
+  formatKigaliDateTime,
   formatPhoneDisplay,
   formatRwf,
   orderDisplayId,
 } from "@/lib/format";
-import { ORDER_HISTORY_TIMEZONE } from "@/lib/orders/history-filters";
 import { PrintReceiptButton } from "@/components/vendor/PrintReceiptButton";
 import { ReceiptBackButton } from "@/components/vendor/ReceiptBackButton";
 
 interface PageProps {
   params: Promise<{ slug: string; orderId: string }>;
-}
-
-function formatReceiptDate(date: Date): string {
-  return date.toLocaleString("en-GB", {
-    timeZone: ORDER_HISTORY_TIMEZONE,
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function paymentLine(payment: Payment | null, order: Order): string | null {
@@ -90,7 +79,7 @@ export default async function VendorReceiptPage({ params }: PageProps) {
             {orderDisplayId(order.id)}
           </p>
           <p className="mt-1 font-body text-body-sm text-muted">
-            {formatReceiptDate(order.createdAt)}
+            {formatKigaliDateTime(order.createdAt, "long")}
           </p>
         </header>
 

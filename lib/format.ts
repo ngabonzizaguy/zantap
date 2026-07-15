@@ -1,7 +1,23 @@
 import { COUNTRY_OPTIONS, DEFAULT_COUNTRY } from "@/lib/vendor/onboard-options";
+import { ORDER_HISTORY_TIMEZONE } from "@/lib/orders/history-filters";
 
 export function formatRwf(amount: number): string {
   return `${amount.toLocaleString("en-US")} RWF`;
+}
+
+/** Kigali-local order timestamp, e.g. `23 Jun 2026, 14:30` (History, exports, receipts). */
+export function formatKigaliDateTime(
+  date: Date,
+  month: "short" | "long" = "short"
+): string {
+  return date.toLocaleString("en-GB", {
+    timeZone: ORDER_HISTORY_TIMEZONE,
+    day: "numeric",
+    month,
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export function formatPhoneDisplay(phone: string): string {

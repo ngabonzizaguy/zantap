@@ -17,8 +17,7 @@ export type IconName =
   | "inventory"
   | "dispatch"
   | "copy"
-  | "call"
-  | "settings";
+  | "call";
 
 const paths: Record<IconName, React.ReactNode> = {
   menu: (
@@ -99,12 +98,6 @@ const paths: Record<IconName, React.ReactNode> = {
   call: (
     <>
       <path d="M5 4h4l2 5-3 2a12 12 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" />
-    </>
-  ),
-  settings: (
-    <>
-      <circle cx="12" cy="12" r="3.1" />
-      <path d="M10.6 3h2.8l.5 2.4 2.1.9 2-1.2 2 2-1.2 2 .9 2.1 2.4.5v2.8l-2.4.5-.9 2.1 1.2 2-2 2-2-1.2-2.1.9-.5 2.4h-2.8l-.5-2.4-2.1-.9-2 1.2-2-2 1.2-2-.9-2.1L3 13.4v-2.8l2.4-.5.9-2.1-1.2-2 2-2 2 1.2 2.1-.9.5-2.4z" />
     </>
   ),
 };

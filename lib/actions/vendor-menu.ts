@@ -98,20 +98,6 @@ export async function renameCategory(
   return getStore().renameCategory(vendorSlug, from, to);
 }
 
-export async function addMenuImageByUrl(
-  ownerToken: string,
-  vendorSlug: string,
-  itemId: string,
-  url: string
-): Promise<MenuImage> {
-  await assertOwnerToken(vendorSlug, ownerToken);
-  const trimmed = url.trim();
-  if (!trimmed || !/^https?:\/\//i.test(trimmed)) {
-    throw new Error("Valid image URL required");
-  }
-  return getStore().addMenuImage(vendorSlug, itemId, { url: trimmed });
-}
-
 export async function uploadMenuImage(
   ownerToken: string,
   vendorSlug: string,

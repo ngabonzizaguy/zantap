@@ -50,6 +50,20 @@ export function endOfDayInTimezone(
 }
 
 /**
+ * Revives serialized `dateFrom`/`dateTo` (strings after a server-action or URL
+ * round-trip) back into Date instances.
+ */
+export function hydrateOrderHistoryFilters(
+  filters: OrderHistoryFilters
+): OrderHistoryFilters {
+  return {
+    ...filters,
+    dateFrom: filters.dateFrom ? new Date(filters.dateFrom) : undefined,
+    dateTo: filters.dateTo ? new Date(filters.dateTo) : undefined,
+  };
+}
+
+/**
  * Resolves inclusive createdAt bounds from preset or custom dates.
  * Returns null when no date constraint applies.
  */

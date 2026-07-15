@@ -16,11 +16,6 @@ export function getBaseUrl(): string {
   return "";
 }
 
-/** @deprecated Prefer getBaseUrl — kept for ADR-0031 call sites. */
-export function resolveStorefrontOrigin(): string {
-  return getBaseUrl();
-}
-
 /** Host prefix for slug inputs, e.g. `zantap.ai/` or `localhost:3000/`. */
 export function getDisplayHostPrefix(): string {
   const base = getBaseUrl();

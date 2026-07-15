@@ -224,7 +224,7 @@ export function runStoreContract(
 
         // The hash must never appear on the domain Vendor returned to callers.
         expect(
-          (created as Record<string, unknown>).ownerTokenHash
+          (created as unknown as Record<string, unknown>).ownerTokenHash
         ).toBeUndefined();
 
         expect(await store.getVendorOwnerTokenHash("token-vendor")).toBe(
@@ -252,7 +252,7 @@ export function runStoreContract(
         );
         expect(rotated?.slug).toBe("rotate-vendor");
         expect(
-          (rotated as Record<string, unknown>).ownerTokenHash
+          (rotated as unknown as Record<string, unknown>).ownerTokenHash
         ).toBeUndefined();
         expect(await store.getVendorOwnerTokenHash("rotate-vendor")).toBe(
           second.hash
