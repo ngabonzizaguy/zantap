@@ -40,8 +40,11 @@ export function useKdsLiveSnapshot(
   onSnapshot: (snapshot: KdsSnapshot) => void
 ): { sseReconnecting: boolean } {
   const onSnapshotRef = useRef(onSnapshot);
-  onSnapshotRef.current = onSnapshot;
   const [sseReconnecting, setSseReconnecting] = useState(false);
+
+  useEffect(() => {
+    onSnapshotRef.current = onSnapshot;
+  });
 
   useEffect(() => {
     let source: EventSource | null = null;

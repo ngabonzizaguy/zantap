@@ -143,9 +143,17 @@ export function KdsDashboard({
   );
   const checklist = onboardingOverride ?? liveChecklist;
 
-  useEffect(() => {
+  // Drop the manual override when fresh snapshot data arrives ("adjust state
+  // during render" — no effect, no extra paint).
+  const [prevSnapshot, setPrevSnapshot] = useState({ menu, kitchenOpen, orders });
+  if (
+    prevSnapshot.menu !== menu ||
+    prevSnapshot.kitchenOpen !== kitchenOpen ||
+    prevSnapshot.orders !== orders
+  ) {
+    setPrevSnapshot({ menu, kitchenOpen, orders });
     setOnboardingOverride(null);
-  }, [menu, kitchenOpen, orders]);
+  }
 
   const refreshOnboarding = useCallback(async () => {
     try {
@@ -210,6 +218,7 @@ export function KdsDashboard({
     if (setupAutoOpened) return;
     if (shouldAutoOpenSetupDrawer(vendor.slug, checklist)) {
       incrementSetupVisitCount(vendor.slug);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage visit-cap is client-only external state; must run post-hydration
       setSetupOpen(true);
     }
     setSetupAutoOpened(true);

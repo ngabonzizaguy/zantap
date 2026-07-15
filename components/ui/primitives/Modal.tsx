@@ -50,13 +50,18 @@ export function Modal({
   const [closing, setClosing] = useState(false);
   const [prevOpen, setPrevOpen] = useState(open);
 
-  onCloseRef.current = onClose;
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   // Keep rendering briefly after `open` flips false so the exit fade can
   // play ("adjust state during render" pattern — no effect, no extra paint).
   if (open !== prevOpen) {
     setPrevOpen(open);
     setClosing(!open);
+    if (!open) {
+      setHandleVisible(false);
+    }
   }
 
   useEffect(() => {
@@ -78,7 +83,7 @@ export function Modal({
   useEffect(() => {
     if (!open) {
       wasOpenRef.current = false;
-      setHandleVisible(false);
+      // handleVisible is reset via the adjust-during-render block above.
       if (hideHandleTimerRef.current) {
         clearTimeout(hideHandleTimerRef.current);
       }

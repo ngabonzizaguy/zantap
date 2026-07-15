@@ -50,6 +50,9 @@ export function useOwnerToken(vendorSlug: string) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    // localStorage is client-only external state; reading it during render would
+    // break SSR hydration, so the sync read must live in an effect.
+    /* eslint-disable react-hooks/set-state-in-effect */
     setReady(false);
     try {
       setTokenState(localStorage.getItem(ownerTokenStorageKey(vendorSlug)));
@@ -57,6 +60,7 @@ export function useOwnerToken(vendorSlug: string) {
       setTokenState(null);
     }
     setReady(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [vendorSlug]);
 
   const setToken = useCallback(

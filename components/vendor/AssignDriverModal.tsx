@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import type { Driver } from "@/lib/types";
 import { formatPhoneDisplay, orderDisplayId } from "@/lib/format";
 import { Icon } from "@/components/ui/Icon";
@@ -26,16 +26,21 @@ export function AssignDriverModal({
 }: AssignDriverModalProps) {
   const titleId = useId();
   const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(() =>
+    open ? drivers[0]?.id ?? null : null
+  );
 
-  useEffect(() => {
+  // Reset on open/close or roster change ("adjust state during render").
+  const [prevKey, setPrevKey] = useState({ open, drivers });
+  if (prevKey.open !== open || prevKey.drivers !== drivers) {
+    setPrevKey({ open, drivers });
     if (!open) {
       setQuery("");
       setSelectedId(null);
-      return;
+    } else {
+      setSelectedId(drivers[0]?.id ?? null);
     }
-    setSelectedId(drivers[0]?.id ?? null);
-  }, [open, drivers]);
+  }
 
   const filteredDrivers = useMemo(() => {
     const needle = query.trim().toLowerCase();

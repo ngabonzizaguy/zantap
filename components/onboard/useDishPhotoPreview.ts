@@ -8,6 +8,7 @@ export function useDishPhotoPreview(file: File | null): string | null {
 
   useEffect(() => {
     if (!file) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- object-URL lifecycle is an external system; create/revoke must pair with render commits
       setPreviewUrl(null);
       return;
     }

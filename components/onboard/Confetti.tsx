@@ -35,6 +35,7 @@ export function Confetti({ pieces = 40 }: ConfettiProps) {
   const [items, setItems] = useState<ConfettiPiece[]>([]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- randomised pieces must seed client-side only (SSR hydration safety)
     setItems(
       Array.from({ length: pieces }, (_, index) => ({
         id: index,

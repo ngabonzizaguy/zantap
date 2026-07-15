@@ -78,34 +78,37 @@ export function HistoryPanel({ vendorSlug }: HistoryPanelProps) {
   const [exporting, setExporting] = useState<"csv" | "xlsx" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
 
-  const fetchHistory = useCallback(
-    async (
-      nextFilters: OrderHistoryFilters,
-      nextPage: number
-    ) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await loadOrderHistory(vendorSlug, nextFilters, {
-          page: nextPage,
-          pageSize: DEFAULT_ORDER_HISTORY_PAGE_SIZE,
-        });
+  // Flip to the loading state as soon as the query changes ("adjust state
+  // during render"); the effect below only owns the async fetch.
+  const [prevQuery, setPrevQuery] = useState({ vendorSlug, appliedFilters, page });
+  if (
+    prevQuery.vendorSlug !== vendorSlug ||
+    prevQuery.appliedFilters !== appliedFilters ||
+    prevQuery.page !== page
+  ) {
+    setPrevQuery({ vendorSlug, appliedFilters, page });
+    setLoading(true);
+    setError(null);
+  }
+
+  useEffect(() => {
+    loadOrderHistory(vendorSlug, appliedFilters, {
+      page,
+      pageSize: DEFAULT_ORDER_HISTORY_PAGE_SIZE,
+    })
+      .then((data) => {
         setResult({
           ...data,
           orders: data.orders.map(hydrateOrderHistoryItem),
         });
-      } catch {
+      })
+      .catch(() => {
         setError("Could not load order history. Try again.");
-      } finally {
+      })
+      .finally(() => {
         setLoading(false);
-      }
-    },
-    [vendorSlug]
-  );
-
-  useEffect(() => {
-    void fetchHistory(appliedFilters, page);
-  }, [appliedFilters, page, fetchHistory]);
+      });
+  }, [vendorSlug, appliedFilters, page]);
 
   const applyFilters = () => {
     setAppliedFilters(filters);

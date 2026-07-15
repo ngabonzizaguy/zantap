@@ -187,23 +187,34 @@ export function SetupDrawer({
   const normalizedSlugDraft = normalizeVendorSlug(slugDraft);
   const hostPrefix = getDisplayHostPrefix();
 
+  // Instant idle/available/invalid/checking feedback while typing ("adjust
+  // state during render"); the debounced availability probe stays in the effect.
+  const [prevSlugKey, setPrevSlugKey] = useState({ open, slugDraft, vendorSlug });
+  if (
+    prevSlugKey.open !== open ||
+    prevSlugKey.slugDraft !== slugDraft ||
+    prevSlugKey.vendorSlug !== vendorSlug
+  ) {
+    setPrevSlugKey({ open, slugDraft, vendorSlug });
+    if (open) {
+      if (!normalizedSlugDraft) {
+        setSlugStatus("idle");
+      } else if (normalizedSlugDraft === normalizeVendorSlug(vendorSlug)) {
+        setSlugStatus("available");
+      } else if (!isValidVendorSlug(slugDraft)) {
+        setSlugStatus("invalid");
+      } else {
+        setSlugStatus("checking");
+      }
+    }
+  }
+
   useEffect(() => {
     if (!open) return;
+    if (!normalizedSlugDraft) return;
+    if (normalizedSlugDraft === normalizeVendorSlug(vendorSlug)) return;
+    if (!isValidVendorSlug(slugDraft)) return;
 
-    if (!normalizedSlugDraft) {
-      setSlugStatus("idle");
-      return;
-    }
-    if (normalizedSlugDraft === normalizeVendorSlug(vendorSlug)) {
-      setSlugStatus("available");
-      return;
-    }
-    if (!isValidVendorSlug(slugDraft)) {
-      setSlugStatus("invalid");
-      return;
-    }
-
-    setSlugStatus("checking");
     let cancelled = false;
     const timer = window.setTimeout(() => {
       void checkSlugAvailable(normalizedSlugDraft).then((available) => {
@@ -238,8 +249,27 @@ export function SetupDrawer({
     };
   }, [open, onClose, onRefresh]);
 
-  useEffect(() => {
-    if (!open) return;
+  // Re-seed drafts when the drawer opens or saved data changes ("adjust state
+  // during render" — no effect, no extra paint).
+  const [prevDraftKey, setPrevDraftKey] = useState({
+    open,
+    profile,
+    business,
+    payments,
+  });
+  if (
+    prevDraftKey.open !== open ||
+    prevDraftKey.profile !== profile ||
+    prevDraftKey.business !== business ||
+    prevDraftKey.payments !== payments
+  ) {
+    setPrevDraftKey({ open, profile, business, payments });
+    if (open) {
+      seedDrafts();
+    }
+  }
+
+  function seedDrafts() {
     setTaglineDraft(profile.tagline ?? "");
     setLocationDraft(profile.location ?? "");
     setDeliveryTimeDraft(profile.deliveryTime ?? "");
@@ -276,7 +306,7 @@ export function SetupDrawer({
     }
     setPaymentsError(null);
     setPaymentsSaved(false);
-  }, [open, profile, business, payments]);
+  }
 
   const handleShowTipsAgain = () => {
     resetCoachmarks();

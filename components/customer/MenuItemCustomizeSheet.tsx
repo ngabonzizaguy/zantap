@@ -53,7 +53,10 @@ export function MenuItemCustomizeSheet({
   const dragRef = useRef<{ startY: number; startT: number } | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  // Reset selection when a new item opens ("adjust state during render").
+  const [prevItem, setPrevItem] = useState<MenuItem | null>(item);
+  if (item !== prevItem) {
+    setPrevItem(item);
     if (item) {
       setRenderItem(item);
       setQty(1);
@@ -63,12 +66,16 @@ export function MenuItemCustomizeSheet({
       }
       setNotes("");
       setPhotoIndex(0);
-      // Clear inline drag styles a cancelled gesture may have left behind.
-      const el = sheetRef.current;
-      if (el) {
-        el.style.transition = "";
-        el.style.transform = "";
-      }
+    }
+  }
+
+  useEffect(() => {
+    if (!item) return;
+    // Clear inline drag styles a cancelled gesture may have left behind.
+    const el = sheetRef.current;
+    if (el) {
+      el.style.transition = "";
+      el.style.transform = "";
     }
   }, [item]);
 

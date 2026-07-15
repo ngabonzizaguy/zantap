@@ -82,6 +82,7 @@ export function OnboardWizard() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("recover") === "1") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- URL is client-only external state (avoids a Suspense boundary)
       setRecoverOpen(true);
     }
   }, []);

@@ -94,18 +94,25 @@ export function MenuItemModal({
 
   const editingItemId = item?.id;
 
-  useEffect(() => {
-    if (!open) return;
-    setValues(item ? formFromItem(item) : emptyForm());
-    setClientError(null);
-    setGalleryError(null);
-    setGalleryImages(item?.images ?? []);
-    setPendingPhoto(null);
-    setDescriptionOpen(Boolean(item?.description));
-    // Reset only when the dialog opens or a different item is selected — not when
-    // the parent passes a fresh object reference (SSE refresh, gallery upload).
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- item read at open/id change
-  }, [open, editingItemId, mode]);
+  // Reset only when the dialog opens or a different item is selected — not when
+  // the parent passes a fresh object reference (SSE refresh, gallery upload).
+  // "Adjust state during render": keyed on (open, itemId, mode), reads latest item.
+  const [prevFormKey, setPrevFormKey] = useState({ open, editingItemId, mode });
+  if (
+    prevFormKey.open !== open ||
+    prevFormKey.editingItemId !== editingItemId ||
+    prevFormKey.mode !== mode
+  ) {
+    setPrevFormKey({ open, editingItemId, mode });
+    if (open) {
+      setValues(item ? formFromItem(item) : emptyForm());
+      setClientError(null);
+      setGalleryError(null);
+      setGalleryImages(item?.images ?? []);
+      setPendingPhoto(null);
+      setDescriptionOpen(Boolean(item?.description));
+    }
+  }
 
   const suggestions = useMemo(() => {
     const base = new Set(categories.filter((c) => c && c !== "All"));

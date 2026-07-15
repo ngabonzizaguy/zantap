@@ -152,6 +152,7 @@ export function useCheckout(
     if (!stored) return;
 
     const createdAt = new Date(stored.orderCreatedAt);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sessionStorage is client-only external state; restore must run post-hydration
     restoreManualSession({
       orderId: stored.orderId,
       ussdDial: stored.ussdDial,

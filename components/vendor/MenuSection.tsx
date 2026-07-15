@@ -324,14 +324,14 @@ export function MenuSection({
   }, [vendorSlug]);
 
   useEffect(() => {
-    void loadCategories();
-  }, [loadCategories]);
+    void loadMenuCategories(vendorSlug).then(setCategories);
+  }, [vendorSlug]);
 
   useEffect(() => {
     if (filter === "archived") {
-      void loadArchived();
+      void loadArchivedMenu(vendorSlug).then(setArchivedItems);
     }
-  }, [filter, loadArchived]);
+  }, [filter, vendorSlug]);
 
   const requireToken = useCallback(
     (action: () => void) => {

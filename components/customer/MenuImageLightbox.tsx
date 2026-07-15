@@ -19,13 +19,21 @@ export function MenuImageLightbox({
   itemName,
   onClose,
 }: MenuImageLightboxProps) {
-  const [activeIndex, setActiveIndex] = useState(initialIndex);
+  const clampedInitialIndex = Math.min(initialIndex, Math.max(urls.length - 1, 0));
+  const [activeIndex, setActiveIndex] = useState(clampedInitialIndex);
 
-  useEffect(() => {
+  // Re-anchor on open / target change ("adjust state during render" — no effect).
+  const [prevKey, setPrevKey] = useState({ open, initialIndex, len: urls.length });
+  if (
+    prevKey.open !== open ||
+    prevKey.initialIndex !== initialIndex ||
+    prevKey.len !== urls.length
+  ) {
+    setPrevKey({ open, initialIndex, len: urls.length });
     if (open) {
-      setActiveIndex(Math.min(initialIndex, Math.max(urls.length - 1, 0)));
+      setActiveIndex(clampedInitialIndex);
     }
-  }, [open, initialIndex, urls.length]);
+  }
 
   const goPrev = useCallback(() => {
     setActiveIndex((index) => Math.max(index - 1, 0));

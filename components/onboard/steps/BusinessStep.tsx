@@ -71,20 +71,28 @@ export function BusinessStep({
   onSlugManuallyEdited,
   onContinue,
 }: BusinessStepProps) {
-  const [slugStatus, setSlugStatus] = useState<SlugAvailability>("idle");
   const normalizedSlug = normalizeVendorSlug(data.slug);
+  const syncSlugStatus = (slug: string): SlugAvailability => {
+    if (!normalizeVendorSlug(slug)) return "idle";
+    if (!isValidVendorSlug(slug)) return "invalid";
+    return "checking";
+  };
+
+  const [slugStatus, setSlugStatus] = useState<SlugAvailability>(() =>
+    syncSlugStatus(data.slug)
+  );
+
+  // Instant idle/invalid/checking feedback on typing ("adjust state during
+  // render"); the debounced availability probe lives in the effect below.
+  const [prevSlugInput, setPrevSlugInput] = useState(data.slug);
+  if (prevSlugInput !== data.slug) {
+    setPrevSlugInput(data.slug);
+    setSlugStatus(syncSlugStatus(data.slug));
+  }
 
   useEffect(() => {
-    if (!normalizedSlug) {
-      setSlugStatus("idle");
-      return;
-    }
-    if (!isValidVendorSlug(data.slug)) {
-      setSlugStatus("invalid");
-      return;
-    }
+    if (!normalizedSlug || !isValidVendorSlug(data.slug)) return;
 
-    setSlugStatus("checking");
     let cancelled = false;
     const timer = window.setTimeout(() => {
       void checkSlugAvailable(normalizedSlug).then((available) => {

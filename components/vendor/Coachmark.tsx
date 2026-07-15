@@ -73,6 +73,9 @@ export function Coachmark({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // localStorage dismissal state is client-only; reading during render would
+    // break SSR hydration.
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
     setMounted(true);
     setDismissed(isCoachmarkDismissed(id));
 
@@ -107,6 +110,7 @@ export function Coachmark({
   }, [dismissed, enabled, targetSelector]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- measures live DOM geometry (external system); cannot run during render
     measure();
     window.addEventListener("resize", measure);
     window.addEventListener("scroll", measure, true);
