@@ -9,7 +9,27 @@ is never lost again.
 > convention — local markdown, no GitHub round-trips). It persists on this machine
 > across sessions, but does **not** sync via git to other clones/machines.
 
-Last verified against the codebase: 2026-07-10.
+Last verified against the codebase: 2026-07-15.
+
+## Codebase hygiene refactor (2026-07-15)
+
+**✅ DONE (local, NOT deployed)** — branch `refactor/codebase-hygiene` (`c2bc2ff` + `e030cc8`,
+even with `origin/main` before the two commits; deliberately kept OFF `main` until reviewed).
+Zero-behavior hygiene pass, ADR-0044:
+- Dead code deleted: `GlassPanel` + `.glass-panel*`/`.glass-pill` CSS, `TabPlaceholder`,
+  `advanceOrderStatus`, `addMenuImageByUrl`, `settings` icon, `resolveStorefrontOrigin`
+  + `lib/vendor/storefront-url.ts` barrel (callers → `@/lib/base-url`).
+- Tailwind: unused tokens removed (`display-mega/xl`, `nav-link`, `serif`, `on-dark`,
+  `surface.dark*`, `4xl/5xl` radii, `section`/`xxs` spacing) + stale `pages/**` glob;
+  `tsconfig` `allowJs:false`; `.env.example` `PROVISION_SECRET` note normalized.
+- Dedup: `hydrateOrderHistoryFilters` (history-filters.ts), `formatKigaliDateTime` (format.ts).
+- **`npm run lint` green again**: 22 react-hooks v6 errors fixed — "adjust state during
+  render" for reset-on-open effects; targeted disables ONLY for client-only external
+  state (localStorage/sessionStorage/URL/DOM measure/object-URL). 2 tsc errors in
+  contract test fixed. Verified: lint 0/0, tsc clean, build clean, tests 253/77.
+- Deferred (behavior risk): big-component splits, Select/Combobox merge, `formatRwf`
+  in Metrics/Ops, `INGREDIENTS_UI_ENABLED` branch removal.
+- **Next:** review → merge to `main` → deploy → prod curl smoke (storefront + KDS + onboard).
 
 ## Recommended next (2026-07-10)
 
