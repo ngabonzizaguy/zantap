@@ -1,84 +1,138 @@
 # ZanTap
 
-An ultra-lightweight, mobile-first social commerce checkout platform and micro-POS designed explicitly for informal food vendors, ghost kitchens, and street food hubs across Africa — starting in Kigali, Rwanda.
+Mobile-first social commerce checkout and kitchen display for informal food vendors,
+ghost kitchens, and street-food hubs — starting in Kigali, Rwanda.
+
+**Live:** [zantap-psi.vercel.app](https://zantap-psi.vercel.app)
+
+| Surface | URL |
+|---|---|
+| Customer storefront | `/[slug]` — e.g. [`/inka-steakhouse`](https://zantap-psi.vercel.app/inka-steakhouse) |
+| Vendor KDS | `/vendor/[slug]` — e.g. [`/vendor/inka-steakhouse`](https://zantap-psi.vercel.app/vendor/inka-steakhouse) |
+| Self-serve onboarding | [`/onboard`](https://zantap-psi.vercel.app/onboard) |
+| Operator console | [`/ops`](https://zantap-psi.vercel.app/ops) |
+| Delivery slip | `/slip/[orderId]` |
 
 ## Quick start
 
 ```bash
 npm install
+cp .env.example .env   # optional — without DATABASE_URL the in-memory Store is used
+npm run db:deploy      # only when DATABASE_URL / DIRECT_URL are set
+npm run db:seed        # seeds the demo vendor `inka-steakhouse`
 npm run dev
 ```
 
 Open:
 
-- Customer storefront: [http://localhost:3000/inka-steakhouse](http://localhost:3000/inka-steakhouse)
-- Vendor KDS: [http://localhost:3000/vendor/inka-steakhouse](http://localhost:3000/vendor/inka-steakhouse)
-- Driver slip stub: [http://localhost:3000/slip/1204](http://localhost:3000/slip/1204)
+- Storefront: [http://localhost:3000/inka-steakhouse](http://localhost:3000/inka-steakhouse)
+- KDS: [http://localhost:3000/vendor/inka-steakhouse](http://localhost:3000/vendor/inka-steakhouse)
+- Onboard: [http://localhost:3000/onboard](http://localhost:3000/onboard)
 
-## Sandbox MoMo PIN
+## Checkout / MoMo
 
-During checkout, use PIN **`12345`** to simulate a successful STK push.
+| Mode | Env | Behaviour |
+|---|---|---|
+| `simulate` | `MOMO_MODE=simulate` (local default) | Sandbox STK sheet — PIN **`12345`** succeeds |
+| `manual` | unset / `manual` (production default) | Customer dials USSD `*182*8*1*{code}*{amount}#`, then taps **I've paid** |
 
 ## Architecture
 
-This repo is frontend-first with a swappable data layer:
+```
+UI (customer storefront · vendor KDS · onboard · ops)
+  → Server Actions (lib/actions/*) + RSC reads
+  → Store seam (lib/store/) — one interface, two adapters
+       ├─ Prisma / Postgres   when DATABASE_URL is set
+       └─ in-memory           otherwise (tests / local without a DB)
+  → MoMo (lib/momo/) — simulate STK or manual USSD
+  → KDS live push — SSE /api/vendor/[slug]/kds-stream (Store-backed)
+```
 
-```
-UI (customer + KDS)
-  → lib/data/*        typed async functions (mock-backed today)
-  → lib/momo/simulate simulated STK push via /api/momo/stk
-  → prisma/schema.prisma authored for future Supabase/Postgres wiring
-```
+The browser never imports the Store. Customer vs vendor UIs stay separate
+routes/components; only the visual language is shared via `DESIGN.md`
+(ElevenLabs editorial tokens in `tailwind.config.ts`). KDS/onboarding use the
+scoped `.kds-dark` remap.
 
 ### Routes
 
 | Route | Purpose |
 |---|---|
-| `/[slug]` | Glassmorphic customer storefront (max 450px) |
-| `/vendor/[slug]` | Dark vendor KDS dashboard (max 560px) |
-| `/slip/[orderId]` | Standalone driver delivery slip |
-| `/api/momo/stk` | Simulated MoMo STK push + PIN confirmation |
+| `/[slug]` | Customer storefront (editorial / immersive hero) |
+| `/vendor/[slug]` | Vendor kitchen display (orders, menu, history, drivers, setup) |
+| `/vendor/[slug]/receipt/[orderId]` | Printable order receipt |
+| `/onboard` | Self-serve vendor signup (owner token minted once) |
+| `/ops` | Operator console (suspend / recover / audit) |
+| `/slip/[orderId]` | Driver delivery slip |
+| `/api/momo/stk` | Simulated MoMo STK + PIN |
+| `/api/vendor/[slug]/kds-stream` | KDS SSE live snapshot |
+| `/api/vendor/[slug]/export` | Order history CSV / XLSX |
+| `/api/operator/v1/*` | Operator Control API |
 
 ### Key directories
 
-- `components/customer/` — storefront UI (menu, cart, checkout, USSD modal, receipt)
-- `components/vendor/` — KDS UI (orders, inventory, dispatch modal)
-- `lib/data/` — mock store + typed data access (swap internals for Prisma later)
-- `lib/momo/` — MoMo simulation logic
-- `prisma/schema.prisma` — database schema (not migrated yet)
+- `components/customer/` — storefront (hero, menu, cart, customize, MoMo sheets)
+- `components/vendor/` — KDS (tickets, menu CRUD, history, drivers, setup drawer)
+- `components/onboard/` — dark self-serve wizard
+- `components/ops/` — operator UI
+- `lib/store/` — Store interface + in-memory / Prisma adapters
+- `lib/actions/` — Server Actions only (async exports; never re-export types)
+- `lib/momo/`, `lib/checkout/`, `lib/kds/`, `lib/vendor/` — domain modules
+- `docs/adr/` — architecture decision records
+- `DESIGN.md` — UI design system (single source of truth)
 
 ## Environment
 
-Copy `.env.example` to `.env` when wiring Supabase:
+Copy `.env.example` → `.env`. Important vars:
 
-```bash
-cp .env.example .env
-```
+| Var | Purpose |
+|---|---|
+| `DATABASE_URL` / `DIRECT_URL` | Supabase Postgres (pooled + session). Unset → in-memory Store |
+| `TEST_DATABASE_URL` | Isolated schema for `#prisma` contract tests |
+| `SKIP_PRISMA_TESTS` | `1` (default) skips remote Prisma tests; set `0` to opt in |
+| `MOMO_MODE` | `simulate` \| `manual` |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob menu/branding uploads (local fallback: `/api/local-blob/…`) |
+| `NEXT_PUBLIC_BASE_URL` | Public origin for QR / share / WhatsApp links |
+| `PROVISION_KILL_SWITCH` | Close public signup (`1`/`true`/`on`) |
+| `OPERATOR_API_KEY` / `OPERATOR_UI_SECRET` | Ops Control API + `/ops` login |
 
-- `DATABASE_URL` — pooled Postgres connection (Supabase transaction pooler)
-- `DIRECT_URL` — direct Postgres connection (Prisma migrations)
+Retired (do not set): `PROVISION_SECRET`, `VENDOR_WRITE_SECRET` — replaced by
+per-vendor owner tokens (ADR-0022 / ADR-0025).
 
 ## Scripts
 
 ```bash
-npm run dev          # Start dev server
+npm run dev          # Next.js dev server
 npm run build        # Production build
+npm run start        # Serve production build
 npm run lint         # ESLint
-npm run db:generate  # Generate Prisma client (after DATABASE_URL is set)
+npm test             # Vitest (Prisma suite skipped unless SKIP_PRISMA_TESTS=0)
+npm run db:generate  # prisma generate
+npm run db:migrate   # prisma migrate dev
+npm run db:deploy    # prisma migrate deploy
+npm run db:seed      # seed demo vendor (refuses remote unless SEED_ALLOW_REMOTE=1)
 ```
 
-## Reference assets
+## Design & agents
 
-Design prototypes and product specs are kept in the repo root:
+- **UI:** follow `DESIGN.md` — off-white canvas / near-black ink on the storefront;
+  `.kds-dark` charcoal + MoMo amber on KDS and onboarding.
+- **Agent rules:** `AGENTS.md` + `.cursorrules` (Store seam, anti-YOLO, handoff protocol).
+- **ADRs:** `docs/adr/` (git-tracked decisions).
 
-- `ZanTap.dc.html` — customer UI reference
-- `ZanTap Vendor KDS.dc.html` — vendor KDS reference
-- `zantap.txt` — product spec
-- `zantap-brand-identity.txt` — brand notes
+## Reference assets (repo root)
 
-## Deferred (Phase 2)
+Prototypes and early product notes (historical; live UI follows `DESIGN.md`):
 
-- Supabase provisioning + Prisma migrations
-- Vendor authentication
-- Real MoMo sandbox integration
-- Realtime order subscriptions
+- `ZanTap.dc.html` — early customer UI reference
+- `ZanTap Vendor KDS.dc.html` — early KDS reference
+- `zantap.txt` / `zantap-brand-identity.txt` — product / brand notes
+
+## Status / deferred
+
+**Shipped:** Store seam (Prisma + in-memory), manual & simulate MoMo, KDS SSE +
+kitchen stages, menu CRUD + Blob gallery, order history/export, self-serve
+onboarding + owner-token recovery, drivers + assignment, operator console,
+storefront DESIGN.md migration.
+
+**Deferred:** vendor/ops auth beyond owner tokens + ops secret (candidate #12),
+live MTN MoMo API (manual USSD is the interim), custom domain cutover.
