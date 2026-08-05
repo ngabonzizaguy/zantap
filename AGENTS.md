@@ -2,6 +2,17 @@
 
 Project-specific behavioral rules also live in `.cursorrules` (UI boundaries, anti-YOLO protocol, MoMo grilling trigger). This file holds the configuration that the installed Matt Pocock engineering skills read.
 
+## Cursor Cloud specific instructions
+
+The Cloud Agent VM is **Linux/bash** (not the human's Windows PowerShell — the "host = Windows PowerShell" gotchas below do NOT apply on the cloud VM; use `&&`, heredocs, etc. normally). Dependencies are refreshed on startup by the update script (`npm install`, which runs `prisma generate` via `postinstall` — no DB needed). Standard commands live in `README.md` / `package.json`; only the non-obvious cloud caveats are below.
+
+- **No database or external service is required to develop.** With `DATABASE_URL` unset, `getStore()` uses the in-memory Store (`lib/store/in-memory.ts`) seeded with demo vendor `inka-steakhouse`. The four surfaces (`/inka-steakhouse` storefront, `/vendor/inka-steakhouse` KDS, `/onboard`, `/ops`) all work without Postgres, Blob, or a payment provider. Only set `DATABASE_URL`/`DIRECT_URL` + run `npm run db:deploy && npm run db:seed` if you specifically need to exercise the Prisma/Postgres path.
+- **Run exactly one dev server.** `npm run dev` serves everything on `http://localhost:3000` (App Router + all API routes + KDS SSE — no separate processes). Starting a second `next dev` fights over port 3000 and produces confusing hangs; if a server is already running (check the `zantap-dev` tmux session / port 3000), reuse it instead of launching another.
+- **MoMo is `simulate` in dev** (`NODE_ENV!=production` → sandbox STK). Pay with **PIN `12345`**. Production defaults to `manual` USSD.
+- **Checkout Pay button gotcha:** the storefront "Pay securely with MoMo" button stays disabled until ALL THREE delivery fields are filled — Phone (`078XXXXXXX`), Delivery **sector**, and **Landmark**. Missing the Landmark field silently blocks payment (`canProceedToPay`). Fill all three when smoke-testing an order.
+- **KDS visibility is status-gated:** only `PAID`/`DISPATCHED`/`COMPLETED` orders reach `/vendor/[slug]`. After paying (PIN `12345`) the order appears as a `NEW` ticket "Paid via MoMo". The KDS auto-opens "Kitchen status" + "Setup guide" overlays on first load — dismiss them to see the queue.
+- **Tests:** `npm test` runs Vitest; the `#prisma` contract suite is **skipped by default** (`SKIP_PRISMA_TESTS=1`, no `TEST_DATABASE_URL`) — a green run of ~253 passed / ~77 skipped is expected and correct without a DB. `npm run lint` and `npm run build` are both clean.
+
 ## MANDATORY: Session handoff protocol (non-negotiable — applies to EVERY session)
 
 Work is run one task per session to keep context token-light. A new session
