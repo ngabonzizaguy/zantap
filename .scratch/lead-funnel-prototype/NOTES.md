@@ -3,7 +3,7 @@
 **Prototype question:** Which landing-page structure best turns attention from
 social posts and Reels into qualified restaurant leads?
 
-**Status:** Prototype revision 3 complete — owner design choice pending.
+**Status:** Direction A selected as the working production direction — scope interview in progress.
 
 This is deliberately throwaway HTML, CSS, and JavaScript. It does not connect
 to the production Store, database, analytics, or operator authentication.
@@ -85,13 +85,24 @@ The external website-builder prompt is in `higgsfield-website-prompt.md`.
 - Dashboard search and CSV export remain wired.
 - JavaScript syntax check passes.
 
-## Verdict placeholder
+## Final verdict — 2026-08-05 (ADR-0046, supersedes the earlier same-day Direction A working verdict)
 
-Winner: **TBD**
+Winner: **Direction C — Founder offer (conversion-first structure)**
 
-Keep from other directions: **TBD**
+Keep from other directions: **Direction A's cinematic Kigali hero (still +
+five-second motion loop)**
 
-Why: **TBD**
+Why: the 90-day objective is lead generation for partner recruitment, so the
+visible lead form and the concrete free-guided-setup offer must lead the page;
+A's footage supplies atmosphere without sacrificing conversion. Production copy
+must broaden from restaurants to local food businesses (small restaurants,
+bars, individual/home food-delivery services) per ADR-0045/0046.
 
-After a direction is chosen, delete this prototype and implement the decision
-through a PRD and isolated issues using the production Store seam.
+Commercial model: **decided** — free guided setup for early partners now,
+per-order commission stated as the long-term model (ADR-0046 §2). The free
+offer may appear in landing copy.
+
+Keep this prototype as a visual reference until the approved production version
+has been specified and verified. Implement only through a PRD and isolated issues
+using the production Store seam; remove throwaway prototype code after the port is
+complete.

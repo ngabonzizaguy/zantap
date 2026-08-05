@@ -13,21 +13,26 @@ Last verified against the codebase: 2026-07-15.
 
 ## Product architecture audit (2026-08-05)
 
-**PHASE 1 COMPLETE · OWNER INTERVIEW IN PROGRESS.** The existing product, docs,
-design/brand assets, PWA readiness, security model, payment flow, IA, and roadmap
-were audited without changing application code. Verification is green: lint,
-TypeScript, production build, and 253 tests pass (77 opt-in database tests
-skipped). The product foundation is strong; broad-launch blockers are the
-unshipped marketing/lead funnel, unresolved product-wide brand authority and
-public domain, phone-only owner-token recovery, customer-self-confirmed payment,
-and the absent manifest/service-worker/offline/install layer. Tracking and the
-first four owner questions: `.scratch/product-architecture-audit/issue-01.md` and
-`audit-2026-08-05.md`. No ADR yet because no new decision was approved. Any
-approved implementation must start on a separate branch.
+**✅ PHASE 1 + FULL OWNER INTERVIEW COMPLETE (ADR-0046) · NEXT = PRD + ISSUES.**
+The existing product, docs, design/brand assets, PWA readiness, security model,
+payment flow, IA, and roadmap were audited without changing application code
+(verification green: lint, tsc, build, 253 tests / 77 opt-in skipped). A
+16-question owner interview on branch `product/restructure-audit` resolved every
+launch-blocking ambiguity — recorded in ADR-0046 (supersedes ADR-0045's
+provisional Direction A and open items). Final decisions: recruit Kigali
+food-business partners in 90 days; free guided setup → commission long-term;
+black-and-amber Z product-wide; landing = C structure + A cinematic hero; buy
+`zantap.app`; operator-gated recovery; vendor payment-verification state; leads
+→ Store/Postgres → ops inbox; rewrite `DESIGN.md` to codify the live system;
+PWA = manifest + install + read-only shell + kitchen-stage-only offline queue
+(server wins); vendor hours first; KDS chime for pilot; English-only i18n-ready;
+ship order = brand+domain+funnel → trust hardening → PWA+hours → rest.
+Tracking: `.scratch/product-architecture-audit/issue-01.md` and
+`audit-2026-08-05.md`.
 
 ## Lead-generation funnel (prototype, 2026-07-30)
 
-**🟡 PROTOTYPE REVISION 3 COMPLETE · OWNER DESIGN CHOICE PENDING.** A standalone,
+**✅ FINAL DIRECTION CHOSEN (C structure + A hero, ADR-0046) · NEXT = PRD.** A standalone,
 throwaway HTML/CSS/JS prototype lives under
 `.scratch/lead-funnel-prototype/`. It contains three structurally different
 landing directions (`?variant=A|B|C`): cinematic restaurant film, editorial
@@ -43,9 +48,12 @@ sub-600px responsive compositions were visually inspected in the in-app
 browser with no page overflow; form submission was re-verified end-to-end.
 Screens exposing customer/driver phone numbers remain excluded. A detailed
 copy/paste Higgsfield website-builder prompt is stored beside the prototype.
-No production route, Store implementation, database schema, or ADR has been
-added. Next: owner chooses a direction and combination notes, then run the
-PRD/issues workflow before production implementation.
+No production route, Store implementation, or database schema has been added.
+ADR-0045 records the local-food-business audience; ADR-0046 finalizes the
+direction (C conversion-first structure + A cinematic hero), offer (free guided
+setup), CTA path (lead form → ops inbox), and canonical brand
+(`public/brand/approved-z/` product-wide). Next: run the PRD/issues workflow,
+then production implementation.
 Tracking: `.scratch/lead-funnel-prototype/issue-01.md` and `NOTES.md`.
 
 ## Social account branding (operational, 2026-07-29)
