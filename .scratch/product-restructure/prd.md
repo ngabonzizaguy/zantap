@@ -38,6 +38,12 @@ covers only what stands between that loop and safe public acquisition.
    `.scratch/lead-funnel-prototype/assets/`). Device-framed real screenshots
    (no floating screenshot cards; no screens exposing customer/driver phones).
    SEO fundamentals: metadata, Open Graph, sitemap/robots for the marketing page.
+   **Motion stack (owner directive 2026-08-05, ADR-0047):** GSAP smooth
+   animations, restrained Three.js detail, Higgsfield-generated assets, and a
+   scroll-scrubbed cinematic built with the installed **scroll-world** skill
+   (`.agents/skills/scroll-world/`) — its own owner interview + budget approval
+   precede any paid rendering; conversion (lead form) always wins over
+   cinematic; reduced-motion/still fallbacks mandatory. Details in issue-03.
 4. **Durable lead capture**: `Lead` model through the Store seam (both adapters
    + migration), server action with validation + basic rate limit + consent
    line, no client DB access.

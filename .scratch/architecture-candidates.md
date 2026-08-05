@@ -16,7 +16,10 @@ Last verified against the codebase: 2026-07-15.
 **✅ PHASE 1 + INTERVIEW + PRD/ISSUES COMPLETE · NEXT = IMPLEMENT ISSUE 01.**
 PRD + 10 isolated issues now live in `.scratch/product-restructure/` (prd.md +
 issue-01…10): T1 brand rollout / domain cutover (owner-blocked on buying
-`zantap.app`) / marketing page at `/` / lead capture / ops inbox; T2
+`zantap.app`) / marketing page at `/` (motion stack per ADR-0047: GSAP +
+Three.js + Higgsfield + vendored scroll-world skill at
+`.agents/skills/scroll-world/`; budget approval before paid rendering) /
+lead capture / ops inbox; T2
 operator-gated recovery / payment verification; T3 `DESIGN.md` rewrite; T4 PWA
 + offline stage queue + chime / vendor hours. One issue per session, PRD order.
 ⚠️ Parallel Codex agent works in worktree `zantap-codex-direction-a` (branch
