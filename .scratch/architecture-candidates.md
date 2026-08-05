@@ -13,7 +13,15 @@ Last verified against the codebase: 2026-07-15.
 
 ## Product architecture audit (2026-08-05)
 
-**✅ PHASE 1 + FULL OWNER INTERVIEW COMPLETE (ADR-0046) · NEXT = PRD + ISSUES.**
+**✅ PHASE 1 + INTERVIEW + PRD/ISSUES COMPLETE · NEXT = IMPLEMENT ISSUE 01.**
+PRD + 10 isolated issues now live in `.scratch/product-restructure/` (prd.md +
+issue-01…10): T1 brand rollout / domain cutover (owner-blocked on buying
+`zantap.app`) / marketing page at `/` / lead capture / ops inbox; T2
+operator-gated recovery / payment verification; T3 `DESIGN.md` rewrite; T4 PWA
++ offline stage queue + chime / vendor hours. One issue per session, PRD order.
+⚠️ Parallel Codex agent works in worktree `zantap-codex-direction-a` (branch
+`codex/direction-a-independent`, forked pre-ADR-0046, Direction-A-only) — owner
+arbitrates any divergence; do not touch that worktree/branch.
 The existing product, docs, design/brand assets, PWA readiness, security model,
 payment flow, IA, and roadmap were audited without changing application code
 (verification green: lint, tsc, build, 253 tests / 77 opt-in skipped). A

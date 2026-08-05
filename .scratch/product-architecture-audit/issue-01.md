@@ -13,7 +13,7 @@ Status: **ready-for-agent — Phase 1 + full owner interview complete (ADR-0046)
 - [x] Owner answers Interview Groups 2–4 (domain, recovery, payment verification, lead workflow, design authority, positioning, PWA scope, vendor fields, offline conflict model, sequencing, notifications, language) — recorded in **ADR-0046** on branch `product/restructure-audit`.
 - [x] Confirm the exact canonical logo/favicon files within `public/brand/` — the approved black-and-amber Z (`public/brand/approved-z/`) is product-wide (ADR-0046 §4); the medallion is retired.
 - [x] Create a separate branch before recording or implementing approved decisions (`product/restructure-audit`, supersedes `codex/partner-funnel-direction-a`).
-- [ ] Convert approved priorities into a PRD (`/to-prd`) and isolated implementation issues (`/to-issues`).
+- [x] Convert approved priorities into a PRD (`/to-prd`) and isolated implementation issues (`/to-issues`) — `.scratch/product-restructure/prd.md` + `issue-01…10.md` (2026-08-05).
 
 ## Interview decision summary (full detail in ADR-0046)
 
