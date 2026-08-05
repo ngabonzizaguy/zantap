@@ -47,12 +47,12 @@ export function SplashStep({ onGetStarted, onRecoverAccess }: SplashStepProps) {
     <div className="flex flex-col gap-8">
       <div className="flex items-center gap-3">
         <Image
-          src="/brand/zantap-logo.png"
+          src="/brand/approved-z/zantap-z-avatar-offwhite-1024.png"
           alt="ZanTap"
           width={56}
           height={56}
           priority
-          className="h-14 w-14 flex-none"
+          className="h-14 w-14 flex-none rounded-brand-lg"
         />
         <p className="font-display text-display-sm leading-none text-ink">
           ZanTap{" "}

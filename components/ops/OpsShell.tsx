@@ -65,11 +65,10 @@ export function OpsShell({ children }: OpsShellProps) {
         <aside className="hidden w-60 shrink-0 border-r border-hairline bg-surface-card lg:block">
           <div className="flex items-center gap-2 border-b border-hairline px-4 py-5">
             <Image
-              src="/brand/zantap-logo.png"
+              src="/brand/approved-z/zantap-z-mark-1024.png"
               alt="ZanTap"
               width={32}
               height={32}
-              className="rounded-full"
             />
             <div>
               <p className="font-display text-sm font-light text-ink">Operator</p>

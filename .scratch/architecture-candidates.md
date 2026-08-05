@@ -13,8 +13,18 @@ Last verified against the codebase: 2026-07-15.
 
 ## Product architecture audit (2026-08-05)
 
-**✅ PHASE 1 + INTERVIEW + PRD/ISSUES COMPLETE · NEXT = IMPLEMENT ISSUE 01.**
-PRD + 10 isolated issues now live in `.scratch/product-restructure/` (prd.md +
+**✅ ISSUE 01 (Z BRAND ROLLOUT) IMPLEMENTED 2026-08-05 · NEXT = COMMIT/DEPLOY + ISSUE 03 (issue 02 domain cutover stays owner-blocked).**
+Issue 01 done on `product/restructure-audit` (working tree, not yet committed):
+all four medallion usages (`SplashStep`, `LiveStep` hero, KDS `MetricsBanner`,
+`OpsShell`) → `public/brand/approved-z/`; favicon set rebuilt from
+`zantap-z-favicon-{32,64,180,512}` (ICO packer:
+`.scratch/product-restructure/build-favicon-ico.mjs`); medallion retired to
+`public/brand/proofs/rejected/zantap-logo-medallion.png`. Variant mapping =
+ADR-0048 (dark surfaces: off-white avatar tile, rounded-square — transparent
+mark is 85% near-black + circular crop clips the Z; light ops: transparent
+mark). Build + lint green; Playwright visual check in
+`.scratch/product-restructure/issue-01-shots/`.
+PRD + 10 isolated issues live in `.scratch/product-restructure/` (prd.md +
 issue-01…10): T1 brand rollout / domain cutover (owner-blocked on buying
 `zantap.app`) / marketing page at `/` (motion stack per ADR-0047: GSAP +
 Three.js + Higgsfield + vendored scroll-world skill at

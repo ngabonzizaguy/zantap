@@ -58,9 +58,9 @@ export function LiveStep({
     <div className="relative flex flex-col items-center gap-6 text-center">
       <Confetti />
 
-      <span className="zt-live-glow mt-4 flex h-24 w-24 items-center justify-center rounded-full">
+      <span className="zt-live-glow mt-4 flex h-24 w-24 items-center justify-center overflow-hidden rounded-brand-xxl">
         <Image
-          src="/brand/zantap-logo.png"
+          src="/brand/approved-z/zantap-z-avatar-offwhite-1024.png"
           alt="ZanTap"
           width={96}
           height={96}

@@ -58,12 +58,12 @@ export function MetricsBanner({
       <div className="flex items-center justify-between gap-3 px-4 pb-3.5 pt-4 sm:px-[18px]">
         <div className="flex min-w-0 items-center gap-3">
           <Image
-            src="/brand/zantap-logo.png"
+            src="/brand/approved-z/zantap-z-avatar-offwhite-1024.png"
             alt="ZanTap"
             width={40}
             height={40}
             priority
-            className="h-10 w-10 flex-none"
+            className="h-10 w-10 flex-none rounded-brand-md"
           />
           <div className="min-w-0">
             <div className="truncate font-display text-display-sm text-ink">
