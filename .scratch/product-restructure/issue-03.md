@@ -31,6 +31,12 @@ the throwaway prototype HTML.
   clip prefetch; Rwanda mobile data budgets matter — ship the 9:16 mobile
   chain only with owner budget sign-off, never a silent centre-crop.
 - Dependencies to add at implementation time: `gsap`, `three` (npm, latest).
+- **Vendored design skills to consult (PRD §3b):** `ui-ux-pro-max` (design
+  system + UX guideline queries), `gsap-core`/`gsap-scrolltrigger`/`gsap-react`
+  (official GSAP patterns), `premium-frontend-ui` (Cinematic Pacing identity),
+  `mobile-app-ui-design` (mobile-first: the page is designed at 390px FIRST,
+  desktop second — owner directive), `scroll-world`. DESIGN.md/ADRs win over
+  any skill advice on conflict.
 
 Constraints (fixed):
 - Copy: "local food businesses" umbrella, free guided setup offer, no invented

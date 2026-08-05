@@ -84,6 +84,26 @@ covers only what stands between that loop and safe public acquisition.
     closed-state + checkout block when closed. (Delivery zones & fees are the
     next field after this; not in this PRD.)
 
+## 3b. Design/UI skill toolkit (owner directive 2026-08-05 — vendored in `.agents/skills/`)
+
+Implementing sessions MUST consult the relevant vendored skills before building UI:
+
+| Skill | Use for |
+|---|---|
+| `ui-ux-pro-max` | Every UI task (issues 03, 09, 10 + any surface work): run its searchable design-system/UX-guideline queries (Python, self-contained). Its priority table (accessibility → touch → performance) matches our mobile-first constraints. |
+| `gsap-core`, `gsap-scrolltrigger`, `gsap-react`, `gsap-timeline`, `gsap-performance` (+ `gsap-plugins`/`gsap-utils`/`gsap-frameworks` as needed) | Official GSAP skills — all GSAP work on the landing page (issue 03, ADR-0047). React/Next usage goes through `gsap-react`. |
+| `premium-frontend-ui` | Landing page (issue 03): award-level polish standards; pick the "Cinematic Pacing" identity — it matches C+A. |
+| `mobile-app-ui-design` | PWA/app surfaces (issues 09, 10) + mobile-first landing: native-feeling mobile patterns, touch/safe-area/nav conventions. |
+| `scroll-world` | Landing scroll cinematic (issue 03, ADR-0047 guardrails: owner budget approval before paid rendering). |
+| `frontend-design` (Anthropic, installed machine-wide) | General frontend craft on any new surface. |
+
+Evaluated and **rejected** (do not install/use): `shadcn` skill (we hand-build
+primitives from DESIGN.md — no competing component system), `minimalist-ui`
+(bans Inter + glassmorphism, contradicting the live dark liquid-glass system),
+`material-3-skill` (ZanTap is deliberately not Material), `awesome-design-skills`
+(a catalog, not a skill — browse it only when hunting for something specific).
+**Authority order on any conflict: DESIGN.md/ADR-0043/0046/0047 > skill advice.**
+
 ## 4. Non-goals (explicitly deferred by the owner)
 
 Live MoMo API integration; vendor accounts/roles/sessions; web push; driver

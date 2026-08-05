@@ -18,10 +18,14 @@ PRD + 10 isolated issues now live in `.scratch/product-restructure/` (prd.md +
 issue-01…10): T1 brand rollout / domain cutover (owner-blocked on buying
 `zantap.app`) / marketing page at `/` (motion stack per ADR-0047: GSAP +
 Three.js + Higgsfield + vendored scroll-world skill at
-`.agents/skills/scroll-world/`; budget approval before paid rendering) /
-lead capture / ops inbox; T2
+`.agents/skills/scroll-world/`; budget approval before paid rendering;
+mobile-first 390px then desktop) / lead capture / ops inbox; T2
 operator-gated recovery / payment verification; T3 `DESIGN.md` rewrite; T4 PWA
 + offline stage queue + chime / vendor hours. One issue per session, PRD order.
+Design/UI skill toolkit vendored 2026-08-05 into `.agents/skills/` (PRD §3b
+maps skill→issue): `ui-ux-pro-max`, official `gsap-*` (8), `premium-frontend-ui`,
+`mobile-app-ui-design`, `scroll-world`; rejected shadcn / minimalist-ui /
+material-3 as conflicting with the live DESIGN.md system.
 ⚠️ Parallel Codex agent works in worktree `zantap-codex-direction-a` (branch
 `codex/direction-a-independent`, forked pre-ADR-0046, Direction-A-only) — owner
 arbitrates any divergence; do not touch that worktree/branch.

@@ -2,6 +2,11 @@
 
 Status: **ready-for-agent** · Track 4 · ADR-0046 §11/§13 (suggest splitting into 09a manifest/shell and 09b queue at session time)
 
+**Vendored design skills to consult (PRD §3b):** `mobile-app-ui-design`
+(installed-app feel: touch targets, safe areas, nav/back conventions, offline
+states), `ui-ux-pro-max` (UX guidelines: touch ≥44px, loading feedback, CLS,
+reduced motion), `frontend-design`. DESIGN.md/ADRs win on conflict.
+
 Baseline (09a):
 - [ ] Web app manifest: Z icons (from approved set), name/short_name, theme colors per surface, `display: standalone`.
 - [ ] Installability verified on Android Chrome (KDS on kitchen tablets is a selling point).
