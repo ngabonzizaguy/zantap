@@ -11,11 +11,62 @@ is never lost again.
 
 Last verified against the codebase: 2026-07-15.
 
+## Product architecture audit (2026-08-05)
+
+**PHASE 1 COMPLETE · OWNER INTERVIEW IN PROGRESS.** The existing product, docs,
+design/brand assets, PWA readiness, security model, payment flow, IA, and roadmap
+were audited without changing application code. Verification is green: lint,
+TypeScript, production build, and 253 tests pass (77 opt-in database tests
+skipped). The product foundation is strong; broad-launch blockers are the
+unshipped marketing/lead funnel, unresolved product-wide brand authority and
+public domain, phone-only owner-token recovery, customer-self-confirmed payment,
+and the absent manifest/service-worker/offline/install layer. Tracking and the
+first four owner questions: `.scratch/product-architecture-audit/issue-01.md` and
+`audit-2026-08-05.md`. No ADR yet because no new decision was approved. Any
+approved implementation must start on a separate branch.
+
+## Lead-generation funnel (prototype, 2026-07-30)
+
+**🟡 PROTOTYPE REVISION 3 COMPLETE · OWNER DESIGN CHOICE PENDING.** A standalone,
+throwaway HTML/CSS/JS prototype lives under
+`.scratch/lead-funnel-prototype/`. It contains three structurally different
+landing directions (`?variant=A|B|C`): cinematic restaurant film, editorial
+product stage, and conversion-first founder offer. Revision 3 fully replaces
+the previous structures. Real ZanTap screenshots are now art-directed only
+inside realistic phone and kitchen-terminal hardware rather than screenshot
+cards. Concept A uses a Higgsfield-generated Kigali still plus a five-second
+subtle motion background; concept B adds restrained Three.js orbit detail; and
+concept C keeps the free early-setup form prominent. Copy remains short,
+Rwanda-first, and East-Africa-ready. Working in-memory lead capture feeds a
+searchable dashboard with dynamic metrics and CSV export. Desktop and
+sub-600px responsive compositions were visually inspected in the in-app
+browser with no page overflow; form submission was re-verified end-to-end.
+Screens exposing customer/driver phone numbers remain excluded. A detailed
+copy/paste Higgsfield website-builder prompt is stored beside the prototype.
+No production route, Store implementation, database schema, or ADR has been
+added. Next: owner chooses a direction and combination notes, then run the
+PRD/issues workflow before production implementation.
+Tracking: `.scratch/lead-funnel-prototype/issue-01.md` and `NOTES.md`.
+
+## Social account branding (operational, 2026-07-29)
+
+**✅ AVATARS + BIOS + COVERS LIVE.** The approved circle-safe Logo-2 Z avatar and
+the shared warm professional bio are live on Instagram `@zantapapp`, X `@ZanTapApp`, the ZanTap
+Facebook Page, and TikTok `@zantapapp`. Option 3 Revision B (`Tap. Serve. Grow.` + 3D
+order-to-kitchen signal path) is approved and live on Facebook and X. X uses `1500×500`; the final
+Facebook `1500×556` file keeps that complete X artwork as one unchanged band and adds only narrow
+top/bottom edge-row continuation to prevent Facebook's live horizontal crop. Both live profiles
+were visually verified with no duplicate layer or omitted leaves. Tracking:
+`.scratch/social-account-branding/issue-01.md` and
+`.scratch/social-account-branding/issue-02.md`. This operational task does not change application
+architecture and requires no ADR. **Open follow-up:** no dedicated ZanTap business email address is
+documented as of 2026-07-31; create or confirm one before using email in the public lead funnel.
+
 ## Codebase hygiene refactor (2026-07-15)
 
-**✅ DONE (local, NOT deployed)** — branch `refactor/codebase-hygiene` (`c2bc2ff` + `e030cc8`,
-even with `origin/main` before the two commits; deliberately kept OFF `main` until reviewed).
-Zero-behavior hygiene pass, ADR-0044:
+**✅ DONE · merged · deployed · curl-smoked 2026-07-23** — `4f64b5f` on `main` →
+`dpl_CSVEC8L2zu7nRqeQc4tN65PpHxCc` → alias `zantap-psi.vercel.app`.
+Zero-behavior hygiene pass + README rewrite, ADR-0044:
 - Dead code deleted: `GlassPanel` + `.glass-panel*`/`.glass-pill` CSS, `TabPlaceholder`,
   `advanceOrderStatus`, `addMenuImageByUrl`, `settings` icon, `resolveStorefrontOrigin`
   + `lib/vendor/storefront-url.ts` barrel (callers → `@/lib/base-url`).
@@ -29,7 +80,9 @@ Zero-behavior hygiene pass, ADR-0044:
   contract test fixed. Verified: lint 0/0, tsc clean, build clean, tests 253/77.
 - Deferred (behavior risk): big-component splits, Select/Combobox merge, `formatRwf`
   in Metrics/Ops, `INGREDIENTS_UI_ENABLED` branch removal.
-- **Next:** review → merge to `main` → deploy → prod curl smoke (storefront + KDS + onboard).
+- README rewritten to match live architecture (Store seam, routes, MoMo, ops, env).
+- Prod curl: `/inka-steakhouse` `/vendor/inka-steakhouse` `/onboard` → 200;
+  `kds-dark` only on KDS + onboard.
 
 ## Recommended next (2026-07-10)
 

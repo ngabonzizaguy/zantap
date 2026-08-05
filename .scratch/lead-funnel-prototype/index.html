@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="ZanTap vendor lead-funnel design prototypes." />
+    <title>ZanTap — Landing page prototypes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=EB+Garamond:ital,wght@0,400;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js" defer></script>
+    <script src="./script.js" defer></script>
+  </head>
+  <body data-variant="A" data-view="landing">
+    <!-- PROTOTYPE V3 — three new structural directions. No production persistence. -->
+
+    <header class="masthead">
+      <a class="wordmark" href="#top" aria-label="ZanTap home">
+        <img
+          src="../../public/brand/approved-z/zantap-wordmark-logo2-transparent.png"
+          alt="ZanTap"
+        />
+      </a>
+      <nav class="masthead__nav" aria-label="Primary navigation">
+        <a href="#how">How it works</a>
+        <a href="#offer">The offer</a>
+        <button type="button" data-open-dashboard>Leads preview</button>
+      </nav>
+      <button class="pill pill--header" type="button" data-open-lead>Get free setup</button>
+      <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false">
+        <i></i><i></i>
+      </button>
+    </header>
+
+    <main id="landing-view">
+      <!-- A — CINEMATIC SERVICE STORY -->
+      <div class="concept concept-a" data-concept="A">
+        <section class="a-hero" id="top">
+          <video
+            class="a-hero__video"
+            autoplay
+            muted
+            loop
+            playsinline
+            poster="./assets/kigali-vendor-hero.png"
+            aria-hidden="true"
+          >
+            <source src="./assets/kigali-shift-loop.mp4" type="video/mp4" />
+          </video>
+          <div class="a-hero__veil"></div>
+          <div class="a-hero__grain"></div>
+
+          <div class="a-hero__content">
+            <div class="a-hero__copy">
+              <p class="signal-label"><i></i> Built for restaurants in Rwanda</p>
+              <h1>More orders.<br /><em>One clear flow.</em></h1>
+              <p class="hero-summary">
+                Customers order and pay from their phone. Your kitchen sees every paid order in
+                one place.
+              </p>
+              <div class="hero-ctas">
+                <button class="pill pill--cream pill--large" type="button" data-open-lead>
+                  Get my free setup <span>↗</span>
+                </button>
+                <a class="text-link text-link--light" href="#how">See how it works <span>↓</span></a>
+              </div>
+              <div class="launch-note">
+                <strong>Rwanda first.</strong>
+                <span>Built to grow across East Africa.</span>
+              </div>
+            </div>
+
+            <div class="a-device-scene" data-tilt-scene>
+              <div class="halo halo--amber"></div>
+              <div class="device device--terminal device--hero" aria-label="ZanTap kitchen dashboard">
+                <span class="device__button device__button--one"></span>
+                <span class="device__button device__button--two"></span>
+                <div class="device__glass">
+                  <span class="device__camera"></span>
+                  <img
+                    src="../../public/brand/UI-screens/Screenshot%202026-07-10%20042559.png"
+                    alt="ZanTap Kitchen showing a new paid order"
+                  />
+                  <span class="device__shine"></span>
+                </div>
+              </div>
+              <div class="a-order-ping">
+                <span class="a-order-ping__icon">✓</span>
+                <div><small>Payment confirmed</small><strong>New order · 8,000 RWF</strong></div>
+              </div>
+              <div class="a-live-chip"><i></i> Kitchen live</div>
+              <p class="a-device-caption">The screen your team works from.</p>
+            </div>
+          </div>
+
+          <div class="a-hero__footer">
+            <span>Storefront</span><i></i><span>MoMo</span><i></i><span>Kitchen</span><i></i
+            ><span>Delivery</span>
+          </div>
+        </section>
+
+        <section class="a-flow" id="how">
+          <div class="section-intro section-intro--dark">
+            <p class="kicker">One order. Four clear moments.</p>
+            <h2>From their phone<br />to your kitchen.</h2>
+          </div>
+
+          <div class="a-flow__body">
+            <div class="a-flow__steps" role="tablist" aria-label="ZanTap order flow">
+              <button class="flow-step is-active" type="button" data-screen-step="store" role="tab">
+                <span>01</span>
+                <div><strong>Share your menu</strong><p>One link for WhatsApp and social media.</p></div>
+              </button>
+              <button class="flow-step" type="button" data-screen-step="pay" role="tab">
+                <span>02</span>
+                <div><strong>Receive MoMo</strong><p>Customers pay from the phone in their hand.</p></div>
+              </button>
+              <button class="flow-step" type="button" data-screen-step="kitchen" role="tab">
+                <span>03</span>
+                <div><strong>See paid orders</strong><p>Your kitchen knows what to prepare next.</p></div>
+              </button>
+              <button class="flow-step" type="button" data-screen-step="live" role="tab">
+                <span>04</span>
+                <div><strong>Keep moving</strong><p>Ready, delivery and complete stay clear.</p></div>
+              </button>
+            </div>
+
+            <div class="a-flow__device-wrap">
+              <div class="flow-ring flow-ring--one"></div>
+              <div class="flow-ring flow-ring--two"></div>
+              <div class="device device--phone device--flow">
+                <span class="device__button device__button--one"></span>
+                <span class="device__button device__button--two"></span>
+                <div class="device__glass">
+                  <span class="device__island"></span>
+                  <img
+                    id="flow-screen"
+                    src="../../public/brand/UI-screens/Screenshot%202026-07-10%20042351.png"
+                    alt="ZanTap storefront"
+                  />
+                  <span class="device__shine"></span>
+                </div>
+              </div>
+              <div class="flow-screen-label"><i></i><span id="flow-screen-label">Your storefront</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="a-offer" id="offer">
+          <div>
+            <p class="kicker">Early restaurant offer</p>
+            <h2>We help you set it up.<br />You start taking orders.</h2>
+          </div>
+          <div class="offer-panel">
+            <p>For selected early restaurant partners in Rwanda.</p>
+            <ul>
+              <li><i>✓</i> Your own order link</li>
+              <li><i>✓</i> First menu setup</li>
+              <li><i>✓</i> MoMo payment setup</li>
+              <li><i>✓</i> Personal WhatsApp walkthrough</li>
+            </ul>
+            <button class="pill pill--ink pill--wide" type="button" data-open-lead>
+              Request my free setup <span>→</span>
+            </button>
+            <small>No long contract. No pressure.</small>
+          </div>
+        </section>
+      </div>
+
+      <!-- B — EDITORIAL PRODUCT STAGE -->
+      <div class="concept concept-b" data-concept="B">
+        <section class="b-hero" id="top-b">
+          <div class="b-hero__headline">
+            <p class="kicker">ZanTap for restaurant teams</p>
+            <h1>Your restaurant,<br /><em>in motion.</em></h1>
+            <p>Orders, MoMo and kitchen work. Designed as one simple rhythm.</p>
+          </div>
+
+          <div class="b-stage" data-tilt-scene>
+            <canvas class="b-stage__canvas" aria-hidden="true"></canvas>
+            <div class="b-stage__shadow"></div>
+            <div class="device device--phone b-device b-device--left">
+              <span class="device__button device__button--one"></span>
+              <div class="device__glass">
+                <span class="device__island"></span>
+                <img
+                  src="../../public/brand/UI-screens/Screenshot%202026-07-10%20041629.png"
+                  alt="ZanTap MoMo setup"
+                />
+                <span class="device__shine"></span>
+              </div>
+            </div>
+            <div class="device device--phone b-device b-device--center">
+              <span class="device__button device__button--one"></span>
+              <div class="device__glass">
+                <span class="device__island"></span>
+                <img
+                  src="../../public/brand/UI-screens/Screenshot%202026-07-10%20042351.png"
+                  alt="Restaurant storefront powered by ZanTap"
+                />
+                <span class="device__shine"></span>
+              </div>
+            </div>
+            <div class="device device--terminal b-device b-device--right">
+              <span class="device__button device__button--one"></span>
+              <div class="device__glass">
+                <span class="device__camera"></span>
+                <img
+                  src="../../public/brand/UI-screens/Screenshot%202026-07-10%20042559.png"
+                  alt="ZanTap kitchen orders"
+                />
+                <span class="device__shine"></span>
+              </div>
+            </div>
+            <div class="b-orbit-copy b-orbit-copy--one"><span>01</span> Your menu</div>
+            <div class="b-orbit-copy b-orbit-copy--two"><span>02</span> Their payment</div>
+            <div class="b-orbit-copy b-orbit-copy--three"><span>03</span> Your kitchen</div>
+          </div>
+
+          <div class="b-hero__actions">
+            <button class="pill pill--ink pill--large" type="button" data-open-lead>
+              Get my free setup <span>↗</span>
+            </button>
+            <p>Launching with selected restaurants in Rwanda.</p>
+          </div>
+        </section>
+
+        <section class="b-manifesto" id="how-b">
+          <p>Most restaurant software starts with software.</p>
+          <h2>ZanTap starts with the shift.</h2>
+        </section>
+
+        <section class="b-chapters">
+          <article class="b-chapter b-chapter--store">
+            <div class="b-chapter__number">01</div>
+            <div class="b-chapter__copy">
+              <p class="kicker">Be easy to order from</p>
+              <h2>Your own mobile menu.</h2>
+              <p>Share one link. Customers choose, order and pay without downloading an app.</p>
+            </div>
+            <div class="b-chapter__visual">
+              <div class="device device--phone device--chapter">
+                <div class="device__glass">
+                  <span class="device__island"></span>
+                  <img
+                    src="../../public/brand/UI-screens/Screenshot%202026-07-10%20042351.png"
+                    alt="ZanTap customer storefront"
+                  />
+                  <span class="device__shine"></span>
+                </div>
+              </div>
+            </div>
+          </article>
+          <article class="b-chapter b-chapter--kitchen">
+            <div class="b-chapter__number">02</div>
+            <div class="b-chapter__copy">
+              <p class="kicker">Run a clearer kitchen</p>
+              <h2>Paid orders. Ready to act on.</h2>
+              <p>See what is new, preparing and ready. No searching through messages.</p>
+            </div>
+            <div class="b-chapter__visual">
+              <div class="device device--terminal device--chapter-terminal">
+                <div class="device__glass">
+                  <span class="device__camera"></span>
+                  <img
+                    src="../../public/brand/UI-screens/Screenshot%202026-07-10%20042559.png"
+                    alt="ZanTap kitchen dashboard"
+                  />
+                  <span class="device__shine"></span>
+                </div>
+              </div>
+            </div>
+          </article>
+          <article class="b-chapter b-chapter--launch">
+            <div class="b-chapter__number">03</div>
+            <div class="b-chapter__copy">
+              <p class="kicker">Start without the stress</p>
+              <h2>Go live with your first dish.</h2>
+              <p>We help with setup. Add the rest of your menu when you are ready.</p>
+              <button class="text-link" type="button" data-open-lead>See the early offer <span>→</span></button>
+            </div>
+            <div class="b-chapter__visual">
+              <div class="device device--phone device--chapter">
+                <div class="device__glass">
+                  <span class="device__island"></span>
+                  <img
+                    src="../../public/brand/UI-screens/Screenshot%202026-07-10%20041901.png"
+                    alt="ZanTap store live screen"
+                  />
+                  <span class="device__shine"></span>
+                </div>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="b-final" id="offer-b">
+          <div class="b-final__ring"><i></i><i></i><i></i><span>Tap</span></div>
+          <h2>Ready when your restaurant is.</h2>
+          <p>Free guided setup for selected early partners.</p>
+          <button class="pill pill--cream pill--large" type="button" data-open-lead>
+            Get my free setup <span>↗</span>
+          </button>
+        </section>
+      </div>
+
+      <!-- C — CONVERSION-FIRST FOUNDER OFFER -->
+      <div class="concept concept-c" data-concept="C">
+        <section class="c-hero" id="top-c">
+          <div class="c-copy">
+            <div class="availability"><i></i> 20 early partner places</div>
+            <p class="kicker">Starting in Rwanda</p>
+            <h1>Put your restaurant online—with help.</h1>
+            <p class="hero-summary">
+              We set up your ordering link, your first menu items and your MoMo flow. Your team
+              gets a live kitchen view.
+            </p>
+            <div class="c-promise">
+              <div><span>01</span><p><strong>Customers order</strong><small>From one simple link</small></p></div>
+              <div><span>02</span><p><strong>You receive payment</strong><small>Through MoMo</small></p></div>
+              <div><span>03</span><p><strong>Your kitchen moves</strong><small>With every paid order</small></p></div>
+            </div>
+          </div>
+
+          <div class="c-device-column">
+            <div class="c-device-glow"></div>
+            <div class="device device--phone device--c">
+              <span class="device__button device__button--one"></span>
+              <span class="device__button device__button--two"></span>
+              <div class="device__glass">
+                <span class="device__island"></span>
+                <img
+                  src="../../public/brand/UI-screens/Screenshot%202026-07-10%20041901.png"
+                  alt="ZanTap store live and ready to share"
+                />
+                <span class="device__shine"></span>
+              </div>
+            </div>
+            <div class="c-device-tag"><i>✓</i><span><strong>Your store is live</strong><small>Share your link</small></span></div>
+          </div>
+
+          <aside class="c-form-card" id="offer-c">
+            <p class="kicker">Free early setup</p>
+            <h2>Tell us about your restaurant.</h2>
+            <p>We’ll contact you on WhatsApp.</p>
+            <form class="inline-lead-form" data-lead-form>
+              <label><span>Your name</span><input name="name" required placeholder="e.g. Aline" /></label>
+              <label><span>Restaurant</span><input name="business" required placeholder="Business name" /></label>
+              <label><span>WhatsApp number</span><input name="phone" required type="tel" placeholder="+250 7•• ••• •••" /></label>
+              <label>
+                <span>What do you need most?</span>
+                <select name="goal" required>
+                  <option value="">Choose one</option>
+                  <option>More direct orders</option>
+                  <option>Easier payments</option>
+                  <option>A clearer kitchen</option>
+                  <option>Help with delivery</option>
+                </select>
+              </label>
+              <button class="pill pill--ink pill--wide" type="submit">Request my setup <span>→</span></button>
+              <small>No long contract. No pressure.</small>
+              <div class="form-success" role="status">
+                <i>✓</i><span><strong>You’re on the list.</strong><small>We’ll contact you on WhatsApp.</small></span>
+              </div>
+            </form>
+          </aside>
+        </section>
+
+        <section class="c-proof" id="how-c">
+          <div class="section-intro">
+            <p class="kicker">What happens next</p>
+            <h2>Simple from day one.</h2>
+          </div>
+          <div class="c-proof__track">
+            <article><span>Day 01</span><strong>We set up together</strong><p>Your details, menu and MoMo.</p></article>
+            <i></i>
+            <article><span>Go live</span><strong>You share your link</strong><p>WhatsApp, Instagram or anywhere.</p></article>
+            <i></i>
+            <article><span>First order</span><strong>Your kitchen sees it</strong><p>Paid and ready to prepare.</p></article>
+          </div>
+        </section>
+
+        <section class="c-close">
+          <div>
+            <p class="kicker">Made here. Ready to grow.</p>
+            <h2>Start in Rwanda.<br />Grow across East Africa.</h2>
+          </div>
+          <button class="pill pill--cream pill--large" type="button" data-open-lead>
+            Get my free setup <span>↗</span>
+          </button>
+        </section>
+      </div>
+
+      <footer class="site-footer">
+        <img
+          src="../../public/brand/approved-z/zantap-wordmark-logo2-transparent.png"
+          alt="ZanTap"
+        />
+        <p>Tap. Serve. Grow.</p>
+        <div><a href="#">Instagram</a><a href="#">TikTok</a><a href="#">Facebook</a><a href="#">X</a></div>
+        <span>© 2026 ZanTap · Kigali, Rwanda</span>
+      </footer>
+    </main>
+
+    <main id="dashboard-view" hidden>
+      <section class="leads-shell">
+        <aside>
+          <img
+            src="../../public/brand/approved-z/zantap-wordmark-logo2-transparent.png"
+            alt="ZanTap"
+          />
+          <nav><button class="is-active">Overview</button><button>Leads</button><button>Campaigns</button></nav>
+          <button class="dashboard-back" type="button" data-close-dashboard>← Back to funnel</button>
+        </aside>
+        <div class="leads-main">
+          <header><div><p class="kicker">Lead overview</p><h1>Restaurant interest</h1></div><button class="pill pill--ink" id="export-leads">Export CSV</button></header>
+          <div class="lead-metrics">
+            <article><span>Total leads</span><strong id="metric-total">8</strong></article>
+            <article><span>New</span><strong id="metric-new">4</strong></article>
+            <article><span>Qualified</span><strong id="metric-qualified">2</strong></article>
+            <article class="metric-dark"><span>Converted</span><strong id="metric-converted">1</strong></article>
+          </div>
+          <div class="leads-table-card">
+            <div><h2>Recent leads</h2><input id="lead-search" type="search" placeholder="Search leads" /></div>
+            <div class="leads-table-wrap"><table><thead><tr><th>Lead</th><th>Restaurant</th><th>Source</th><th>Status</th><th>Received</th></tr></thead><tbody id="lead-table-body"></tbody></table></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <dialog class="lead-dialog" id="lead-dialog">
+      <button class="dialog-close" type="button" aria-label="Close">×</button>
+      <div class="dialog-copy">
+        <p class="kicker">Free early setup</p>
+        <h2>Let’s put your restaurant online.</h2>
+        <p>Four quick details. We’ll continue on WhatsApp.</p>
+      </div>
+      <form data-lead-form>
+        <label><span>Your name</span><input name="name" required placeholder="Your full name" /></label>
+        <label><span>Restaurant</span><input name="business" required placeholder="Business name" /></label>
+        <label><span>WhatsApp number</span><input name="phone" required type="tel" placeholder="+250 7•• ••• •••" /></label>
+        <label>
+          <span>What do you need most?</span>
+          <select name="goal" required><option value="">Choose one</option><option>More direct orders</option><option>Easier payments</option><option>A clearer kitchen</option><option>Help with delivery</option></select>
+        </label>
+        <button class="pill pill--ink pill--wide" type="submit">Request my setup <span>→</span></button>
+        <small>By continuing, you agree that ZanTap may contact you.</small>
+        <div class="form-success" role="status"><i>✓</i><span><strong>You’re on the list.</strong><small>We’ll contact you on WhatsApp.</small></span></div>
+      </form>
+    </dialog>
+
+    <div class="prototype-switcher" aria-label="Prototype switcher">
+      <button type="button" data-direction="-1" aria-label="Previous concept">←</button>
+      <div><small>New design direction</small><strong id="concept-name">A — Cinematic service</strong></div>
+      <button type="button" data-direction="1" aria-label="Next concept">→</button>
+    </div>
+  </body>
+</html>
