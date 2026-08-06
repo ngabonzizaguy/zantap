@@ -1,6 +1,16 @@
 # Issue 03 — Production marketing page at `/` (C structure + A hero + scroll-world cinematic)
 
-Status: **✅ CORE SHIPPED 2026-08-06 (ADR-0049) — scroll-world cinematic pending owner interview/budget** · Track 1 · ADR-0046 §5 + ADR-0047
+Status: **✅ CORE SHIPPED · DEPLOYED · PROD-SMOKED 2026-08-06 (ADR-0049) — scroll-world cinematic pending owner interview/budget** · Track 1 · ADR-0046 §5 + ADR-0047
+
+Deploy: `fe9f5d1` merged to `main` (fast-forward `4f64b5f..fe9f5d1`, carries
+Issue 01 brand `877cef0` + Issue 02 sweep `2479b19`) → auto Vercel Production
+`zantap-qv9d8y90w` → `https://zantap.app`. Prod smoke: `/` 200 serving the
+funnel (no demo redirect; headline/CTA/hero/kitchen-screen/OG all in HTML),
+`robots.txt` + `sitemap.xml` correct, storefront/KDS/onboard 200, Z favicon +
+`/brand/approved-z/*` + hero mp4 200, prod mobile screenshot in
+`issue-03-shots/prod-mobile-390-top.png`. `.scratch/lead-funnel-prototype/`
+deleted per its NOTES (Higgsfield prompts preserved in git history +
+`docs/adr/0046`).
 
 Replace the root demo-storefront redirect with the production funnel page.
 Design source: `.scratch/lead-funnel-prototype/` variant C structure (offer +

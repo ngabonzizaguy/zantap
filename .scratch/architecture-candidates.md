@@ -13,8 +13,11 @@ Last verified against the codebase: 2026-07-15.
 
 ## Product architecture audit (2026-08-05)
 
-**✅ ISSUE 03 (MARKETING PAGE AT `/`) CORE SHIPPED 2026-08-06 (ADR-0049) —
-scroll-world cinematic pending owner interview + budget approval.** Root
+**✅ ISSUE 03 (MARKETING PAGE AT `/`) CORE SHIPPED · DEPLOYED · PROD-SMOKED
+2026-08-06 (ADR-0049; `fe9f5d1` → main → Vercel prod `zantap-qv9d8y90w` →
+`zantap.app`; Issue 01 brand + Issue 02 sweep deployed in the same
+fast-forward) — scroll-world cinematic pending owner interview + budget
+approval.** Root
 demo redirect replaced by the production funnel: C structure (offer + visible
 lead form, sticky mobile CTA guard) + A cinematic Kigali hero (still + loop in
 `public/marketing/`, reduced-motion/Save-Data safe); GSAP ScrollTrigger
