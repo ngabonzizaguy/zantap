@@ -75,10 +75,27 @@ Notes:
   `public/brand/UI-screens/` captures show the retired medallion + a
   `zantap.ai` URL; don't reuse those on marketing surfaces.
 
-## Scroll-world owner interview (recorded when answered)
+## Scroll-world owner interview — ANSWERED 2026-08-06 ✅
 
-- Art direction: _pending_
-- Camera style: _pending_
-- Journey sections: _pending_ (proposed: storefront → order → kitchen → dispatch → grow)
-- Mobile 9:16 chain: _pending_
-- Budget tier + biller + approval: _pending_ (NO paid rendering until this line is a yes)
+- **Art direction:** grounded cinematic **photoreal Kigali** (matches the live
+  hero; reuse its palette: warm near-black, amber, natural wood, muted green —
+  see the hero prompt preserved in git history of
+  `.scratch/lead-funnel-prototype/NOTES.md`).
+- **Camera style:** **one continuous forward walkthrough** → scroll-world
+  **Architecture A** (sequential legs chained from each leg's ACTUAL last
+  frame, NO `--end-image`, NO connectors — skip skill Step 5).
+- **Journey sections (6):** 1) Kigali food-business storefront → 2) customer
+  ordering on a phone → 3) MoMo payment moment → 4) the kitchen in motion →
+  5) dispatch/delivery on the street → 6) the business growing (finale + CTA).
+- **Mobile:** **YES — native 9:16 portrait chain** (never a centre-crop);
+  ~2× video gens.
+- **Biller / budget:** **Higgsfield credits ONLY** (owner has a subscription;
+  do NOT use Monid USD). Approval given for available credits. Implementing
+  session MUST: check `higgsfield workspace list` balance, run ONE still +
+  ONE video probe to calibrate credit cost, estimate the full run
+  (6 stills + 6 desktop legs + 6 portrait legs + ~25% photoreal-interior
+  re-roll headroom ≈ 700–900 credits at 2026-07 observed rates), and warn if
+  the estimate exceeds ~70% of the balance BEFORE batching.
+- Model: `seedance_2_0` (default; Architecture A start-image-only works on
+  the whole roster). One model for both chains. Photoreal interiors trip the
+  NSFW filter — budget 3 attempts/leg, `kling3_0` as single-clip fallback.
