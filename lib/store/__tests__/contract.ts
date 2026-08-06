@@ -1050,6 +1050,66 @@ export function runStoreContract(
       });
     });
 
+    describe("lead capture", () => {
+      it("creates a NEW lead with a canonical phone and lists it newest-first", async () => {
+        const first = await store.createLead({
+          businessName: "Kigali Kitchen",
+          businessType: "Restaurant",
+          contactName: "Aline",
+          phone: "0788 123 456",
+          area: "Kimihurura",
+          message: "Please call after lunch",
+          source: "marketing-root",
+          consentAt: new Date("2026-08-06T08:00:00.000Z"),
+        });
+        const second = await store.createLead({
+          businessName: "Nyamirambo Grill",
+          businessType: "Bar & grill",
+          contactName: "Eric",
+          phone: "+250 780 123 456",
+          area: "Nyamirambo",
+          consentAt: new Date("2026-08-06T09:00:00.000Z"),
+        });
+
+        expect(first).toMatchObject({
+          businessName: "Kigali Kitchen",
+          phone: "250788123456",
+          status: "NEW",
+          message: "Please call after lunch",
+          source: "marketing-root",
+        });
+        expect(first.id).toEqual(expect.any(String));
+        expect(first.createdAt).toBeInstanceOf(Date);
+        expect(first.consentAt).toEqual(
+          new Date("2026-08-06T08:00:00.000Z")
+        );
+
+        const leads = await store.listLeads();
+        expect(leads.map((lead) => lead.id)).toEqual([second.id, first.id]);
+      });
+
+      it("updates a lead's follow-up status and returns null for a missing lead", async () => {
+        const created = await store.createLead({
+          businessName: "Kacyiru Caterers",
+          businessType: "Caterer",
+          contactName: "Diane",
+          phone: "0788 555 444",
+          area: "Kacyiru",
+          consentAt: new Date(),
+        });
+
+        const contacted = await store.updateLeadStatus(
+          created.id,
+          "CONTACTED"
+        );
+        expect(contacted?.status).toBe("CONTACTED");
+        expect((await store.listLeads())[0]?.status).toBe("CONTACTED");
+        expect(
+          await store.updateLeadStatus("missing-lead", "CLOSED")
+        ).toBeNull();
+      });
+    });
+
     describe("reset", () => {
       it("returns the Store to its seeded state", async () => {
         const before = (await store.listOrders(slug)).length;

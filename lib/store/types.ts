@@ -36,6 +36,11 @@ import type {
   Vendor,
   VendorRecoveryEvent,
 } from "@/lib/types";
+import type {
+  CreateLeadInput,
+  Lead,
+  LeadStatus,
+} from "@/lib/leads/types";
 
 /**
  * The single seam through which all persistent reads and mutations pass.
@@ -73,6 +78,11 @@ export interface Store {
     eventId: string,
     reviewNote?: string
   ): Promise<VendorRecoveryEvent | null>;
+
+  // Marketing leads (ADR-0046 §9) — durable capture and Ops follow-up seam.
+  createLead(input: CreateLeadInput): Promise<Lead>;
+  listLeads(): Promise<Lead[]>;
+  updateLeadStatus(leadId: string, status: LeadStatus): Promise<Lead | null>;
 
   // Operator console (ADR-0039) — only callable from lib/operator-control/
   listVendors(filters?: VendorListFilters): Promise<VendorListEntry[]>;
