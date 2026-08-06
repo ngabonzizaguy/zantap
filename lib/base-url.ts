@@ -16,7 +16,7 @@ export function getBaseUrl(): string {
   return "";
 }
 
-/** Host prefix for slug inputs, e.g. `zantap.ai/` or `localhost:3000/`. */
+/** Host prefix for slug inputs, e.g. `zantap.app/` or `localhost:3000/`. */
 export function getDisplayHostPrefix(): string {
   const base = getBaseUrl();
   if (!base) return "";
@@ -36,7 +36,7 @@ export function getStorefrontUrl(slug: string): string {
   return origin ? `${origin}${path}` : path;
 }
 
-/** Storefront path without protocol for compact display, e.g. `zantap.ai/inka`. */
+/** Storefront path without protocol for compact display, e.g. `zantap.app/inka`. */
 export function formatStorefrontDisplayPath(slug: string): string {
   return getStorefrontUrl(slug).replace(/^https?:\/\//, "");
 }

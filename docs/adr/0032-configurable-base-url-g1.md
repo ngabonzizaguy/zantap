@@ -29,6 +29,6 @@ Issue 11 consolidates it.
 
 ## Consequences
 
-- Production can set `NEXT_PUBLIC_BASE_URL=https://zantap.ai` once for consistent
-  links/copy even if the deployment hostname differs.
+- Production can set `NEXT_PUBLIC_BASE_URL` once for consistent links/copy even if
+  the deployment hostname differs (since 2026-08-06: `https://zantap.app`).
 - No admin UI for domain management in this pass (later candidate).

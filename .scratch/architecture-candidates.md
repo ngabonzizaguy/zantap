@@ -13,7 +13,19 @@ Last verified against the codebase: 2026-07-15.
 
 ## Product architecture audit (2026-08-05)
 
-**✅ ISSUE 01 (Z BRAND ROLLOUT) IMPLEMENTED 2026-08-05 · NEXT = COMMIT/DEPLOY + ISSUE 03 (issue 02 domain cutover stays owner-blocked).**
+**✅ ISSUE 02 (ZANTAP.APP CUTOVER) DONE · PROD-SMOKED 2026-08-06.** Owner bought
+`zantap.app` and attached it (apex = Production, `www` 308→apex,
+`zantap-psi.vercel.app` alias retained). `NEXT_PUBLIC_BASE_URL=https://zantap.app`
++ `ZANTAP_OPERATOR_API_URL=https://zantap.app/api/operator/v1` set in Vercel
+Production via CLI; prod rebuilt via `vercel redeploy dpl_CSVEC8L2…` →
+`zantap-bexc31rf4` aliased `zantap.app` (NOT deployed from the dirty local tree).
+Smoke: storefront/KDS/onboard 200 over `zantap.app`; `zantap.app` confirmed
+inlined in the deployed JS chunk. `zantap.ai` swept from live artifacts
+(`lib/base-url.ts`, base-url tests 7/7, `.env.example`, ADR-0032, stale AGENTS
+ops note); historical logs left as history. See
+`.scratch/product-restructure/issue-02.md`.
+
+**✅ ISSUE 01 (Z BRAND ROLLOUT) IMPLEMENTED 2026-08-05 · NEXT = COMMIT/DEPLOY + ISSUE 03 (landing).**
 Issue 01 done on `product/restructure-audit` (working tree, not yet committed):
 all four medallion usages (`SplashStep`, `LiveStep` hero, KDS `MetricsBanner`,
 `OpsShell`) → `public/brand/approved-z/`; favicon set rebuilt from
