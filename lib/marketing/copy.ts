@@ -60,16 +60,19 @@ export const LEAD_FORM = {
     area: { label: "Area", placeholder: "e.g. Kimihurura, Kigali" },
   },
   submit: "Request my free setup",
+  submitting: "Sending\u2026",
   consent:
     "By sending this, you agree that ZanTap may contact you on WhatsApp about your setup.",
   reassurance: "No long contract. No pressure.",
   errors: {
     required: "Please fill in every field.",
     phone: "Enter a valid Rwandan phone number (07XX XXX XXX).",
+    rateLimited: "Too many requests. Please wait a while and try again.",
+    submissionFailed: "We couldn\u2019t save your request. Please try again.",
   },
   success: {
     title: "You\u2019re on the list.",
-    detail: "Finish sending the prepared WhatsApp message and we\u2019ll take it from there.",
+    detail: "We\u2019ll contact you on WhatsApp and take it from there.",
   },
 } as const;
 

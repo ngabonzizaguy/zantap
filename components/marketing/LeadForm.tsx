@@ -1,31 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import type { SubmitLeadInput } from "@/lib/leads/types";
-import { LEAD_FORM, MARKETING_WHATSAPP_PHONE } from "@/lib/marketing/copy";
-import { buildWhatsAppUrl, toWhatsAppE164 } from "@/lib/whatsapp";
+import { submitLead } from "@/lib/actions/lead-submit";
+import type {
+  SubmitLeadErrorCode,
+  SubmitLeadInput,
+} from "@/lib/leads/types";
+import { LEAD_FORM } from "@/lib/marketing/copy";
+import { toWhatsAppE164 } from "@/lib/whatsapp";
 
 /**
- * Interim lead transport (pre-Issue-04): validated submissions open WhatsApp
- * to the owner's number with a prefilled message — the owner's stated
- * follow-up channel (ADR-0046 §9). Issue 04 replaces `deliverLead` with the
- * durable `submitLead` server action; the form and `SubmitLeadInput` stay.
+ * Public marketing lead form. The browser submits through the Server Action;
+ * only the server reaches the Store seam (ADR-0046 §9).
  */
-function deliverLead(lead: SubmitLeadInput): void {
-  const text = [
-    "New ZanTap setup request",
-    `Business: ${lead.businessName}`,
-    `Type: ${lead.businessType}`,
-    `Contact: ${lead.contactName}`,
-    `WhatsApp: ${lead.phone}`,
-    `Area: ${lead.area}`,
-  ].join("\n");
-  window.open(
-    buildWhatsAppUrl(text, MARKETING_WHATSAPP_PHONE),
-    "_blank",
-    "noopener"
-  );
-}
+const submissionErrors: Record<SubmitLeadErrorCode, string> = {
+  INVALID_INPUT: LEAD_FORM.errors.required,
+  INVALID_PHONE: LEAD_FORM.errors.phone,
+  RATE_LIMITED: LEAD_FORM.errors.rateLimited,
+  SUBMISSION_FAILED: LEAD_FORM.errors.submissionFailed,
+};
 
 const inputClass =
   "w-full rounded-brand-md border border-[#d6d3d1] bg-white px-3.5 py-3 font-body text-body-sm text-[#0c0a09] placeholder:text-[#a8a29e] focus:border-[#0c0a09] focus:outline-none";
@@ -36,8 +29,9 @@ const labelClass =
 export function LeadForm() {
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const lead: SubmitLeadInput = {
@@ -47,6 +41,7 @@ export function LeadForm() {
       phone: String(data.get("phone") ?? "").trim(),
       area: String(data.get("area") ?? "").trim(),
       source: "marketing-root",
+      website: String(data.get("website") ?? "").trim(),
     };
 
     if (
@@ -65,8 +60,19 @@ export function LeadForm() {
     }
 
     setError(null);
-    deliverLead(lead);
-    setSubmitted(true);
+    setSubmitting(true);
+    try {
+      const result = await submitLead(lead);
+      if (!result.ok) {
+        setError(submissionErrors[result.error]);
+        return;
+      }
+      setSubmitted(true);
+    } catch {
+      setError(LEAD_FORM.errors.submissionFailed);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -103,6 +109,17 @@ export function LeadForm() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
+          <div className="absolute -left-[10000px]" aria-hidden="true">
+            <label>
+              Website
+              <input
+                name="website"
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+              />
+            </label>
+          </div>
           <label className="block space-y-1.5">
             <span className={labelClass}>
               {LEAD_FORM.fields.businessName.label}
@@ -180,9 +197,11 @@ export function LeadForm() {
 
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-pill bg-[#0c0a09] px-6 py-4 font-body text-button text-white transition-colors hover:bg-[#292524]"
+            disabled={submitting}
+            className="flex w-full items-center justify-center gap-2 rounded-pill bg-[#0c0a09] px-6 py-4 font-body text-button text-white transition-colors hover:bg-[#292524] disabled:cursor-wait disabled:opacity-60"
           >
-            {LEAD_FORM.submit} <span aria-hidden>→</span>
+            {submitting ? LEAD_FORM.submitting : LEAD_FORM.submit}{" "}
+            <span aria-hidden>→</span>
           </button>
 
           <p className="text-center font-body text-[12px] leading-relaxed text-[#777169]">

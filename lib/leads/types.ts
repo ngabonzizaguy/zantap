@@ -12,8 +12,47 @@ export interface SubmitLeadInput {
   /** Raw phone as typed; canonicalized server-side (E.164, Rwanda-first). */
   phone: string;
   area: string;
+  message?: string;
   /** Attribution, e.g. "marketing-root". */
   source?: string;
+  /** Visually hidden bot trap. Real users leave this empty. */
+  website?: string;
 }
 
-export type SubmitLeadResult = { ok: true } | { ok: false; error: string };
+export type SubmitLeadErrorCode =
+  | "INVALID_INPUT"
+  | "INVALID_PHONE"
+  | "RATE_LIMITED"
+  | "SUBMISSION_FAILED";
+
+export type SubmitLeadResult =
+  | { ok: true }
+  | { ok: false; error: SubmitLeadErrorCode };
+
+export type LeadStatus = "NEW" | "CONTACTED" | "ONBOARDED" | "CLOSED";
+
+export interface Lead {
+  id: string;
+  businessName: string;
+  businessType: string;
+  contactName: string;
+  /** Canonical E.164 digits without a leading plus. */
+  phone: string;
+  area: string;
+  message?: string;
+  status: LeadStatus;
+  source?: string;
+  consentAt: Date;
+  createdAt: Date;
+}
+
+export interface CreateLeadInput {
+  businessName: string;
+  businessType: string;
+  contactName: string;
+  phone: string;
+  area: string;
+  message?: string;
+  source?: string;
+  consentAt: Date;
+}

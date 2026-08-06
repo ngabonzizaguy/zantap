@@ -44,6 +44,14 @@ _Avoid_: push notification, payment prompt
 The server-only data module that owns all persistent reads and mutations (Vendors, Menu, Orders, Payments, Drivers, kitchen state) behind a single interface. The browser never imports it; it is reached through Server Actions or RSC.
 _Avoid_: data layer, repository, db, service
 
+**Lead** (ADR-0050):
+A food business's request for ZanTap setup, captured by the public marketing
+form and persisted through the Store. It moves through the operator follow-up
+lifecycle `NEW → CONTACTED → ONBOARDED` or `NEW/CONTACTED → CLOSED`.
+Its phone is stored as Rwanda-first E.164 digits and `consentAt` records when
+the server accepted the contact request.
+_Avoid_: vendor (until onboarding creates one), signup, WhatsApp message
+
 **Payment**:
 A durable record of money moving for an Order, keyed by a stable `transactionRef` (the STK token in sandbox mode; `manual-{orderId}` in production manual MoMo). Moves through `PENDING → SUCCESS` on valid confirm (which also marks the Order `PAID`), or `PENDING → FAILED` on abandonment. `FAILED` is terminal — not a typoed PIN (sandbox wrong PIN keeps `PENDING`). Manual confirm requires the Customer's phone to match the Order.
 _Avoid_: transaction, charge, txn

@@ -36,6 +36,11 @@ import type {
   VendorRecoveryEvent,
 } from "@/lib/types";
 import type { ResettableStore } from "@/lib/store/types";
+import type {
+  CreateLeadInput,
+  Lead,
+  LeadStatus,
+} from "@/lib/leads/types";
 import {
   matchesOrderSearch,
   normalizePagination,
@@ -139,6 +144,7 @@ export function createInMemoryStore(): ResettableStore {
   let orders: Order[] = [];
   let payments: Payment[] = [];
   let vendors: StoredVendor[] = [];
+  let leads: Lead[] = [];
   let recoveryEvents: VendorRecoveryEvent[] = [];
   let operatorActions: OperatorAction[] = [];
   let drivers: Driver[] = [];
@@ -149,6 +155,7 @@ export function createInMemoryStore(): ResettableStore {
   let menuItemCounter = 0;
   let menuImageCounter = 0;
   let vendorCounter = 0;
+  let leadCounter = 0;
   let recoveryEventCounter = 0;
   let operatorActionCounter = 0;
   let driverCounter = 0;
@@ -169,6 +176,14 @@ export function createInMemoryStore(): ResettableStore {
 
   function cloneOperatorAction(action: OperatorAction): OperatorAction {
     return { ...action, at: new Date(action.at) };
+  }
+
+  function cloneLead(lead: Lead): Lead {
+    return {
+      ...lead,
+      consentAt: new Date(lead.consentAt),
+      createdAt: new Date(lead.createdAt),
+    };
   }
 
   function isActiveItem(item: MenuItem): boolean {
@@ -223,6 +238,7 @@ export function createInMemoryStore(): ResettableStore {
     ];
     recoveryEvents = [];
     operatorActions = [];
+    leads = [];
     drivers = seedDrivers.map((driver) => ({ ...driver }));
     kitchenOpen = true;
     orderCounter = 0;
@@ -231,6 +247,7 @@ export function createInMemoryStore(): ResettableStore {
     vendorCounter = 0;
     recoveryEventCounter = 0;
     driverCounter = 0;
+    leadCounter = 0;
   }
 
   load();
@@ -410,6 +427,41 @@ export function createInMemoryStore(): ResettableStore {
       reviewNote: reviewNote?.trim() || undefined,
     };
     return cloneRecoveryEvent(recoveryEvents[index]);
+  }
+
+  async function createLead(input: CreateLeadInput): Promise<Lead> {
+    const phone = canonicalizePhone(input.phone);
+    if (!phone) throw new Error("Invalid lead phone");
+
+    const lead: Lead = {
+      id: `lead_${++leadCounter}_${Date.now()}`,
+      businessName: input.businessName.trim(),
+      businessType: input.businessType.trim(),
+      contactName: input.contactName.trim(),
+      phone,
+      area: input.area.trim(),
+      message: input.message?.trim() || undefined,
+      status: "NEW",
+      source: input.source?.trim() || undefined,
+      consentAt: new Date(input.consentAt),
+      createdAt: new Date(),
+    };
+    leads.unshift(lead);
+    return cloneLead(lead);
+  }
+
+  async function listLeads(): Promise<Lead[]> {
+    return leads.map(cloneLead);
+  }
+
+  async function updateLeadStatus(
+    leadId: string,
+    status: LeadStatus
+  ): Promise<Lead | null> {
+    const index = leads.findIndex((lead) => lead.id === leadId);
+    if (index === -1) return null;
+    leads[index] = { ...leads[index], status };
+    return cloneLead(leads[index]);
   }
 
   async function listVendors(
@@ -1549,6 +1601,9 @@ export function createInMemoryStore(): ResettableStore {
     listRecoveryEvents,
     listAllRecoveryEvents,
     reviewRecoveryEvent,
+    createLead,
+    listLeads,
+    updateLeadStatus,
     listVendors,
     getOperatorVendorDetail,
     setVendorActive,

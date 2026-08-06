@@ -2,6 +2,7 @@ import "server-only";
 
 import type {
   Driver as PrismaDriver,
+  Lead as PrismaLead,
   MenuImage as PrismaMenuImage,
   MenuItem as PrismaMenuItem,
   Order as PrismaOrder,
@@ -43,6 +44,11 @@ import {
   normalizeDriverName,
 } from "@/lib/vendor/driver-display";
 import type { Store } from "@/lib/store/types";
+import type {
+  CreateLeadInput,
+  Lead,
+  LeadStatus,
+} from "@/lib/leads/types";
 import type {
   AbandonManualPaymentResult,
   AddMenuImageInput,
@@ -194,6 +200,22 @@ function mapRecoveryEvent(
     reviewNote: event.reviewNote ?? undefined,
     vendorSlug: vendor?.slug,
     vendorName: vendor?.name,
+  };
+}
+
+function mapLead(lead: PrismaLead): Lead {
+  return {
+    id: lead.id,
+    businessName: lead.businessName,
+    businessType: lead.businessType,
+    contactName: lead.contactName,
+    phone: lead.phone,
+    area: lead.area,
+    message: lead.message ?? undefined,
+    status: lead.status as LeadStatus,
+    source: lead.source ?? undefined,
+    consentAt: lead.consentAt,
+    createdAt: lead.createdAt,
   };
 }
 
@@ -515,6 +537,48 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
         },
       });
       return mapRecoveryEvent(event);
+    } catch (error) {
+      if (isNotFoundError(error)) return null;
+      throw error;
+    }
+  }
+
+  async function createLead(input: CreateLeadInput): Promise<Lead> {
+    const phone = canonicalizePhone(input.phone);
+    if (!phone) throw new Error("Invalid lead phone");
+
+    const lead = await client.lead.create({
+      data: {
+        businessName: input.businessName.trim(),
+        businessType: input.businessType.trim(),
+        contactName: input.contactName.trim(),
+        phone,
+        area: input.area.trim(),
+        message: input.message?.trim() || null,
+        source: input.source?.trim() || null,
+        consentAt: input.consentAt,
+      },
+    });
+    return mapLead(lead);
+  }
+
+  async function listLeads(): Promise<Lead[]> {
+    const leads = await client.lead.findMany({
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    });
+    return leads.map(mapLead);
+  }
+
+  async function updateLeadStatus(
+    leadId: string,
+    status: LeadStatus
+  ): Promise<Lead | null> {
+    try {
+      const lead = await client.lead.update({
+        where: { id: leadId },
+        data: { status },
+      });
+      return mapLead(lead);
     } catch (error) {
       if (isNotFoundError(error)) return null;
       throw error;
@@ -1932,6 +1996,9 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     listRecoveryEvents,
     listAllRecoveryEvents,
     reviewRecoveryEvent,
+    createLead,
+    listLeads,
+    updateLeadStatus,
     listVendors,
     getOperatorVendorDetail,
     setVendorActive,
