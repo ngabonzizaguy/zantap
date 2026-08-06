@@ -1,6 +1,6 @@
 # Issue 03 — Production marketing page at `/` (C structure + A hero + scroll-world cinematic)
 
-Status: **ready-for-agent** · Track 1 · ADR-0046 §5 + ADR-0047 (animation/motion stack)
+Status: **✅ CORE SHIPPED 2026-08-06 (ADR-0049) — scroll-world cinematic pending owner interview/budget** · Track 1 · ADR-0046 §5 + ADR-0047
 
 Replace the root demo-storefront redirect with the production funnel page.
 Design source: `.scratch/lead-funnel-prototype/` variant C structure (offer +
@@ -48,13 +48,27 @@ Constraints (fixed):
 - Form fields per prototype (business name, type, contact person, WhatsApp
   phone, area) + a consent line for follow-up contact.
 
-- [ ] Read `.agents/skills/scroll-world/SKILL.md` + its references; run its owner interview (sections, art direction, camera, mobile opt-in, budget) before any paid generation.
-- [ ] Move hero assets into `public/`; build the page as RSC + small client islands (form, video, scrub engine, Three.js accent).
-- [ ] Add `gsap` + `three` via npm; GSAP entrance/scroll animations on copy/sections; Three.js accent detail per prototype B.
-- [ ] scroll-world chain: stills → dives → connectors → encode → wire `scrub-engine.js` into a client island; seam QA (skill Step 8).
-- [ ] Lead form submits via Server Action from Issue 04 (if 04 not yet done, land the UI behind the action's interface).
-- [ ] SEO: metadata, Open Graph image, `sitemap.xml`, `robots.txt`; keep vendor storefronts crawlable policy explicit.
-- [ ] Preserve `/[slug]` routing — ensure no slug can collide with the root page and reserved paths.
-- [ ] Mobile-first check at 390px; no horizontal overflow; reduced-motion fallback to the still image.
-- [ ] `npm run build`; Playwright/curl smoke; delete `.scratch/lead-funnel-prototype/` per its NOTES once verified in prod.
-- [ ] Handoff per protocol (ADR for the root-IA change).
+- [x] Read `.agents/skills/scroll-world/SKILL.md` + its references; run its owner interview (sections, art direction, camera, mobile opt-in, budget) before any paid generation. — Skill read 2026-08-06; **interview questions issued to owner at session end; NO paid rendering has run.** Answers to be recorded below.
+- [x] Move hero assets into `public/`; build the page as RSC + small client islands (form, video, scrub engine, Three.js accent). — `public/marketing/`; `app/page.tsx` RSC + `components/marketing/*` islands (HeroMedia, LeadForm, MarketingMotion, OrbitAccent, StickyCta). Scrub engine island deferred with the cinematic.
+- [x] Add `gsap` + `three` via npm; GSAP entrance/scroll animations on copy/sections; Three.js accent detail per prototype B. — `MarketingMotion` (matchMedia-gated), `OrbitAccent` (lazy three import).
+- [ ] scroll-world chain: stills → dives → connectors → encode → wire `scrub-engine.js` into a client island; seam QA (skill Step 8). — **BLOCKED on owner interview answers + budget approval (ADR-0047 decision 3). Dedicated follow-up session.**
+- [x] Lead form submits via Server Action from Issue 04 (if 04 not yet done, land the UI behind the action's interface). — UI built against `lib/leads/types.ts` `SubmitLeadInput`; interim transport = prefilled WhatsApp to the owner (no lead silently dropped); Issue 04 swaps `deliverLead` for the action.
+- [x] SEO: metadata, Open Graph image, `sitemap.xml`, `robots.txt`; keep vendor storefronts crawlable policy explicit. — `app/robots.ts` (storefronts crawlable; api/ops/vendor/slip disallowed), `app/sitemap.ts`, OG = hero still.
+- [x] Preserve `/[slug]` routing — ensure no slug can collide with the root page and reserved paths. — `RESERVED_VENDOR_SLUGS` enforced in BOTH store adapters' `isSlugAvailable` (+ unit & contract tests).
+- [x] Mobile-first check at 390px; no horizontal overflow; reduced-motion fallback to the still image. — Playwright check: 0px overflow at 390/1440, no console errors; video gated by `useSyncExternalStore` reduced-motion/Save-Data.
+- [x] `npm run build`; Playwright/curl smoke; delete `.scratch/lead-funnel-prototype/` per its NOTES once verified in prod. — build/lint/`npm test` (256/78) green; shots in `.scratch/product-restructure/issue-03-shots/`; prototype deleted after prod smoke.
+- [x] Handoff per protocol (ADR for the root-IA change). — ADR-0049.
+
+Notes:
+- Fresh Z-brand kitchen screenshot captured against the in-memory store
+  (`.scratch/product-restructure/issue-03-capture-kds.mjs`) — the July
+  `public/brand/UI-screens/` captures show the retired medallion + a
+  `zantap.ai` URL; don't reuse those on marketing surfaces.
+
+## Scroll-world owner interview (recorded when answered)
+
+- Art direction: _pending_
+- Camera style: _pending_
+- Journey sections: _pending_ (proposed: storefront → order → kitchen → dispatch → grow)
+- Mobile 9:16 chain: _pending_
+- Budget tier + biller + approval: _pending_ (NO paid rendering until this line is a yes)

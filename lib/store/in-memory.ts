@@ -76,7 +76,7 @@ import {
   seedOrders,
   seedVendor,
 } from "@/lib/store/seed-data";
-import { normalizeVendorSlug } from "@/lib/vendor/slug";
+import { isReservedVendorSlug, normalizeVendorSlug } from "@/lib/vendor/slug";
 import { mintOwnerToken } from "@/lib/vendor/owner-token";
 import { canonicalizePhone } from "@/lib/format";
 import {
@@ -244,6 +244,7 @@ export function createInMemoryStore(): ResettableStore {
   async function isSlugAvailable(slug: string): Promise<boolean> {
     const normalized = normalizeVendorSlug(slug);
     if (!normalized) return false;
+    if (isReservedVendorSlug(normalized)) return false;
     return !vendors.some((row) => row.slug === normalized);
   }
 

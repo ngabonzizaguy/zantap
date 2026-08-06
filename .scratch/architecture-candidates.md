@@ -13,6 +13,21 @@ Last verified against the codebase: 2026-07-15.
 
 ## Product architecture audit (2026-08-05)
 
+**✅ ISSUE 03 (MARKETING PAGE AT `/`) CORE SHIPPED 2026-08-06 (ADR-0049) —
+scroll-world cinematic pending owner interview + budget approval.** Root
+demo redirect replaced by the production funnel: C structure (offer + visible
+lead form, sticky mobile CTA guard) + A cinematic Kigali hero (still + loop in
+`public/marketing/`, reduced-motion/Save-Data safe); GSAP ScrollTrigger
+reveals + lazy Three.js orbit accent (`gsap`/`three` deps added); i18n-ready
+copy in `lib/marketing/copy.ts`; lead form built against Issue-04's
+`SubmitLeadInput` with interim WhatsApp transport to the owner; SEO
+(metadata/OG/sitemap/robots — storefronts crawlable, ops/KDS/slip excluded);
+`RESERVED_VENDOR_SLUGS` enforced in both Store adapters. Fresh Z-brand KDS
+screenshot captured in-memory (July UI-screens show the retired medallion +
+zantap.ai — don't reuse). Issue 01 (Z brand) was already committed in
+`877cef0` on `cursor/setup-dev-environment-0a7d`; deployed together with
+Issue 03. See `.scratch/product-restructure/issue-03.md`.
+
 **✅ ISSUE 02 (ZANTAP.APP CUTOVER) DONE · PROD-SMOKED 2026-08-06.** Owner bought
 `zantap.app` and attached it (apex = Production, `www` 308→apex,
 `zantap-psi.vercel.app` alias retained). `NEXT_PUBLIC_BASE_URL=https://zantap.app`

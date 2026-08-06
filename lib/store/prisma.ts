@@ -81,7 +81,7 @@ import type {
   Vendor,
   VendorRecoveryEvent,
 } from "@/lib/types";
-import { normalizeVendorSlug } from "@/lib/vendor/slug";
+import { isReservedVendorSlug, normalizeVendorSlug } from "@/lib/vendor/slug";
 import { mintOwnerToken } from "@/lib/vendor/owner-token";
 import { thumbGradientForId } from "@/lib/menu/gradients";
 import {
@@ -334,6 +334,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function isSlugAvailable(slug: string): Promise<boolean> {
     const normalized = normalizeVendorSlug(slug);
     if (!normalized) return false;
+    if (isReservedVendorSlug(normalized)) return false;
     const vendor = await client.vendor.findUnique({ where: { slug: normalized } });
     return vendor === null;
   }

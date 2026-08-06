@@ -57,6 +57,13 @@ export function runStoreContract(
         expect(await store.isSlugAvailable("INKA-STEAKHOUSE")).toBe(false);
       });
 
+      it("isSlugAvailable rejects reserved route/marketing slugs (ADR-0049)", async () => {
+        expect(await store.isSlugAvailable("ops")).toBe(false);
+        expect(await store.isSlugAvailable("vendor")).toBe(false);
+        expect(await store.isSlugAvailable("onboard")).toBe(false);
+        expect(await store.isSlugAvailable("pricing")).toBe(false);
+      });
+
       it("createVendor persists required fields and round-trips via getVendorBySlug", async () => {
         const created = await store.createVendor({
           name: "Test Bistro",
