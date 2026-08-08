@@ -91,11 +91,12 @@ export type KdsSortDirection = "oldest" | "newest";
 
 /**
  * KDS queue sort: kitchen stage ordinal first, then by `paidAt` within the stage.
- * `oldest` (default) surfaces the longest-waiting order first; `newest` reverses it.
+ * `newest` (default) surfaces the most recently paid order first; vendors can
+ * still select `oldest` when they need to focus on the longest wait.
  */
 export function sortKdsQueueOrders(
   orders: Order[],
-  direction: KdsSortDirection = "oldest"
+  direction: KdsSortDirection = "newest"
 ): Order[] {
   const timeSign = direction === "newest" ? -1 : 1;
   return [...orders].sort((a, b) => {

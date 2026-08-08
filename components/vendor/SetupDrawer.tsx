@@ -29,7 +29,6 @@ import {
   transferOwnerTokenCache,
   useOwnerToken,
 } from "@/lib/vendor/useOwnerToken";
-import { resetCoachmarks } from "@/components/vendor/Coachmark";
 import { StorefrontQr } from "@/components/onboard/StorefrontQr";
 import { getStorefrontUrl } from "@/lib/base-url";
 
@@ -131,7 +130,6 @@ export function SetupDrawer({
   const logoFileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const { token, hasToken } = useOwnerToken(vendorSlug);
-  const [tipsReset, setTipsReset] = useState(false);
   const [taglineDraft, setTaglineDraft] = useState("");
   const [locationDraft, setLocationDraft] = useState("");
   const [deliveryTimeDraft, setDeliveryTimeDraft] = useState("");
@@ -307,12 +305,6 @@ export function SetupDrawer({
     setPaymentsError(null);
     setPaymentsSaved(false);
   }
-
-  const handleShowTipsAgain = () => {
-    resetCoachmarks();
-    setTipsReset(true);
-    window.setTimeout(() => setTipsReset(false), 2000);
-  };
 
   const applySavedProfile = (saved: StorefrontProfile) => {
     onProfileSaved?.(saved);
@@ -660,7 +652,11 @@ export function SetupDrawer({
                 return (
                   <li
                     key={item.id}
-                    className="flex items-start gap-3 rounded-brand-md border border-hairline px-3 py-2.5"
+                    className={cn(
+                      "flex items-start gap-3 rounded-brand-md border border-hairline px-3 py-2.5",
+                      item.comingSoon &&
+                        "border-hairline/60 bg-canvas-soft/40 opacity-55"
+                    )}
                   >
                     <span
                       className={cn(
@@ -678,7 +674,11 @@ export function SetupDrawer({
                         <p
                           className={cn(
                             "font-body text-body-md font-medium",
-                            done ? "text-muted line-through" : "text-ink"
+                            done
+                              ? "text-muted line-through"
+                              : item.comingSoon
+                                ? "text-muted-soft"
+                                : "text-ink"
                           )}
                         >
                           {item.label}
@@ -689,7 +689,12 @@ export function SetupDrawer({
                           </span>
                         ) : null}
                       </div>
-                      <p className="mt-0.5 font-body text-body-sm text-muted">
+                      <p
+                        className={cn(
+                          "mt-0.5 font-body text-body-sm",
+                          item.comingSoon ? "text-muted-soft" : "text-muted"
+                        )}
+                      >
                         {item.hint}
                       </p>
                     </div>
@@ -1221,26 +1226,6 @@ export function SetupDrawer({
             </div>
           </section>
 
-          <section className="mt-8">
-            <h3 className="font-display text-display-sm text-ink">Tips</h3>
-            <p className="mt-1 font-body text-body-sm text-muted">
-              Coachmarks appear once on key controls. Use the button below to
-              show them again.
-            </p>
-            <Button
-              size="default"
-              variant="outline"
-              className="mt-4 w-full"
-              onClick={handleShowTipsAgain}
-            >
-              Show tips again
-            </Button>
-            {tipsReset ? (
-              <p className="mt-2 font-body text-body-sm text-primary">
-                Tips will reappear on the relevant tabs.
-              </p>
-            ) : null}
-          </section>
         </div>
       </aside>
     </div>

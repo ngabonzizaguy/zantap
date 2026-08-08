@@ -24,6 +24,7 @@ import {
 import { stageFilterGroup, type KdsStageFilter } from "@/lib/kds/stage-styles";
 import { useKdsLiveSnapshot } from "@/lib/kds/useKdsLiveSnapshot";
 import { usePeekVisibility } from "@/lib/kds/usePeekVisibility";
+import { KDS_COACHMARKS_ENABLED } from "@/lib/kds/feature-flags";
 import type { KdsSnapshot } from "@/lib/kds/types";
 import type { KitchenStage } from "@/lib/types";
 import { deriveOnboardingState } from "@/lib/vendor/onboarding";
@@ -135,7 +136,7 @@ export function KdsDashboard({
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [stageFilter, setStageFilter] = useState<KdsStageFilter>("all");
-  const [sortDirection, setSortDirection] = useState<KdsSortDirection>("oldest");
+  const [sortDirection, setSortDirection] = useState<KdsSortDirection>("newest");
 
   const liveChecklist = useMemo(
     () => deriveOnboardingState(menu, kitchenOpen, orders),
@@ -453,7 +454,7 @@ export function KdsDashboard({
         onClick={() => setHelpOpen(true)}
         {...helpPeekHandlers}
         className={cn(
-          "fixed bottom-24 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-hairline bg-surface-card text-2xl font-bold text-ink shadow-brand-soft hover:bg-canvas-soft motion-safe:transition-opacity motion-safe:duration-300",
+          "fixed bottom-24 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-hairline/70 bg-surface-card/95 text-sm font-medium text-muted shadow-brand-soft hover:bg-canvas-soft hover:text-ink motion-safe:transition-[opacity,color,background-color] motion-safe:duration-300",
           helpPeekVisible ? "opacity-100" : "pointer-events-none opacity-0 motion-reduce:opacity-100 motion-reduce:pointer-events-auto"
         )}
         aria-label="Open help"
@@ -486,26 +487,30 @@ export function KdsDashboard({
         onRefresh={refreshOnboarding}
       />
 
-      <Coachmark
-        id="kitchen-toggle"
-        targetSelector='[data-coachmark-target="kitchen-toggle"]'
-        title="Kitchen status"
-        body="Toggle OPEN when you're ready to accept orders. Let customers know when you're accepting orders."
-      />
-      <Coachmark
-        id="menu-add"
-        targetSelector='[data-coachmark-target="menu-add"]'
-        title="Add your first dish"
-        body="Tap here to create a menu item customers can order from your storefront."
-        enabled={tab === "menu"}
-      />
-      <Coachmark
-        id="dispatch-button"
-        targetSelector='[data-coachmark-target="dispatch-button"]'
-        title="Assign a driver"
-        body="When an order is ready, expand the ticket and assign a driver to keep delivery records."
-        enabled={tab === "orders" && !!expandedId}
-      />
+      {KDS_COACHMARKS_ENABLED ? (
+        <>
+          <Coachmark
+            id="kitchen-toggle"
+            targetSelector='[data-coachmark-target="kitchen-toggle"]'
+            title="Kitchen status"
+            body="Toggle OPEN when you're ready to accept orders. Let customers know when you're accepting orders."
+          />
+          <Coachmark
+            id="menu-add"
+            targetSelector='[data-coachmark-target="menu-add"]'
+            title="Add your first dish"
+            body="Tap here to create a menu item customers can order from your storefront."
+            enabled={tab === "menu"}
+          />
+          <Coachmark
+            id="dispatch-button"
+            targetSelector='[data-coachmark-target="dispatch-button"]'
+            title="Assign a driver"
+            body="When an order is ready, expand the ticket and assign a driver to keep delivery records."
+            enabled={tab === "orders" && !!expandedId}
+          />
+        </>
+      ) : null}
 
       <AssignDriverModal
         open={assignOrderIds.length > 0}
