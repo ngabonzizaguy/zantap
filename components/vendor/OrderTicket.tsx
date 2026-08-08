@@ -522,7 +522,10 @@ export function OrdersList({
         </Card>
       )}
 
-      <div className="zt-hidescroll -mx-[18px] flex gap-2 overflow-x-auto px-[18px] pb-1">
+      <div
+        className="zt-hidescroll -mx-1 flex flex-nowrap gap-2 overflow-x-auto px-1 pb-0.5 snap-x snap-mandatory"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
         {KDS_STAGE_FILTERS.map(({ id, label }) => {
           const active = stageFilter === id;
           const count = filterCounts[id];
@@ -533,7 +536,7 @@ export function OrdersList({
               type="button"
               onClick={() => onStageFilter(id)}
               className={cn(
-                "flex flex-none items-center gap-1.5 rounded-brand-md px-3.5 py-2 font-body text-body-sm font-medium transition-colors",
+                "flex flex-none snap-start items-center gap-1.5 rounded-brand-md px-3.5 py-2 font-body text-body-sm font-medium transition-colors",
                 chip.text,
                 active ? chip.activeBg : cn(chip.bg, "hover:opacity-90")
               )}

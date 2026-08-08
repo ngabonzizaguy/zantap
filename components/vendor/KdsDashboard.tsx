@@ -454,7 +454,7 @@ export function KdsDashboard({
         onClick={() => setHelpOpen(true)}
         {...helpPeekHandlers}
         className={cn(
-          "fixed bottom-24 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-hairline/70 bg-surface-card/95 text-sm font-medium text-muted shadow-brand-soft hover:bg-canvas-soft hover:text-ink motion-safe:transition-[opacity,color,background-color] motion-safe:duration-300",
+          "fixed bottom-24 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-hairline/70 bg-surface-card text-sm font-medium text-muted shadow-brand-soft motion-safe:transition-[opacity,color] motion-safe:duration-300",
           helpPeekVisible ? "opacity-100" : "pointer-events-none opacity-0 motion-reduce:opacity-100 motion-reduce:pointer-events-auto"
         )}
         aria-label="Open help"
