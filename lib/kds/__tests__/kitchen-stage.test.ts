@@ -3,7 +3,25 @@ import {
   assertCanAdvanceKitchenStage,
   isForwardKitchenTransition,
   KitchenStageTransitionError,
+  sortKdsQueueOrders,
 } from "@/lib/kds/kitchen-stage";
+import type { Order } from "@/lib/types";
+
+function makeOrder(id: string, paidAt: string): Order {
+  return {
+    id,
+    vendorId: "vendor-1",
+    customerPhone: "250788123456",
+    deliverySector: "Kacyiru",
+    landmark: "Library",
+    totalAmount: 1_000,
+    status: "PAID",
+    kitchenStage: "NEW",
+    paidAt: new Date(paidAt),
+    orderItems: [],
+    createdAt: new Date(paidAt),
+  };
+}
 
 describe("assertCanAdvanceKitchenStage", () => {
   it("allows forward jumps", () => {
@@ -51,5 +69,23 @@ describe("isForwardKitchenTransition", () => {
   it("is false for backward or equal stages", () => {
     expect(isForwardKitchenTransition("READY", "NEW")).toBe(false);
     expect(isForwardKitchenTransition("PREPARING", "PREPARING")).toBe(false);
+  });
+});
+
+describe("sortKdsQueueOrders", () => {
+  const older = makeOrder("older", "2026-08-08T08:00:00.000Z");
+  const newer = makeOrder("newer", "2026-08-08T09:00:00.000Z");
+
+  it("defaults to newest-first within a kitchen stage", () => {
+    expect(sortKdsQueueOrders([older, newer]).map((order) => order.id)).toEqual([
+      "newer",
+      "older",
+    ]);
+  });
+
+  it("keeps oldest-first available as an explicit operator choice", () => {
+    expect(
+      sortKdsQueueOrders([newer, older], "oldest").map((order) => order.id)
+    ).toEqual(["older", "newer"]);
   });
 });

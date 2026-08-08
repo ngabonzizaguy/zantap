@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import {
   Instrument_Serif,
   Inter,
@@ -7,6 +7,7 @@ import {
 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { PwaRuntime } from "@/components/pwa/PwaRuntime";
 import "./globals.css";
 
 const inter = Inter({
@@ -38,6 +39,17 @@ export const metadata: Metadata = {
   title: "ZanTap",
   description:
     "Low-friction social-commerce checkout and micro-POS for informal food vendors in Kigali.",
+  applicationName: "ZanTap",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "ZanTap",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f5f5f5",
 };
 
 export default function RootLayout({
@@ -52,6 +64,7 @@ export default function RootLayout({
     >
       <body className="font-body antialiased" suppressHydrationWarning>
         {children}
+        <PwaRuntime />
         <Analytics />
         <SpeedInsights />
       </body>
