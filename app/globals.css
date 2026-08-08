@@ -204,21 +204,27 @@
  * covers the full viewport regardless of where the token sits.
  */
 .kds-dark {
+  --kds-resting-background: #0e0e10;
   color-scheme: dark;
   background-color: #0e0e10;
   color: #f4f4f3;
 }
 
+.kds-dark [class*="hover:bg-"],
+.kds-dark [class*="active:bg-"] {
+  --kds-resting-background: transparent;
+}
+
 /* Surfaces */
-.kds-dark .bg-canvas { background-color: #0e0e10; }
-.kds-dark .bg-canvas-soft { background-color: #17171a; }
-.kds-dark .bg-surface-card { background-color: #161619; }
-.kds-dark .bg-surface-strong { background-color: #202024; }
-.kds-dark .bg-canvas\/80 { background-color: rgba(14, 14, 16, 0.8); }
-.kds-dark .bg-canvas\/90 { background-color: rgba(14, 14, 16, 0.9); }
-.kds-dark .bg-canvas\/95 { background-color: rgba(14, 14, 16, 0.95); }
-.kds-dark .bg-surface-card\/80 { background-color: rgba(22, 22, 25, 0.8); }
-.kds-dark .bg-surface-card\/90 { background-color: rgba(22, 22, 25, 0.9); }
+.kds-dark .bg-canvas { --kds-resting-background: #0e0e10; background-color: #0e0e10; }
+.kds-dark .bg-canvas-soft { --kds-resting-background: #17171a; background-color: #17171a; }
+.kds-dark .bg-surface-card { --kds-resting-background: #161619; background-color: #161619; }
+.kds-dark .bg-surface-strong { --kds-resting-background: #202024; background-color: #202024; }
+.kds-dark .bg-canvas\/80 { --kds-resting-background: rgba(14, 14, 16, 0.8); background-color: rgba(14, 14, 16, 0.8); }
+.kds-dark .bg-canvas\/90 { --kds-resting-background: rgba(14, 14, 16, 0.9); background-color: rgba(14, 14, 16, 0.9); }
+.kds-dark .bg-canvas\/95 { --kds-resting-background: rgba(14, 14, 16, 0.95); background-color: rgba(14, 14, 16, 0.95); }
+.kds-dark .bg-surface-card\/80 { --kds-resting-background: rgba(22, 22, 25, 0.8); background-color: rgba(22, 22, 25, 0.8); }
+.kds-dark .bg-surface-card\/90 { --kds-resting-background: rgba(22, 22, 25, 0.9); background-color: rgba(22, 22, 25, 0.9); }
 
 /*
  * KDS operational canvas: a touch darker than the base #0e0e10 with a subtle
@@ -227,6 +233,7 @@
  * (`.kds-surface`) so the onboarding wizard's dark surface is unaffected.
  */
 .kds-dark .kds-surface {
+  --kds-resting-background: #0b0b0d;
   background-color: #0b0b0d;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='kdsGrain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23kdsGrain)' opacity='0.05'/%3E%3C/svg%3E");
   background-repeat: repeat;
@@ -246,7 +253,7 @@
 .kds-dark .border-hairline-strong { border-color: rgba(255, 255, 255, 0.14); }
 
 /* Primary -> orange accent (price, active tab, dispatch, etc.) */
-.kds-dark .bg-primary { background-color: #f5a623; }
+.kds-dark .bg-primary { --kds-resting-background: #f5a623; background-color: #f5a623; }
 .kds-dark .bg-primary-active,
 .kds-dark .hover\:bg-primary-active:hover,
 .kds-dark .active\:bg-primary-active:active { background-color: #e0951f; }
@@ -255,18 +262,34 @@
 .kds-dark .border-primary { border-color: #f5a623; }
 .kds-dark .border-l-primary { border-left-color: #f5a623; }
 .kds-dark .border-primary\/40 { border-color: rgba(245, 166, 35, 0.4); }
-.kds-dark .bg-primary\/10 { background-color: rgba(245, 166, 35, 0.12); }
-.kds-dark .bg-primary\/5 { background-color: rgba(245, 166, 35, 0.08); }
+.kds-dark .bg-primary\/10 { --kds-resting-background: rgba(245, 166, 35, 0.12); background-color: rgba(245, 166, 35, 0.12); }
+.kds-dark .bg-primary\/5 { --kds-resting-background: rgba(245, 166, 35, 0.08); background-color: rgba(245, 166, 35, 0.08); }
 
 /* Golden-yellow recover-access accent (D5) — distinct from primary CTAs */
 .kds-dark .text-gold { color: #ffd24c; }
 .kds-dark .border-gold { border-color: #ffd24c; }
 .kds-dark .border-gold\/50 { border-color: rgba(255, 210, 76, 0.5); }
-.kds-dark .bg-gold\/10 { background-color: rgba(255, 210, 76, 0.12); }
-.kds-dark .bg-gold\/20 { background-color: rgba(255, 210, 76, 0.2); }
+.kds-dark .bg-gold\/10 { --kds-resting-background: rgba(255, 210, 76, 0.12); background-color: rgba(255, 210, 76, 0.12); }
+.kds-dark .bg-gold\/20 { --kds-resting-background: rgba(255, 210, 76, 0.2); background-color: rgba(255, 210, 76, 0.2); }
 .kds-dark .hover\:border-gold:hover { border-color: #ffd24c; }
 .kds-dark .hover\:bg-gold\/20:hover { background-color: rgba(255, 210, 76, 0.2); }
 .kds-dark .focus-visible\:outline-gold:focus-visible { outline-color: #ffd24c; }
+
+/*
+ * Keep tap/click feedback from painting a second background over KDS controls.
+ * Mobile browsers can leave `:hover` stuck after a tap; each surface records
+ * its resting fill above, and controls without one inherit the surface beneath
+ * them. Focus outlines and press-scale feedback remain intact.
+ */
+.kds-dark .bg-transparent { --kds-resting-background: transparent; }
+.kds-dark .bg-success\/10 { --kds-resting-background: rgba(22, 163, 74, 0.1); }
+.kds-dark .bg-error\/10 { --kds-resting-background: rgba(220, 38, 38, 0.1); }
+.kds-dark .bg-\[\#7c6fe0\] { --kds-resting-background: #7c6fe0; }
+.kds-dark .bg-\[\#25D366\] { --kds-resting-background: #25d366; }
+.kds-dark [class*="hover:bg-"]:hover,
+.kds-dark [class*="active:bg-"]:active {
+  background-color: var(--kds-resting-background);
+}
 
 /* Semantic status text brightened for dark surfaces */
 .kds-dark .text-success { color: #34d399; }

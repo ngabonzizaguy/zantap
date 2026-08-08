@@ -652,11 +652,7 @@ export function SetupDrawer({
                 return (
                   <li
                     key={item.id}
-                    className={cn(
-                      "flex items-start gap-3 rounded-brand-md border border-hairline px-3 py-2.5",
-                      item.comingSoon &&
-                        "border-hairline/60 bg-canvas-soft/40 opacity-55"
-                    )}
+                    className="flex items-start gap-3 rounded-brand-md border border-hairline px-3 py-2.5"
                   >
                     <span
                       className={cn(
@@ -674,11 +670,7 @@ export function SetupDrawer({
                         <p
                           className={cn(
                             "font-body text-body-md font-medium",
-                            done
-                              ? "text-muted line-through"
-                              : item.comingSoon
-                                ? "text-muted-soft"
-                                : "text-ink"
+                            done ? "text-muted line-through" : "text-ink"
                           )}
                         >
                           {item.label}
@@ -689,12 +681,7 @@ export function SetupDrawer({
                           </span>
                         ) : null}
                       </div>
-                      <p
-                        className={cn(
-                          "mt-0.5 font-body text-body-sm",
-                          item.comingSoon ? "text-muted-soft" : "text-muted"
-                        )}
-                      >
+                      <p className="mt-0.5 font-body text-body-sm text-muted">
                         {item.hint}
                       </p>
                     </div>

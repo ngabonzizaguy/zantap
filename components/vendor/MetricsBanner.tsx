@@ -105,7 +105,7 @@ export function MetricsBanner({
           <button
             type="button"
             onClick={onOpenMenu}
-            className="flex h-9 w-9 flex-none items-center justify-center rounded-brand-md border border-hairline-strong text-ink transition-colors hover:bg-surface-strong"
+            className="flex h-9 w-9 flex-none items-center justify-center rounded-brand-md border border-hairline-strong text-ink"
             aria-label="Open setup menu"
           >
             <Icon name="menu" size={18} strokeWidth={2.2} />
