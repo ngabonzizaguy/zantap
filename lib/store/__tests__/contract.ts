@@ -1051,6 +1051,24 @@ export function runStoreContract(
     });
 
     describe("lead capture", () => {
+      it("stores disabled WhatsApp routing by default and canonicalizes an enabled recipient", async () => {
+        expect(await store.getLeadRoutingSettings()).toEqual({
+          whatsappEnabled: false,
+        });
+
+        const updated = await store.updateLeadRoutingSettings({
+          whatsappEnabled: true,
+          whatsappPhone: "+250 784 928 786",
+        });
+
+        expect(updated).toMatchObject({
+          whatsappEnabled: true,
+          whatsappPhone: "250784928786",
+        });
+        expect(updated.updatedAt).toBeInstanceOf(Date);
+        expect(await store.getLeadRoutingSettings()).toEqual(updated);
+      });
+
       it("creates a NEW lead with a canonical phone and lists it newest-first", async () => {
         const first = await store.createLead({
           businessName: "Kigali Kitchen",

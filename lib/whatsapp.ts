@@ -1,14 +1,15 @@
+import type { Lead } from "@/lib/leads/types";
 import type { Order } from "@/lib/types";
 import { formatRwf, normalizePhone } from "@/lib/format";
 
-/** Rwanda local → WhatsApp wa.me path segment (e.g. 0788123456 → 250788123456). */
+/** Local Rwanda or canonical international number → WhatsApp wa.me path. */
 export function toWhatsAppE164(localPhone: string): string {
   const digits = normalizePhone(localPhone);
-  if (digits.length === 12 && digits.startsWith("250")) {
-    return digits;
-  }
   if (digits.length === 10 && digits.startsWith("0")) {
     return `250${digits.slice(1)}`;
+  }
+  if (/^[1-9]\d{7,14}$/.test(digits)) {
+    return digits;
   }
   return "";
 }
@@ -47,6 +48,28 @@ export function buildWhatsAppUrl(text: string, phone?: string): string {
     }
   }
   return `https://wa.me/?text=${encoded}`;
+}
+
+export function buildLeadWhatsAppUrl(
+  recipientPhone: string,
+  lead: Pick<
+    Lead,
+    | "businessName"
+    | "businessType"
+    | "contactName"
+    | "phone"
+    | "area"
+  >
+): string {
+  const text = [
+    "New ZanTap partner request",
+    `Business: ${lead.businessName}`,
+    `Type: ${lead.businessType}`,
+    `Contact: ${lead.contactName}`,
+    `Phone: +${lead.phone}`,
+    `Area: ${lead.area}`,
+  ].join("\n");
+  return buildWhatsAppUrl(text, recipientPhone);
 }
 
 export function buildVendorWhatsAppUrl(

@@ -30,6 +30,7 @@ export function LeadForm() {
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -67,6 +68,7 @@ export function LeadForm() {
         setError(submissionErrors[result.error]);
         return;
       }
+      setWhatsappUrl(result.whatsappUrl ?? null);
       setSubmitted(true);
     } catch {
       setError(LEAD_FORM.errors.submissionFailed);
@@ -105,6 +107,21 @@ export function LeadForm() {
             <p className="mt-0.5 font-body text-caption text-[#4e4e4e]">
               {LEAD_FORM.success.detail}
             </p>
+            {whatsappUrl ? (
+              <div className="mt-4">
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-11 items-center justify-center rounded-pill bg-[#0c0a09] px-5 font-body text-button text-white transition-colors hover:bg-[#292524] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0c0a09]"
+                >
+                  {LEAD_FORM.success.whatsappCta}
+                </a>
+                <p className="mt-2 font-body text-[12px] text-[#777169]">
+                  {LEAD_FORM.success.whatsappNote}
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : (

@@ -5,9 +5,6 @@
  * guided setup offer, no invented pricing, Rwanda-first.
  */
 
-/** Owner's WhatsApp for lead follow-up (same number as the KDS help modal). */
-export const MARKETING_WHATSAPP_PHONE = "250784928786";
-
 export const MARKETING_META = {
   title: "ZanTap — Put your food business online, with help",
   description:
@@ -73,6 +70,8 @@ export const LEAD_FORM = {
   success: {
     title: "You\u2019re on the list.",
     detail: "We\u2019ll contact you on WhatsApp and take it from there.",
+    whatsappCta: "Continue on WhatsApp",
+    whatsappNote: "Review the message, then tap Send in WhatsApp.",
   },
 } as const;
 

@@ -10,6 +10,7 @@ import type {
   SubmitLeadResult,
 } from "@/lib/leads/types";
 import { getStore } from "@/lib/store";
+import { buildLeadWhatsAppUrl } from "@/lib/whatsapp";
 import {
   enforceRateLimit,
   RateLimitError,
@@ -107,10 +108,25 @@ export async function submitLead(
   }
 
   try {
-    await getStore().createLead({
+    const store = getStore();
+    const lead = await store.createLead({
       ...parsed.lead,
       consentAt: new Date(),
     });
+
+    // The Lead is already durable. A settings read or WhatsApp handoff problem
+    // must never turn a successful partner request into a failed submission.
+    try {
+      const settings = await store.getLeadRoutingSettings();
+      if (settings.whatsappEnabled && settings.whatsappPhone) {
+        return {
+          ok: true,
+          whatsappUrl: buildLeadWhatsAppUrl(settings.whatsappPhone, lead),
+        };
+      }
+    } catch {
+      return { ok: true };
+    }
     return { ok: true };
   } catch {
     return { ok: false, error: "SUBMISSION_FAILED" };

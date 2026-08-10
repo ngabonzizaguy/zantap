@@ -77,6 +77,13 @@ model Lead {
   @@index([createdAt])
 }
 
+model LeadRoutingSettings {
+  id              String   @id
+  whatsappEnabled Boolean  @default(false)
+  whatsappPhone   String?
+  updatedAt       DateTime @updatedAt
+}
+
 model MenuItem {
   id          String      @id @default(cuid())
   vendorId    String

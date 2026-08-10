@@ -46,6 +46,33 @@ describe("submitLead", () => {
     ]);
   });
 
+  it("returns a configured WhatsApp handoff after the lead is durably stored", async () => {
+    await getStore().updateLeadRoutingSettings({
+      whatsappEnabled: true,
+      whatsappPhone: "0784 928 786",
+    });
+
+    const result = await submitLead({
+      businessName: "Kigali Kitchen",
+      businessType: "Restaurant",
+      contactName: "Aline",
+      phone: "0788 123 456",
+      area: "Kimihurura",
+      source: "marketing-root",
+    });
+
+    expect(await getStore().listLeads()).toHaveLength(1);
+    expect(result).toEqual({
+      ok: true,
+      whatsappUrl: expect.stringMatching(
+        /^https:\/\/wa\.me\/250784928786\?text=/
+      ),
+    });
+    expect(decodeURIComponent(result.ok ? result.whatsappUrl ?? "" : "")).toContain(
+      "Kigali Kitchen"
+    );
+  });
+
   it("rejects incomplete or invalid-phone submissions without persisting", async () => {
     const incomplete = await submitLead({
       businessName: "",

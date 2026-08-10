@@ -39,8 +39,11 @@ import type { ResettableStore } from "@/lib/store/types";
 import type {
   CreateLeadInput,
   Lead,
+  LeadRoutingSettings,
   LeadStatus,
+  UpdateLeadRoutingSettingsInput,
 } from "@/lib/leads/types";
+import { normalizeLeadRoutingSettings } from "@/lib/leads/routing";
 import {
   matchesOrderSearch,
   normalizePagination,
@@ -145,6 +148,9 @@ export function createInMemoryStore(): ResettableStore {
   let payments: Payment[] = [];
   let vendors: StoredVendor[] = [];
   let leads: Lead[] = [];
+  let leadRoutingSettings: LeadRoutingSettings = {
+    whatsappEnabled: false,
+  };
   let recoveryEvents: VendorRecoveryEvent[] = [];
   let operatorActions: OperatorAction[] = [];
   let drivers: Driver[] = [];
@@ -239,6 +245,7 @@ export function createInMemoryStore(): ResettableStore {
     recoveryEvents = [];
     operatorActions = [];
     leads = [];
+    leadRoutingSettings = { whatsappEnabled: false };
     drivers = seedDrivers.map((driver) => ({ ...driver }));
     kitchenOpen = true;
     orderCounter = 0;
@@ -464,6 +471,25 @@ export function createInMemoryStore(): ResettableStore {
     return cloneLead(leads[index]);
   }
 
+  async function getLeadRoutingSettings(): Promise<LeadRoutingSettings> {
+    return {
+      ...leadRoutingSettings,
+      updatedAt: leadRoutingSettings.updatedAt
+        ? new Date(leadRoutingSettings.updatedAt)
+        : undefined,
+    };
+  }
+
+  async function updateLeadRoutingSettings(
+    input: UpdateLeadRoutingSettingsInput
+  ): Promise<LeadRoutingSettings> {
+    leadRoutingSettings = {
+      ...normalizeLeadRoutingSettings(input),
+      updatedAt: new Date(),
+    };
+    return getLeadRoutingSettings();
+  }
+
   async function listVendors(
     filters?: VendorListFilters
   ): Promise<VendorListEntry[]> {
@@ -619,13 +645,13 @@ export function createInMemoryStore(): ResettableStore {
   }
 
   async function listOperatorActions(
-    vendorSlug: string,
+    vendorSlug?: string,
     limit = 50
   ): Promise<OperatorAction[]> {
-    const vendor = await getVendorBySlug(vendorSlug);
-    if (!vendor) return [];
+    const vendor = vendorSlug ? await getVendorBySlug(vendorSlug) : undefined;
+    if (vendorSlug && !vendor) return [];
     return operatorActions
-      .filter((a) => a.vendorId === vendor.id)
+      .filter((a) => !vendorSlug || a.vendorId === vendor?.id)
       .map(cloneOperatorAction)
       .sort((a, b) => b.at.getTime() - a.at.getTime())
       .slice(0, limit);
@@ -1604,6 +1630,8 @@ export function createInMemoryStore(): ResettableStore {
     createLead,
     listLeads,
     updateLeadStatus,
+    getLeadRoutingSettings,
+    updateLeadRoutingSettings,
     listVendors,
     getOperatorVendorDetail,
     setVendorActive,

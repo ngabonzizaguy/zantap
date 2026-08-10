@@ -37,6 +37,7 @@ async function seedDatabaseInner(client: PrismaClient): Promise<void> {
   }
 
   // Clear in dependency order.
+  await client.leadRoutingSettings.deleteMany();
   await client.lead.deleteMany();
   await client.payment.deleteMany();
   await client.orderItem.deleteMany();

@@ -46,6 +46,10 @@ describe("toWhatsAppE164", () => {
     expect(toWhatsAppE164("+250 788 123 456")).toBe("250788123456");
   });
 
+  it("preserves another canonical international number", () => {
+    expect(toWhatsAppE164("+254 712 345 678")).toBe("254712345678");
+  });
+
   it("returns empty for invalid or short numbers", () => {
     expect(toWhatsAppE164("12345")).toBe("");
     expect(toWhatsAppE164("")).toBe("");

@@ -10,6 +10,12 @@ import type {
   VendorListEntry,
   VendorRecoveryEvent,
 } from "@/lib/types";
+import type {
+  Lead,
+  LeadRoutingSettings,
+  LeadStatus,
+  UpdateLeadRoutingSettingsInput,
+} from "@/lib/leads/types";
 
 export function getOperatorApiBaseUrl(): string {
   const configured = process.env.ZANTAP_OPERATOR_API_URL?.trim();
@@ -86,6 +92,51 @@ export async function listVendors(filters?: {
     `/vendors${query ? `?${query}` : ""}`
   );
   return data.vendors;
+}
+
+export async function listLeads(filters?: {
+  search?: string;
+  status?: LeadStatus;
+}): Promise<Lead[]> {
+  const params = new URLSearchParams();
+  if (filters?.search) params.set("search", filters.search);
+  if (filters?.status) params.set("status", filters.status);
+  const query = params.toString();
+  const data = await operatorFetch<{ leads: Lead[] }>(
+    `/leads${query ? `?${query}` : ""}`
+  );
+  return data.leads;
+}
+
+export async function patchLeadStatus(
+  leadId: string,
+  status: LeadStatus
+): Promise<Lead> {
+  const data = await operatorFetch<{ lead: Lead }>("/leads", {
+    method: "PATCH",
+    body: JSON.stringify({ leadId, status }),
+  });
+  return data.lead;
+}
+
+export async function getLeadRoutingSettings(): Promise<LeadRoutingSettings> {
+  const data = await operatorFetch<{ settings: LeadRoutingSettings }>(
+    "/lead-routing"
+  );
+  return data.settings;
+}
+
+export async function patchLeadRoutingSettings(
+  input: UpdateLeadRoutingSettingsInput
+): Promise<LeadRoutingSettings> {
+  const data = await operatorFetch<{ settings: LeadRoutingSettings }>(
+    "/lead-routing",
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }
+  );
+  return data.settings;
 }
 
 export async function getVendorDetail(

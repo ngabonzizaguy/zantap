@@ -3,6 +3,7 @@ import "server-only";
 import type {
   Driver as PrismaDriver,
   Lead as PrismaLead,
+  LeadRoutingSettings as PrismaLeadRoutingSettings,
   MenuImage as PrismaMenuImage,
   MenuItem as PrismaMenuItem,
   Order as PrismaOrder,
@@ -47,8 +48,11 @@ import type { Store } from "@/lib/store/types";
 import type {
   CreateLeadInput,
   Lead,
+  LeadRoutingSettings,
   LeadStatus,
+  UpdateLeadRoutingSettingsInput,
 } from "@/lib/leads/types";
+import { normalizeLeadRoutingSettings } from "@/lib/leads/routing";
 import type {
   AbandonManualPaymentResult,
   AddMenuImageInput,
@@ -216,6 +220,16 @@ function mapLead(lead: PrismaLead): Lead {
     source: lead.source ?? undefined,
     consentAt: lead.consentAt,
     createdAt: lead.createdAt,
+  };
+}
+
+function mapLeadRoutingSettings(
+  settings: PrismaLeadRoutingSettings
+): LeadRoutingSettings {
+  return {
+    whatsappEnabled: settings.whatsappEnabled,
+    whatsappPhone: settings.whatsappPhone ?? undefined,
+    updatedAt: settings.updatedAt,
   };
 }
 
@@ -585,6 +599,34 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     }
   }
 
+  async function getLeadRoutingSettings(): Promise<LeadRoutingSettings> {
+    const settings = await client.leadRoutingSettings.findUnique({
+      where: { id: "default" },
+    });
+    return settings
+      ? mapLeadRoutingSettings(settings)
+      : { whatsappEnabled: false };
+  }
+
+  async function updateLeadRoutingSettings(
+    input: UpdateLeadRoutingSettingsInput
+  ): Promise<LeadRoutingSettings> {
+    const normalized = normalizeLeadRoutingSettings(input);
+    const settings = await client.leadRoutingSettings.upsert({
+      where: { id: "default" },
+      create: {
+        id: "default",
+        whatsappEnabled: normalized.whatsappEnabled,
+        whatsappPhone: normalized.whatsappPhone ?? null,
+      },
+      update: {
+        whatsappEnabled: normalized.whatsappEnabled,
+        whatsappPhone: normalized.whatsappPhone ?? null,
+      },
+    });
+    return mapLeadRoutingSettings(settings);
+  }
+
   async function listVendors(
     filters?: VendorListFilters
   ): Promise<VendorListEntry[]> {
@@ -771,16 +813,18 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   }
 
   async function listOperatorActions(
-    vendorSlug: string,
+    vendorSlug?: string,
     limit = 50
   ): Promise<OperatorAction[]> {
-    const vendor = await client.vendor.findUnique({
-      where: { slug: normalizeVendorSlug(vendorSlug) },
-      select: { id: true },
-    });
-    if (!vendor) return [];
+    const vendor = vendorSlug
+      ? await client.vendor.findUnique({
+          where: { slug: normalizeVendorSlug(vendorSlug) },
+          select: { id: true },
+        })
+      : undefined;
+    if (vendorSlug && !vendor) return [];
     const rows = await client.operatorAction.findMany({
-      where: { vendorId: vendor.id },
+      where: vendor ? { vendorId: vendor.id } : undefined,
       orderBy: { at: "desc" },
       take: limit,
     });
@@ -1999,6 +2043,8 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     createLead,
     listLeads,
     updateLeadStatus,
+    getLeadRoutingSettings,
+    updateLeadRoutingSettings,
     listVendors,
     getOperatorVendorDetail,
     setVendorActive,

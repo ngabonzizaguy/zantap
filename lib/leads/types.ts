@@ -26,10 +26,23 @@ export type SubmitLeadErrorCode =
   | "SUBMISSION_FAILED";
 
 export type SubmitLeadResult =
-  | { ok: true }
+  | { ok: true; whatsappUrl?: string }
   | { ok: false; error: SubmitLeadErrorCode };
 
 export type LeadStatus = "NEW" | "CONTACTED" | "ONBOARDED" | "CLOSED";
+
+export interface LeadRoutingSettings {
+  whatsappEnabled: boolean;
+  /** Canonical E.164 digits without a leading plus. */
+  whatsappPhone?: string;
+  updatedAt?: Date;
+}
+
+export interface UpdateLeadRoutingSettingsInput {
+  whatsappEnabled: boolean;
+  /** Raw operator input; the Store canonicalizes and validates it. */
+  whatsappPhone?: string;
+}
 
 export interface Lead {
   id: string;

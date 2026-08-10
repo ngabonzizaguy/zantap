@@ -11,10 +11,12 @@ import {
   PhoneCall,
   Plus,
   ShoppingCart,
+  SlidersHorizontal,
   Smartphone,
   Star,
   Truck,
   Utensils,
+  UsersRound,
   WifiOff,
   X,
   type LucideIcon,
@@ -39,7 +41,9 @@ export type IconName =
   | "dispatch"
   | "copy"
   | "call"
-  | "wifiOff";
+  | "wifiOff"
+  | "leads"
+  | "settings";
 
 const icons: Record<IconName, LucideIcon> = {
   menu: Menu,
@@ -60,6 +64,8 @@ const icons: Record<IconName, LucideIcon> = {
   copy: Copy,
   call: PhoneCall,
   wifiOff: WifiOff,
+  leads: UsersRound,
+  settings: SlidersHorizontal,
 };
 
 interface IconProps extends Omit<LucideProps, "size"> {
