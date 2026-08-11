@@ -167,7 +167,12 @@ export function LeadInbox({ leads: initialLeads }: LeadInboxProps) {
                     </td>
                     <td className="px-4 py-3 text-body">{lead.area}</td>
                     <td className="px-4 py-3 text-muted">
-                      {formatRelativeTime(new Date(lead.createdAt))}
+                      <time
+                        dateTime={new Date(lead.createdAt).toISOString()}
+                        suppressHydrationWarning
+                      >
+                        {formatRelativeTime(new Date(lead.createdAt))}
+                      </time>
                     </td>
                     <td className="px-4 py-3">{statusControl(lead)}</td>
                     <td className="px-4 py-3">
@@ -229,7 +234,12 @@ export function LeadInbox({ leads: initialLeads }: LeadInboxProps) {
                   <div>
                     <dt className="text-xs text-muted">Received</dt>
                     <dd className="mt-0.5 text-body">
-                      {formatRelativeTime(new Date(lead.createdAt))}
+                      <time
+                        dateTime={new Date(lead.createdAt).toISOString()}
+                        suppressHydrationWarning
+                      >
+                        {formatRelativeTime(new Date(lead.createdAt))}
+                      </time>
                     </dd>
                   </div>
                   <div className="col-span-2">
