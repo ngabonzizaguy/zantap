@@ -3,14 +3,15 @@
 Mobile-first social commerce checkout and kitchen display for informal food vendors,
 ghost kitchens, and street-food hubs — starting in Kigali, Rwanda.
 
-**Live:** [zantap-psi.vercel.app](https://zantap-psi.vercel.app)
+**Live:** [zantap.app](https://zantap.app)
 
 | Surface | URL |
 |---|---|
-| Customer storefront | `/[slug]` — e.g. [`/inka-steakhouse`](https://zantap-psi.vercel.app/inka-steakhouse) |
-| Vendor KDS | `/vendor/[slug]` — e.g. [`/vendor/inka-steakhouse`](https://zantap-psi.vercel.app/vendor/inka-steakhouse) |
-| Self-serve onboarding | [`/onboard`](https://zantap-psi.vercel.app/onboard) |
-| Operator console | [`/ops`](https://zantap-psi.vercel.app/ops) |
+| Marketing and partner lead capture | [`/`](https://zantap.app) |
+| Customer storefront | `/[slug]` — e.g. [`/inka-steakhouse`](https://zantap.app/inka-steakhouse) |
+| Vendor KDS | `/vendor/[slug]` — e.g. [`/vendor/inka-steakhouse`](https://zantap.app/vendor/inka-steakhouse) |
+| Self-serve onboarding | [`/onboard`](https://zantap.app/onboard) |
+| Operator console | [`/ops`](https://zantap.app/ops) |
 | Delivery slip | `/slip/[orderId]` |
 
 ## Quick start
@@ -46,6 +47,7 @@ UI (customer storefront · vendor KDS · onboard · ops)
        └─ in-memory           otherwise (tests / local without a DB)
   → MoMo (lib/momo/) — simulate STK or manual USSD
   → KDS live push — SSE /api/vendor/[slug]/kds-stream (Store-backed)
+  → Lead routing — persist first, then concurrency-safe round-robin to one enabled WhatsApp recipient
 ```
 
 The browser never imports the Store. Customer vs vendor UIs stay separate
@@ -57,11 +59,12 @@ scoped `.kds-dark` remap.
 
 | Route | Purpose |
 |---|---|
+| `/` | Marketing funnel and durable partner Lead capture |
 | `/[slug]` | Customer storefront (editorial / immersive hero) |
 | `/vendor/[slug]` | Vendor kitchen display (orders, menu, history, drivers, setup) |
 | `/vendor/[slug]/receipt/[orderId]` | Printable order receipt |
 | `/onboard` | Self-serve vendor signup (owner token minted once) |
-| `/ops` | Operator console (suspend / recover / audit) |
+| `/ops` | Operator console (vendors, Leads, recovery, routing settings, audit) |
 | `/slip/[orderId]` | Driver delivery slip |
 | `/api/momo/stk` | Simulated MoMo STK + PIN |
 | `/api/vendor/[slug]/kds-stream` | KDS SSE live snapshot |
@@ -117,6 +120,8 @@ npm run db:seed      # seed demo vendor (refuses remote unless SEED_ALLOW_REMOTE
 - **UI:** follow `DESIGN.md` — off-white canvas / near-black ink on the storefront;
   `.kds-dark` charcoal + MoMo amber on KDS and onboarding.
 - **Agent rules:** `AGENTS.md` + `.cursorrules` (Store seam, anti-YOLO, handoff protocol).
+- **Shared continuity:** `docs/agents/codex-cursor-shared-handoff.md` reconciles
+  shipped work, local-only work, deployments, and remaining gates across Codex and Cursor.
 - **ADRs:** `docs/adr/` (git-tracked decisions).
 
 ## Reference assets (repo root)
@@ -132,7 +137,12 @@ Prototypes and early product notes (historical; live UI follows `DESIGN.md`):
 **Shipped:** Store seam (Prisma + in-memory), manual & simulate MoMo, KDS SSE +
 kitchen stages, menu CRUD + Blob gallery, order history/export, self-serve
 onboarding + owner-token recovery, drivers + assignment, operator console,
-storefront DESIGN.md migration.
+durable marketing Lead capture, and configurable multi-recipient WhatsApp
+routing. Lead routing persists every Lead first, assigns one enabled recipient
+with concurrency-safe round-robin, records an immutable assignment for Ops, and
+returns at most one public `Continue on WhatsApp` action. Production currently
+has two recipients configured: one enabled and one temporarily disabled.
 
 **Deferred:** vendor/ops auth beyond owner tokens + ops secret (candidate #12),
-live MTN MoMo API (manual USSD is the interim), custom domain cutover.
+live MTN MoMo API (manual USSD is the interim), automatic WhatsApp Business API
+delivery, and the Android install/standalone/offline acceptance smoke.

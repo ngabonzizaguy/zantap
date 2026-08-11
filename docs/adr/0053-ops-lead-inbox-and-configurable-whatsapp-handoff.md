@@ -84,3 +84,9 @@ delivery-status handling, and retries.
 - Local browser smoke: save routing → submit public Lead → see configured WhatsApp
   CTA → see Lead in `/ops/leads` → advance to Contacted; no console errors or
   horizontal overflow at the browser's minimum mobile width and landscape.
+- Production 2026-08-12: migration applied; persistence-first labeled Lead appeared
+  Unassigned while routing was paused; after enabling the primary recipient, a
+  second labeled Lead received exactly one WhatsApp action and appeared with its
+  immutable assignment in Ops. Final recipient configuration is `1 of 2 enabled`:
+  `…8786` enabled and owner-supplied `…7771` disabled. The hydration-fix deployment
+  serves `/ops/leads` with zero browser console errors. Evidence retains suffixes only.
