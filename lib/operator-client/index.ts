@@ -11,10 +11,11 @@ import type {
   VendorRecoveryEvent,
 } from "@/lib/types";
 import type {
+  CreateLeadRoutingRecipientInput,
   Lead,
-  LeadRoutingSettings,
+  LeadRoutingRecipient,
   LeadStatus,
-  UpdateLeadRoutingSettingsInput,
+  UpdateLeadRoutingRecipientInput,
 } from "@/lib/leads/types";
 
 export function getOperatorApiBaseUrl(): string {
@@ -119,24 +120,49 @@ export async function patchLeadStatus(
   return data.lead;
 }
 
-export async function getLeadRoutingSettings(): Promise<LeadRoutingSettings> {
-  const data = await operatorFetch<{ settings: LeadRoutingSettings }>(
+export async function listLeadRoutingRecipients(): Promise<
+  LeadRoutingRecipient[]
+> {
+  const data = await operatorFetch<{ recipients: LeadRoutingRecipient[] }>(
     "/lead-routing"
   );
-  return data.settings;
+  return data.recipients;
 }
 
-export async function patchLeadRoutingSettings(
-  input: UpdateLeadRoutingSettingsInput
-): Promise<LeadRoutingSettings> {
-  const data = await operatorFetch<{ settings: LeadRoutingSettings }>(
+export async function createLeadRoutingRecipient(
+  input: CreateLeadRoutingRecipientInput
+): Promise<LeadRoutingRecipient> {
+  const data = await operatorFetch<{ recipient: LeadRoutingRecipient }>(
     "/lead-routing",
     {
-      method: "PATCH",
+      method: "POST",
       body: JSON.stringify(input),
     }
   );
-  return data.settings;
+  return data.recipient;
+}
+
+export async function patchLeadRoutingRecipient(
+  recipientId: string,
+  input: UpdateLeadRoutingRecipientInput
+): Promise<LeadRoutingRecipient> {
+  const data = await operatorFetch<{ recipient: LeadRoutingRecipient }>(
+    "/lead-routing",
+    {
+      method: "PATCH",
+      body: JSON.stringify({ recipientId, ...input }),
+    }
+  );
+  return data.recipient;
+}
+
+export async function deleteLeadRoutingRecipient(
+  recipientId: string
+): Promise<void> {
+  await operatorFetch<{ removed: true }>("/lead-routing", {
+    method: "DELETE",
+    body: JSON.stringify({ recipientId }),
+  });
 }
 
 export async function getVendorDetail(

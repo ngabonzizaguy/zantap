@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { GET, PATCH } from "@/app/api/operator/v1/leads/route";
 import {
+  DELETE as DELETE_ROUTING,
   GET as GET_ROUTING,
+  POST as POST_ROUTING,
   PATCH as PATCH_ROUTING,
 } from "@/app/api/operator/v1/lead-routing/route";
 import { getStore } from "@/lib/store";
@@ -59,27 +61,52 @@ describe("operator lead routes", () => {
     });
   });
 
-  it("reads and updates the guarded WhatsApp routing setting", async () => {
-    const patchResponse = await PATCH_ROUTING(
+  it("creates, reads, edits, and removes guarded WhatsApp recipients", async () => {
+    const createResponse = await POST_ROUTING(
       operatorRequest("http://localhost/api/operator/v1/lead-routing", {
-        method: "PATCH",
+        method: "POST",
         body: JSON.stringify({
-          whatsappEnabled: true,
-          whatsappPhone: "+250 784 928 786",
+          name: "Primary operator",
+          enabled: true,
+          phone: "+250 784 928 786",
         }),
       })
     );
-    expect(patchResponse.status).toBe(200);
+    expect(createResponse.status).toBe(201);
+    const created = (await createResponse.json()).recipient;
 
     const getResponse = await GET_ROUTING(
       operatorRequest("http://localhost/api/operator/v1/lead-routing")
     );
     expect(getResponse.status).toBe(200);
     expect(await getResponse.json()).toEqual({
-      settings: expect.objectContaining({
-        whatsappEnabled: true,
-        whatsappPhone: "250784928786",
-      }),
+      recipients: [
+        expect.objectContaining({
+          id: created.id,
+          enabled: true,
+          phone: "250784928786",
+        }),
+      ],
     });
+
+    const patchResponse = await PATCH_ROUTING(
+      operatorRequest("http://localhost/api/operator/v1/lead-routing", {
+        method: "PATCH",
+        body: JSON.stringify({ recipientId: created.id, enabled: false }),
+      })
+    );
+    expect(patchResponse.status).toBe(200);
+    expect(await patchResponse.json()).toEqual({
+      recipient: expect.objectContaining({ id: created.id, enabled: false }),
+    });
+
+    const deleteResponse = await DELETE_ROUTING(
+      operatorRequest("http://localhost/api/operator/v1/lead-routing", {
+        method: "DELETE",
+        body: JSON.stringify({ recipientId: created.id }),
+      })
+    );
+    expect(deleteResponse.status).toBe(200);
+    expect(await deleteResponse.json()).toEqual({ removed: true });
   });
 });

@@ -37,13 +37,15 @@ import type {
 } from "@/lib/types";
 import type { ResettableStore } from "@/lib/store/types";
 import type {
+  CreateLeadRoutingRecipientInput,
   CreateLeadInput,
   Lead,
-  LeadRoutingSettings,
+  LeadRoutingAssignment,
+  LeadRoutingRecipient,
   LeadStatus,
-  UpdateLeadRoutingSettingsInput,
+  UpdateLeadRoutingRecipientInput,
 } from "@/lib/leads/types";
-import { normalizeLeadRoutingSettings } from "@/lib/leads/routing";
+import { normalizeLeadRoutingRecipient } from "@/lib/leads/routing";
 import {
   matchesOrderSearch,
   normalizePagination,
@@ -148,9 +150,8 @@ export function createInMemoryStore(): ResettableStore {
   let payments: Payment[] = [];
   let vendors: StoredVendor[] = [];
   let leads: Lead[] = [];
-  let leadRoutingSettings: LeadRoutingSettings = {
-    whatsappEnabled: false,
-  };
+  let leadRoutingRecipients: LeadRoutingRecipient[] = [];
+  let lastAssignedLeadRoutingRecipientId: string | undefined;
   let recoveryEvents: VendorRecoveryEvent[] = [];
   let operatorActions: OperatorAction[] = [];
   let drivers: Driver[] = [];
@@ -162,6 +163,8 @@ export function createInMemoryStore(): ResettableStore {
   let menuImageCounter = 0;
   let vendorCounter = 0;
   let leadCounter = 0;
+  let leadRoutingRecipientCounter = 0;
+  let leadRoutingAssignmentCounter = 0;
   let recoveryEventCounter = 0;
   let operatorActionCounter = 0;
   let driverCounter = 0;
@@ -189,6 +192,22 @@ export function createInMemoryStore(): ResettableStore {
       ...lead,
       consentAt: new Date(lead.consentAt),
       createdAt: new Date(lead.createdAt),
+      routingAssignment: lead.routingAssignment
+        ? {
+            ...lead.routingAssignment,
+            assignedAt: new Date(lead.routingAssignment.assignedAt),
+          }
+        : undefined,
+    };
+  }
+
+  function cloneLeadRoutingRecipient(
+    recipient: LeadRoutingRecipient
+  ): LeadRoutingRecipient {
+    return {
+      ...recipient,
+      createdAt: new Date(recipient.createdAt),
+      updatedAt: new Date(recipient.updatedAt),
     };
   }
 
@@ -245,7 +264,8 @@ export function createInMemoryStore(): ResettableStore {
     recoveryEvents = [];
     operatorActions = [];
     leads = [];
-    leadRoutingSettings = { whatsappEnabled: false };
+    leadRoutingRecipients = [];
+    lastAssignedLeadRoutingRecipientId = undefined;
     drivers = seedDrivers.map((driver) => ({ ...driver }));
     kitchenOpen = true;
     orderCounter = 0;
@@ -255,6 +275,8 @@ export function createInMemoryStore(): ResettableStore {
     recoveryEventCounter = 0;
     driverCounter = 0;
     leadCounter = 0;
+    leadRoutingRecipientCounter = 0;
+    leadRoutingAssignmentCounter = 0;
   }
 
   load();
@@ -471,23 +493,106 @@ export function createInMemoryStore(): ResettableStore {
     return cloneLead(leads[index]);
   }
 
-  async function getLeadRoutingSettings(): Promise<LeadRoutingSettings> {
-    return {
-      ...leadRoutingSettings,
-      updatedAt: leadRoutingSettings.updatedAt
-        ? new Date(leadRoutingSettings.updatedAt)
-        : undefined,
-    };
+  async function listLeadRoutingRecipients(): Promise<
+    LeadRoutingRecipient[]
+  > {
+    return leadRoutingRecipients.map(cloneLeadRoutingRecipient);
   }
 
-  async function updateLeadRoutingSettings(
-    input: UpdateLeadRoutingSettingsInput
-  ): Promise<LeadRoutingSettings> {
-    leadRoutingSettings = {
-      ...normalizeLeadRoutingSettings(input),
+  async function createLeadRoutingRecipient(
+    input: CreateLeadRoutingRecipientInput
+  ): Promise<LeadRoutingRecipient> {
+    const normalized = normalizeLeadRoutingRecipient(input);
+    if (
+      leadRoutingRecipients.some(
+        (recipient) => recipient.phone === normalized.phone
+      )
+    ) {
+      throw new Error("A recipient with this WhatsApp number already exists");
+    }
+    const now = new Date();
+    const recipient: LeadRoutingRecipient = {
+      id: `lead_recipient_${++leadRoutingRecipientCounter}_${Date.now()}`,
+      ...normalized,
+      createdAt: now,
+      updatedAt: now,
+    };
+    leadRoutingRecipients.push(recipient);
+    return cloneLeadRoutingRecipient(recipient);
+  }
+
+  async function updateLeadRoutingRecipient(
+    recipientId: string,
+    input: UpdateLeadRoutingRecipientInput
+  ): Promise<LeadRoutingRecipient | null> {
+    const index = leadRoutingRecipients.findIndex(
+      (recipient) => recipient.id === recipientId
+    );
+    if (index === -1) return null;
+
+    const current = leadRoutingRecipients[index];
+    const normalized = normalizeLeadRoutingRecipient({
+      name: input.name ?? current.name,
+      phone: input.phone ?? current.phone,
+      enabled: input.enabled ?? current.enabled,
+    });
+    if (
+      leadRoutingRecipients.some(
+        (recipient) =>
+          recipient.id !== recipientId && recipient.phone === normalized.phone
+      )
+    ) {
+      throw new Error("A recipient with this WhatsApp number already exists");
+    }
+    leadRoutingRecipients[index] = {
+      ...current,
+      ...normalized,
       updatedAt: new Date(),
     };
-    return getLeadRoutingSettings();
+    return cloneLeadRoutingRecipient(leadRoutingRecipients[index]);
+  }
+
+  async function removeLeadRoutingRecipient(
+    recipientId: string
+  ): Promise<boolean> {
+    const index = leadRoutingRecipients.findIndex(
+      (recipient) => recipient.id === recipientId
+    );
+    if (index === -1) return false;
+    leadRoutingRecipients.splice(index, 1);
+    return true;
+  }
+
+  async function assignLeadRoutingRecipient(
+    leadId: string
+  ): Promise<LeadRoutingAssignment | null> {
+    const leadIndex = leads.findIndex((lead) => lead.id === leadId);
+    if (leadIndex === -1) return null;
+    if (leads[leadIndex].routingAssignment) {
+      return cloneLead(leads[leadIndex]).routingAssignment ?? null;
+    }
+
+    const enabledRecipients = leadRoutingRecipients.filter(
+      (recipient) => recipient.enabled
+    );
+    if (enabledRecipients.length === 0) return null;
+
+    const previousIndex = enabledRecipients.findIndex(
+      (recipient) => recipient.id === lastAssignedLeadRoutingRecipientId
+    );
+    const recipient =
+      enabledRecipients[(previousIndex + 1) % enabledRecipients.length];
+    const assignment: LeadRoutingAssignment = {
+      id: `lead_assignment_${++leadRoutingAssignmentCounter}_${Date.now()}`,
+      leadId,
+      recipientId: recipient.id,
+      recipientName: recipient.name,
+      recipientPhone: recipient.phone,
+      assignedAt: new Date(),
+    };
+    leads[leadIndex] = { ...leads[leadIndex], routingAssignment: assignment };
+    lastAssignedLeadRoutingRecipientId = recipient.id;
+    return cloneLead(leads[leadIndex]).routingAssignment ?? null;
   }
 
   async function listVendors(
@@ -1630,8 +1735,11 @@ export function createInMemoryStore(): ResettableStore {
     createLead,
     listLeads,
     updateLeadStatus,
-    getLeadRoutingSettings,
-    updateLeadRoutingSettings,
+    listLeadRoutingRecipients,
+    createLeadRoutingRecipient,
+    updateLeadRoutingRecipient,
+    removeLeadRoutingRecipient,
+    assignLeadRoutingRecipient,
     listVendors,
     getOperatorVendorDetail,
     setVendorActive,

@@ -114,14 +114,17 @@ export async function submitLead(
       consentAt: new Date(),
     });
 
-    // The Lead is already durable. A settings read or WhatsApp handoff problem
+    // The Lead is already durable. Assignment or WhatsApp handoff problems
     // must never turn a successful partner request into a failed submission.
     try {
-      const settings = await store.getLeadRoutingSettings();
-      if (settings.whatsappEnabled && settings.whatsappPhone) {
+      const assignment = await store.assignLeadRoutingRecipient(lead.id);
+      if (assignment) {
         return {
           ok: true,
-          whatsappUrl: buildLeadWhatsAppUrl(settings.whatsappPhone, lead),
+          whatsappUrl: buildLeadWhatsAppUrl(
+            assignment.recipientPhone,
+            lead
+          ),
         };
       }
     } catch {

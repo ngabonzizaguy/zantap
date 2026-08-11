@@ -1,9 +1,12 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
+
 import type {
   Driver as PrismaDriver,
   Lead as PrismaLead,
-  LeadRoutingSettings as PrismaLeadRoutingSettings,
+  LeadRoutingAssignment as PrismaLeadRoutingAssignment,
+  LeadRoutingRecipient as PrismaLeadRoutingRecipient,
   MenuImage as PrismaMenuImage,
   MenuItem as PrismaMenuItem,
   Order as PrismaOrder,
@@ -46,13 +49,15 @@ import {
 } from "@/lib/vendor/driver-display";
 import type { Store } from "@/lib/store/types";
 import type {
+  CreateLeadRoutingRecipientInput,
   CreateLeadInput,
   Lead,
-  LeadRoutingSettings,
+  LeadRoutingAssignment,
+  LeadRoutingRecipient,
   LeadStatus,
-  UpdateLeadRoutingSettingsInput,
+  UpdateLeadRoutingRecipientInput,
 } from "@/lib/leads/types";
-import { normalizeLeadRoutingSettings } from "@/lib/leads/routing";
+import { normalizeLeadRoutingRecipient } from "@/lib/leads/routing";
 import type {
   AbandonManualPaymentResult,
   AddMenuImageInput,
@@ -207,7 +212,24 @@ function mapRecoveryEvent(
   };
 }
 
-function mapLead(lead: PrismaLead): Lead {
+function mapLeadRoutingAssignment(
+  assignment: PrismaLeadRoutingAssignment
+): LeadRoutingAssignment {
+  return {
+    id: assignment.id,
+    leadId: assignment.leadId,
+    recipientId: assignment.recipientId,
+    recipientName: assignment.recipientName,
+    recipientPhone: assignment.recipientPhone,
+    assignedAt: assignment.assignedAt,
+  };
+}
+
+function mapLead(
+  lead: PrismaLead & {
+    routingAssignment?: PrismaLeadRoutingAssignment | null;
+  }
+): Lead {
   return {
     id: lead.id,
     businessName: lead.businessName,
@@ -220,16 +242,22 @@ function mapLead(lead: PrismaLead): Lead {
     source: lead.source ?? undefined,
     consentAt: lead.consentAt,
     createdAt: lead.createdAt,
+    routingAssignment: lead.routingAssignment
+      ? mapLeadRoutingAssignment(lead.routingAssignment)
+      : undefined,
   };
 }
 
-function mapLeadRoutingSettings(
-  settings: PrismaLeadRoutingSettings
-): LeadRoutingSettings {
+function mapLeadRoutingRecipient(
+  recipient: PrismaLeadRoutingRecipient
+): LeadRoutingRecipient {
   return {
-    whatsappEnabled: settings.whatsappEnabled,
-    whatsappPhone: settings.whatsappPhone ?? undefined,
-    updatedAt: settings.updatedAt,
+    id: recipient.id,
+    name: recipient.name,
+    phone: recipient.phone,
+    enabled: recipient.enabled,
+    createdAt: recipient.createdAt,
+    updatedAt: recipient.updatedAt,
   };
 }
 
@@ -578,6 +606,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function listLeads(): Promise<Lead[]> {
     const leads = await client.lead.findMany({
+      include: { routingAssignment: true },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
     return leads.map(mapLead);
@@ -599,32 +628,172 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     }
   }
 
-  async function getLeadRoutingSettings(): Promise<LeadRoutingSettings> {
-    const settings = await client.leadRoutingSettings.findUnique({
-      where: { id: "default" },
+  async function listLeadRoutingRecipients(): Promise<LeadRoutingRecipient[]> {
+    const recipients = await client.leadRoutingRecipient.findMany({
+      where: { archivedAt: null },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     });
-    return settings
-      ? mapLeadRoutingSettings(settings)
-      : { whatsappEnabled: false };
+    return recipients.map(mapLeadRoutingRecipient);
   }
 
-  async function updateLeadRoutingSettings(
-    input: UpdateLeadRoutingSettingsInput
-  ): Promise<LeadRoutingSettings> {
-    const normalized = normalizeLeadRoutingSettings(input);
-    const settings = await client.leadRoutingSettings.upsert({
-      where: { id: "default" },
-      create: {
-        id: "default",
-        whatsappEnabled: normalized.whatsappEnabled,
-        whatsappPhone: normalized.whatsappPhone ?? null,
-      },
-      update: {
-        whatsappEnabled: normalized.whatsappEnabled,
-        whatsappPhone: normalized.whatsappPhone ?? null,
-      },
+  async function createLeadRoutingRecipient(
+    input: CreateLeadRoutingRecipientInput
+  ): Promise<LeadRoutingRecipient> {
+    const normalized = normalizeLeadRoutingRecipient(input);
+    const existing = await client.leadRoutingRecipient.findUnique({
+      where: { phone: normalized.phone },
     });
-    return mapLeadRoutingSettings(settings);
+    if (existing && !existing.archivedAt) {
+      throw new Error("A recipient with this WhatsApp number already exists");
+    }
+
+    try {
+      const recipient = existing
+        ? await client.leadRoutingRecipient.update({
+            where: { id: existing.id },
+            data: { ...normalized, archivedAt: null },
+          })
+        : await client.leadRoutingRecipient.create({ data: normalized });
+      return mapLeadRoutingRecipient(recipient);
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        throw new Error("A recipient with this WhatsApp number already exists");
+      }
+      throw error;
+    }
+  }
+
+  async function updateLeadRoutingRecipient(
+    recipientId: string,
+    input: UpdateLeadRoutingRecipientInput
+  ): Promise<LeadRoutingRecipient | null> {
+    const current = await client.leadRoutingRecipient.findFirst({
+      where: { id: recipientId, archivedAt: null },
+    });
+    if (!current) return null;
+
+    const normalized = normalizeLeadRoutingRecipient({
+      name: input.name ?? current.name,
+      phone: input.phone ?? current.phone,
+      enabled: input.enabled ?? current.enabled,
+    });
+    try {
+      const recipient = await client.leadRoutingRecipient.update({
+        where: { id: recipientId },
+        data: normalized,
+      });
+      return mapLeadRoutingRecipient(recipient);
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        throw new Error("A recipient with this WhatsApp number already exists");
+      }
+      throw error;
+    }
+  }
+
+  async function removeLeadRoutingRecipient(
+    recipientId: string
+  ): Promise<boolean> {
+    const result = await client.leadRoutingRecipient.updateMany({
+      where: { id: recipientId, archivedAt: null },
+      data: { enabled: false, archivedAt: new Date() },
+    });
+    return result.count > 0;
+  }
+
+  async function assignLeadRoutingRecipient(
+    leadId: string
+  ): Promise<LeadRoutingAssignment | null> {
+    return client.$transaction(
+      async (tx) => {
+        // One global transaction-scoped lock serializes cursor reads/writes
+        // across Vercel instances. It releases at commit or rollback.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(873014205)`;
+
+        const assignmentId = randomUUID();
+        const assignments = await tx.$queryRaw<PrismaLeadRoutingAssignment[]>`
+          WITH "existing" AS (
+            SELECT assignment.*
+            FROM "LeadRoutingAssignment" assignment
+            WHERE assignment."leadId" = ${leadId}
+          ),
+          "enabled" AS (
+            SELECT
+              recipient.*,
+              ROW_NUMBER() OVER (
+                ORDER BY recipient."createdAt" ASC, recipient."id" ASC
+              ) AS "position"
+            FROM "LeadRoutingRecipient" recipient
+            WHERE recipient."enabled" = true
+              AND recipient."archivedAt" IS NULL
+          ),
+          "cursor" AS (
+            SELECT enabled."position"
+            FROM "enabled" enabled
+            JOIN "LeadRoutingSettings" settings
+              ON settings."id" = 'default'
+             AND settings."lastRecipientId" = enabled."id"
+          ),
+          "nextRecipient" AS (
+            SELECT enabled.*
+            FROM "enabled" enabled
+            ORDER BY
+              CASE
+                WHEN enabled."position" > COALESCE(
+                  (SELECT cursor."position" FROM "cursor" cursor),
+                  0
+                ) THEN 0
+                ELSE 1
+              END,
+              enabled."position"
+            LIMIT 1
+          ),
+          "inserted" AS (
+            INSERT INTO "LeadRoutingAssignment" (
+              "id",
+              "leadId",
+              "recipientId",
+              "recipientName",
+              "recipientPhone",
+              "assignedAt"
+            )
+            SELECT
+              ${assignmentId},
+              ${leadId},
+              recipient."id",
+              recipient."name",
+              recipient."phone",
+              CURRENT_TIMESTAMP
+            FROM "nextRecipient" recipient
+            WHERE EXISTS (SELECT 1 FROM "Lead" lead WHERE lead."id" = ${leadId})
+              AND NOT EXISTS (SELECT 1 FROM "existing")
+            ON CONFLICT ("leadId") DO NOTHING
+            RETURNING *
+          ),
+          "cursorUpdate" AS (
+            INSERT INTO "LeadRoutingSettings" (
+              "id",
+              "lastRecipientId",
+              "updatedAt"
+            )
+            SELECT 'default', inserted."recipientId", CURRENT_TIMESTAMP
+            FROM "inserted" inserted
+            ON CONFLICT ("id") DO UPDATE SET
+              "lastRecipientId" = EXCLUDED."lastRecipientId",
+              "updatedAt" = CURRENT_TIMESTAMP
+            RETURNING "id"
+          )
+          SELECT existing.* FROM "existing" existing
+          UNION ALL
+          SELECT inserted.* FROM "inserted" inserted
+          LIMIT 1
+        `;
+        return assignments[0]
+          ? mapLeadRoutingAssignment(assignments[0])
+          : null;
+      },
+      { maxWait: 15_000, timeout: 30_000 }
+    );
   }
 
   async function listVendors(
@@ -2043,8 +2212,11 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     createLead,
     listLeads,
     updateLeadStatus,
-    getLeadRoutingSettings,
-    updateLeadRoutingSettings,
+    listLeadRoutingRecipients,
+    createLeadRoutingRecipient,
+    updateLeadRoutingRecipient,
+    removeLeadRoutingRecipient,
+    assignLeadRoutingRecipient,
     listVendors,
     getOperatorVendorDetail,
     setVendorActive,

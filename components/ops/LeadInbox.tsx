@@ -150,6 +150,7 @@ export function LeadInbox({ leads: initialLeads }: LeadInboxProps) {
                   <th className="px-4 py-3 font-medium">Area</th>
                   <th className="px-4 py-3 font-medium">Received</th>
                   <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Assigned to</th>
                   <th className="px-4 py-3 font-medium">Follow up</th>
                 </tr>
               </thead>
@@ -169,6 +170,20 @@ export function LeadInbox({ leads: initialLeads }: LeadInboxProps) {
                       {formatRelativeTime(new Date(lead.createdAt))}
                     </td>
                     <td className="px-4 py-3">{statusControl(lead)}</td>
+                    <td className="px-4 py-3">
+                      {lead.routingAssignment ? (
+                        <>
+                          <p className="font-medium text-ink">
+                            {lead.routingAssignment.recipientName}
+                          </p>
+                          <p className="text-xs text-muted">
+                            WhatsApp …{lead.routingAssignment.recipientPhone.slice(-4)}
+                          </p>
+                        </>
+                      ) : (
+                        <span className="text-muted">Unassigned</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <a
                         href={whatsappFollowUpUrl(lead)}
@@ -215,6 +230,14 @@ export function LeadInbox({ leads: initialLeads }: LeadInboxProps) {
                     <dt className="text-xs text-muted">Received</dt>
                     <dd className="mt-0.5 text-body">
                       {formatRelativeTime(new Date(lead.createdAt))}
+                    </dd>
+                  </div>
+                  <div className="col-span-2">
+                    <dt className="text-xs text-muted">Assigned to</dt>
+                    <dd className="mt-0.5 text-body">
+                      {lead.routingAssignment
+                        ? `${lead.routingAssignment.recipientName} · WhatsApp …${lead.routingAssignment.recipientPhone.slice(-4)}`
+                        : "Unassigned"}
                     </dd>
                   </div>
                 </dl>

@@ -61,17 +61,18 @@ model OperatorAction {
 }
 
 model Lead {
-  id           String     @id @default(cuid())
-  businessName String
-  businessType String
-  contactName  String
-  phone        String
-  area         String
-  message      String?
-  status       LeadStatus @default(NEW)
-  source       String?
-  consentAt    DateTime
-  createdAt    DateTime   @default(now())
+  id                String                 @id @default(cuid())
+  businessName      String
+  businessType      String
+  contactName       String
+  phone             String
+  area              String
+  message           String?
+  status            LeadStatus             @default(NEW)
+  source            String?
+  consentAt         DateTime
+  createdAt         DateTime               @default(now())
+  routingAssignment LeadRoutingAssignment?
 
   @@index([status, createdAt])
   @@index([createdAt])
@@ -79,9 +80,34 @@ model Lead {
 
 model LeadRoutingSettings {
   id              String   @id
-  whatsappEnabled Boolean  @default(false)
-  whatsappPhone   String?
+  lastRecipientId String?
   updatedAt       DateTime @updatedAt
+}
+
+model LeadRoutingRecipient {
+  id          String                  @id @default(cuid())
+  name        String
+  phone       String                  @unique
+  enabled     Boolean                 @default(true)
+  archivedAt  DateTime?
+  assignments LeadRoutingAssignment[]
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  @@index([enabled, archivedAt])
+}
+
+model LeadRoutingAssignment {
+  id             String               @id @default(cuid())
+  leadId         String               @unique
+  lead           Lead                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  recipientId    String
+  recipient      LeadRoutingRecipient @relation(fields: [recipientId], references: [id], onDelete: Restrict)
+  recipientName  String
+  recipientPhone String
+  assignedAt     DateTime             @default(now())
+
+  @@index([recipientId, assignedAt])
 }
 
 model MenuItem {

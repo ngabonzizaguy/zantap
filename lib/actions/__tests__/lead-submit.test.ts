@@ -47,9 +47,10 @@ describe("submitLead", () => {
   });
 
   it("returns a configured WhatsApp handoff after the lead is durably stored", async () => {
-    await getStore().updateLeadRoutingSettings({
-      whatsappEnabled: true,
-      whatsappPhone: "0784 928 786",
+    const recipient = await getStore().createLeadRoutingRecipient({
+      name: "Primary operator",
+      phone: "0784 928 786",
+      enabled: true,
     });
 
     const result = await submitLead({
@@ -61,7 +62,12 @@ describe("submitLead", () => {
       source: "marketing-root",
     });
 
-    expect(await getStore().listLeads()).toHaveLength(1);
+    const stored = await getStore().listLeads();
+    expect(stored).toHaveLength(1);
+    expect(stored[0]?.routingAssignment).toMatchObject({
+      recipientId: recipient.id,
+      recipientPhone: "250784928786",
+    });
     expect(result).toEqual({
       ok: true,
       whatsappUrl: expect.stringMatching(
@@ -71,6 +77,44 @@ describe("submitLead", () => {
     expect(decodeURIComponent(result.ok ? result.whatsappUrl ?? "" : "")).toContain(
       "Kigali Kitchen"
     );
+  });
+
+  it("returns one round-robin WhatsApp action per persisted Lead", async () => {
+    await getStore().createLeadRoutingRecipient({
+      name: "First operator",
+      phone: "0784 928 786",
+      enabled: true,
+    });
+    await getStore().createLeadRoutingRecipient({
+      name: "Second operator",
+      phone: "0788 000 222",
+      enabled: true,
+    });
+
+    const first = await submitLead({
+      businessName: "First Bistro",
+      businessType: "Restaurant",
+      contactName: "Aline",
+      phone: "0788 123 456",
+      area: "Kigali",
+    });
+    const second = await submitLead({
+      businessName: "Second Bistro",
+      businessType: "Restaurant",
+      contactName: "Eric",
+      phone: "0788 123 457",
+      area: "Kigali",
+    });
+
+    expect(first).toMatchObject({
+      ok: true,
+      whatsappUrl: expect.stringMatching(/^https:\/\/wa\.me\/250784928786\?/),
+    });
+    expect(second).toMatchObject({
+      ok: true,
+      whatsappUrl: expect.stringMatching(/^https:\/\/wa\.me\/250788000222\?/),
+    });
+    expect(await getStore().listLeads()).toHaveLength(2);
   });
 
   it("rejects incomplete or invalid-phone submissions without persisting", async () => {

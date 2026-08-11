@@ -1051,22 +1051,248 @@ export function runStoreContract(
     });
 
     describe("lead capture", () => {
-      it("stores disabled WhatsApp routing by default and canonicalizes an enabled recipient", async () => {
-        expect(await store.getLeadRoutingSettings()).toEqual({
-          whatsappEnabled: false,
+      it("creates and lists a canonical WhatsApp routing recipient", async () => {
+        expect(await store.listLeadRoutingRecipients()).toEqual([]);
+
+        const created = await store.createLeadRoutingRecipient({
+          name: "Primary operator",
+          phone: "+250 784 928 786",
+          enabled: true,
         });
 
-        const updated = await store.updateLeadRoutingSettings({
-          whatsappEnabled: true,
-          whatsappPhone: "+250 784 928 786",
+        expect(created).toMatchObject({
+          name: "Primary operator",
+          phone: "250784928786",
+          enabled: true,
+        });
+        expect(created.id).toEqual(expect.any(String));
+        expect(created.createdAt).toBeInstanceOf(Date);
+        expect(created.updatedAt).toBeInstanceOf(Date);
+        expect(await store.listLeadRoutingRecipients()).toEqual([created]);
+      });
+
+      it("rejects a duplicate active WhatsApp recipient", async () => {
+        await store.createLeadRoutingRecipient({
+          name: "Primary operator",
+          phone: "0784 928 786",
+          enabled: true,
+        });
+
+        await expect(
+          store.createLeadRoutingRecipient({
+            name: "Duplicate operator",
+            phone: "+250 784 928 786",
+            enabled: false,
+          })
+        ).rejects.toThrow("already exists");
+      });
+
+      it("edits and independently disables a routing recipient", async () => {
+        const created = await store.createLeadRoutingRecipient({
+          name: "Primary operator",
+          phone: "0784 928 786",
+          enabled: true,
+        });
+
+        const updated = await store.updateLeadRoutingRecipient(created.id, {
+          name: "Kigali operator",
+          phone: "+250 784 928 786",
+          enabled: false,
         });
 
         expect(updated).toMatchObject({
-          whatsappEnabled: true,
-          whatsappPhone: "250784928786",
+          id: created.id,
+          name: "Kigali operator",
+          phone: "250784928786",
+          enabled: false,
         });
-        expect(updated.updatedAt).toBeInstanceOf(Date);
-        expect(await store.getLeadRoutingSettings()).toEqual(updated);
+        expect(updated?.updatedAt.getTime()).toBeGreaterThanOrEqual(
+          created.updatedAt.getTime()
+        );
+        expect(
+          await store.updateLeadRoutingRecipient("missing-recipient", {
+            enabled: true,
+          })
+        ).toBeNull();
+      });
+
+      it("rejects editing a recipient to another active WhatsApp number", async () => {
+        const first = await store.createLeadRoutingRecipient({
+          name: "First operator",
+          phone: "0784 928 786",
+          enabled: true,
+        });
+        const second = await store.createLeadRoutingRecipient({
+          name: "Second operator",
+          phone: "0788 000 222",
+          enabled: true,
+        });
+
+        await expect(
+          store.updateLeadRoutingRecipient(second.id, { phone: first.phone })
+        ).rejects.toThrow("already exists");
+      });
+
+      it("removes a routing recipient from future configuration", async () => {
+        const created = await store.createLeadRoutingRecipient({
+          name: "Temporary operator",
+          phone: "0788 000 111",
+          enabled: false,
+        });
+
+        expect(await store.removeLeadRoutingRecipient(created.id)).toBe(true);
+        expect(await store.listLeadRoutingRecipients()).toEqual([]);
+        expect(await store.removeLeadRoutingRecipient(created.id)).toBe(false);
+      });
+
+      it("assigns a persisted Lead to one enabled recipient and records a snapshot", async () => {
+        const recipient = await store.createLeadRoutingRecipient({
+          name: "Primary operator",
+          phone: "0784 928 786",
+          enabled: true,
+        });
+        await store.createLeadRoutingRecipient({
+          name: "Unavailable operator",
+          phone: "0788 000 222",
+          enabled: false,
+        });
+        const lead = await store.createLead({
+          businessName: "Assigned Cafe",
+          businessType: "Cafe",
+          contactName: "Grace",
+          phone: "0788 123 456",
+          area: "Kigali",
+          consentAt: new Date(),
+        });
+
+        const assignment = await store.assignLeadRoutingRecipient(lead.id);
+
+        expect(assignment).toMatchObject({
+          recipientId: recipient.id,
+          recipientName: "Primary operator",
+          recipientPhone: "250784928786",
+        });
+        expect(assignment?.assignedAt).toBeInstanceOf(Date);
+        expect((await store.listLeads())[0]?.routingAssignment).toEqual(
+          assignment
+        );
+      });
+
+      it("round-robins enabled recipients and never reassigns the same Lead", async () => {
+        const firstRecipient = await store.createLeadRoutingRecipient({
+          name: "First operator",
+          phone: "0784 928 786",
+          enabled: true,
+        });
+        const secondRecipient = await store.createLeadRoutingRecipient({
+          name: "Second operator",
+          phone: "0788 000 222",
+          enabled: true,
+        });
+        await store.createLeadRoutingRecipient({
+          name: "Disabled operator",
+          phone: "0788 000 999",
+          enabled: false,
+        });
+
+        const leads = await Promise.all(
+          ["One", "Two", "Three"].map((businessName, index) =>
+            store.createLead({
+              businessName,
+              businessType: "Restaurant",
+              contactName: `Contact ${index}`,
+              phone: `07880000${10 + index}`,
+              area: "Kigali",
+              consentAt: new Date(),
+            })
+          )
+        );
+
+        const assignments = [];
+        for (const lead of leads) {
+          assignments.push(await store.assignLeadRoutingRecipient(lead.id));
+        }
+
+        expect(assignments.map((row) => row?.recipientId)).toEqual([
+          firstRecipient.id,
+          secondRecipient.id,
+          firstRecipient.id,
+        ]);
+        expect(await store.assignLeadRoutingRecipient(leads[0].id)).toEqual(
+          assignments[0]
+        );
+      });
+
+      it("keeps round-robin balanced when Leads are assigned concurrently", async () => {
+        const first = await store.createLeadRoutingRecipient({
+          name: "First operator",
+          phone: "0784 928 786",
+          enabled: true,
+        });
+        const second = await store.createLeadRoutingRecipient({
+          name: "Second operator",
+          phone: "0788 000 222",
+          enabled: true,
+        });
+        const leads = await Promise.all(
+          Array.from({ length: 12 }, (_, index) =>
+            store.createLead({
+              businessName: `Concurrent ${index}`,
+              businessType: "Restaurant",
+              contactName: `Contact ${index}`,
+              phone: `078811${String(index).padStart(4, "0")}`,
+              area: "Kigali",
+              consentAt: new Date(),
+            })
+          )
+        );
+
+        const assignments = await Promise.all(
+          leads.map((lead) => store.assignLeadRoutingRecipient(lead.id))
+        );
+        const counts = assignments.reduce<Record<string, number>>(
+          (result, assignment) => {
+            if (assignment) {
+              result[assignment.recipientId] =
+                (result[assignment.recipientId] ?? 0) + 1;
+            }
+            return result;
+          },
+          {}
+        );
+
+        expect(counts).toEqual({ [first.id]: 6, [second.id]: 6 });
+      });
+
+      it("keeps the Lead assignment snapshot after recipient edits and removal", async () => {
+        const recipient = await store.createLeadRoutingRecipient({
+          name: "Original operator",
+          phone: "0784 928 786",
+          enabled: true,
+        });
+        const lead = await store.createLead({
+          businessName: "Snapshot Bistro",
+          businessType: "Restaurant",
+          contactName: "Alice",
+          phone: "0788 123 456",
+          area: "Kigali",
+          consentAt: new Date(),
+        });
+        const assignment = await store.assignLeadRoutingRecipient(lead.id);
+
+        await store.updateLeadRoutingRecipient(recipient.id, {
+          name: "Renamed operator",
+          phone: "0788 000 222",
+        });
+        await store.removeLeadRoutingRecipient(recipient.id);
+
+        expect((await store.listLeads())[0]?.routingAssignment).toEqual(
+          assignment
+        );
+        expect(assignment).toMatchObject({
+          recipientName: "Original operator",
+          recipientPhone: "250784928786",
+        });
       });
 
       it("creates a NEW lead with a canonical phone and lists it newest-first", async () => {

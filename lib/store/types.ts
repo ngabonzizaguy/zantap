@@ -37,11 +37,13 @@ import type {
   VendorRecoveryEvent,
 } from "@/lib/types";
 import type {
+  CreateLeadRoutingRecipientInput,
   CreateLeadInput,
   Lead,
-  LeadRoutingSettings,
+  LeadRoutingAssignment,
+  LeadRoutingRecipient,
   LeadStatus,
-  UpdateLeadRoutingSettingsInput,
+  UpdateLeadRoutingRecipientInput,
 } from "@/lib/leads/types";
 
 /**
@@ -85,10 +87,18 @@ export interface Store {
   createLead(input: CreateLeadInput): Promise<Lead>;
   listLeads(): Promise<Lead[]>;
   updateLeadStatus(leadId: string, status: LeadStatus): Promise<Lead | null>;
-  getLeadRoutingSettings(): Promise<LeadRoutingSettings>;
-  updateLeadRoutingSettings(
-    input: UpdateLeadRoutingSettingsInput
-  ): Promise<LeadRoutingSettings>;
+  listLeadRoutingRecipients(): Promise<LeadRoutingRecipient[]>;
+  createLeadRoutingRecipient(
+    input: CreateLeadRoutingRecipientInput
+  ): Promise<LeadRoutingRecipient>;
+  updateLeadRoutingRecipient(
+    recipientId: string,
+    input: UpdateLeadRoutingRecipientInput
+  ): Promise<LeadRoutingRecipient | null>;
+  removeLeadRoutingRecipient(recipientId: string): Promise<boolean>;
+  assignLeadRoutingRecipient(
+    leadId: string
+  ): Promise<LeadRoutingAssignment | null>;
 
   // Operator console (ADR-0039) — only callable from lib/operator-control/
   listVendors(filters?: VendorListFilters): Promise<VendorListEntry[]>;

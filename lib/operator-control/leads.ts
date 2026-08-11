@@ -1,9 +1,10 @@
 import { getStore } from "@/lib/store";
 import type {
+  CreateLeadRoutingRecipientInput,
   Lead,
-  LeadRoutingSettings,
+  LeadRoutingRecipient,
   LeadStatus,
-  UpdateLeadRoutingSettingsInput,
+  UpdateLeadRoutingRecipientInput,
 } from "@/lib/leads/types";
 import { auditOperatorAction } from "@/lib/operator-control/audit";
 import { canTransitionLeadStatus } from "@/lib/leads/status";
@@ -58,20 +59,62 @@ export async function updateOperatorLeadStatus(
   return lead;
 }
 
-export async function getOperatorLeadRoutingSettings(): Promise<LeadRoutingSettings> {
-  return getStore().getLeadRoutingSettings();
+export async function listOperatorLeadRoutingRecipients(): Promise<
+  LeadRoutingRecipient[]
+> {
+  return getStore().listLeadRoutingRecipients();
 }
 
-export async function updateOperatorLeadRoutingSettings(
-  input: UpdateLeadRoutingSettingsInput
-): Promise<LeadRoutingSettings> {
-  const settings = await getStore().updateLeadRoutingSettings(input);
+export async function createOperatorLeadRoutingRecipient(
+  input: CreateLeadRoutingRecipientInput
+): Promise<LeadRoutingRecipient> {
+  const recipient = await getStore().createLeadRoutingRecipient(input);
   await auditOperatorAction({
-    action: "LEAD_ROUTING_UPDATE",
+    action: "LEAD_ROUTING_RECIPIENT_CREATE",
     detail: {
-      whatsappEnabled: settings.whatsappEnabled,
-      phoneSuffix: settings.whatsappPhone?.slice(-4) ?? null,
+      recipientId: recipient.id,
+      enabled: recipient.enabled,
+      phoneSuffix: recipient.phone.slice(-4),
     },
   });
-  return settings;
+  return recipient;
+}
+
+export async function updateOperatorLeadRoutingRecipient(
+  recipientId: string,
+  input: UpdateLeadRoutingRecipientInput
+): Promise<LeadRoutingRecipient | null> {
+  const recipient = await getStore().updateLeadRoutingRecipient(
+    recipientId,
+    input
+  );
+  if (!recipient) return null;
+  await auditOperatorAction({
+    action: "LEAD_ROUTING_RECIPIENT_UPDATE",
+    detail: {
+      recipientId: recipient.id,
+      enabled: recipient.enabled,
+      phoneSuffix: recipient.phone.slice(-4),
+    },
+  });
+  return recipient;
+}
+
+export async function removeOperatorLeadRoutingRecipient(
+  recipientId: string
+): Promise<boolean> {
+  const current = (await getStore().listLeadRoutingRecipients()).find(
+    (recipient) => recipient.id === recipientId
+  );
+  if (!current) return false;
+  const removed = await getStore().removeLeadRoutingRecipient(recipientId);
+  if (!removed) return false;
+  await auditOperatorAction({
+    action: "LEAD_ROUTING_RECIPIENT_REMOVE",
+    detail: {
+      recipientId,
+      phoneSuffix: current.phone.slice(-4),
+    },
+  });
+  return true;
 }

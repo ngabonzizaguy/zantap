@@ -3,11 +3,14 @@
 import { revalidatePath } from "next/cache";
 
 import type {
+  CreateLeadRoutingRecipientInput,
   LeadStatus,
-  UpdateLeadRoutingSettingsInput,
+  UpdateLeadRoutingRecipientInput,
 } from "@/lib/leads/types";
 import {
-  patchLeadRoutingSettings,
+  createLeadRoutingRecipient,
+  deleteLeadRoutingRecipient,
+  patchLeadRoutingRecipient,
   patchLeadStatus,
 } from "@/lib/operator-client";
 
@@ -20,10 +23,24 @@ export async function patchLeadStatusAction(
   return lead;
 }
 
-export async function patchLeadRoutingSettingsAction(
-  input: UpdateLeadRoutingSettingsInput
+export async function createLeadRoutingRecipientAction(
+  input: CreateLeadRoutingRecipientInput
 ) {
-  const settings = await patchLeadRoutingSettings(input);
+  const recipient = await createLeadRoutingRecipient(input);
   revalidatePath("/ops/settings");
-  return settings;
+  return recipient;
+}
+
+export async function patchLeadRoutingRecipientAction(
+  recipientId: string,
+  input: UpdateLeadRoutingRecipientInput
+) {
+  const recipient = await patchLeadRoutingRecipient(recipientId, input);
+  revalidatePath("/ops/settings");
+  return recipient;
+}
+
+export async function removeLeadRoutingRecipientAction(recipientId: string) {
+  await deleteLeadRoutingRecipient(recipientId);
+  revalidatePath("/ops/settings");
 }

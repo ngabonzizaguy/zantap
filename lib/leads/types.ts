@@ -31,17 +31,38 @@ export type SubmitLeadResult =
 
 export type LeadStatus = "NEW" | "CONTACTED" | "ONBOARDED" | "CLOSED";
 
-export interface LeadRoutingSettings {
-  whatsappEnabled: boolean;
+export interface LeadRoutingRecipient {
+  id: string;
+  name: string;
   /** Canonical E.164 digits without a leading plus. */
-  whatsappPhone?: string;
-  updatedAt?: Date;
+  phone: string;
+  enabled: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface UpdateLeadRoutingSettingsInput {
-  whatsappEnabled: boolean;
+export interface LeadRoutingAssignment {
+  id: string;
+  leadId: string;
+  recipientId: string;
+  recipientName: string;
+  /** Snapshot of the canonical number used when the Lead was assigned. */
+  recipientPhone: string;
+  assignedAt: Date;
+}
+
+export interface CreateLeadRoutingRecipientInput {
+  name: string;
   /** Raw operator input; the Store canonicalizes and validates it. */
-  whatsappPhone?: string;
+  phone: string;
+  enabled: boolean;
+}
+
+export interface UpdateLeadRoutingRecipientInput {
+  name?: string;
+  /** Raw operator input; the Store canonicalizes and validates it. */
+  phone?: string;
+  enabled?: boolean;
 }
 
 export interface Lead {
@@ -57,6 +78,7 @@ export interface Lead {
   source?: string;
   consentAt: Date;
   createdAt: Date;
+  routingAssignment?: LeadRoutingAssignment;
 }
 
 export interface CreateLeadInput {

@@ -1,25 +1,21 @@
 import { canonicalizePhone } from "@/lib/format";
 import type {
-  LeadRoutingSettings,
-  UpdateLeadRoutingSettingsInput,
+  CreateLeadRoutingRecipientInput,
+  LeadRoutingRecipient,
 } from "@/lib/leads/types";
 
-/** Validate operator input once before either Store adapter persists it. */
-export function normalizeLeadRoutingSettings(
-  input: UpdateLeadRoutingSettingsInput
-): Omit<LeadRoutingSettings, "updatedAt"> {
-  const rawPhone = input.whatsappPhone?.trim() ?? "";
-  const whatsappPhone = rawPhone ? canonicalizePhone(rawPhone) : "";
+export function normalizeLeadRoutingRecipient(
+  input: CreateLeadRoutingRecipientInput
+): Pick<LeadRoutingRecipient, "name" | "phone" | "enabled"> {
+  const name = input.name.trim();
+  const phone = canonicalizePhone(input.phone.trim());
 
-  if (whatsappPhone && !/^\d{8,15}$/.test(whatsappPhone)) {
+  if (!name || name.length > 80) {
+    throw new Error("Enter a recipient name");
+  }
+  if (!/^\d{8,15}$/.test(phone)) {
     throw new Error("Enter a valid WhatsApp number with country code");
   }
-  if (input.whatsappEnabled && !whatsappPhone) {
-    throw new Error("A WhatsApp number is required when lead routing is enabled");
-  }
 
-  return {
-    whatsappEnabled: input.whatsappEnabled,
-    whatsappPhone: whatsappPhone || undefined,
-  };
+  return { name, phone, enabled: input.enabled };
 }

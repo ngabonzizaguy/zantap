@@ -1,7 +1,7 @@
 import { LeadRoutingSettingsForm } from "@/components/ops/LeadRoutingSettingsForm";
-import { getLeadRoutingSettings } from "@/lib/operator-client";
+import { listLeadRoutingRecipients } from "@/lib/operator-client";
 
 export default async function OpsSettingsPage() {
-  const settings = await getLeadRoutingSettings();
-  return <LeadRoutingSettingsForm settings={settings} />;
+  const recipients = await listLeadRoutingRecipients();
+  return <LeadRoutingSettingsForm recipients={recipients} />;
 }
