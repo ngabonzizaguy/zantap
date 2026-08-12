@@ -16,6 +16,7 @@ import { HeroMedia } from "@/components/marketing/HeroMedia";
 import { LeadForm } from "@/components/marketing/LeadForm";
 import { MarketingMotion } from "@/components/marketing/MarketingMotion";
 import { OrbitAccent } from "@/components/marketing/OrbitAccent";
+import { ScrollWorldSection } from "@/components/marketing/scroll-world/ScrollWorldSection";
 import { StickyCta } from "@/components/marketing/StickyCta";
 
 const OG_IMAGE = "/marketing/kigali-vendor-hero.png";
@@ -54,12 +55,12 @@ export default function MarketingPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-5 sm:px-8">
           <a href="#top" aria-label="ZanTap home" className="flex-none">
             <Image
-              src="/brand/approved-z/zantap-wordmark-logo2-transparent.png"
+              src="/brand/approved-z/zantap-wordmark-logo2-darkbg.png"
               alt="ZanTap"
-              width={128}
-              height={36}
+              width={420}
+              height={116}
               priority
-              className="h-8 w-auto brightness-0 invert"
+              className="h-8 w-auto"
             />
           </a>
           <nav
@@ -174,6 +175,9 @@ export default function MarketingPage() {
           </div>
         </div>
       </section>
+
+      {/* Scroll-world cinematic — one continuous Kigali walkthrough (Issue 03 preview) */}
+      <ScrollWorldSection />
 
       {/* Product: two screens inside device hardware */}
       <section className="relative overflow-hidden border-t border-white/10">
@@ -295,11 +299,11 @@ export default function MarketingPage() {
       <footer className="border-t border-white/10 bg-[#0a0908]">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-5 py-12 text-center sm:px-8">
           <Image
-            src="/brand/approved-z/zantap-wordmark-logo2-transparent.png"
+            src="/brand/approved-z/zantap-wordmark-logo2-darkbg.png"
             alt="ZanTap"
-            width={110}
-            height={31}
-            className="h-7 w-auto brightness-0 invert"
+            width={420}
+            height={116}
+            className="h-7 w-auto"
           />
           <p className="font-display text-title-md italic text-white/70">
             {FOOTER.tagline}

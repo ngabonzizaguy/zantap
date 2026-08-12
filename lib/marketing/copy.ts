@@ -114,6 +114,68 @@ export const PRODUCT = {
   },
 } as const;
 
+/**
+ * Scroll-world cinematic (Issue 03, zero-credit preview). Scenes 1–2 scrub
+ * accepted walkthrough legs; scenes 3–6 crossfade accepted stills until the
+ * real partner footage arrives. Real product screens + the MoMo logo live in
+ * this HTML overlay — never baked into generated video.
+ */
+export const SCROLL_WORLD = {
+  kicker: "One order, start to finish",
+  heading: "Walk through it.",
+  hint: "Scroll to walk through",
+  sections: [
+    {
+      id: "storefront",
+      label: "The storefront",
+      eyebrow: "Kigali, golden hour",
+      title: "It starts at your counter.",
+      body: "Great food already brings people in. ZanTap gives them an easier way to reach you \u2014 wherever they are.",
+    },
+    {
+      id: "order",
+      label: "The order",
+      eyebrow: "One simple link",
+      title: "They order from their phone.",
+      body: "No app to download. Your menu, your prices, one link you can share on WhatsApp, Instagram or anywhere.",
+    },
+    {
+      id: "momo",
+      label: "MoMo payment",
+      eyebrow: "Paid before you cook",
+      title: "MoMo payment, confirmed.",
+      body: "Customers pay with MTN MoMo. You see the money before the kitchen starts \u2014 no chasing, no guessing.",
+    },
+    {
+      id: "kitchen",
+      label: "The kitchen",
+      eyebrow: "The kitchen view",
+      title: "Every paid order, on one screen.",
+      body: "New, preparing, ready \u2014 your team works a clear queue instead of scrolling through messages.",
+    },
+    {
+      id: "dispatch",
+      label: "Dispatch",
+      eyebrow: "Out for delivery",
+      title: "From your door to theirs.",
+      body: "Assign a driver and send the order on its way, with a delivery slip that carries everything they need.",
+    },
+    {
+      id: "grow",
+      label: "Grow",
+      eyebrow: "Made in Rwanda",
+      title: "More orders. Fuller nights.",
+      body: "Selected early partners get free guided setup. Your food business, online \u2014 with help.",
+      cta: "Get my free setup",
+    },
+  ],
+  media: {
+    momoLogoAlt: "MoMo from MTN logo",
+    storefrontScreenAlt: "A ZanTap storefront on a phone",
+    kitchenScreenAlt: "The ZanTap kitchen dashboard",
+  },
+} as const;
+
 export const OFFER = {
   kicker: "Early partner offer",
   heading: "We help you set it up. You start taking orders.",
