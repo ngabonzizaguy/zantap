@@ -142,6 +142,10 @@ routing. Lead routing persists every Lead first, assigns one enabled recipient
 with concurrency-safe round-robin, records an immutable assignment for Ops, and
 returns at most one public `Continue on WhatsApp` action. Production currently
 has two recipients configured: one enabled and one temporarily disabled.
+The marketing root also ships the six-scene scroll-world preview: two
+scroll-scrubbed desktop clips followed by four intentional still crossfades,
+with reduced-motion/Save-Data fallbacks. Native partner footage in separate
+16:9 and 9:16 chains remains the planned asset replacement.
 
 **Deferred:** vendor/ops auth beyond owner tokens + ops secret (candidate #12),
 live MTN MoMo API (manual USSD is the interim), automatic WhatsApp Business API

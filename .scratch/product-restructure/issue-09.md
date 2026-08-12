@@ -1,6 +1,6 @@
 # Issue 09 — PWA baseline + offline kitchen-stage queue + chime
 
-Status: **ready-for-agent** · Track 4 · ADR-0046 §11/§13 (suggest splitting into 09a manifest/shell and 09b queue at session time)
+Status: **in-progress** · 09a merged to main + production deployed + curl-smoked + owner visual PASS (Android install smoke pending) · 09b ready-for-agent · Track 4 · ADR-0046 §11/§13
 
 **Vendored design skills to consult (PRD §3b):** `mobile-app-ui-design`
 (installed-app feel: touch targets, safe areas, nav/back conventions, offline
@@ -8,10 +8,12 @@ states), `ui-ux-pro-max` (UX guidelines: touch ≥44px, loading feedback, CLS,
 reduced motion), `frontend-design`. DESIGN.md/ADRs win on conflict.
 
 Baseline (09a):
-- [ ] Web app manifest: Z icons (from approved set), name/short_name, theme colors per surface, `display: standalone`.
+- [x] Web app manifest: Z icons (from approved set), name/short_name, theme colors per surface, `display: standalone`.
 - [ ] Installability verified on Android Chrome (KDS on kitchen tablets is a selling point).
-- [ ] Service worker: cache-first for static shell/brand assets ONLY; network-first for data; explicit versioned update strategy; NEVER cache API/SSE/payment responses.
-- [ ] Clear offline UI states on storefront + KDS (read-only shell + "you're offline").
+- [x] Service worker: cache-first for static shell/brand assets ONLY; network-first for data; explicit versioned update strategy; NEVER cache API/SSE/payment responses.
+- [x] Clear offline UI states on storefront + KDS (read-only shell + "you're offline").
+- [x] Dark KDS tappable controls retain their resting background through hover/active states (no sticky light overlay after tap/click).
+- [x] Orders stage chips use a contained, swipeable rail that never widens the KDS document.
 
 Offline stage queue (09b — the ONLY offline writes, server wins):
 - [ ] Queue accept/preparing/ready kitchen-stage moves while offline (localStorage/IDB), replay on reconnect.
@@ -21,3 +23,17 @@ Offline stage queue (09b — the ONLY offline writes, server wins):
 - [ ] Tests for queue replay/conflict; `npm run build`; airplane-mode manual smoke.
 - [ ] ADR (offline model).
 - [ ] Handoff per protocol.
+
+09a evidence (2026-08-08, branch `codex/pwa-kds-paypack-polish`): root and
+vendor-specific KDS manifests, 192/512 `any` + `maskable` approved-Z icons,
+production-only SW registration, versioned static-shell cache, `/offline`
+fallback, and a safe-area offline status. Local prod HTTP + responsive browser
+checks pass. A 390×844 interaction audit also verifies stable backgrounds across
+all KDS tabs, tickets, filters, Setup, Help, and modal controls with zero console
+errors. The automation browser hides Service Worker APIs, so perform the
+remaining Android Chrome install/airplane-mode smoke after deploy. ADR-0051.
+The approved commits were replayed cleanly onto `origin/main` as `0b685ea` +
+`1cf4a5a`, excluding unaudited durable-leads commit `2d6e391`. Production
+deployment `dpl_6yTBeB4YTo8cdDuBf3ahVgmTS8yn` is Ready at `zantap.app`; curl
+smoke and runtime error scan pass. Physical Android Chrome install, standalone
+launch, and airplane-mode verification remain pending.

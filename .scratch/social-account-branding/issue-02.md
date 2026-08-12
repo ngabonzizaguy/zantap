@@ -71,8 +71,15 @@ Rejected export:
 
 No password or verification code is stored in this documentation.
 
-## Open account follow-up
+## Account follow-up
 
-- [ ] Create or confirm a dedicated ZanTap business email inbox. No dedicated
-      address is documented in the project as of 2026-07-31; the login email
-      used for the social accounts, if any, is intentionally not recorded here.
+- [x] Create and connect dedicated ZanTap business email inboxes. Completed
+      2026-08-06: `hello@zantap.app`, `support@zantap.app`, and
+      `vendors@zantap.app` are active in Spacemail. Vercel DNS has domain
+      verification, two MX records, SPF, DKIM, and autodiscover SRV; Spacemail
+      cleared the DNS-setup warning and enabled mailbox login. No DNS secret,
+      verification token, DKIM key, password, or login code is stored here.
+- [x] Send an outbound delivery test from `hello@zantap.app`. Completed
+      2026-08-06: Spacemail recorded the message in Sent. The personal recipient
+      address is intentionally not stored; recipient-side delivery and an
+      inbound reply remain owner-confirmed follow-ups if desired.

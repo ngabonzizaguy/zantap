@@ -1,6 +1,6 @@
 # Issue 01 — Z brand rollout in-product
 
-Status: **done — implemented + build/lint green + local visual check 2026-08-05 (ADR-0048)** · Track 1 · ADR-0046 §4
+Status: **✅ DONE · deployed with Issue 03 · prod-smoked 2026-08-06 (ADR-0048)** · Track 1 · ADR-0046 §4
 
 Replace the circular food medallion with the approved black-and-amber Z
 (`public/brand/approved-z/`) across every product surface. Assets exist; no new
@@ -14,4 +14,5 @@ part of its canvas).
 - [x] `npm run build` + visual check of onboarding, KDS header, storefront, browser tab icon. (Build + lint clean; Playwright screenshots at 390px in `.scratch/product-restructure/issue-01-shots/` — splash, KDS header, storefront all pass; `/favicon.ico`, `/icon.png`, `/apple-icon.png` serve 200 with correct content types. "You're Live" hero not exercised live — would require provisioning a vendor against the real DB — but uses the identical asset/tile pattern as the verified splash; ops sidebar behind ops auth, code-verified only.)
 - [x] Handoff: tick boxes, update candidates table, ADR only if a decision beyond ADR-0046 arises. (ADR-0048: per-surface variant mapping + favicon tile treatment superseding ADR-0027's round-transparent choice.)
 
-Not committed/deployed — changes staged/working-tree only; commit + deploy is the next session's call alongside further Track 1 work.
+Committed in `877cef0`, carried by the Issue 03 fast-forward to `main`, and deployed
+with production deployment `zantap-qv9d8y90w` at `https://zantap.app`.

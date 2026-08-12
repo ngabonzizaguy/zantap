@@ -182,3 +182,10 @@ Release hygiene:
 
 Real 16:9 and 9:16 partner-restaurant footage remains a future asset replacement under
 the existing capture plan; no new generation or payment behavior is authorized here.
+
+Production evidence: release commit `3a80e3e` deployed as
+`dpl_6iMs3LEJw3Y8VPgfdc56SHiynCLn` on `zantap.app`. Root and accepted public
+assets return 200; video byte-range delivery returns 206; the rejected public
+MoMo encode returns 404. The production Step 8 suite passes 19/19 across desktop,
+reduced-motion, touch portrait, and landscape with no browser errors/overflow;
+the deployment's release-window warning/error scans are empty.

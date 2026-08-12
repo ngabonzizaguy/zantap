@@ -13,23 +13,123 @@ Last verified against the codebase: 2026-07-15.
 
 ## Product architecture audit (2026-08-05)
 
+**🟡 ISSUE 09a (PWA BASELINE) MERGED TO MAIN + PRODUCTION DEPLOYED + CURL-SMOKED · OWNER VISUAL PASS · ANDROID INSTALL SMOKE PENDING
+2026-08-08 (ADR-0051; `fce8360` + `9f0a66d` on branch
+`codex/pwa-kds-paypack-polish`).** Added root and
+vendor-specific install manifests (KDS starts at its vendor route), approved-Z
+192/512 `any` + `maskable` launcher assets, production-only service-worker
+registration, versioned static-shell caching with API/SSE/payment exclusion,
+an offline fallback, and global safe-area offline status. The same batch moves
+the shared hand-drawn glyph layer to ISC `lucide-react`, defaults KDS orders to
+newest-first, shrinks/mutes the help question mark while retaining a 44px hit
+area, gates coachmarks fully off, keeps deferred Setup Guide rows on the normal
+card treatment with “Soon” badges, and documents the researched Paypack API
+integration plan without changing manual MoMo. A
+verified follow-up removes persistent hover/active background overlays across
+the dark KDS while preserving focus outlines and press-scale feedback, restores
+deferred Setup rows to their normal cards after owner review, and contains the
+Orders status chips in the same swipe rail pattern as History filters.
+Focused 9/9 + full 266/80 tests, lint, build, HTTP manifest/icon checks, and
+responsive desktop/mobile/landscape visual checks pass; the follow-up also
+passes a 390×844 interaction audit across all KDS tabs, tickets, Setup, Help,
+and modal controls with zero console errors. Remaining 09a gate:
+install from Android Chrome, launch standalone into KDS, then airplane-
+mode verify the offline shell/banner. Issue 09b offline stage queue + chime stays
+separate and ready-for-agent. Tracking:
+`.scratch/pwa-kds-paypack-polish/issue-01.md` and
+`.scratch/product-restructure/issue-09.md`.
+
+Scoped main integration verified 2026-08-08: only `fce8360` + `9f0a66d` were
+replayed onto clean `origin/main` as `0b685ea` + `1cf4a5a`; unaudited
+durable-leads `2d6e391` was excluded. Automatic Production
+`dpl_6yTBeB4YTo8cdDuBf3ahVgmTS8yn` is Ready at `zantap.app`. Production curl
+smoke passes for root, KDS, manifests, service worker, offline page, and launcher
+assets; runtime error scan is clean.
+
 **✅ ISSUE 03 (MARKETING PAGE AT `/`) CORE SHIPPED · DEPLOYED · PROD-SMOKED
 2026-08-06 (ADR-0049; `fe9f5d1` → main → Vercel prod `zantap-qv9d8y90w` →
 `zantap.app`; Issue 01 brand + Issue 02 sweep deployed in the same
-fast-forward) — scroll-world cinematic pending owner interview + budget
-approval.** Root
+fast-forward) — scroll-world cinematic RENDERING HALTED BY OWNER 2026-08-06
+mid-chain (credit floor 700; balance 881.42; 6 stills + desktop legs 1–3 +
+portrait leg 1 rendered & on disk; calibrated 7cr/still, 72cr/1080p-leg,
+26cr/720p-leg). **ZERO-CREDIT scroll-world PREVIEW BUILT & QA'D 2026-08-09,
+APPROVED + SHIPPED 2026-08-12 (ADR-0052; `3a80e3e` →
+`dpl_6iMs3LEJw3Y8VPgfdc56SHiynCLn` → `zantap.app`):** legs 1–2 encoded (§5) + engine adapted as
+a mid-page sticky embed (`components/marketing/scroll-world/`) between
+`#how` and the offer on `/`; real MoMo logo + ZanTap screens in the HTML
+overlay; QA 13/13 + lint/build/test green. **Scene-3 swap DONE 2026-08-09
+(later session, zero credits): momo clip dropped (AI-invented payment screen,
+owner-rejected) → scenes 1–2 scrub video, 3–6 still-crossfade; poster rebuilt
+  from the clean `still_momo`. **Owner-requested wordmark + mobile pass shipped:**
+  approved off-white/amber dark wordmark wired into the
+  masthead/footer; stable 100svh track math, passive touch scrub, safe-area and
+  CTA compositor stacking hardened; QA expanded to 19/19 across desktop,
+  reduced-motion, touch portrait, and landscape; lint/build/test green (266/80).
+Credit balance corrected to ~112–120. **OWNER CHOSE OPTION B 2026-08-09:**
+finish with native real partner-restaurant footage
+(continuous 16:9 + separately composed 9:16 masters; zero generation credits).
+Pre-production plan is complete at
+`.scratch/product-restructure/scroll-world/native-walkthrough-footage-plan.md`;
+the 2026-08-10 location-call-sheet pass is **BLOCKED ON INTAKE** because the
+promised partner/permission/schedule/gear/cast/demo-data/route/branding facts
+are not present in the accessible current or preceding task history. No facts
+were invented. The owner separately approved the desktop-preview release on
+2026-08-12. Production QA passed 19/19; public media routes and range requests
+passed, the rejected MoMo encode is 404, and Vercel error/warning scans were
+empty. Native capture/integration remains pending.** Session logs are in
+`.scratch/product-restructure/issue-03.md`.
+Root
 demo redirect replaced by the production funnel: C structure (offer + visible
 lead form, sticky mobile CTA guard) + A cinematic Kigali hero (still + loop in
 `public/marketing/`, reduced-motion/Save-Data safe); GSAP ScrollTrigger
 reveals + lazy Three.js orbit accent (`gsap`/`three` deps added); i18n-ready
-copy in `lib/marketing/copy.ts`; lead form built against Issue-04's
-`SubmitLeadInput` with interim WhatsApp transport to the owner; SEO
+  copy in `lib/marketing/copy.ts`; durable lead form now persists through the
+  Store seam (Issue 04, `c79738e`); SEO
 (metadata/OG/sitemap/robots — storefronts crawlable, ops/KDS/slip excluded);
 `RESERVED_VENDOR_SLUGS` enforced in both Store adapters. Fresh Z-brand KDS
 screenshot captured in-memory (July UI-screens show the retired medallion +
 zantap.ai — don't reuse). Issue 01 (Z brand) was already committed in
 `877cef0` on `cursor/setup-dev-environment-0a7d`; deployed together with
 Issue 03. See `.scratch/product-restructure/issue-03.md`.
+
+**✅ ISSUE 04 (DURABLE LEAD CAPTURE) DONE · DEPLOYED · PROD-SMOKED 2026-08-09
+(ADR-0050).** Owner approved after Cursor audit; `2d6e391` cherry-picked onto
+main as `c79738e` (conflict-free — main tip vs branch tip differed only by the
+15 lead files) → pushed → auto Vercel Production `zantap-lxwwvr7vs` →
+`zantap.app`. Fresh validation on replay: lint clean, 266/80, build green.
+Prod smoke PASS: live form submit → action POST 200 → success state → Lead row
+in prod DB (canonical `250788123456`, NEW, marketing-root; labeled smoke row
+left in place). WhatsApp interim transport retired. Issue 05 Ops lead inbox
+UNBLOCKED. Added the `Lead`/`LeadStatus` Prisma model + migration, the
+`createLead`/`listLeads`/`updateLeadStatus` Store interface across both
+adapters, shared contract coverage, and an async-only `submitLead` Server
+Action with runtime validation, canonical Rwanda E.164 phone storage,
+honeypot discard, and per-IP/per-phone best-effort limits. The marketing form
+now reports success only after durable submission. Prisma validation, diff
+  check, lint, 266 tests passed / 80 Prisma-gated skipped, and the production
+  build are green. Migration `20260806213500_durable_lead_capture` is applied;
+  Issue 05 Ops leads inbox is now unblocked. See
+  `.scratch/product-restructure/issue-04.md`.
+
+**✅ ISSUE 05 (OPS LEADS + CONFIGURABLE WHATSAPP PILOT) DONE · MULTI-RECIPIENT
+ROUTING DEPLOYED + PROD-SMOKED + CONFIGURED 2026-08-12 (ADR-0053;
+`5aee9b2` + `943efbc` → `zantap.app`).** Ops can add, edit, archive-remove,
+enable, and disable WhatsApp recipients. Every Lead persists first, then receives
+one immutable assignment through a concurrency-safe round-robin Store operation;
+Prisma serializes the cursor with a transaction-scoped advisory lock. The public
+success state returns at most one user-confirmed WhatsApp action, and `/ops/leads`
+shows the redacted assignment. Migration
+`20260811234500_multi_recipient_lead_routing` is applied. Schema, TypeScript, lint,
+build, 284/89 full tests, 97 focused tests, and the isolated Postgres Lead contract
+(11/11, including 12-way concurrency) are green. Authenticated Production Ops
+configured `…8786` enabled. Persistence-first smoke passed with labeled Lead
+`ISSUE05 PERSIST FIRST 20260812 0017` visible as Unassigned before routing was
+activated; routed smoke `ISSUE05 ROUTED 20260812 0018` then showed exactly one
+public action and assignment to `…8786`. Release-window error/warning logs were
+empty. Review found and fixed two recoverable relative-time hydration mismatches
+in `943efbc`. Final authenticated configuration shows 1 of 2 enabled: `…8786`
+enabled and owner-supplied `…7771` disabled; `/ops/leads` then loaded with zero
+browser console errors. Automatic WhatsApp Business API delivery remains deferred.
 
 **✅ ISSUE 02 (ZANTAP.APP CUTOVER) DONE · PROD-SMOKED 2026-08-06.** Owner bought
 `zantap.app` and attached it (apex = Production, `www` 308→apex,
@@ -122,8 +222,14 @@ top/bottom edge-row continuation to prevent Facebook's live horizontal crop. Bot
 were visually verified with no duplicate layer or omitted leaves. Tracking:
 `.scratch/social-account-branding/issue-01.md` and
 `.scratch/social-account-branding/issue-02.md`. This operational task does not change application
-architecture and requires no ADR. **Open follow-up:** no dedicated ZanTap business email address is
-documented as of 2026-07-31; create or confirm one before using email in the public lead funnel.
+architecture and requires no ADR. **Email follow-up completed 2026-08-06:**
+`hello@zantap.app`, `support@zantap.app`, and `vendors@zantap.app` are active in
+Spacemail after the domain-specific Vercel DNS setup was added and verified.
+Verification, two MX records, SPF, DKIM, and autodiscover SRV are present;
+Spacemail cleared the DNS-setup warning and enabled all three mailbox Login
+buttons. An outbound test from `hello@zantap.app` was recorded in Spacemail's
+Sent folder on 2026-08-06; the personal recipient address is not documented.
+No secret DNS values are persisted in project documentation.
 
 ## Codebase hygiene refactor (2026-07-15)
 
@@ -274,6 +380,8 @@ If a session ends without doing both, the handoff is incomplete.
 | 19 | KDS + Storefront polish batch (recovery, dashboard, images, help, onboarding, storefront sync, domain) | Owner request | Store + KDS + onboarding + customer UI + config | ✅ Done · deployed · prod-smoked 2026-07-02 | `.scratch/kds-storefront-polish/PRD.md` |
 | 21 | Storefront customize slim-down + vendor profile edits + MoMo phone fix | Owner request | customer modal + KDS Setup + MoMo USSD | ✅ Done · deployed · prod-smoked 2026-07-05 (`5ad7a92`) | `.scratch/candidate-21/PRD.md` |
 | 22 | Storefront share + menu lightbox + KDS drivers | Owner request | customer UI + KDS drivers tab + Order.driverId | ✅ Done · deployed · prod-smoked 2026-07-06 | `.scratch/candidate-22/PRD.md` |
+| Ops | Professional email DNS for `zantap.app` | Owner request | Vercel DNS + Spacemail | ✅ Done · domain verified · 3 mailboxes active · outbound test sent 2026-08-06 | `.scratch/social-account-branding/issue-02.md` |
+| Ops | Shared Codex ↔ Cursor continuity prompt | Owner request | Agent coordination only; no product/deploy change | ✅ Done · durable prompt created 2026-08-09 | `docs/agents/codex-cursor-shared-handoff.md` |
 
 **#22 closed 2026-07-06** — code shipped `e734387` (live on `zantap-psi.vercel.app`
 since #17 deploy); migration `20260705180000_order_driver_assignment` applied.

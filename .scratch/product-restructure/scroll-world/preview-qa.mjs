@@ -11,7 +11,8 @@ import { chromium } from "playwright-core";
 import { mkdirSync } from "node:fs";
 
 const BASE = process.env.QA_BASE_URL || "http://localhost:3000";
-const SHOTS = ".scratch/product-restructure/scroll-world/qa-shots";
+const SHOTS =
+  process.env.QA_SHOTS || ".scratch/product-restructure/scroll-world/qa-shots";
 mkdirSync(SHOTS, { recursive: true });
 
 const results = [];
@@ -73,9 +74,23 @@ const browser = await chromium.launch({ channel: "msedge" });
 
   // currentTime tracks scroll within scene 1.
   await scrollTo(band.top + 0.3 * 1.3 * band.vh);
+  await page.waitForFunction(
+    () => {
+      const video = document.querySelector(".sw-scene video");
+      return Boolean(video && !video.seeking && video.currentTime > 0.1);
+    },
+    { timeout: 12000 },
+  );
   const t1 = await page.evaluate(() => document.querySelector(".sw-scene video")?.currentTime ?? -1);
   await scrollTo(band.top + 0.85 * 1.3 * band.vh);
-  await page.waitForTimeout(900);
+  await page.waitForFunction(
+    (before) => {
+      const video = document.querySelector(".sw-scene video");
+      return Boolean(video && !video.seeking && video.currentTime > before + 1);
+    },
+    t1,
+    { timeout: 12000 },
+  );
   const t2 = await page.evaluate(() => document.querySelector(".sw-scene video")?.currentTime ?? -1);
   check("currentTime tracks scroll", t2 > t1 + 1, `t1=${t1.toFixed(2)} t2=${t2.toFixed(2)}`);
 
@@ -218,9 +233,17 @@ const browser = await chromium.launch({ channel: "msedge" });
     band,
   );
   // Edge's mobile decoder can need one final GOP seek after the coalesced
-  // catch-up reaches the latest touch position. Give that bounded final seek
-  // time to paint before asserting the queue is settled.
-  await page.waitForTimeout(2600);
+  // catch-up reaches the latest touch position, especially against cold
+  // production media. Wait on the bounded decoder-settled condition rather
+  // than assuming a fixed local-disk deadline.
+  await page.waitForFunction(
+    (before) => {
+      const video = document.querySelector(".sw-scene video");
+      return Boolean(video && !video.seeking && video.currentTime > before + 1);
+    },
+    mobileT1,
+    { timeout: 12000 },
+  );
   const mobileSeek = await page.evaluate(() => {
     const video = document.querySelector(".sw-scene video");
     return video

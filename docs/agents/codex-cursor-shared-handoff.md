@@ -48,18 +48,17 @@ explicitly owns it.
     assignments, and concurrency-safe round-robin through both Store adapters.
   - `943efbc` — suppresses expected relative-time hydration drift in both Lead
     inbox layouts after production review found two recoverable React errors.
-- Latest behavior-bearing production deployment is `dpl_HTWEh9G18kJ9QF5Er9hatqfuTScq`
-  (`zantap-3ots9uibt`, 2026-08-12), Ready at `https://zantap.app` from main at
-  `943efbc`; its predecessor `dpl_C5BBDbY4wiZVypSAvofSz2quRqpX` passed the
-  multi-recipient Production smoke.
+- Latest behavior-bearing production deployment is
+  `dpl_6iMs3LEJw3Y8VPgfdc56SHiynCLn` (`zantap-qg9ax88dn`, 2026-08-12), Ready at
+  `https://zantap.app` from main at `3a80e3e`; it ships the scroll-world preview
+  on top of the already-smoked Issue 05 routing behavior.
   Migration `20260811234500_multi_recipient_lead_routing` is applied. Final
   authenticated configuration is complete: `…8786` enabled and owner-supplied
   `…7771` disabled, with `1 of 2 enabled` visible in Ops. Persistence-first and
   assigned Lead smokes passed; the post-fix Lead inbox has zero console errors.
-- The current working branch is `main`; the documentation closure follows
-  `943efbc` without changing application behavior and is pushed to `origin/main`.
-  Scroll-world, wordmark, mobile-hardening, tracker, ADR, and handoff changes
-  remain uncommitted in this shared working tree.
+- The current working branch is `main`; scroll-world release commit `3a80e3e`
+  is pushed to `origin/main`. The documentation closure records its exact
+  Production evidence without changing application behavior.
 - The working tree was already dirty before this continuity file was added.
   Modified tracker files included `.scratch/architecture-candidates.md` and
   several product-restructure/social issue files. Untracked work included
@@ -103,10 +102,10 @@ Detailed sources:
 - Scroll-world generation is halted at ~112–120 credits. Six desktop stills,
   one portrait still, desktop legs 1–3, portrait leg 1, prompts, and handoff
   frames are retained under `.scratch/product-restructure/scroll-world/`.
-  A zero-credit preview is encoded and wired locally, scene 3 uses the
+  The zero-credit preview is encoded, committed, and deployed; scene 3 uses the
   owner-approved clean still, and mobile behavior/branding are hardened with
-  19/19 QA. None of that local preview is committed or shipped. On 2026-08-09
-  the owner chose **Option B**: keep it local and finish with native continuous
+  local and Production 19/19 QA. On 2026-08-09 the owner chose **Option B**:
+  finish with native continuous
   partner-restaurant footage (16:9 + separately composed 9:16, zero generation
   credits). Capture/integration plan:
   `.scratch/product-restructure/scroll-world/native-walkthrough-footage-plan.md`.
@@ -150,7 +149,7 @@ Detailed sources:
 | Z-brand rollout, `zantap.app` sweep, root marketing funnel | On main | Shipped and smoke-tested |
 | PWA baseline + KDS visual/interaction polish | On main (`0b685ea`, `1cf4a5a`) | Shipped and curl-smoked; owner visual pass |
 | Durable lead capture | On main (`c79738e`, replay of `2d6e391`); migration applied | Shipped 2026-08-09 (`zantap-lxwwvr7vs`); live form + DB row smoked; WhatsApp interim transport retired |
-| Scroll-world cinematic | Zero-credit preview + scene-3 swap + approved dark wordmark + stable mobile/touch hardening complete 2026-08-09 (ADR-0052; QA 19/19) — UNCOMMITTED working-tree changes on main; Option B native-footage plan complete; location call sheet blocked 2026-08-10 because the promised readiness facts are absent from accessible task history | Not shipped; generation halted (~112–120 credits untouched); native 16:9 + 9:16 partner-restaurant capture pending |
+| Scroll-world cinematic | Preview on main (`3a80e3e`): engine, active public media, generated/raw evidence, scene-3 still swap, dark wordmark, stable mobile/touch hardening, ADR-0052, QA 19/19 | Preview shipped + prod-smoked 2026-08-12 (`dpl_6iMs3LEJw3Y8VPgfdc56SHiynCLn`); native 16:9 + 9:16 partner footage replacement pending; generation remains halted |
 | PWA Android install/standalone/airplane-mode acceptance | Code shipped | Human device smoke still pending |
 | Offline kitchen-stage mutation queue + new-order chime (Issue 09b) | Not implemented | Not shipped |
 | Paypack API integration | Reference document only | Not implemented; manual MoMo unchanged |
@@ -185,15 +184,11 @@ Detailed sources:
 3. Issue 09b (offline kitchen-stage queue + chime) is separately ready for an
    agent. Follow ADR-0046 and create the required offline-model ADR.
 4. ~~Scroll-world zero-credit preview + owner-requested logo/mobile pass~~ —
-   BUILT & QA'D 2026-08-09; scene-3 still swap, approved two-tone dark
-   wordmark, stable mobile viewport, touch scrub hardening, and CTA stacking
-   are complete (19/19; see ledger and ADR-0052). It sits UNCOMMITTED in main
-   (`components/marketing/scroll-world/`, `public/marketing/{vid,scroll}/`,
-   `app/page.tsx`, `lib/marketing/copy.ts`). Preserve it. **Option B chosen:**
-   keep the preview local and capture native continuous partner-restaurant
-   footage. Next gate is physical pre-production using
+   SHIPPED + PROD-SMOKED 2026-08-12 (`3a80e3e`, 19/19). **Option B remains:**
+   capture native continuous partner-restaurant footage as the final asset
+   replacement. Next gate is physical pre-production using
    `scroll-world/native-walkthrough-footage-plan.md`; generation remains
-   prohibited and commit/deploy remains separately owner-gated. The 2026-08-10
+   prohibited. The 2026-08-10
    call-sheet pass found no actual partner logistics in the current or preceding
    task history, so the owner must paste the missing intake before the plan can
    be made location-specific.
@@ -218,6 +213,25 @@ Do not paste secrets, owner tokens, API keys, personal recipient details, or
 database credentials here.
 
 ## Session ledger
+
+### 2026-08-12 — Codex — scroll-world preview release
+
+- Owner explicitly approved shipping the complete preview while real footage is
+  supplied later. Commit `3a80e3e` includes the engine, active public clips/
+  posters, approved dark wordmark, raw/generated masters, prompts, boundary
+  frames, capture plan, QA harness/screenshots, and ADR-0052. Provider job
+  `.json`/`.err` files remain local; the rejected MoMo video is archival only.
+- Validation before release: lint clean, full suite 284 passed / 89 skipped,
+  production build green, local Step 8 19/19. Production deployment
+  `dpl_6iMs3LEJw3Y8VPgfdc56SHiynCLn` reached Ready on `zantap.app`.
+- Production smoke: root + active public media 200, rejected public MoMo encode
+  404, video byte-range request 206, desktop/touch/reduced-motion Step 8 19/19,
+  no browser errors or overflow, and no Vercel warning/error logs in the release
+  window. The harness now waits for decoder-settled seeks and can write prod
+  evidence to a separate `QA_SHOTS` directory.
+- Remaining gate: capture/integrate separately composed native 16:9 + 9:16
+  partner footage. The shipped phone experience remains a clearly documented
+  desktop-preview fallback; no new generation was authorized.
 
 ### 2026-08-12 — Codex — Issue 05 multi-recipient routing release
 
