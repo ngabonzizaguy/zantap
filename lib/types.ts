@@ -37,6 +37,10 @@ export interface Vendor {
   logoUrl?: string;
   coverImageUrl?: string;
   description?: string;
+  /** Ops-controlled KDS surface flags (ADR-0056). */
+  featureWhatsappNotify: boolean;
+  featureStockTracking: boolean;
+  featureProfitInsights: boolean;
   createdAt: Date;
   // NOTE: ownerTokenHash is intentionally NOT on the domain Vendor — it is a
   // server-only secret hash and must never be serialized to the browser. Read it
@@ -143,11 +147,21 @@ export interface OperatorVendorDetail {
   activeOrderCount: number;
   recoveryEventCount: number;
   recentOrders: Order[];
+  /** Present when stock tracking is meaningful for Ops visibility. */
+  stockTrackedItemCount?: number;
+  stockLowItemCount?: number;
+  /** Present for profit Ops visibility. */
+  todayGrossRwf?: number;
+  weekdayAverageRwf?: number;
+  weekProfitRwf?: number;
 }
 
 export interface OperatorUpdateVendorInput extends UpdateVendorInput {
   isActive?: boolean;
   kitchenOpen?: boolean;
+  featureWhatsappNotify?: boolean;
+  featureStockTracking?: boolean;
+  featureProfitInsights?: boolean;
 }
 
 export interface OperatorOrderPatch {
@@ -181,6 +195,11 @@ export interface MenuItem {
   isAvailable: boolean;
   thumbFrom?: string;
   thumbTo?: string;
+  /** Remaining count when stock tracking is on for this item; undefined = unlimited. */
+  stockCount?: number;
+  lowStockThreshold?: number;
+  /** Cost to make in RWF for margin math. */
+  costPriceRwf?: number;
   archivedAt?: Date;
   images?: MenuImage[];
   /**
@@ -208,6 +227,9 @@ export interface UpdateMenuItemInput {
   priceRwf?: number;
   description?: string;
   category?: string;
+  stockCount?: number | null;
+  lowStockThreshold?: number | null;
+  costPriceRwf?: number | null;
 }
 
 export interface OrderItem {

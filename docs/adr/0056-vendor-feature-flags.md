@@ -1,0 +1,3 @@
+# ADR-0056: Per-vendor feature flags
+
+WhatsApp notify CTA, Stock tracking, and Know Your Profit are controlled by three booleans on Vendor (`featureWhatsappNotify`, `featureStockTracking`, `featureProfitInsights`), defaulting false / off until Ops enables them per kitchen. One shared mechanism keeps KDS layout stable when a surface is hidden. Global toggles were rejected so pilots can roll out one vendor at a time.

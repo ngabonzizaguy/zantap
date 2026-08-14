@@ -7,6 +7,7 @@ import type {
   SubmitLeadInput,
 } from "@/lib/leads/types";
 import { LEAD_FORM } from "@/lib/marketing/copy";
+import { TornPanelBackdrop } from "@/components/marketing/TornPaint";
 import { toWhatsAppE164 } from "@/lib/whatsapp";
 
 /**
@@ -80,8 +81,10 @@ export function LeadForm() {
   return (
     <aside
       id="lead-form"
-      className="w-full rounded-brand-xxl bg-[#faf7f2] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.45)] sm:p-7"
+      className="relative isolate w-full p-7 sm:p-8"
     >
+      {/* Torn-paint background replaces the card's straight edges */}
+      <TornPanelBackdrop />
       <p className="font-body text-caption-uppercase uppercase text-[#b45309]">
         {LEAD_FORM.kicker}
       </p>

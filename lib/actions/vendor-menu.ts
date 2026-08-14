@@ -67,6 +67,9 @@ export async function updateMenuItem(
       input.category !== undefined
         ? input.category.trim() || "General"
         : undefined,
+    stockCount: input.stockCount,
+    lowStockThreshold: input.lowStockThreshold,
+    costPriceRwf: input.costPriceRwf,
   });
 }
 

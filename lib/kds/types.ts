@@ -1,4 +1,5 @@
 import type { MenuItem, Order } from "@/lib/types";
+import type { VendorFeatureFlags } from "@/lib/vendor/feature-and-profit-types";
 
 export interface KdsSnapshot {
   orders: Order[];
@@ -6,4 +7,5 @@ export interface KdsSnapshot {
   todayGross: number;
   yesterdayGross: number;
   kitchenOpen: boolean;
+  featureFlags: VendorFeatureFlags;
 }

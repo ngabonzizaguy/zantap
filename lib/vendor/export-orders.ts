@@ -78,7 +78,20 @@ export function escapeCsvCell(value: string): string {
   return value;
 }
 
-export function buildCsv(rows: OrderHistoryItem[]): string {
+function paidTotal(rows: OrderHistoryItem[]): number {
+  return rows.reduce((sum, item) => {
+    const status = item.order.status;
+    if (status === "PAID" || status === "DISPATCHED" || status === "COMPLETED") {
+      return sum + item.order.totalAmount;
+    }
+    return sum;
+  }, 0);
+}
+
+export function buildCsv(
+  rows: OrderHistoryItem[],
+  allTimePaidRevenue?: number
+): string {
   const lines = [EXPORT_CSV_HEADERS.join(",")];
   for (const item of rows) {
     const record = orderHistoryItemToRow(item);
@@ -87,11 +100,34 @@ export function buildCsv(rows: OrderHistoryItem[]): string {
     );
     lines.push(cells.join(","));
   }
+  lines.push("");
+  const paid = paidTotal(rows);
+  lines.push(
+    EXPORT_CSV_HEADERS.map((h) =>
+      h === "Total (RWF)"
+        ? String(paid)
+        : h === "Order ID"
+          ? "TOTAL (paid/dispatched/completed)"
+          : ""
+    ).join(",")
+  );
+  if (allTimePaidRevenue != null) {
+    lines.push(
+      EXPORT_CSV_HEADERS.map((h) =>
+        h === "Total (RWF)"
+          ? String(allTimePaidRevenue)
+          : h === "Order ID"
+            ? "ALL-TIME PAID REVENUE"
+            : ""
+      ).join(",")
+    );
+  }
   return `${lines.join("\r\n")}\r\n`;
 }
 
 export async function buildXlsxBuffer(
-  rows: OrderHistoryItem[]
+  rows: OrderHistoryItem[],
+  allTimePaidRevenue?: number
 ): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Order History");
@@ -103,6 +139,32 @@ export async function buildXlsxBuffer(
   for (const item of rows) {
     const record = orderHistoryItemToRow(item);
     sheet.addRow(EXPORT_CSV_HEADERS.map((header) => record[header]));
+  }
+
+  sheet.addRow([]);
+  const paid = paidTotal(rows);
+  const totalRow = sheet.addRow(
+    EXPORT_CSV_HEADERS.map((h) =>
+      h === "Total (RWF)"
+        ? String(paid)
+        : h === "Order ID"
+          ? "TOTAL (paid/dispatched/completed)"
+          : ""
+    )
+  );
+  totalRow.font = { bold: true };
+
+  if (allTimePaidRevenue != null) {
+    const allTimeRow = sheet.addRow(
+      EXPORT_CSV_HEADERS.map((h) =>
+        h === "Total (RWF)"
+          ? String(allTimePaidRevenue)
+          : h === "Order ID"
+            ? "ALL-TIME PAID REVENUE"
+            : ""
+      )
+    );
+    allTimeRow.font = { bold: true };
   }
 
   sheet.columns.forEach((column) => {

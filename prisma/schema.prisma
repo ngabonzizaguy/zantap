@@ -26,11 +26,17 @@ model Vendor {
   coverImageUrl   String?
   description     String?
   ownerTokenHash  String?
+  /// Ops-controlled KDS surface flags (ADR-0056). Defaults off.
+  featureWhatsappNotify Boolean @default(false)
+  featureStockTracking  Boolean @default(false)
+  featureProfitInsights Boolean @default(false)
   menuItems       MenuItem[]
   orders          Order[]
   drivers         Driver[]
+  expenses        VendorExpense[]
   recoveryEvents  VendorRecoveryEvent[]
   operatorActions OperatorAction[]
+  convertedProspects Prospect[]         @relation("ProspectConvertedVendor")
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
 }
@@ -73,9 +79,73 @@ model Lead {
   consentAt         DateTime
   createdAt         DateTime               @default(now())
   routingAssignment LeadRoutingAssignment?
+  convertedProspects Prospect[]            @relation("ProspectConvertedLead")
 
   @@index([status, createdAt])
   @@index([createdAt])
+}
+
+model Prospect {
+  id                 String                 @id @default(cuid())
+  businessName       String
+  contactName        String?
+  phone              String?
+  area               String?
+  source             String?
+  mapsUrl            String?
+  instagramHandle    String?
+  notes              String?
+  status             ProspectStatus         @default(FOUND)
+  nextFollowUpAt     DateTime?
+  convertedVendorId  String?
+  convertedVendor    Vendor?                @relation("ProspectConvertedVendor", fields: [convertedVendorId], references: [id], onDelete: SetNull)
+  convertedLeadId    String?
+  convertedLead      Lead?                  @relation("ProspectConvertedLead", fields: [convertedLeadId], references: [id], onDelete: SetNull)
+  interactions       ProspectInteraction[]
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  @@index([status, nextFollowUpAt])
+  @@index([nextFollowUpAt])
+  @@index([createdAt])
+}
+
+model ProspectInteraction {
+  id         String          @id @default(cuid())
+  prospectId String
+  prospect   Prospect        @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  at         DateTime        @default(now())
+  channel    ProspectChannel
+  note       String?
+
+  @@index([prospectId, at])
+}
+
+model MarketingSiteSettings {
+  id               String   @id
+  publicPhone      String?
+  publicEmail      String?
+  socialX          String?
+  socialTiktok     String?
+  socialInstagram  String?
+  socialFacebook   String?
+  socialLinkedin   String?
+  socialYoutube    String?
+  socialWhatsapp   String?
+  updatedAt        DateTime @updatedAt
+}
+
+model VendorExpense {
+  id         String   @id @default(cuid())
+  vendorId   String
+  vendor     Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  amountRwf  Int
+  category   String
+  note       String?
+  spentAt    DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([vendorId, spentAt])
 }
 
 model LeadRoutingSettings {
@@ -122,6 +192,11 @@ model MenuItem {
   isAvailable Boolean     @default(true)
   thumbFrom   String?
   thumbTo     String?
+  /// Optional dish-level stock (ADR-0055). Null = unlimited / tracking off for this item.
+  stockCount         Int?
+  lowStockThreshold  Int?
+  /// Optional cost to make (RWF) for Know Your Profit margins.
+  costPriceRwf       Int?
   archivedAt  DateTime?
   images      MenuImage[]
   orderItems  OrderItem[]
@@ -243,4 +318,23 @@ enum LeadStatus {
   CONTACTED
   ONBOARDED
   CLOSED
+}
+
+enum ProspectStatus {
+  FOUND
+  CONTACTED
+  IN_TALKS
+  CONVERTED
+  DECLINED
+  UNREACHABLE
+}
+
+enum ProspectChannel {
+  WHATSAPP
+  PHONE
+  INSTAGRAM
+  GOOGLE_MAPS
+  EMAIL
+  IN_PERSON
+  OTHER
 }

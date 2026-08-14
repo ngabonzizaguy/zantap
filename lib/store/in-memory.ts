@@ -46,11 +46,30 @@ import type {
   UpdateLeadRoutingRecipientInput,
 } from "@/lib/leads/types";
 import { normalizeLeadRoutingRecipient } from "@/lib/leads/routing";
+import { canTransitionProspectStatus } from "@/lib/prospects/status";
+import type {
+  BulkCreateProspectsInput,
+  CreateProspectInput,
+  CreateProspectInteractionInput,
+  Prospect,
+  ProspectInteraction,
+  ProspectStatus,
+  UpdateProspectInput,
+} from "@/lib/prospects/types";
+import type {
+  CreateVendorExpenseInput,
+  MarketingSiteSettings,
+  ProfitSnapshot,
+  UpdateMarketingSiteSettingsInput,
+  VendorExpense,
+} from "@/lib/vendor/feature-and-profit-types";
+import { computeGlowScore } from "@/lib/vendor/profit";
 import {
   matchesOrderSearch,
   normalizePagination,
   paymentMatchesFilter,
   resolveDateRange,
+  startOfDayInTimezone,
 } from "@/lib/orders/history-filters";
 import { putMenuImageBlob } from "@/lib/menu/blob-storage";
 import { sanitizeItemNotes } from "@/lib/menu/customization";
@@ -155,6 +174,13 @@ export function createInMemoryStore(): ResettableStore {
   let recoveryEvents: VendorRecoveryEvent[] = [];
   let operatorActions: OperatorAction[] = [];
   let drivers: Driver[] = [];
+  let prospects: Prospect[] = [];
+  let prospectInteractions: ProspectInteraction[] = [];
+  let expenses: VendorExpense[] = [];
+  let marketingSettings: MarketingSiteSettings = {
+    id: "default",
+    updatedAt: new Date(),
+  };
   let kitchenOpen = true;
   let orderCounter = 0;
   let orderItemCounter = 0;
@@ -168,6 +194,9 @@ export function createInMemoryStore(): ResettableStore {
   let recoveryEventCounter = 0;
   let operatorActionCounter = 0;
   let driverCounter = 0;
+  let prospectCounter = 0;
+  let prospectInteractionCounter = 0;
+  let expenseCounter = 0;
 
   function cloneVendor(vendor: StoredVendor): Vendor {
     // Strip the server-only owner-token hash — it must never leave the Store.
@@ -267,6 +296,10 @@ export function createInMemoryStore(): ResettableStore {
     leadRoutingRecipients = [];
     lastAssignedLeadRoutingRecipientId = undefined;
     drivers = seedDrivers.map((driver) => ({ ...driver }));
+    prospects = [];
+    prospectInteractions = [];
+    expenses = [];
+    marketingSettings = { id: "default", updatedAt: new Date() };
     kitchenOpen = true;
     orderCounter = 0;
     orderItemCounter = 0;
@@ -277,6 +310,9 @@ export function createInMemoryStore(): ResettableStore {
     leadCounter = 0;
     leadRoutingRecipientCounter = 0;
     leadRoutingAssignmentCounter = 0;
+    prospectCounter = 0;
+    prospectInteractionCounter = 0;
+    expenseCounter = 0;
   }
 
   load();
@@ -318,6 +354,9 @@ export function createInMemoryStore(): ResettableStore {
       logoUrl: input.logoUrl,
       coverImageUrl: input.coverImageUrl,
       description: input.description,
+      featureWhatsappNotify: false,
+      featureStockTracking: false,
+      featureProfitInsights: false,
       ownerTokenHash: input.ownerTokenHash,
       createdAt: new Date(),
     };
@@ -650,12 +689,30 @@ export function createInMemoryStore(): ResettableStore {
       .map(cloneOrder)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice(0, 20);
+
+    const tracked = menu.filter((item) => item.stockCount != null);
+    const low = tracked.filter(
+      (item) =>
+        item.stockCount != null &&
+        item.stockCount <= (item.lowStockThreshold ?? 0)
+    );
+    const todayGrossRwf = await getTodayGross(vendorSlug);
+    const weekdayAverageRwf = await getWeekdayAverageGross(vendorSlug);
+    const weekTo = new Date();
+    const weekFrom = new Date(weekTo.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const weekProfit = await getProfitSnapshot(vendorSlug, weekFrom, weekTo);
+
     return {
       vendor,
       menuItemCount: menu.length,
       activeOrderCount,
       recoveryEventCount: vendorRecovery.length,
       recentOrders,
+      stockTrackedItemCount: tracked.length,
+      stockLowItemCount: low.length,
+      todayGrossRwf,
+      weekdayAverageRwf,
+      weekProfitRwf: weekProfit?.periodProfitRwf,
     };
   }
 
@@ -678,10 +735,28 @@ export function createInMemoryStore(): ResettableStore {
     vendorSlug: string,
     input: OperatorUpdateVendorInput
   ): Promise<Vendor | null> {
-    const { isActive: nextActive, kitchenOpen: nextKitchenOpen, ...rest } =
-      input;
+    const {
+      isActive: nextActive,
+      kitchenOpen: nextKitchenOpen,
+      featureWhatsappNotify,
+      featureStockTracking,
+      featureProfitInsights,
+      ...rest
+    } = input;
     const updated = await updateVendor(vendorSlug, rest);
     if (!updated) return null;
+
+    const normalized = normalizeVendorSlug(vendorSlug);
+    const vendorIdx = vendors.findIndex((row) => row.slug === normalized);
+    if (vendorIdx !== -1) {
+      if (featureWhatsappNotify !== undefined)
+        vendors[vendorIdx] = { ...vendors[vendorIdx], featureWhatsappNotify };
+      if (featureStockTracking !== undefined)
+        vendors[vendorIdx] = { ...vendors[vendorIdx], featureStockTracking };
+      if (featureProfitInsights !== undefined)
+        vendors[vendorIdx] = { ...vendors[vendorIdx], featureProfitInsights };
+    }
+
     if (nextActive !== undefined) {
       return setVendorActive(vendorSlug, nextActive);
     }
@@ -860,6 +935,15 @@ export function createInMemoryStore(): ResettableStore {
         input.category !== undefined
           ? input.category.trim() || "General"
           : current.category,
+      ...(input.stockCount !== undefined
+        ? { stockCount: input.stockCount ?? undefined }
+        : {}),
+      ...(input.lowStockThreshold !== undefined
+        ? { lowStockThreshold: input.lowStockThreshold ?? undefined }
+        : {}),
+      ...(input.costPriceRwf !== undefined
+        ? { costPriceRwf: input.costPriceRwf ?? undefined }
+        : {}),
     };
     return cloneMenuItem(menuItems[index]);
   }
@@ -1545,6 +1629,24 @@ export function createInMemoryStore(): ResettableStore {
     return payment ? clonePayment(payment) : null;
   }
 
+  function decrementStockForOrder(orderId: string): void {
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
+    const vendorRow = vendors.find((v) => v.id === order.vendorId);
+    if (!vendorRow?.featureStockTracking) return;
+    for (const line of order.orderItems) {
+      const itemIdx = menuItems.findIndex((m) => m.id === line.menuItemId);
+      if (itemIdx === -1) continue;
+      const item = menuItems[itemIdx];
+      if (item.stockCount != null) {
+        menuItems[itemIdx] = {
+          ...item,
+          stockCount: Math.max(0, item.stockCount - line.quantity),
+        };
+      }
+    }
+  }
+
   async function confirmPayment(
     ref: string,
     pin: string
@@ -1578,6 +1680,7 @@ export function createInMemoryStore(): ResettableStore {
 
     payments[index] = { ...payment, status: "SUCCESS" };
     await updateOrderStatus(payment.orderId, "PAID");
+    decrementStockForOrder(payment.orderId);
 
     return { ok: true, payment: clonePayment(payments[index]) };
   }
@@ -1634,6 +1737,7 @@ export function createInMemoryStore(): ResettableStore {
 
     payments[paymentIndex] = { ...payment, status: "SUCCESS" };
     await updateOrderStatus(orderId, "PAID");
+    decrementStockForOrder(orderId);
     const updatedOrder = orders.find((o) => o.id === orderId);
 
     return {
@@ -1717,6 +1821,327 @@ export function createInMemoryStore(): ResettableStore {
     return null;
   }
 
+  // ─── Prospects ──────────────────────────────────────────────────────────────
+
+  async function createProspect(input: CreateProspectInput): Promise<Prospect> {
+    const now = new Date();
+    const prospect: Prospect = {
+      id: `prospect_${++prospectCounter}_${Date.now()}`,
+      businessName: input.businessName.trim(),
+      contactName: input.contactName?.trim() || undefined,
+      phone: input.phone?.trim() || undefined,
+      area: input.area?.trim() || undefined,
+      source: input.source?.trim() || undefined,
+      mapsUrl: input.mapsUrl?.trim() || undefined,
+      instagramHandle: input.instagramHandle?.trim() || undefined,
+      notes: input.notes?.trim() || undefined,
+      status: "FOUND",
+      nextFollowUpAt: input.nextFollowUpAt,
+      createdAt: now,
+      updatedAt: now,
+    };
+    prospects.push(prospect);
+    return { ...prospect, createdAt: new Date(now), updatedAt: new Date(now) };
+  }
+
+  async function bulkCreateProspects(input: BulkCreateProspectsInput): Promise<Prospect[]> {
+    const results: Prospect[] = [];
+    for (const row of input.rows) {
+      results.push(await createProspect(row));
+    }
+    return results;
+  }
+
+  async function listProspects(status?: ProspectStatus): Promise<Prospect[]> {
+    let rows = [...prospects];
+    if (status) rows = rows.filter((p) => p.status === status);
+    rows.sort((a, b) => {
+      const aFollow = a.nextFollowUpAt?.getTime() ?? Infinity;
+      const bFollow = b.nextFollowUpAt?.getTime() ?? Infinity;
+      if (aFollow !== bFollow) return aFollow - bFollow;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
+    return rows.map((p) => ({
+      ...p,
+      createdAt: new Date(p.createdAt),
+      updatedAt: new Date(p.updatedAt),
+      nextFollowUpAt: p.nextFollowUpAt ? new Date(p.nextFollowUpAt) : undefined,
+      interactions: prospectInteractions
+        .filter((i) => i.prospectId === p.id)
+        .sort((a, b) => b.at.getTime() - a.at.getTime())
+        .map((i) => ({ ...i, at: new Date(i.at) })),
+    }));
+  }
+
+  async function getProspect(prospectId: string): Promise<Prospect | null> {
+    const p = prospects.find((row) => row.id === prospectId);
+    if (!p) return null;
+    return {
+      ...p,
+      createdAt: new Date(p.createdAt),
+      updatedAt: new Date(p.updatedAt),
+      nextFollowUpAt: p.nextFollowUpAt ? new Date(p.nextFollowUpAt) : undefined,
+      interactions: prospectInteractions
+        .filter((i) => i.prospectId === p.id)
+        .sort((a, b) => b.at.getTime() - a.at.getTime())
+        .map((i) => ({ ...i, at: new Date(i.at) })),
+    };
+  }
+
+  async function updateProspect(
+    prospectId: string,
+    input: UpdateProspectInput
+  ): Promise<Prospect | null> {
+    const idx = prospects.findIndex((p) => p.id === prospectId);
+    if (idx === -1) return null;
+    const existing = prospects[idx];
+
+    if (input.status !== undefined && input.status !== existing.status) {
+      if (!canTransitionProspectStatus(existing.status, input.status)) {
+        throw new Error(
+          `Invalid status transition: ${existing.status} → ${input.status}`
+        );
+      }
+    }
+
+    const updated: Prospect = { ...existing, updatedAt: new Date() };
+    if (input.businessName !== undefined) updated.businessName = input.businessName.trim();
+    if (input.contactName !== undefined) updated.contactName = input.contactName?.trim() || undefined;
+    if (input.phone !== undefined) updated.phone = input.phone?.trim() || undefined;
+    if (input.area !== undefined) updated.area = input.area?.trim() || undefined;
+    if (input.source !== undefined) updated.source = input.source?.trim() || undefined;
+    if (input.mapsUrl !== undefined) updated.mapsUrl = input.mapsUrl?.trim() || undefined;
+    if (input.instagramHandle !== undefined) updated.instagramHandle = input.instagramHandle?.trim() || undefined;
+    if (input.notes !== undefined) updated.notes = input.notes?.trim() || undefined;
+    if (input.status !== undefined) updated.status = input.status;
+    if (input.nextFollowUpAt !== undefined) updated.nextFollowUpAt = input.nextFollowUpAt ?? undefined;
+    if (input.convertedVendorId !== undefined) updated.convertedVendorId = input.convertedVendorId ?? undefined;
+    if (input.convertedLeadId !== undefined) updated.convertedLeadId = input.convertedLeadId ?? undefined;
+
+    prospects[idx] = updated;
+    return getProspect(prospectId);
+  }
+
+  async function addProspectInteraction(
+    prospectId: string,
+    input: CreateProspectInteractionInput
+  ): Promise<ProspectInteraction | null> {
+    if (!prospects.find((p) => p.id === prospectId)) return null;
+    const interaction: ProspectInteraction = {
+      id: `pi_${++prospectInteractionCounter}_${Date.now()}`,
+      prospectId,
+      channel: input.channel,
+      note: input.note?.trim() || undefined,
+      at: input.at ?? new Date(),
+    };
+    prospectInteractions.push(interaction);
+    return { ...interaction, at: new Date(interaction.at) };
+  }
+
+  async function convertProspect(
+    prospectId: string,
+    vendorId: string,
+    leadId?: string
+  ): Promise<Prospect | null> {
+    const idx = prospects.findIndex((p) => p.id === prospectId);
+    if (idx === -1) return null;
+    const existing = prospects[idx];
+    if (!canTransitionProspectStatus(existing.status, "CONVERTED")) {
+      throw new Error(`Invalid status transition: ${existing.status} → CONVERTED`);
+    }
+    prospects[idx] = {
+      ...existing,
+      status: "CONVERTED",
+      convertedVendorId: vendorId,
+      convertedLeadId: leadId,
+      updatedAt: new Date(),
+    };
+    return getProspect(prospectId);
+  }
+
+  // ─── Marketing site settings ──────────────────────────────────────────────────
+
+  async function getMarketingSiteSettings(): Promise<MarketingSiteSettings> {
+    return { ...marketingSettings, updatedAt: new Date(marketingSettings.updatedAt) };
+  }
+
+  async function updateMarketingSiteSettings(
+    input: UpdateMarketingSiteSettingsInput
+  ): Promise<MarketingSiteSettings> {
+    const updated = { ...marketingSettings, updatedAt: new Date() };
+    for (const [key, value] of Object.entries(input)) {
+      if (value !== undefined) {
+        (updated as Record<string, unknown>)[key] =
+          value === null ? undefined : (value as string).trim() || undefined;
+      }
+    }
+    marketingSettings = updated;
+    return { ...marketingSettings, updatedAt: new Date(marketingSettings.updatedAt) };
+  }
+
+  // ─── Vendor expenses + profit ─────────────────────────────────────────────────
+
+  async function listVendorExpenses(
+    vendorSlug: string,
+    from?: Date,
+    to?: Date
+  ): Promise<VendorExpense[]> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return [];
+    let rows = expenses.filter((e) => e.vendorId === vendor.id);
+    if (from) rows = rows.filter((e) => e.spentAt >= from);
+    if (to) rows = rows.filter((e) => e.spentAt <= to);
+    return rows
+      .sort((a, b) => b.spentAt.getTime() - a.spentAt.getTime())
+      .map((e) => ({ ...e, spentAt: new Date(e.spentAt), createdAt: new Date(e.createdAt) }));
+  }
+
+  async function createVendorExpense(
+    vendorSlug: string,
+    input: CreateVendorExpenseInput
+  ): Promise<VendorExpense> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) throw new Error("Vendor not found");
+    const now = new Date();
+    const expense: VendorExpense = {
+      id: `exp_${++expenseCounter}_${Date.now()}`,
+      vendorId: vendor.id,
+      amountRwf: input.amountRwf,
+      category: input.category.trim(),
+      note: input.note?.trim() || undefined,
+      spentAt: input.spentAt ?? now,
+      createdAt: now,
+    };
+    expenses.push(expense);
+    return { ...expense, spentAt: new Date(expense.spentAt), createdAt: new Date(now) };
+  }
+
+  async function deleteVendorExpense(
+    vendorSlug: string,
+    expenseId: string
+  ): Promise<boolean> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return false;
+    const before = expenses.length;
+    expenses = expenses.filter(
+      (e) => !(e.id === expenseId && e.vendorId === vendor.id)
+    );
+    return expenses.length < before;
+  }
+
+  async function getProfitSnapshot(
+    vendorSlug: string,
+    from: Date,
+    to: Date
+  ): Promise<ProfitSnapshot | null> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return null;
+
+    const todayGrossRwf = await getTodayGross(vendorSlug);
+    const weekdayAverageRwf = await getWeekdayAverageGross(vendorSlug);
+
+    const periodOrders = orders.filter(
+      (o) =>
+        o.vendorId === vendor.id &&
+        o.createdAt >= from &&
+        o.createdAt <= to &&
+        COUNTED_STATUSES.includes(o.status)
+    );
+    const periodRevenueRwf = periodOrders.reduce((s, o) => s + o.totalAmount, 0);
+
+    const periodExpenses = expenses.filter(
+      (e) => e.vendorId === vendor.id && e.spentAt >= from && e.spentAt <= to
+    );
+    const periodExpensesRwf = periodExpenses.reduce((s, e) => s + e.amountRwf, 0);
+
+    const marginMap = new Map<string, {
+      name: string; soldQty: number; revenueRwf: number; costRwf: number;
+    }>();
+    let periodCostOfGoodsRwf = 0;
+    for (const order of periodOrders) {
+      for (const line of order.orderItems) {
+        const item = menuItems.find((m) => m.id === line.menuItemId);
+        const existing = marginMap.get(line.menuItemId) ?? {
+          name: item?.name ?? "Unknown",
+          soldQty: 0,
+          revenueRwf: 0,
+          costRwf: 0,
+        };
+        existing.soldQty += line.quantity;
+        existing.revenueRwf += line.quantity * line.unitPriceRwf;
+        const cost = (item?.costPriceRwf ?? 0) * line.quantity;
+        existing.costRwf += cost;
+        periodCostOfGoodsRwf += cost;
+        marginMap.set(line.menuItemId, existing);
+      }
+    }
+
+    const itemMargins = [...marginMap.entries()].map(([menuItemId, data]) => ({
+      menuItemId,
+      name: data.name,
+      soldQty: data.soldQty,
+      revenueRwf: data.revenueRwf,
+      costRwf: data.costRwf,
+      marginRwf: data.revenueRwf - data.costRwf,
+      marginPct: data.revenueRwf > 0
+        ? (data.revenueRwf - data.costRwf) / data.revenueRwf
+        : null,
+    }));
+
+    return {
+      todayGrossRwf,
+      weekdayAverageRwf,
+      glowScore: computeGlowScore(todayGrossRwf, weekdayAverageRwf),
+      periodRevenueRwf,
+      periodExpensesRwf,
+      periodCostOfGoodsRwf,
+      periodProfitRwf: periodRevenueRwf - periodExpensesRwf - periodCostOfGoodsRwf,
+      itemMargins,
+    };
+  }
+
+  async function getWeekdayAverageGross(
+    vendorSlug: string,
+    weeks = 4
+  ): Promise<number> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return 0;
+
+    const now = new Date();
+    const todayStart = startOfDayInTimezone(now);
+    const targetDay = now.getDay();
+
+    let total = 0;
+    let count = 0;
+    for (let w = 1; w <= weeks; w++) {
+      const dayStart = new Date(todayStart.getTime() - w * 7 * 24 * 60 * 60 * 1000);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+      if (dayStart.getDay() !== targetDay) continue;
+      const gross = orders
+        .filter(
+          (o) =>
+            o.vendorId === vendor.id &&
+            o.createdAt >= dayStart &&
+            o.createdAt <= dayEnd &&
+            COUNTED_STATUSES.includes(o.status)
+        )
+        .reduce((s, o) => s + o.totalAmount, 0);
+      total += gross;
+      count++;
+    }
+    return count > 0 ? Math.round(total / count) : 0;
+  }
+
+  async function getAllTimePaidRevenue(vendorSlug: string): Promise<number> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return 0;
+    return orders
+      .filter(
+        (o) => o.vendorId === vendor.id && COUNTED_STATUSES.includes(o.status)
+      )
+      .reduce((s, o) => s + o.totalAmount, 0);
+  }
+
   function reset(): void {
     load();
   }
@@ -1740,6 +2165,21 @@ export function createInMemoryStore(): ResettableStore {
     updateLeadRoutingRecipient,
     removeLeadRoutingRecipient,
     assignLeadRoutingRecipient,
+    createProspect,
+    bulkCreateProspects,
+    listProspects,
+    getProspect,
+    updateProspect,
+    addProspectInteraction,
+    convertProspect,
+    getMarketingSiteSettings,
+    updateMarketingSiteSettings,
+    listVendorExpenses,
+    createVendorExpense,
+    deleteVendorExpense,
+    getProfitSnapshot,
+    getWeekdayAverageGross,
+    getAllTimePaidRevenue,
     listVendors,
     getOperatorVendorDetail,
     setVendorActive,

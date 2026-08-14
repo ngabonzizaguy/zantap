@@ -12,15 +12,15 @@ import { cn } from "@/lib/cn";
 interface MenuItemCardProps {
   item: MenuItem;
   qty: number;
+  soldOut?: boolean;
   onAdd: (id: string) => void;
   onOpen: (item: MenuItem) => void;
 }
 
-// Memoized so a cart change (or any parent re-render) only re-renders the
-// card whose qty actually changed — tapping "+" used to re-render every card.
 export const MenuItemCard = memo(function MenuItemCard({
   item,
   qty,
+  soldOut = false,
   onAdd,
   onOpen,
 }: MenuItemCardProps) {
@@ -75,28 +75,41 @@ export const MenuItemCard = memo(function MenuItemCard({
         </div>
 
         <div className="min-w-0 flex-1 py-0.5">
-          <div className="truncate font-body text-body-strong text-ink">
-            {item.name}
+          <div className="flex items-center gap-2">
+            <span className={cn("truncate font-body text-body-strong", soldOut ? "text-muted" : "text-ink")}>
+              {item.name}
+            </span>
+            {soldOut && (
+              <span className="flex-none rounded-pill bg-error/15 px-2 py-0.5 font-body text-caption font-medium text-error">
+                Sold out
+              </span>
+            )}
           </div>
           <div className="mt-1 line-clamp-2 font-body text-body-sm text-muted">
             {item.description}
           </div>
-          <div className="mt-2.5 font-body text-body-md font-medium text-gold">
+          <div className={cn("mt-2.5 font-body text-body-md font-medium", soldOut ? "text-muted" : "text-gold")}>
             {formatRwf(item.priceRwf)}
           </div>
         </div>
 
-        <button
-          type="button"
-          aria-label={`Add ${item.name}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onAdd(item.id);
-          }}
-          className="glass-gold flex h-11 w-11 flex-none items-center justify-center rounded-brand-lg transition-transform hover:brightness-110 active:scale-95"
-        >
-          <Icon name="plus" size={20} strokeWidth={2.2} />
-        </button>
+        {soldOut ? (
+          <div className="flex h-11 w-11 flex-none items-center justify-center rounded-brand-lg border border-hairline/40 opacity-40">
+            <Icon name="close" size={18} strokeWidth={2} className="text-muted" />
+          </div>
+        ) : (
+          <button
+            type="button"
+            aria-label={`Add ${item.name}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAdd(item.id);
+            }}
+            className="glass-gold flex h-11 w-11 flex-none items-center justify-center rounded-brand-lg transition-transform hover:brightness-110 active:scale-95"
+          >
+            <Icon name="plus" size={20} strokeWidth={2.2} />
+          </button>
+        )}
       </div>
 
       {hasPhotos ? (
@@ -114,22 +127,34 @@ export const MenuItemCard = memo(function MenuItemCard({
 interface MenuListProps {
   items: MenuItem[];
   cart: Record<string, number>;
+  featureStockTracking?: boolean;
   onAdd: (id: string) => void;
   onOpen: (item: MenuItem) => void;
 }
 
-export function MenuList({ items, cart, onAdd, onOpen }: MenuListProps) {
+export function MenuList({
+  items,
+  cart,
+  featureStockTracking = false,
+  onAdd,
+  onOpen,
+}: MenuListProps) {
   return (
     <div className="flex flex-col gap-3">
-      {items.map((item) => (
-        <MenuItemCard
-          key={item.id}
-          item={item}
-          qty={cart[item.id] ?? 0}
-          onAdd={onAdd}
-          onOpen={onOpen}
-        />
-      ))}
+      {items.map((item) => {
+        const soldOut =
+          featureStockTracking && item.stockCount === 0;
+        return (
+          <MenuItemCard
+            key={item.id}
+            item={item}
+            qty={cart[item.id] ?? 0}
+            soldOut={soldOut}
+            onAdd={soldOut ? () => {} : onAdd}
+            onOpen={onOpen}
+          />
+        );
+      })}
     </div>
   );
 }

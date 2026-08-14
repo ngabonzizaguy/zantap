@@ -93,6 +93,7 @@ interface OrderTicketProps {
   expanded: boolean;
   selected: boolean;
   bulkMode: boolean;
+  featureWhatsappNotify: boolean;
   onToggle: () => void;
   onSelect: () => void;
   onAssign: () => void;
@@ -106,6 +107,7 @@ export function OrderTicket({
   expanded,
   selected,
   bulkMode,
+  featureWhatsappNotify,
   onToggle,
   onSelect,
   onAssign,
@@ -115,6 +117,7 @@ export function OrderTicket({
   const stageStyle = kitchenStageStyle(stage);
   const isOutForDelivery =
     stage === "OUT_FOR_DELIVERY" || stage === "COMPLETED";
+  const isNew = stage === "NEW";
   const paid =
     order.status === "PAID" ||
     order.status === "DISPATCHED" ||
@@ -129,6 +132,7 @@ export function OrderTicket({
   const canComplete = stage === "OUT_FOR_DELIVERY";
   const vendorE164 = toWhatsAppE164(vendorPhone);
   const showVendorWhatsAppNotify =
+    featureWhatsappNotify &&
     order.status === "PAID" &&
     stage !== "OUT_FOR_DELIVERY" &&
     stage !== "COMPLETED";
@@ -191,10 +195,17 @@ export function OrderTicket({
               <span
                 className={cn(
                   "inline-flex h-[24px] items-center gap-1.5 rounded-pill px-2.5 font-body text-caption-uppercase uppercase tracking-wide",
-                  stageStyle.badge
+                  stageStyle.badge,
+                  isNew && "shadow-[0_0_8px_rgba(168,85,247,0.35)]"
                 )}
               >
-                <span className={cn("h-1.5 w-1.5 rounded-full", stageStyle.dot)} />
+                <span
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    stageStyle.dot,
+                    isNew && "animate-pulse"
+                  )}
+                />
                 {formatKitchenStageLabel(stage)}
               </span>
             </div>
@@ -276,23 +287,39 @@ export function OrderTicket({
           )}
 
           <div className="flex flex-col gap-2 border-t border-dashed border-hairline pt-3.5">
-            {order.orderItems.map((item) => (
-              <div key={item.id} className="flex flex-col gap-0.5">
-                <div className="flex items-baseline gap-2.5">
-                  <span className="min-w-[42px] font-display text-display-sm text-ink">
-                    {item.quantity}x
-                  </span>
-                  <span className="font-body text-body-md font-medium text-ink">
-                    {item.menuItem?.name ?? "Item"}
-                  </span>
+            {order.orderItems.map((item) => {
+              const thumbUrl =
+                item.menuItem?.imageUrl ??
+                item.menuItem?.images?.[0]?.url;
+              return (
+                <div key={item.id} className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2.5">
+                    {thumbUrl ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={thumbUrl}
+                        alt=""
+                        className="h-[42px] w-[42px] flex-none rounded-brand-md object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-brand-md border border-hairline bg-surface-strong">
+                        <Icon name="plate" size={18} className="text-muted" strokeWidth={1.8} />
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <span className="font-body text-body-md font-medium text-ink">
+                        {item.quantity}x {item.menuItem?.name ?? "Item"}
+                      </span>
+                    </div>
+                  </div>
+                  {item.notes && (
+                    <p className="pl-[52px] font-body text-body-sm italic text-muted">
+                      &ldquo;{item.notes}&rdquo;
+                    </p>
+                  )}
                 </div>
-                {item.notes && (
-                  <p className="pl-[52px] font-body text-body-sm italic text-muted">
-                    &ldquo;{item.notes}&rdquo;
-                  </p>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <a
@@ -454,6 +481,7 @@ interface OrdersListProps {
   stageFilter: KdsStageFilter;
   filterCounts: Record<KdsStageFilter, number>;
   sortDirection: KdsSortDirection;
+  featureWhatsappNotify: boolean;
   onStageFilter: (filter: KdsStageFilter) => void;
   onSortDirection: (direction: KdsSortDirection) => void;
   onToggle: (id: string) => void;
@@ -485,6 +513,7 @@ export function OrdersList({
   stageFilter,
   filterCounts,
   sortDirection,
+  featureWhatsappNotify,
   onStageFilter,
   onSortDirection,
   onToggle,
@@ -615,6 +644,7 @@ export function OrdersList({
               expanded={expandedId === order.id}
               selected={selectedIds.has(order.id)}
               bulkMode={bulkMode}
+              featureWhatsappNotify={featureWhatsappNotify}
               onToggle={() => onToggle(order.id)}
               onSelect={() => onSelect(order.id)}
               onAssign={() => onAssign(order.id)}

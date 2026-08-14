@@ -1354,6 +1354,293 @@ export function runStoreContract(
       });
     });
 
+    describe("feature flags (ADR-0056)", () => {
+      it("vendor created via createVendor defaults all flags false", async () => {
+        const vendor = await store.createVendor({
+          name: "Flag Test",
+          slug: "flag-test-vendor",
+          phoneNumber: "0788111222",
+          momoCode: "FLG001",
+        });
+        expect(vendor.featureWhatsappNotify).toBe(false);
+        expect(vendor.featureStockTracking).toBe(false);
+        expect(vendor.featureProfitInsights).toBe(false);
+      });
+
+      it("seeded vendor has flags false", async () => {
+        const vendor = await store.getVendorBySlug(slug);
+        expect(vendor?.featureWhatsappNotify).toBe(false);
+        expect(vendor?.featureStockTracking).toBe(false);
+        expect(vendor?.featureProfitInsights).toBe(false);
+      });
+
+      it("operatorUpdateVendor can enable feature flags", async () => {
+        await store.operatorUpdateVendor(slug, {
+          featureWhatsappNotify: true,
+          featureStockTracking: true,
+        });
+        const vendor = await store.getVendorBySlug(slug);
+        expect(vendor?.featureWhatsappNotify).toBe(true);
+        expect(vendor?.featureStockTracking).toBe(true);
+        expect(vendor?.featureProfitInsights).toBe(false);
+      });
+    });
+
+    describe("stock tracking", () => {
+      it("updateMenuItem sets stockCount, lowStockThreshold, costPriceRwf; null clears", async () => {
+        const item = await store.createMenuItem(slug, {
+          name: "Stock Test Item",
+          priceRwf: 5000,
+          category: "Test",
+        });
+        expect(item.stockCount).toBeUndefined();
+
+        const withStock = await store.updateMenuItem(slug, item.id, {
+          stockCount: 10,
+          lowStockThreshold: 3,
+          costPriceRwf: 2000,
+        });
+        expect(withStock?.stockCount).toBe(10);
+        expect(withStock?.lowStockThreshold).toBe(3);
+        expect(withStock?.costPriceRwf).toBe(2000);
+
+        const cleared = await store.updateMenuItem(slug, item.id, {
+          stockCount: null,
+          lowStockThreshold: null,
+          costPriceRwf: null,
+        });
+        expect(cleared?.stockCount).toBeUndefined();
+        expect(cleared?.lowStockThreshold).toBeUndefined();
+        expect(cleared?.costPriceRwf).toBeUndefined();
+      });
+
+      it("payment confirms decrement stock when featureStockTracking enabled", async () => {
+        await store.operatorUpdateVendor(slug, { featureStockTracking: true });
+
+        const item = (await store.getAvailableMenu(slug))[0];
+        await store.updateMenuItem(slug, item.id, { stockCount: 5 });
+
+        const order = await store.createOrder({
+          vendorSlug: slug,
+          customerPhone: "0788000111",
+          deliverySector: "Kicukiro",
+          landmark: "Stock test",
+          items: [{ menuItemId: item.id, quantity: 2 }],
+        });
+
+        const ref = `stock_${Date.now()}`;
+        await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: ref,
+        });
+        await store.confirmPayment(ref, MOMO_SIM_VALID_PIN);
+
+        const updated = await store.getMenuItem(slug, item.id);
+        expect(updated?.stockCount).toBe(3);
+      });
+
+      it("stock decrement floors at 0", async () => {
+        await store.operatorUpdateVendor(slug, { featureStockTracking: true });
+
+        const item = (await store.getAvailableMenu(slug))[0];
+        await store.updateMenuItem(slug, item.id, { stockCount: 1 });
+
+        const order = await store.createOrder({
+          vendorSlug: slug,
+          customerPhone: "0788000111",
+          deliverySector: "Kicukiro",
+          landmark: "Floor test",
+          items: [{ menuItemId: item.id, quantity: 3 }],
+        });
+
+        const ref = `floor_${Date.now()}`;
+        await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: ref,
+        });
+        await store.confirmPayment(ref, MOMO_SIM_VALID_PIN);
+
+        const updated = await store.getMenuItem(slug, item.id);
+        expect(updated?.stockCount).toBe(0);
+      });
+
+      it("items without stockCount are unchanged on payment", async () => {
+        await store.operatorUpdateVendor(slug, { featureStockTracking: true });
+
+        const item = (await store.getAvailableMenu(slug))[0];
+        const beforeStock = (await store.getMenuItem(slug, item.id))?.stockCount;
+
+        const order = await store.createOrder({
+          vendorSlug: slug,
+          customerPhone: "0788000111",
+          deliverySector: "Kicukiro",
+          landmark: "No-stock test",
+          items: [{ menuItemId: item.id, quantity: 1 }],
+        });
+
+        const ref = `nostock_${Date.now()}`;
+        await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: ref,
+        });
+        await store.confirmPayment(ref, MOMO_SIM_VALID_PIN);
+
+        const updated = await store.getMenuItem(slug, item.id);
+        expect(updated?.stockCount).toBe(beforeStock);
+      });
+    });
+
+    describe("prospects (ADR-0054)", () => {
+      it("creates → lists (sorted) → adds interaction → transitions status → converts", async () => {
+        const created = await store.createProspect({
+          businessName: "Kigali Kitchen",
+          contactName: "Alice",
+          phone: "0788111222",
+          area: "Kimihurura",
+          source: "Instagram",
+          nextFollowUpAt: new Date("2030-01-15"),
+        });
+        expect(created.id).toBeTruthy();
+        expect(created.status).toBe("FOUND");
+        expect(created.businessName).toBe("Kigali Kitchen");
+        expect(created.nextFollowUpAt).toEqual(new Date("2030-01-15"));
+
+        const second = await store.createProspect({
+          businessName: "Musanze Grill",
+          nextFollowUpAt: new Date("2029-12-01"),
+        });
+
+        const listed = await store.listProspects();
+        expect(listed.length).toBe(2);
+        expect(listed[0].id).toBe(second.id);
+
+        const interaction = await store.addProspectInteraction(created.id, {
+          channel: "WHATSAPP",
+          note: "Sent intro message",
+        });
+        expect(interaction?.channel).toBe("WHATSAPP");
+
+        const fetched = await store.getProspect(created.id);
+        expect(fetched?.interactions).toHaveLength(1);
+        expect(fetched?.interactions?.[0].note).toBe("Sent intro message");
+
+        const contacted = await store.updateProspect(created.id, {
+          status: "CONTACTED",
+        });
+        expect(contacted?.status).toBe("CONTACTED");
+
+        await expect(
+          store.updateProspect(created.id, { status: "CONVERTED" })
+        ).rejects.toThrow(/Invalid status transition/);
+
+        const inTalks = await store.updateProspect(created.id, {
+          status: "IN_TALKS",
+        });
+        expect(inTalks?.status).toBe("IN_TALKS");
+
+        const vendor = await store.getVendorBySlug(slug);
+        const converted = await store.convertProspect(
+          created.id,
+          vendor!.id,
+          "lead_xyz"
+        );
+        expect(converted?.status).toBe("CONVERTED");
+        expect(converted?.convertedVendorId).toBe(vendor!.id);
+        expect(converted?.convertedLeadId).toBe("lead_xyz");
+      });
+
+      it("bulkCreateProspects creates multiple prospects", async () => {
+        const results = await store.bulkCreateProspects({
+          rows: [
+            { businessName: "Bulk A" },
+            { businessName: "Bulk B" },
+          ],
+        });
+        expect(results).toHaveLength(2);
+        expect(results[0].businessName).toBe("Bulk A");
+      });
+
+      it("listProspects filters by status", async () => {
+        await store.createProspect({ businessName: "A" });
+        const b = await store.createProspect({ businessName: "B" });
+        await store.updateProspect(b.id, { status: "CONTACTED" });
+
+        const found = await store.listProspects("FOUND");
+        expect(found.every((p) => p.status === "FOUND")).toBe(true);
+
+        const contacted = await store.listProspects("CONTACTED");
+        expect(contacted).toHaveLength(1);
+        expect(contacted[0].id).toBe(b.id);
+      });
+    });
+
+    describe("marketing site settings", () => {
+      it("round-trips settings upsert", async () => {
+        const initial = await store.getMarketingSiteSettings();
+        expect(initial.id).toBe("default");
+
+        const updated = await store.updateMarketingSiteSettings({
+          publicPhone: "0784928786",
+          socialInstagram: "@zantap",
+        });
+        expect(updated.publicPhone).toBe("0784928786");
+        expect(updated.socialInstagram).toBe("@zantap");
+
+        const fetched = await store.getMarketingSiteSettings();
+        expect(fetched.publicPhone).toBe("0784928786");
+
+        const cleared = await store.updateMarketingSiteSettings({
+          publicPhone: null,
+        });
+        expect(cleared.publicPhone).toBeUndefined();
+      });
+    });
+
+    describe("vendor expenses", () => {
+      it("creates, lists, and deletes expenses", async () => {
+        const created = await store.createVendorExpense(slug, {
+          amountRwf: 5000,
+          category: "Ingredients",
+          note: "Tomatoes",
+        });
+        expect(created.amountRwf).toBe(5000);
+        expect(created.category).toBe("Ingredients");
+
+        const listed = await store.listVendorExpenses(slug);
+        expect(listed.some((e) => e.id === created.id)).toBe(true);
+
+        const deleted = await store.deleteVendorExpense(slug, created.id);
+        expect(deleted).toBe(true);
+
+        const afterDelete = await store.listVendorExpenses(slug);
+        expect(afterDelete.some((e) => e.id === created.id)).toBe(false);
+      });
+    });
+
+    describe("all-time paid revenue", () => {
+      it("increases after an order is paid", async () => {
+        const baseline = await store.getAllTimePaidRevenue(slug);
+        const order = await placeOrderFromMenu();
+
+        expect(await store.getAllTimePaidRevenue(slug)).toBe(baseline);
+
+        const ref = `alltime_${Date.now()}`;
+        await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: ref,
+        });
+        await store.confirmPayment(ref, MOMO_SIM_VALID_PIN);
+
+        expect(await store.getAllTimePaidRevenue(slug)).toBe(
+          baseline + order.totalAmount
+        );
+      });
+    });
+
     describe("reset", () => {
       it("returns the Store to its seeded state", async () => {
         const before = (await store.listOrders(slug)).length;

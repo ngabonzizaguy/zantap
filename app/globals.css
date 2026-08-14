@@ -468,3 +468,14 @@
     animation-duration: 1ms;
   }
 }
+
+/* Legal pages typography */
+.legal-prose h2 {
+  @apply mb-3 mt-8 font-display text-title-md text-ink;
+}
+.legal-prose ul {
+  @apply ml-5 list-disc space-y-1.5;
+}
+.legal-prose p + ul {
+  @apply mt-2;
+}

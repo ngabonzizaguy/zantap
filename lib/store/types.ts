@@ -45,6 +45,22 @@ import type {
   LeadStatus,
   UpdateLeadRoutingRecipientInput,
 } from "@/lib/leads/types";
+import type {
+  BulkCreateProspectsInput,
+  CreateProspectInput,
+  CreateProspectInteractionInput,
+  Prospect,
+  ProspectInteraction,
+  ProspectStatus,
+  UpdateProspectInput,
+} from "@/lib/prospects/types";
+import type {
+  CreateVendorExpenseInput,
+  MarketingSiteSettings,
+  ProfitSnapshot,
+  UpdateMarketingSiteSettingsInput,
+  VendorExpense,
+} from "@/lib/vendor/feature-and-profit-types";
 
 /**
  * The single seam through which all persistent reads and mutations pass.
@@ -99,6 +115,57 @@ export interface Store {
   assignLeadRoutingRecipient(
     leadId: string
   ): Promise<LeadRoutingAssignment | null>;
+
+  // Outbound prospects (ADR-0054)
+  createProspect(input: CreateProspectInput): Promise<Prospect>;
+  bulkCreateProspects(input: BulkCreateProspectsInput): Promise<Prospect[]>;
+  listProspects(status?: ProspectStatus): Promise<Prospect[]>;
+  getProspect(prospectId: string): Promise<Prospect | null>;
+  updateProspect(
+    prospectId: string,
+    input: UpdateProspectInput
+  ): Promise<Prospect | null>;
+  addProspectInteraction(
+    prospectId: string,
+    input: CreateProspectInteractionInput
+  ): Promise<ProspectInteraction | null>;
+  convertProspect(
+    prospectId: string,
+    vendorId: string,
+    leadId?: string
+  ): Promise<Prospect | null>;
+
+  // Marketing site settings (footer socials / contacts)
+  getMarketingSiteSettings(): Promise<MarketingSiteSettings>;
+  updateMarketingSiteSettings(
+    input: UpdateMarketingSiteSettingsInput
+  ): Promise<MarketingSiteSettings>;
+
+  // Vendor expenses + profit insights
+  listVendorExpenses(
+    vendorSlug: string,
+    from?: Date,
+    to?: Date
+  ): Promise<VendorExpense[]>;
+  createVendorExpense(
+    vendorSlug: string,
+    input: CreateVendorExpenseInput
+  ): Promise<VendorExpense>;
+  deleteVendorExpense(
+    vendorSlug: string,
+    expenseId: string
+  ): Promise<boolean>;
+  getProfitSnapshot(
+    vendorSlug: string,
+    from: Date,
+    to: Date
+  ): Promise<ProfitSnapshot | null>;
+  /** Mean paid gross for the same weekday over the last `weeks` weeks (excl. today). */
+  getWeekdayAverageGross(
+    vendorSlug: string,
+    weeks?: number
+  ): Promise<number>;
+  getAllTimePaidRevenue(vendorSlug: string): Promise<number>;
 
   // Operator console (ADR-0039) — only callable from lib/operator-control/
   listVendors(filters?: VendorListFilters): Promise<VendorListEntry[]>;

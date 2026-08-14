@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { getBaseUrl } from "@/lib/base-url";
+import { getStore } from "@/lib/store";
 import {
   CLOSE,
-  FOOTER,
   HERO,
   HOW_IT_WORKS,
   MARKETING_META,
@@ -11,11 +11,15 @@ import {
   OFFER,
   PRODUCT,
 } from "@/lib/marketing/copy";
+import { ComparisonSection } from "@/components/marketing/ComparisonSection";
 import { DeviceFrame } from "@/components/marketing/DeviceFrame";
 import { HeroMedia } from "@/components/marketing/HeroMedia";
+import { LanguageSwitcher } from "@/components/marketing/LanguageSwitcher";
 import { LeadForm } from "@/components/marketing/LeadForm";
+import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingMotion } from "@/components/marketing/MarketingMotion";
 import { OrbitAccent } from "@/components/marketing/OrbitAccent";
+import { ScreenCardDeck } from "@/components/marketing/ScreenCardDeck";
 import { ScrollWorldSection } from "@/components/marketing/scroll-world/ScrollWorldSection";
 import { StickyCta } from "@/components/marketing/StickyCta";
 
@@ -47,13 +51,27 @@ export function generateMetadata(): Metadata {
 const CTA_PILL_CREAM =
   "inline-flex items-center gap-2 rounded-pill bg-[#faf7f2] px-7 py-4 font-body text-button font-semibold text-[#0c0a09] transition-colors hover:bg-white";
 
-export default function MarketingPage() {
+export default async function MarketingPage() {
+  const settings = await getStore().getMarketingSiteSettings();
+
   return (
     <div className="min-h-screen bg-[#0c0a09] text-[#f4f4f3]">
       {/* Masthead */}
       <header className="absolute inset-x-0 top-0 z-40">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-5 sm:px-8">
-          <a href="#top" aria-label="ZanTap home" className="flex-none">
+          <a
+            href="#top"
+            aria-label="ZanTap home"
+            className="flex flex-none items-center gap-2.5"
+          >
+            <Image
+              src="/brand/approved-z/zantap-z-mark-white-2048.png"
+              alt=""
+              width={2048}
+              height={2048}
+              priority
+              className="h-8 w-8"
+            />
             <Image
               src="/brand/approved-z/zantap-wordmark-logo2-darkbg.png"
               alt="ZanTap"
@@ -74,12 +92,15 @@ export default function MarketingPage() {
               {NAV.offer}
             </a>
           </nav>
-          <a
-            href="#lead-form"
-            className="rounded-pill bg-[#f5a623] px-5 py-2.5 font-body text-button font-semibold text-[#1a1205] transition-colors hover:bg-[#ffd24c]"
-          >
-            {NAV.cta}
-          </a>
+          <div className="flex flex-none items-center gap-2.5">
+            <LanguageSwitcher />
+            <a
+              href="#lead-form"
+              className="rounded-pill bg-[#f5a623] px-5 py-2.5 font-body text-button font-semibold text-[#1a1205] transition-colors hover:bg-[#ffd24c]"
+            >
+              {NAV.cta}
+            </a>
+          </div>
         </div>
       </header>
 
@@ -179,6 +200,9 @@ export default function MarketingPage() {
       {/* Scroll-world cinematic — one continuous Kigali walkthrough (Issue 03 preview) */}
       <ScrollWorldSection />
 
+      {/* Comparison: problem → solution */}
+      <ComparisonSection />
+
       {/* Product: two screens inside device hardware */}
       <section className="relative overflow-hidden border-t border-white/10">
         <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-28">
@@ -215,14 +239,7 @@ export default function MarketingPage() {
           <div className="mt-20 grid items-center gap-14 lg:grid-cols-2">
             <div data-mkt-reveal className="lg:order-2">
               <div className="flex justify-center">
-                <DeviceFrame
-                  src="/marketing/screen-kitchen.png"
-                  alt={PRODUCT.kitchen.alt}
-                  width={390}
-                  height={702}
-                  variant="terminal"
-                  className="w-[300px] sm:w-[360px]"
-                />
+                <ScreenCardDeck cards={PRODUCT.kitchen.cards} />
               </div>
             </div>
             <div data-mkt-reveal className="lg:order-1">
@@ -296,23 +313,7 @@ export default function MarketingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 bg-[#0a0908]">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-5 py-12 text-center sm:px-8">
-          <Image
-            src="/brand/approved-z/zantap-wordmark-logo2-darkbg.png"
-            alt="ZanTap"
-            width={420}
-            height={116}
-            className="h-7 w-auto"
-          />
-          <p className="font-display text-title-md italic text-white/70">
-            {FOOTER.tagline}
-          </p>
-          <p className="font-body text-caption text-white/40">
-            {FOOTER.location}
-          </p>
-        </div>
-      </footer>
+      <MarketingFooter settings={settings} />
 
       <StickyCta />
       <MarketingMotion />

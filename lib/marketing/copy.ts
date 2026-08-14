@@ -15,7 +15,7 @@ export const MARKETING_META = {
 export const NAV = {
   howItWorks: "How it works",
   offer: "The offer",
-  cta: "Get free setup",
+  cta: "Get setup",
   openStorefrontDemo: "See a live storefront",
 } as const;
 
@@ -56,7 +56,7 @@ export const LEAD_FORM = {
     phone: { label: "WhatsApp number", placeholder: "07\u2022\u2022 \u2022\u2022\u2022 \u2022\u2022\u2022" },
     area: { label: "Area", placeholder: "e.g. Kimihurura, Kigali" },
   },
-  submit: "Request my free setup",
+  submit: "Request setup",
   submitting: "Sending\u2026",
   consent:
     "By sending this, you agree that ZanTap may contact you on WhatsApp about your setup.",
@@ -111,6 +111,30 @@ export const PRODUCT = {
     detail:
       "Every paid order arrives on your kitchen dashboard — new, preparing, ready. No searching through messages.",
     alt: "The ZanTap kitchen dashboard showing a new paid order",
+    /** Cards for the auto-cycling screen deck (reference-video style). */
+    cards: [
+      {
+        src: "/marketing/card-store-live.png",
+        width: 534,
+        height: 943,
+        caption: "Your store, live in minutes",
+        alt: "ZanTap onboarding success screen with storefront link and QR code",
+      },
+      {
+        src: "/marketing/card-momo-pay.png",
+        width: 422,
+        height: 633,
+        caption: "Customers pay by MoMo",
+        alt: "ZanTap checkout sheet asking the customer to pay with MoMo",
+      },
+      {
+        src: "/marketing/card-kds-dashboard.png",
+        width: 557,
+        height: 768,
+        caption: "Orders land in your kitchen",
+        alt: "ZanTap kitchen dashboard listing paid orders",
+      },
+    ],
   },
 } as const;
 
@@ -166,14 +190,42 @@ export const SCROLL_WORLD = {
       eyebrow: "Made in Rwanda",
       title: "More orders. Fuller nights.",
       body: "Selected early partners get free guided setup. Your food business, online \u2014 with help.",
-      cta: "Get my free setup",
+      cta: "Get setup",
     },
   ],
   media: {
     momoLogoAlt: "MoMo from MTN logo",
+    momoScreenAlt: "Paying with MoMo on a phone",
     storefrontScreenAlt: "A ZanTap storefront on a phone",
     kitchenScreenAlt: "The ZanTap kitchen dashboard",
   },
+} as const;
+
+export const COMPARISON = {
+  kicker: "Why change?",
+  heading: "Same food. Better system.",
+  rows: [
+    {
+      problem: "Commission fees eating profits",
+      solution: "Lower fees — your revenue stays yours",
+      icon: "fees",
+    },
+    {
+      problem: "Competition platforms own your customers",
+      solution: "Your own kitchen dashboard and link",
+      icon: "platform",
+    },
+    {
+      problem: "Paper sales tracking and guesswork",
+      solution: "Digital sales system, clear records",
+      icon: "tracking",
+    },
+    {
+      problem: "No insight into stock or demand",
+      solution: "Stock and demand tracking, built in",
+      icon: "stock",
+    },
+  ],
 } as const;
 
 export const OFFER = {
@@ -186,19 +238,21 @@ export const OFFER = {
     "MoMo payment setup",
     "Personal WhatsApp walkthrough",
   ],
-  cta: "Request my free setup",
+  cta: "Request setup",
   smallPrint: "No long contract. No pressure.",
 } as const;
 
 export const CLOSE = {
   kicker: "Made here. Ready to grow.",
   heading: "Start in Rwanda. Grow across East Africa.",
-  cta: "Get my free setup",
+  cta: "Get setup",
 } as const;
 
 export const FOOTER = {
   tagline: "Tap. Serve. Grow.",
   location: "\u00a9 2026 ZanTap \u00b7 Kigali, Rwanda",
+  privacyLabel: "Privacy",
+  termsLabel: "Terms",
 } as const;
 
-export const STICKY_CTA = "Get free setup";
+export const STICKY_CTA = "Get setup";

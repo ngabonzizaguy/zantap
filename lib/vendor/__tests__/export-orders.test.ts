@@ -71,7 +71,8 @@ describe("buildCsv", () => {
     item.order.orderItems[0].menuItem!.name = 'Brochette, "special"';
     const csv = buildCsv([item]);
     const lines = csv.trimEnd().split("\r\n");
-    expect(lines).toHaveLength(2);
+    // header + 1 data row + blank separator + total footer = 4
+    expect(lines).toHaveLength(4);
     expect(lines[1]).toContain('""special""');
   });
 

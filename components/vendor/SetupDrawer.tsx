@@ -29,6 +29,7 @@ import {
   transferOwnerTokenCache,
   useOwnerToken,
 } from "@/lib/vendor/useOwnerToken";
+import { DriversPanel } from "@/components/vendor/DriversPanel";
 import { StorefrontQr } from "@/components/onboard/StorefrontQr";
 import { getStorefrontUrl } from "@/lib/base-url";
 
@@ -103,10 +104,14 @@ interface SetupDrawerProps {
   payments: VendorPaymentProfile;
   profile: StorefrontProfile;
   menu: MenuItem[];
+  drivers?: import("@/lib/types").Driver[];
+  featureFlags?: import("@/lib/vendor/feature-and-profit-types").VendorFeatureFlags;
   onProfileSaved?: (profile: StorefrontProfile) => void;
   onBusinessSaved?: (business: VendorBusinessProfile) => void;
   onPaymentsSaved?: (payments: VendorPaymentProfile) => void;
   onRefresh?: () => void;
+  onNavigateTab?: (tab: import("@/components/vendor/Tabs").KdsTab) => void;
+  onDriversChange?: (drivers: import("@/lib/types").Driver[]) => void;
 }
 
 export function SetupDrawer({
@@ -118,11 +123,16 @@ export function SetupDrawer({
   payments,
   profile,
   menu,
+  drivers,
+  featureFlags,
   onProfileSaved,
   onBusinessSaved,
   onPaymentsSaved,
   onRefresh,
+  onNavigateTab,
+  onDriversChange,
 }: SetupDrawerProps) {
+  const [driversExpanded, setDriversExpanded] = useState(false);
   const router = useRouter();
   const titleId = useId();
   const panelRef = useRef<HTMLElement>(null);
@@ -593,13 +603,34 @@ export function SetupDrawer({
           <ol className="flex flex-col gap-3">
             {ONBOARDING_STEPS.map((step, index) => {
               const done = checklist[step.id];
+              const stepTabTarget: Record<string, import("@/components/vendor/Tabs").KdsTab | undefined> = {
+                hasMenuItem: "menu",
+                hasPhoto: "menu",
+                hasFirstOrder: "orders",
+                hasDispatch: "orders",
+              };
+              const targetTab = stepTabTarget[step.id];
+              const handleStepClick = () => {
+                if (!onNavigateTab || !targetTab) return;
+                onNavigateTab(targetTab);
+                onClose();
+              };
+              const clickable = !!onNavigateTab && !!targetTab;
               return (
                 <li key={step.id}>
                   <Card
                     padding="sm"
                     className={cn(
-                      done && "border-primary/30 bg-canvas-soft/60"
+                      done && "border-primary/30 bg-canvas-soft/60",
+                      clickable && !done && "cursor-pointer hover:border-primary/30"
                     )}
+                    {...(clickable && !done
+                      ? {
+                          onClick: handleStepClick,
+                          role: "button",
+                          tabIndex: 0,
+                        }
+                      : {})}
                   >
                     <div className="flex items-start gap-3">
                       <span
@@ -1158,6 +1189,52 @@ export function SetupDrawer({
               ) : null}
             </div>
           </section>
+
+          <section className="mt-8">
+            <h3 className="font-display text-display-sm text-ink">
+              Manage drivers
+            </h3>
+            <p className="mt-1 font-body text-body-sm text-muted">
+              Add delivery drivers here, then assign them from the Orders tab.
+            </p>
+            <button
+              type="button"
+              onClick={() => setDriversExpanded((prev) => !prev)}
+              className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-brand-lg border border-hairline bg-canvas-soft px-5 font-body text-button font-medium text-ink transition-colors hover:bg-canvas"
+            >
+              {driversExpanded ? "Hide drivers" : "Show drivers"}
+            </button>
+            {driversExpanded && drivers && onDriversChange ? (
+              <div className="mt-4">
+                <DriversPanel
+                  vendorSlug={vendorSlug}
+                  drivers={drivers}
+                  onDriversChange={onDriversChange}
+                />
+              </div>
+            ) : null}
+          </section>
+
+          {featureFlags?.featureStockTracking && onNavigateTab ? (
+            <section className="mt-8">
+              <h3 className="font-display text-display-sm text-ink">
+                Stock tracking
+              </h3>
+              <p className="mt-1 font-body text-body-sm text-muted">
+                Set inventory counts and low-stock alerts for your menu items.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  onNavigateTab("stock");
+                  onClose();
+                }}
+                className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-brand-lg border border-hairline bg-canvas-soft px-5 font-body text-button font-medium text-ink transition-colors hover:bg-canvas"
+              >
+                Open stock panel
+              </button>
+            </section>
+          ) : null}
 
           <section className="mt-8">
             <h3 className="font-display text-display-sm text-ink">

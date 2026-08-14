@@ -1,0 +1,3 @@
+# ADR-0055: Dish-level stock tracking
+
+Stock tracks optional counts on MenuItems (not ingredients/recipes). When set, stock auto-decrements when an Order becomes `PAID`. At 0 the storefront shows Sold out and blocks add-to-cart; items with no stock number behave exactly as today. Low-stock alerts are KDS-only in v1 (badge/banner). The Drivers tab slot becomes Stock; driver management moves into the Setup guide while order-ticket driver assignment stays put. Gated per vendor by `featureStockTracking` (ADR-0056).

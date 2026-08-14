@@ -164,8 +164,17 @@ export function mountScrollWorld(
       (s.title ? `<h3 class="sw-copy__title">${esc(s.title)}</h3>` : "") +
       (s.body ? `<p class="sw-copy__body">${esc(s.body)}</p>` : "") +
       (s.media
-        ? `<div class="sw-copy__media sw-copy__media--${s.media.kind}">` +
-          `<img src="${esc(s.media.src)}" alt="${esc(s.media.alt)}" loading="lazy" decoding="async" /></div>`
+        ? s.media.kind === "screen"
+          ? // UI screenshots ride inside a phone chassis (ScreenCardDeck look:
+            // no notch, uniform elongated screen, screenshot uncropped top-down)
+            `<div class="sw-copy__media sw-copy__media--screen"><div class="sw-phone">` +
+            `<span class="sw-phone__btn sw-phone__btn--l"></span>` +
+            `<span class="sw-phone__btn sw-phone__btn--r"></span>` +
+            `<div class="sw-phone__screen">` +
+            `<img src="${esc(s.media.src)}" alt="${esc(s.media.alt)}" loading="lazy" decoding="async" />` +
+            `<span class="sw-phone__sheen"></span></div></div></div>`
+          : `<div class="sw-copy__media sw-copy__media--${s.media.kind}">` +
+            `<img src="${esc(s.media.src)}" alt="${esc(s.media.alt)}" loading="lazy" decoding="async" /></div>`
         : "") +
       (s.tags?.length
         ? `<ul class="sw-copy__tags">${s.tags.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>`
@@ -351,16 +360,23 @@ export function mountScrollWorld(
   function raf() {
     if (disposed) return;
     const eps = isMobile() ? 0.02 : 0.008;
-    const follow = isMobile() ? 0.32 : 0.18;
     for (const s of SEGMENTS) {
       if (!s.hasClip || !s.ready || !s.video) continue;
-      // Coalesce seeks: never queue a new currentTime mid-seek (phone flicks).
       if (s.video.seeking) continue;
       if (!s.visible && Math.abs(s.cur - s.target) < 0.002) continue;
-      // Phones need a shorter catch-up tail: touch flicks cover more scroll
-      // distance per frame, while the seeking guard below still prevents a
-      // decoder backlog.
-      s.cur += (s.target - s.cur) * (reduce ? 1 : follow);
+      // Eased catch-up: use a cubic ease-out curve toward the target so the
+      // scrub decelerates smoothly instead of snapping. The factor decreases
+      // as the gap shrinks, giving a bouncy settling feel.
+      const gap = s.target - s.cur;
+      const absGap = Math.abs(gap);
+      const k = reduce
+        ? 1
+        : isMobile()
+          ? 0.22 + 0.14 * (1 - absGap)
+          : 0.12 + 0.10 * (1 - absGap);
+      s.cur += gap * k;
+      // Snap to target when very close to avoid endless micro-seeks.
+      if (absGap < 0.003) s.cur = s.target;
       const dur = s.video.duration || 1;
       const t = clamp(s.cur, 0, 0.999) * dur;
       if (Math.abs(s.video.currentTime - t) > eps) {
@@ -481,7 +497,7 @@ function injectCSS() {
   .sw-sky__grad{position:absolute;inset:-10%;background:linear-gradient(178deg,color-mix(in srgb,var(--sw-accent) 8%,var(--sw-bg)) 0%,var(--sw-bg) 55%,color-mix(in srgb,var(--sw-accent) 4%,var(--sw-bg)) 100%);}
   .sw-sky__glow{position:absolute;inset:0;background:radial-gradient(60% 42% at 74% 16%,color-mix(in srgb,var(--sw-accent) 14%,transparent),transparent 70%);}
   .sw-stage{position:absolute;inset:0;z-index:10;pointer-events:none;}
-  .sw-scene{position:absolute;inset:0;opacity:0;overflow:hidden;will-change:opacity;}
+  .sw-scene{position:absolute;inset:0;opacity:0;overflow:hidden;will-change:opacity;transition:opacity .18s ease-out;}
   .sw-scene__video,.sw-scene__still{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 42%;}
   .sw-scene__still{will-change:transform;}
   .sw-scene.has-clip .sw-scene__still{opacity:0;}
@@ -495,7 +511,13 @@ function injectCSS() {
   .sw-copy__body{margin-top:16px;font-size:clamp(1rem,1.2vw,1.12rem);line-height:1.55;color:color-mix(in srgb,var(--sw-ink) 80%,var(--sw-ink-soft));max-width:40ch;text-shadow:0 1px 12px color-mix(in srgb,var(--sw-bg) 90%,transparent);}
   .sw-copy__media{margin-top:20px;}
   .sw-copy__media--logo img{height:64px;width:auto;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.45);}
-  .sw-copy__media--screen img{width:150px;height:auto;max-height:190px;object-fit:cover;object-position:top;border-radius:18px;border:1px solid rgba(255,255,255,.14);box-shadow:0 14px 40px rgba(0,0,0,.5);}
+  .sw-phone{position:relative;width:160px;border-radius:26px;background:#1c1917;padding:6px;box-shadow:0 24px 70px rgba(0,0,0,.6);}
+  .sw-phone__btn{position:absolute;width:2px;background:#292524;}
+  .sw-phone__btn--l{left:-2px;top:18%;height:34px;border-radius:2px 0 0 2px;}
+  .sw-phone__btn--r{right:-2px;top:26%;height:22px;border-radius:0 2px 2px 0;}
+  .sw-phone__screen{position:relative;aspect-ratio:10/19;overflow:hidden;border-radius:20px;background:#0c0a09;}
+  .sw-phone__screen img{display:block;width:100%;height:auto;}
+  .sw-phone__sheen{pointer-events:none;position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.08),transparent 55%);}
   .sw-copy__tags{list-style:none;display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0;padding:0;}
   .sw-copy__tags li{font-size:.8rem;font-weight:500;color:color-mix(in srgb,var(--sw-accent) 88%,#fff);padding:6px 13px;border-radius:999px;background:color-mix(in srgb,var(--sw-accent) 14%,transparent);border:1px solid color-mix(in srgb,var(--sw-accent) 32%,transparent);}
   .sw-copy__cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px;pointer-events:auto;}
@@ -510,7 +532,7 @@ function injectCSS() {
   .sw-route__dot.is-active i{background:var(--sw-accent);transform:scale(1.4);box-shadow:0 0 0 5px color-mix(in srgb,var(--sw-accent) 22%,transparent);}
   .sw-route__label{position:absolute;right:24px;top:50%;transform:translateY(-50%) translateX(6px);white-space:nowrap;font-size:.78rem;font-weight:500;color:var(--sw-ink);background:rgba(12,10,9,.78);backdrop-filter:blur(6px);padding:5px 11px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;border:1px solid color-mix(in srgb,var(--sw-accent) 20%,transparent);}
   .sw-route__dot:hover .sw-route__label,.sw-route__dot.is-active .sw-route__label{opacity:1;transform:translateY(-50%) translateX(0);}
-  .sw-hint{position:absolute;left:50%;bottom:26px;z-index:55;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--sw-ink-soft);transition:opacity .3s;pointer-events:none;}
+  .sw-hint{position:absolute;left:50%;bottom:26px;z-index:55;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--sw-ink);transition:opacity .3s;pointer-events:none;padding:12px 20px;border-radius:22px;background:rgba(12,10,9,.42);backdrop-filter:blur(12px) saturate(1.2);-webkit-backdrop-filter:blur(12px) saturate(1.2);border:1px solid rgba(255,255,255,.14);box-shadow:0 8px 28px rgba(0,0,0,.35);text-shadow:0 1px 8px rgba(0,0,0,.6);}
   .sw-hint i{width:22px;height:34px;border-radius:12px;border:2px solid color-mix(in srgb,var(--sw-ink) 28%,transparent);position:relative;}
   .sw-hint i::after{content:"";position:absolute;left:50%;top:7px;width:4px;height:7px;border-radius:2px;background:var(--sw-accent);transform:translateX(-50%);animation:sw-wheel 1.7s ease-in-out infinite;}
   @keyframes sw-wheel{0%{opacity:0;top:6px}40%{opacity:1}100%{opacity:0;top:17px}}
@@ -521,9 +543,13 @@ function injectCSS() {
     .sw-copy__title{font-size:clamp(1.7rem,7vw,2.4rem);}
     .sw-copy__body{max-width:none;font-size:clamp(.95rem,3.4vw,1.05rem);}
     .sw-copy__media--logo img{height:48px;}
-    .sw-copy__media--screen img{width:104px;}
+    .sw-phone{width:108px;border-radius:20px;padding:5px;}
+    .sw-phone__screen{border-radius:15px;}
+    .sw-phone__btn--l{height:26px;}
+    .sw-phone__btn--r{height:17px;}
     .sw-scene__video,.sw-scene__still{object-position:center 46%;}
-    .sw-hint{left:20px;right:auto;top:calc(18px + env(safe-area-inset-top));bottom:auto;transform:none;flex-direction:row;gap:8px;}
+    /* Sits below the TornEdge seam overlay (64px tall on mobile) */
+    .sw-hint{left:20px;right:auto;top:calc(76px + env(safe-area-inset-top));bottom:auto;transform:none;flex-direction:row;gap:8px;padding:8px 14px;border-radius:999px;}
     .sw-hint i{width:18px;height:28px;transform:scale(.82);transform-origin:center;}
     .sw-route{gap:16px;right:6px;}
     .sw-route__label{display:none;}

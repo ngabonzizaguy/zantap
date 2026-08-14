@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Driver, MenuItem, Order, Vendor } from "@/lib/types";
+import type { VendorFeatureFlags } from "@/lib/vendor/feature-and-profit-types";
 import {
   advanceKitchenStage,
   bulkAdvanceKitchenStage,
@@ -41,16 +42,20 @@ import { MenuSection } from "@/components/vendor/MenuSection";
 import { HistoryPanel } from "@/components/vendor/HistoryPanel";
 import { AssignDriverModal } from "@/components/vendor/AssignDriverModal";
 import { DriversPanel } from "@/components/vendor/DriversPanel";
+import { StockPanel } from "@/components/vendor/StockPanel";
+import { ProfitPanel } from "@/components/vendor/ProfitPanel";
 import { SetupDrawer, type StorefrontProfile, type VendorBusinessProfile, type VendorPaymentProfile } from "@/components/vendor/SetupDrawer";
 import { HelpModal } from "@/components/vendor/HelpModal";
 import { Coachmark } from "@/components/vendor/Coachmark";
 import { Card, GradientOrbs } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 
-const KDS_TABS = new Set<KdsTab>(["orders", "menu", "history", "drivers"]);
+const KDS_TABS = new Set<KdsTab>(["orders", "menu", "history", "stock"]);
 
 function parseInitialTab(tab?: string): KdsTab {
-  if (tab === "setup") return "drivers";
+  if (tab === "setup") return "orders";
+  if (tab === "drivers") return "orders";
+  if (tab === "profit") return "orders";
   if (tab && KDS_TABS.has(tab as KdsTab)) {
     return tab as KdsTab;
   }
@@ -73,6 +78,7 @@ interface KdsDashboardProps {
   initialTodayGross: number;
   initialYesterdayGross: number;
   initialKitchenOpen: boolean;
+  initialFeatureFlags: VendorFeatureFlags;
   initialTab?: string;
 }
 
@@ -84,6 +90,7 @@ export function KdsDashboard({
   initialTodayGross,
   initialYesterdayGross,
   initialKitchenOpen,
+  initialFeatureFlags,
   initialTab,
 }: KdsDashboardProps) {
   const [tab, setTab] = useState<KdsTab>(() => parseInitialTab(initialTab));
@@ -93,6 +100,7 @@ export function KdsDashboard({
   const [todayGross, setTodayGross] = useState(initialTodayGross);
   const [yesterdayGross, setYesterdayGross] = useState(initialYesterdayGross);
   const [kitchenOpen, setKitchenOpenState] = useState(initialKitchenOpen);
+  const [featureFlags, setFeatureFlags] = useState(initialFeatureFlags);
   const [expandedId, setExpandedId] = useState<string | null>(
     initialOrders[0]?.id ?? null
   );
@@ -102,6 +110,9 @@ export function KdsDashboard({
   const { token: ownerToken } = useOwnerToken(vendor.slug);
   const [setupOpen, setSetupOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [profitOpen, setProfitOpen] = useState(
+    () => initialTab === "profit" && featureFlags.featureProfitInsights
+  );
   const [storefrontProfile, setStorefrontProfile] = useState<StorefrontProfile>(
     () => ({
       tagline: vendor.tagline,
@@ -144,8 +155,6 @@ export function KdsDashboard({
   );
   const checklist = onboardingOverride ?? liveChecklist;
 
-  // Drop the manual override when fresh snapshot data arrives ("adjust state
-  // during render" — no effect, no extra paint).
   const [prevSnapshot, setPrevSnapshot] = useState({ menu, kitchenOpen, orders });
   if (
     prevSnapshot.menu !== menu ||
@@ -164,12 +173,14 @@ export function KdsDashboard({
       setOnboardingOverride(null);
     }
   }, [vendor.slug]);
+
   const applySnapshot = useCallback((snapshot: KdsSnapshot) => {
-      setOrders(snapshot.orders);
-      setMenu(snapshot.menu);
-      setTodayGross(snapshot.todayGross);
-      setYesterdayGross(snapshot.yesterdayGross);
-      setKitchenOpenState(snapshot.kitchenOpen);
+    setOrders(snapshot.orders);
+    setMenu(snapshot.menu);
+    setTodayGross(snapshot.todayGross);
+    setYesterdayGross(snapshot.yesterdayGross);
+    setKitchenOpenState(snapshot.kitchenOpen);
+    setFeatureFlags(snapshot.featureFlags);
   }, []);
 
   const { sseReconnecting } = useKdsLiveSnapshot(vendor.slug, applySnapshot);
@@ -232,10 +243,15 @@ export function KdsDashboard({
   const closeSetup = useCallback(() => {
     setSetupOpen(false);
   }, []);
+
   const refresh = useCallback(async () => {
     const snapshot = await loadKdsSnapshot(vendor.slug);
     applySnapshot(snapshot);
   }, [vendor.slug, applySnapshot]);
+
+  const navigateTab = useCallback((target: KdsTab) => {
+    setTab(target);
+  }, []);
 
   const activeCount = orders.filter(
     (o) => o.status === "PAID" || o.status === "DISPATCHED"
@@ -385,6 +401,8 @@ export function KdsDashboard({
           kitchenOpen={kitchenOpen}
           onToggleKitchen={handleToggleKitchen}
           onOpenMenu={openSetup}
+          featureProfitInsights={featureFlags.featureProfitInsights}
+          onOpenProfit={() => setProfitOpen(true)}
         />
 
         {!vendor.isActive ? (
@@ -395,13 +413,12 @@ export function KdsDashboard({
 
         <Tabs
           active={tab}
+          showStock={featureFlags.featureStockTracking}
           onOrders={() => setTab("orders")}
           onMenu={() => setTab("menu")}
           onHistory={() => setTab("history")}
-          onDrivers={() => setTab("drivers")}
+          onStock={() => setTab("stock")}
         />
-        {/* Keyed by tab so switching replays the rise-in instead of an
-            instant content swap. */}
         <div key={tab} className="zt-list-in relative z-[1] px-[18px] pt-3.5">
           {tab === "orders" ? (
             <OrdersList
@@ -416,6 +433,7 @@ export function KdsDashboard({
               stageFilter={stageFilter}
               filterCounts={filterCounts}
               sortDirection={sortDirection}
+              featureWhatsappNotify={featureFlags.featureWhatsappNotify}
               onStageFilter={setStageFilter}
               onSortDirection={setSortDirection}
               onToggle={(id) => setExpandedId((prev) => (prev === id ? null : id))}
@@ -440,10 +458,11 @@ export function KdsDashboard({
           ) : tab === "history" ? (
             <HistoryPanel vendorSlug={vendor.slug} />
           ) : (
-            <DriversPanel
+            <StockPanel
               vendorSlug={vendor.slug}
-              drivers={drivers}
-              onDriversChange={setDrivers}
+              items={menu}
+              enabled={featureFlags.featureStockTracking}
+              onRefresh={refresh}
             />
           )}
         </div>
@@ -477,6 +496,8 @@ export function KdsDashboard({
         payments={paymentProfile}
         profile={storefrontProfile}
         menu={menu}
+        drivers={drivers}
+        featureFlags={featureFlags}
         onProfileSaved={setStorefrontProfile}
         onBusinessSaved={(saved) => {
           setBusinessProfile(saved);
@@ -485,6 +506,8 @@ export function KdsDashboard({
         }}
         onPaymentsSaved={setPaymentProfile}
         onRefresh={refreshOnboarding}
+        onNavigateTab={navigateTab}
+        onDriversChange={setDrivers}
       />
 
       {KDS_COACHMARKS_ENABLED ? (
@@ -528,6 +551,12 @@ export function KdsDashboard({
         onClear={() => setSelectedIds(new Set())}
         onBulkAdvance={handleBulkAdvance}
         onBulkAssign={() => setAssignOrderIds(Array.from(selectedIds))}
+      />
+
+      <ProfitPanel
+        vendorSlug={vendor.slug}
+        open={profitOpen}
+        onClose={() => setProfitOpen(false)}
       />
     </div>
   );

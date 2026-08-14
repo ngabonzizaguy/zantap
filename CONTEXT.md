@@ -50,7 +50,37 @@ form and persisted through the Store. It moves through the operator follow-up
 lifecycle `NEW → CONTACTED → ONBOARDED` or `NEW/CONTACTED → CLOSED`.
 Its phone is stored as Rwanda-first E.164 digits and `consentAt` records when
 the server accepted the contact request.
-_Avoid_: vendor (until onboarding creates one), signup, WhatsApp message
+_Avoid_: vendor (until onboarding creates one), signup, WhatsApp message, prospect
+
+**Prospect** (ADR-0054):
+An outbound business ZanTap found and is contacting (Google Maps, Instagram,
+referral, etc.). Separate from a Lead. Moves through
+`FOUND → CONTACTED → IN_TALKS → CONVERTED`, or exits as `DECLINED` /
+`UNREACHABLE`. Each touch is a ProspectInteraction; conversion may link to a
+Vendor (and optionally a Lead).
+_Avoid_: lead, client, contact (when you mean the pipeline record)
+
+**Feature flag** (ADR-0056):
+A per-Vendor boolean that Ops turns on/off to show or hide a KDS/product
+surface (`featureWhatsappNotify`, `featureStockTracking`,
+`featureProfitInsights`). Defaults off until enabled.
+_Avoid_: kill switch (platform-wide), env var, remote config
+
+**Stock** (ADR-0055):
+An optional remaining-count on a MenuItem. When set, it decrements on PAID
+orders and can mark the dish Sold out at zero. Distinct from ingredient
+inventory.
+_Avoid_: inventory (ingredient-level), availability (the isAvailable toggle)
+
+**Cost price**:
+What a MenuItem costs the Vendor to make, in RWF. Used with sale price to
+compute margin on Know Your Profit.
+_Avoid_: price (the customer-facing sale price), fee
+
+**Expense**:
+A Vendor-logged business cost (gas, ingredients, rent) used with sales to
+compute period profit on Know Your Profit.
+_Avoid_: cost price (per-dish), fee, payout
 
 **Payment**:
 A durable record of money moving for an Order, keyed by a stable `transactionRef` (the STK token in sandbox mode; `manual-{orderId}` in production manual MoMo). Moves through `PENDING → SUCCESS` on valid confirm (which also marks the Order `PAID`), or `PENDING → FAILED` on abandonment. `FAILED` is terminal — not a typoed PIN (sandbox wrong PIN keeps `PENDING`). Manual confirm requires the Customer's phone to match the Order.

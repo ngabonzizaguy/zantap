@@ -6,23 +6,40 @@ import { STICKY_CTA } from "@/lib/marketing/copy";
 /**
  * Conversion guard (ADR-0047 decision 2): on mobile the lead form (or this
  * jump-to-form pill) is reachable within one viewport at all times. The pill
- * hides while the form itself is on screen.
+ * hides when the form itself, the offer CTA, the footer — or the hero (whose
+ * masthead already carries a Get setup button) — is on screen.
  */
 export function StickyCta() {
-  const [formVisible, setFormVisible] = useState(true);
+  const [hidden, setHidden] = useState(true);
 
   useEffect(() => {
-    const form = document.getElementById("lead-form");
-    if (!form) return;
+    const targets = [
+      document.getElementById("top"),
+      document.getElementById("lead-form"),
+      document.getElementById("offer"),
+      document.getElementById("footer"),
+    ].filter(Boolean) as HTMLElement[];
+
+    if (!targets.length) return;
+
+    const visibleSet = new Set<HTMLElement>();
+
     const observer = new IntersectionObserver(
-      ([entry]) => setFormVisible(entry.isIntersecting),
-      { threshold: 0.15 }
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) visibleSet.add(entry.target as HTMLElement);
+          else visibleSet.delete(entry.target as HTMLElement);
+        }
+        setHidden(visibleSet.size > 0);
+      },
+      { threshold: 0.15 },
     );
-    observer.observe(form);
+
+    targets.forEach((t) => observer.observe(t));
     return () => observer.disconnect();
   }, []);
 
-  if (formVisible) return null;
+  if (hidden) return null;
 
   return (
     <a

@@ -4,14 +4,15 @@ import { cn } from "@/lib/cn";
 import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/primitives";
 
-export type KdsTab = "orders" | "menu" | "history" | "drivers";
+export type KdsTab = "orders" | "menu" | "history" | "stock";
 
 interface TabsProps {
   active: KdsTab;
+  showStock: boolean;
   onOrders: () => void;
   onMenu: () => void;
   onHistory: () => void;
-  onDrivers: () => void;
+  onStock: () => void;
 }
 
 function tabClass(active: boolean) {
@@ -23,10 +24,11 @@ function tabClass(active: boolean) {
 
 export function Tabs({
   active,
+  showStock,
   onOrders,
   onMenu,
   onHistory,
-  onDrivers,
+  onStock,
 }: TabsProps) {
   return (
     <div className="relative z-[1] grid grid-cols-2 gap-2.5 px-[18px] pb-1 pt-4 sm:grid-cols-4">
@@ -63,17 +65,19 @@ export function Tabs({
         <Icon name="clock" size={20} strokeWidth={2.1} />
         History
       </Button>
-      <Button
-        type="button"
-        variant={active === "drivers" ? "primary" : "outline"}
-        size="kds"
-        radius="xl"
-        onClick={onDrivers}
-        className={tabClass(active === "drivers")}
-      >
-        <Icon name="dispatch" size={20} strokeWidth={2.1} />
-        Drivers
-      </Button>
+      {showStock ? (
+        <Button
+          type="button"
+          variant={active === "stock" ? "primary" : "outline"}
+          size="kds"
+          radius="xl"
+          onClick={onStock}
+          className={tabClass(active === "stock")}
+        >
+          <Icon name="stock" size={20} strokeWidth={2.1} />
+          Stock
+        </Button>
+      ) : null}
     </div>
   );
 }

@@ -1,9 +1,11 @@
 import {
+  Binoculars,
   Check,
   ChevronRight,
   ClipboardList,
   Clock3,
   Copy,
+  Eye,
   MapPin,
   Menu,
   Package,
@@ -43,7 +45,10 @@ export type IconName =
   | "call"
   | "wifiOff"
   | "leads"
-  | "settings";
+  | "settings"
+  | "prospects"
+  | "eye"
+  | "stock";
 
 const icons: Record<IconName, LucideIcon> = {
   menu: Menu,
@@ -66,6 +71,9 @@ const icons: Record<IconName, LucideIcon> = {
   wifiOff: WifiOff,
   leads: UsersRound,
   settings: SlidersHorizontal,
+  prospects: Binoculars,
+  eye: Eye,
+  stock: Package,
 };
 
 interface IconProps extends Omit<LucideProps, "size"> {

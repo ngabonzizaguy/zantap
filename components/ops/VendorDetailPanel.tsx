@@ -22,7 +22,7 @@ import {
 } from "@/lib/ops-actions/vendor-actions";
 import { getBaseUrl } from "@/lib/base-url";
 
-type DetailTab = "overview" | "profile" | "menu" | "orders" | "audit";
+type DetailTab = "overview" | "profile" | "flags" | "menu" | "orders" | "audit";
 
 interface VendorDetailPanelProps {
   detail: OperatorVendorDetail;
@@ -60,9 +60,16 @@ export function VendorDetailPanel({
     });
   }
 
+  const [flags, setFlags] = useState({
+    featureWhatsappNotify: initialDetail.vendor.featureWhatsappNotify,
+    featureStockTracking: initialDetail.vendor.featureStockTracking,
+    featureProfitInsights: initialDetail.vendor.featureProfitInsights,
+  });
+
   const tabs: { id: DetailTab; label: string }[] = [
     { id: "overview", label: "Overview" },
     { id: "profile", label: "Profile" },
+    { id: "flags", label: "Flags" },
     { id: "menu", label: "Menu" },
     { id: "orders", label: "Orders" },
     { id: "audit", label: "Audit" },
@@ -136,6 +143,50 @@ export function VendorDetailPanel({
             <p className="text-xs uppercase tracking-wide text-muted">Recovery events</p>
             <p className="mt-1 font-display text-2xl font-light">{detail.recoveryEventCount}</p>
           </Card>
+          {vendor.featureStockTracking ? (
+            <>
+              <Card className="p-4">
+                <p className="text-xs uppercase tracking-wide text-muted">
+                  Stock tracked
+                </p>
+                <p className="mt-1 font-display text-2xl font-light">
+                  {detail.stockTrackedItemCount ?? 0}
+                </p>
+              </Card>
+              <Card className="p-4">
+                <p className="text-xs uppercase tracking-wide text-muted">
+                  Low stock
+                </p>
+                <p className="mt-1 font-display text-2xl font-light">
+                  {detail.stockLowItemCount ?? 0}
+                </p>
+              </Card>
+            </>
+          ) : null}
+          {vendor.featureProfitInsights ? (
+            <>
+              <Card className="p-4">
+                <p className="text-xs uppercase tracking-wide text-muted">
+                  Today&apos;s gross
+                </p>
+                <p className="mt-1 font-display text-2xl font-light">
+                  {(detail.todayGrossRwf ?? 0).toLocaleString()} RWF
+                </p>
+                <p className="mt-1 text-xs text-muted">
+                  Weekday avg {(detail.weekdayAverageRwf ?? 0).toLocaleString()}{" "}
+                  RWF
+                </p>
+              </Card>
+              <Card className="p-4">
+                <p className="text-xs uppercase tracking-wide text-muted">
+                  7-day profit
+                </p>
+                <p className="mt-1 font-display text-2xl font-light">
+                  {(detail.weekProfitRwf ?? 0).toLocaleString()} RWF
+                </p>
+              </Card>
+            </>
+          ) : null}
           <Card className="space-y-3 p-4 sm:col-span-2 lg:col-span-3">
             <p className="text-sm font-medium text-ink">Quick actions</p>
             <div className="flex flex-wrap gap-2">
@@ -267,6 +318,54 @@ export function VendorDetailPanel({
           >
             Save profile
           </Button>
+        </Card>
+      ) : null}
+
+      {tab === "flags" ? (
+        <Card className="space-y-6 p-6">
+          <p className="text-sm font-medium text-ink">Feature flags</p>
+          <p className="text-xs text-muted">
+            Toggle vendor-level KDS features. Changes take effect immediately.
+          </p>
+          {(
+            [
+              { key: "featureWhatsappNotify", label: "WhatsApp notify", description: "Send WhatsApp alerts for new PAID orders" },
+              { key: "featureStockTracking", label: "Stock tracking", description: "Enable item-level stock count on KDS" },
+              { key: "featureProfitInsights", label: "Profit insights", description: "Show revenue/expense dashboard on KDS" },
+            ] as const
+          ).map((flag) => (
+            <label key={flag.key} className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-ink">{flag.label}</p>
+                <p className="text-xs text-muted">{flag.description}</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={flags[flag.key]}
+                disabled={pending}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                  flags[flag.key] ? "bg-ink" : "bg-surface-strong"
+                }`}
+                onClick={() =>
+                  run(async () => {
+                    const newVal = !flags[flag.key];
+                    const updated = await patchVendorAction(vendor.slug, {
+                      [flag.key]: newVal,
+                    });
+                    setDetail((d) => ({ ...d, vendor: updated }));
+                    setFlags((f) => ({ ...f, [flag.key]: newVal }));
+                  })
+                }
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                    flags[flag.key] ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </label>
+          ))}
         </Card>
       ) : null}
 

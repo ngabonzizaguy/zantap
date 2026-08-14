@@ -2,16 +2,18 @@
 
 import { useEffect, useRef } from "react";
 import { SCROLL_WORLD } from "@/lib/marketing/copy";
+import { TornEdge } from "@/components/marketing/TornPaint";
 import {
   mountScrollWorld,
   type ScrollWorldSection as SectionConfig,
 } from "./scrub-engine";
 
 /**
- * Mid-page scroll-world embed (Issue 03 zero-credit preview): a sticky
- * viewport that scrubs the pre-rendered Kigali walkthrough legs by scroll.
- * Scenes 1–2 scrub video; scenes 3–6 crossfade their approved stills until
- * the owner decides how the film gets finished (real footage favored).
+ * Mid-page scroll-world embed: a sticky viewport that scrubs the
+ * pre-rendered Kigali walkthrough legs by scroll. Scene 02 uses the
+ * owner-approved Journey 02 native-reference generation; scene 03 uses the
+ * owner-accepted Journey 03 payment-success still (2026-08-14); scenes 4–6
+ * retain their approved stills until their separately gated production passes.
  */
 export function ScrollWorldSection() {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -21,27 +23,30 @@ export function ScrollWorldSection() {
     if (!track) return;
 
     const sw = SCROLL_WORLD;
+    // Owner-approved current screenshots (public/brand/UI-screens/new-UI-screens
+    // & video walkthrough) — scene 02 shows the storefront UI per owner request.
     const media: Record<string, SectionConfig["media"]> = {
       order: {
-        src: "/marketing/screen-storefront.png",
+        src: "/marketing/card-storefront.png",
         alt: sw.media.storefrontScreenAlt,
         kind: "screen",
       },
       momo: {
-        src: "/marketing/scroll/momo-logo.png",
-        alt: sw.media.momoLogoAlt,
-        kind: "logo",
+        src: "/marketing/card-momo-pay.png",
+        alt: sw.media.momoScreenAlt,
+        kind: "screen",
       },
       kitchen: {
-        src: "/marketing/screen-kitchen.png",
+        src: "/marketing/card-kds-dashboard.png",
         alt: sw.media.kitchenScreenAlt,
         kind: "screen",
       },
     };
     // Scenes with rendered legs scrub video; the rest still-crossfade.
-    // Scene 3 (momo) deliberately has NO clip: the rendered leg bakes in an
-    // AI-invented payment screen (owner-rejected 2026-08-09) — it re-slots
-    // once the film is finished with clean footage.
+    // Scene 3 (momo) deliberately has NO clip: its rendered leg baked in an
+    // AI-invented payment screen (owner-rejected 2026-08-09) — a clip re-slots
+    // once the film is finished with clean footage. Its poster momo.webp is
+    // now the owner-accepted Journey 03 payment-success still (ADR-0058).
     const clips: Record<string, string> = {
       storefront: "/marketing/vid/storefront.mp4",
       order: "/marketing/vid/order.mp4",
@@ -82,7 +87,12 @@ export function ScrollWorldSection() {
           </h2>
         </div>
       </div>
-      <div ref={trackRef} />
+      {/* The dark page background tears into the footage at both seams */}
+      <div className="relative">
+        <TornEdge position="top" />
+        <div ref={trackRef} />
+        <TornEdge position="bottom" />
+      </div>
     </section>
   );
 }

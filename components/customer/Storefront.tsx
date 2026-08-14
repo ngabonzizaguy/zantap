@@ -120,6 +120,7 @@ function StorefrontInner({
             <MenuList
               items={filteredMenu}
               cart={cart}
+              featureStockTracking={vendor.featureStockTracking}
               onAdd={addItem}
               onOpen={handleOpenItem}
             />

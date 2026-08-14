@@ -17,6 +17,18 @@ import type {
   LeadStatus,
   UpdateLeadRoutingRecipientInput,
 } from "@/lib/leads/types";
+import type {
+  CreateProspectInput,
+  CreateProspectInteractionInput,
+  Prospect,
+  ProspectInteraction,
+  ProspectStatus,
+  UpdateProspectInput,
+} from "@/lib/prospects/types";
+import type {
+  MarketingSiteSettings,
+  UpdateMarketingSiteSettingsInput,
+} from "@/lib/vendor/feature-and-profit-types";
 
 export function getOperatorApiBaseUrl(): string {
   const configured = process.env.ZANTAP_OPERATOR_API_URL?.trim();
@@ -336,4 +348,103 @@ export async function patchOrder(
     }
   );
   return data.order;
+}
+
+// --- Prospects ---
+
+export async function listProspects(filters?: {
+  search?: string;
+  status?: ProspectStatus;
+}): Promise<Prospect[]> {
+  const params = new URLSearchParams();
+  if (filters?.search) params.set("search", filters.search);
+  if (filters?.status) params.set("status", filters.status);
+  const query = params.toString();
+  const data = await operatorFetch<{ prospects: Prospect[] }>(
+    `/prospects${query ? `?${query}` : ""}`
+  );
+  return data.prospects;
+}
+
+export async function createProspect(
+  input: CreateProspectInput
+): Promise<Prospect> {
+  const data = await operatorFetch<{ prospect: Prospect }>("/prospects", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return data.prospect;
+}
+
+export async function bulkCreateProspects(
+  rows: CreateProspectInput[]
+): Promise<Prospect[]> {
+  const data = await operatorFetch<{ prospects: Prospect[] }>("/prospects", {
+    method: "POST",
+    body: JSON.stringify({ rows }),
+  });
+  return data.prospects;
+}
+
+export async function patchProspect(
+  prospectId: string,
+  input: UpdateProspectInput
+): Promise<Prospect> {
+  const data = await operatorFetch<{ prospect: Prospect }>("/prospects", {
+    method: "PATCH",
+    body: JSON.stringify({ prospectId, ...input }),
+  });
+  return data.prospect;
+}
+
+export async function addProspectInteraction(
+  prospectId: string,
+  input: CreateProspectInteractionInput
+): Promise<ProspectInteraction> {
+  const data = await operatorFetch<{ interaction: ProspectInteraction }>(
+    "/prospects",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        action: "interact",
+        prospectId,
+        ...input,
+      }),
+    }
+  );
+  return data.interaction;
+}
+
+export async function convertProspect(
+  prospectId: string,
+  vendorId: string,
+  leadId?: string
+): Promise<Prospect> {
+  const data = await operatorFetch<{ prospect: Prospect }>("/prospects", {
+    method: "POST",
+    body: JSON.stringify({ action: "convert", prospectId, vendorId, leadId }),
+  });
+  return data.prospect;
+}
+
+// --- Marketing site settings ---
+
+export async function getMarketingSiteSettings(): Promise<MarketingSiteSettings> {
+  const data = await operatorFetch<{ settings: MarketingSiteSettings }>(
+    "/marketing-settings"
+  );
+  return data.settings;
+}
+
+export async function patchMarketingSiteSettings(
+  input: UpdateMarketingSiteSettingsInput
+): Promise<MarketingSiteSettings> {
+  const data = await operatorFetch<{ settings: MarketingSiteSettings }>(
+    "/marketing-settings",
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }
+  );
+  return data.settings;
 }

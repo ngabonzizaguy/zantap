@@ -1,8 +1,9 @@
 # Codex ↔ Cursor shared continuity prompt
 
-Last reconciled: **2026-08-12 (Africa/Kigali)**
-Scope: the product-restructure, marketing, lead-capture, PWA/KDS-polish, and
-Paypack-preparation work performed across Cursor- and Codex-associated sessions.
+Last reconciled: **2026-08-14 (Africa/Kigali)**
+Scope: the product-restructure, marketing, lead-capture, PWA/KDS-polish,
+Paypack-preparation work, plus the new **Ops outreach + KDS + marketing batch**
+on branch `feat/ops-kds-marketing-batch` (shared Cursor ↔ Codex).
 
 This is the durable coordination entry point for both agents. It summarizes
 current truth and points to the detailed artifacts; it does not replace issue
@@ -22,10 +23,10 @@ Before changing anything, read these files in order:
 2. `.cursorrules`, especially Anti-YOLO, UI boundaries, and payment grilling.
 3. This file: `docs/agents/codex-cursor-shared-handoff.md`.
 4. `.scratch/architecture-candidates.md`.
-5. The relevant issue under `.scratch/product-restructure/` or
-   `.scratch/pwa-kds-paypack-polish/issue-01.md`.
+5. The relevant issue under `.scratch/ops-kds-marketing-batch/` (candidate #23),
+   `.scratch/product-restructure/`, or `.scratch/pwa-kds-paypack-polish/issue-01.md`.
 6. The relevant ADR(s), especially `docs/adr/0046-*.md` through
-   `docs/adr/0053-*.md`.
+   `docs/adr/0056-*.md`.
 
 Then run `git status --short --branch` and inspect the relevant commit/diff.
 Preserve every pre-existing dirty or untracked path unless the current task
@@ -56,9 +57,20 @@ explicitly owns it.
   authenticated configuration is complete: `…8786` enabled and owner-supplied
   `…7771` disabled, with `1 of 2 enabled` visible in Ops. Persistence-first and
   assigned Lead smokes passed; the post-fix Lead inbox has zero console errors.
-- The current working branch is `main`; scroll-world release commit `3a80e3e`
-  is pushed to `origin/main`. The documentation closure records its exact
-  Production evidence without changing application behavior.
+- Production tip remains `main` at `3a80e3e` (scroll-world) →
+  `dpl_6iMs3LEJw3Y8VPgfdc56SHiynCLn` on `zantap.app`.
+- **Active shared feature branch:** `feat/ops-kds-marketing-batch` (Cursor
+  implemented 2026-08-13). Issues A–E coded (Prospects, flags, Stock, Profit,
+  marketing polish, scroll-world code + shot list). ADRs 0054–0056. Migration
+  `20260813120000_ops_kds_marketing_batch` is in-repo but **not applied to
+  production**.   Fee machinery deferred. Journey 02 and Journey 03 attempt 1 are
+  owner-accepted. Journey 03 was **integrated by Cursor on 2026-08-14** on
+  `feat/ops-kds-marketing-batch`: the Scene 03 poster
+  `public/marketing/scroll/momo.webp` was rebuilt from
+  `.scratch/ops-kds-marketing-batch/journey-03-payment-success-attempt-1.png`
+  (source PNG preserved); no retry was submitted and the Codex branch carries
+  no integration. Branch is **not committed/pushed/deployed** — owner review
+  next.
 - The working tree was already dirty before this continuity file was added.
   Modified tracker files included `.scratch/architecture-candidates.md` and
   several product-restructure/social issue files. Untracked work included
@@ -213,6 +225,146 @@ Do not paste secrets, owner tokens, API keys, personal recipient details, or
 database credentials here.
 
 ## Session ledger
+
+### 2026-08-14 — Cursor — per-storefront PWA install manifest (branch `feat/ops-kds-marketing-batch`)
+
+- Owner asked whether the PWA covers both storefront and KDS installs. Audit:
+  KDS installs per-vendor (own manifest, starts at `/vendor/{slug}`); storefront
+  pages inherited the root manifest, so customers installed generic "ZanTap"
+  launching into the marketing root. Closed the gap per ADR-0059: pure builder
+  `lib/pwa/storefront-manifest.ts` (+7 unit tests), thin route
+  `app/[slug]/manifest.webmanifest/route.ts` (Store read; 404 for
+  missing/suspended vendors; 1h cache), `app/[slug]/layout.tsx` metadata
+  (manifest link + vendor-name apple title). Icons stay approved-Z.
+- Owner clarified notifications: the Issue 09b in-app KDS chime is sufficient;
+  Web Push is NOT wanted — do not scope it.
+- Verification: full suite 314/102, lint + `next build` clean; local smoke via
+  the running dev server — vendor manifest JSON 200 (`start_url`
+  `/inka-steakhouse`, name "Inka Steakhouse"), unknown slug 404, storefront
+  HTML links the per-slug manifest. UNCOMMITTED, rides with the candidate #23
+  batch; no migration.
+- Remaining gates: owner's physical-device Android install smoke (Issue 09a,
+  now covering both KDS and storefront installs after the batch deploys).
+
+### 2026-08-14 — Cursor — Journey 03/06 payment-success still integrated (branch `feat/ops-kds-marketing-batch`)
+
+- Switched HEAD from `codex/journey-02-walkthrough` to
+  `feat/ops-kds-marketing-batch` — both pointed at `f57ccbb`, so the move was
+  pointer-only and every pre-existing dirty/untracked path was preserved.
+- Integrated the owner-accepted Journey 03 still: Scene 03 poster
+  `public/marketing/scroll/momo.webp` rebuilt from
+  `.scratch/ops-kds-marketing-batch/journey-03-payment-success-attempt-1.png`
+  via the batch's poster pipeline (ffmpeg `scale=1600:-2`, libwebp q82 →
+  1600×1062, 143 KB). Source PNG untouched under `.scratch`. Scene 03 remains
+  deliberately clip-less (still-crossfade); the rejected `leg_momo` encode is
+  still unused. `ScrollWorldSection.tsx` doc comments updated to record the
+  accepted-still state (ADR-0058 reference).
+- Validation: new scene-3 harness
+  `.scratch/ops-kds-marketing-batch/journey-03-scene-check.mjs` **10/10**
+  (desktop 1440×900 + mobile 390×844: fresh 1600×1062 poster served,
+  payment-success hierarchy recognizable, crossfade seams to scenes 2/4
+  healthy, zero overflow/console errors; shots in `journey-03-shots/`);
+  scroll-world `preview-qa.mjs` 16/19 (only the three pre-documented stale
+  assertions: footer wordmark filename, removed MoMo-logo overlay, new
+  sticky-CTA wording); lint clean; production build green.
+- Zero generations, uploads, retries, or credit spend (balance stays 86.72).
+  Journey 02 untouched. Scene 04/06 remains separately gated. Nothing
+  committed or deployed; migration `20260813120000_ops_kds_marketing_batch`
+  still not applied to production. Remaining gate: owner review of the full
+  batch → commit → `db:deploy` → deploy → smoke.
+
+### 2026-08-14 — Cursor — batch re-validated; owner review gate open (branch `feat/ops-kds-marketing-batch`)
+
+- No code changes. Re-verified the full uncommitted batch after rounds 2–6:
+  `tsc --noEmit` clean, `npm run lint` clean, `npm test` **307 passed /
+  102 skipped** (suite grew from 284/89 with the batch's new tests). Dev
+  server confirmed serving `http://localhost:3000` (HTTP 200) for the owner's
+  local walkthrough.
+- Remaining gate (owner-owned): review the marketing page, KDS Stock/Profit,
+  and Ops Prospects/settings locally; on approval → commit the branch, apply
+  migration `20260813120000_ops_kds_marketing_batch` via `npm run db:deploy`,
+  deploy, prod-smoke. Scroll-world scene generation stays gated on the
+  Higgsfield budget (Codex ledger 2026-08-14).
+
+### 2026-08-14 — Cursor — marketing feedback round 2 (branch `feat/ops-kds-marketing-batch`)
+
+- Owner feedback applied on the shared branch (still not committed/deployed):
+  sticky "Get setup" pill now also hides while the hero `#top` is on screen
+  (masthead already carries the CTA); footer renders all 7 social icons with
+  unconfigured ones as dimmed non-clickable placeholders until URLs are set in
+  Ops → Marketing site settings; "Your own mobile menu" storefront DeviceFrame
+  replaced with `components/marketing/ScreenCardDeck.tsx` — GSAP auto-cycling
+  3-card deck (per owner's two reference videos; caption pill + dots; pause on
+  hover/press; reduced-motion static) using `public/marketing/card-*.png`
+  copies of `kds-store-live`/`momo-pay-step`/`kds-dashboard`. Deliberately
+  supersedes ADR-0046 §5 device-hardware-only rule for that one section at
+  explicit owner request (noted in issue D).
+- Languages CRUD in Ops (rw/fr/sw word-for-word editor → future full CMS)
+  recorded as DEFERRED: `.scratch/ops-kds-marketing-batch/deferred-language-cms.md`.
+- Validation: tsc, lint, `npm run build` all clean; dev visual check
+  (`.scratch/ops-kds-marketing-batch/deck-visual-check.mjs`) — sticky absent on
+  hero, 7 footer icons, deck cycles (shots in `deck-shots/`).
+- Round 3 (same day): deck placement corrected per owner — original storefront
+  `DeviceFrame` restored in "Your own mobile menu", `ScreenCardDeck` replaces
+  the kitchen terminal frame in "A clearer kitchen" (`PRODUCT.kitchen.cards`);
+  footer LinkedIn + YouTube fully hidden until Ops URLs are set (other 5 keep
+  dimmed placeholders). tsc + lint clean; visual check re-run — 5 icons, deck
+  in kitchen block (`deck-shots/kitchen-deck.png`).
+- Rounds 7–8 (same day): torn-paint treatment. Round-7 halo blob behind the
+  form (`PaintSplash.tsx`) was rejected by the owner and deleted. Round 8:
+  `TornPaint.tsx` — `TornPanelBackdrop` makes the LeadForm card itself
+  torn-edged (straight edges replaced by an feTurbulence-displaced cream
+  sheet). Round 9: the cream walkthrough seams were rejected (wrong color);
+  `TornEdge` now overlays the page's own near-black tearing into the footage
+  at the scroll-world track's top/bottom seams instead. Pending owner taste
+  check.
+- Rounds 5–6 (same day): deck swap smoothed (1.5s `power2.inOut`, z-index
+  interpolated in-tween, caption swaps mid-transition; right → left travel);
+  masthead `LanguageSwitcher` added (globe pill, en/rw/fr/sw dropdown, en-only
+  enabled with "Soon" badges, localStorage `zantap.lang` + `<html lang>` via
+  `useSyncExternalStore`) — the deferred language-CMS session plugs into it.
+- Round 4 (same day): deck cards restyled as phone hardware — DeviceFrame-style
+  chassis (no notch, so no UI covered), one uniform elongated `aspect-[10/19]`
+  screen height for all three cards, screenshots fill the width top-down
+  uncropped (dark screen below), and back-card transparency replaced with a
+  solid GSAP-animated dark scrim. tsc + lint clean; shot
+  `deck-shots/kitchen-deck-framed.png`.
+
+### 2026-08-14 — Codex — journey 02/06 final prompt gate
+
+- Inspected the owner’s open Higgsfield draft without uploading or generating: Seedance 2.5, References mode, 5s, 16:9, 720p, high bitrate, 38.33 credits per attempt; no references attached and the older generic prompt remains.
+- Owner-approved direction is grounded photoreal Repub Lounge + the real local `storefront.png`, superseding the stylized/Pixar-like option for journey 02/06 only.
+- Exact attempt-1 prompt and two-reference/one-generate action are recorded in `.scratch/ops-kds-marketing-batch/shot-list-scenes-2-4.md` and ADR-0057. No prompt was entered into Higgsfield and zero credits were spent.
+- Budget gate: owner-reported 126 credits; attempt 1 costs 38.33, attempt 2 is considered only after attempt-1 owner review, and attempt 3 is a hard reserve requiring fresh explicit approval.
+- The owner then approved attempt 1. The Higgsfield two-file chooser opened, but Chrome denied file attachment because the ChatGPT browser extension lacks file-URL access. No reference attached, Generate was not clicked, and zero credits were spent. Resume the still-valid approval after the owner enables that permission.
+- The owner subsequently enabled file-URL access and refreshed Higgsfield. Extension/native-host diagnostics passed, but Chrome control timed out claiming the refreshed tab and a fresh same-profile tab/window. No reference attached, the prompt was not transmitted, Generate was not clicked, and all 126 credits remain. Reinstall the Browser plugin from the ChatGPT plugin UI, then resume the still-valid one-attempt approval.
+- The owner exposed the Higgsfield connector, which supported the exact approved Seedance 2.5 omni-reference controls and both local images. Exactly one 32.5-credit job was submitted (`0a409cd1-425b-4ffd-a5c1-22bb104601a4`) and saved locally as `.scratch/ops-kds-marketing-batch/journey-02-attempt-1.mp4` with review frames/contact sheet. The owner accepted the shot (“This shot is fine. Truly!”), so attempt 2 is skipped. Attempt 3 remains reserved and untouched; confirmed balance is 93.72 credits.
+- The owner confirmed Cursor's lead-form and marketing batch work is on point and asked Codex to isolate the accepted video integration. On `codex/journey-02-walkthrough`, Journey 02 now replaces `public/marketing/vid/order.mp4` as a native 1280×720/24fps, audio-free, dense-keyframe H.264 web encode; `public/marketing/scroll/order.webp` is its true first frame. The existing overlay and scroll engine are unchanged. Visual seam/reduced-motion/mobile checks passed for the integration; the legacy preview harness reports 16/19 because three assertions still expect pre-Cursor branding/copy. ESLint is clean. Nothing was committed or deployed.
+
+### 2026-08-14 — Codex — journey 03/06 payment-success still accepted
+
+- Owner requested one corrected Scene 03 image only; Cursor will integrate it with the other marketing corrections.
+- Composition reference: `public/marketing/scroll/momo.webp`. UI reference: `public/brand/UI-screens/new-UI-screens & video walkthrough/successful-payment.png`. The edit changes only the blank amber phone display and makes the existing thumb read as tapping the real successful-payment UI.
+- Historical `still_momo.json` confirms the original settings: GPT Image 2, 3:2, 2K, High. The exact edit prompt and action are recorded in the shot list and ADR-0058.
+- Higgsfield read-only preflight: 7 credits. Current balance 93.72; projected balance 86.72. No reference uploaded and no generation submitted. Wait for exact owner approval, then submit once and review before any retry.
+- The owner approved exactly. Both references were uploaded in order and one job was submitted: `3f09077f-13e7-45fd-9d29-31b0b1dd4713`. Result: `.scratch/ops-kds-marketing-batch/journey-03-payment-success-attempt-1.png` (2048×1360). The payment-success UI is integrated into the phone and the lower thumb contacts the screen; core UI reads correctly, with some tiny generated body-copy softness. Confirmed balance: 86.72 after the 7-credit charge. No retry. The owner accepted attempt 1 on 2026-08-14. Cursor must integrate from that exact path; Codex made no page or public-asset integration change.
+
+### 2026-08-13 — Cursor — Ops outreach + KDS + marketing batch implemented
+
+- Grilled decisions locked (Prospect vs Lead, dish-level stock, per-vendor
+  flags, gated assets, fee machinery deferred).
+- Branch `feat/ops-kds-marketing-batch` created; issues A–E + ADRs 0054–0056 +
+  CONTEXT glossary terms written.
+- Store: Prospect/Interaction, MarketingSiteSettings, VendorExpense, feature
+  flags, stock/cost fields; both adapters; contract coverage.
+- Ops: `/ops/prospects`, Flags tab, marketing settings on `/ops/settings`,
+  vendor overview stock/profit cards when flags on.
+- KDS: Stock tab, Drivers in Setup, Profit eye panel, NEW badge, item thumbs,
+  WhatsApp gated, export totals, storefront Sold out.
+- Marketing: footer/socials, privacy/terms, comparison section, sticky CTA,
+  hero loop + Z, eased scrub + soft screenshots, shot list for scenes 2–4.
+- Verification local: `tsc` clean, lint clean, store + unit tests green.
+  Not deployed; migration not applied to prod.
 
 ### 2026-08-12 — Codex — scroll-world preview release
 

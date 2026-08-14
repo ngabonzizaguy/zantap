@@ -19,7 +19,10 @@ export function validateUpdateMenuItemInput(
     input.name !== undefined ||
     input.priceRwf !== undefined ||
     input.description !== undefined ||
-    input.category !== undefined;
+    input.category !== undefined ||
+    input.stockCount !== undefined ||
+    input.lowStockThreshold !== undefined ||
+    input.costPriceRwf !== undefined;
   if (!hasField) {
     return "Nothing to update";
   }

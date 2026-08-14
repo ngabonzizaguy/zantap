@@ -55,11 +55,14 @@ export async function GET(
   const filters = parseExportFiltersFromSearchParams(params);
 
   try {
-    const rows = await fetchAllFilteredOrders(store, slug, filters);
+    const [rows, allTimePaidRevenue] = await Promise.all([
+      fetchAllFilteredOrders(store, slug, filters),
+      store.getAllTimePaidRevenue(slug),
+    ]);
     const filename = exportFilename(slug, format);
 
     if (format === "csv") {
-      const body = buildCsv(rows);
+      const body = buildCsv(rows, allTimePaidRevenue);
       return new Response(body, {
         headers: {
           "Content-Type": "text/csv; charset=utf-8",
@@ -68,7 +71,7 @@ export async function GET(
       });
     }
 
-    const buffer = await buildXlsxBuffer(rows);
+    const buffer = await buildXlsxBuffer(rows, allTimePaidRevenue);
     return new Response(new Uint8Array(buffer), {
       headers: {
         "Content-Type":

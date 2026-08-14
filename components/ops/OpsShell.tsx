@@ -12,6 +12,7 @@ import { logoutOpsAction } from "@/lib/ops-auth/actions";
 const NAV = [
   { href: "/ops", label: "Vendors", icon: "inventory" as const },
   { href: "/ops/leads", label: "Leads", icon: "leads" as const },
+  { href: "/ops/prospects", label: "Prospects", icon: "prospects" as const },
   { href: "/ops/recovery", label: "Recovery", icon: "clock" as const },
   { href: "/ops/settings", label: "Settings", icon: "settings" as const },
 ];

@@ -26,6 +26,9 @@ export const seedVendor: Vendor = {
   deliveryTime: "30–40 min",
   rating: 4.8,
   payoutMethod: "MERCHANT_CODE",
+  featureWhatsappNotify: false,
+  featureStockTracking: false,
+  featureProfitInsights: false,
   createdAt: new Date("2025-01-01"),
 };
 

@@ -35,7 +35,14 @@ passes a 390×844 interaction audit across all KDS tabs, tickets, Setup, Help,
 and modal controls with zero console errors. Remaining 09a gate:
 install from Android Chrome, launch standalone into KDS, then airplane-
 mode verify the offline shell/banner. Issue 09b offline stage queue + chime stays
-separate and ready-for-agent. Tracking:
+separate and ready-for-agent (owner confirmed 2026-08-14: chime yes, Web Push
+not needed). **Per-storefront install manifest added 2026-08-14 (ADR-0059,
+uncommitted on `feat/ops-kds-marketing-batch`, not deployed):** customers
+installing from `/{slug}` now get the restaurant-named app launching into that
+storefront (`lib/pwa/storefront-manifest.ts` + `app/[slug]/manifest.webmanifest`
+route + `app/[slug]/layout.tsx`); tests 314/102, lint/build clean, local smoke
+PASS. Deploys with the candidate #23 batch; Android install smoke then covers
+both KDS and storefront installs. Tracking:
 `.scratch/pwa-kds-paypack-polish/issue-01.md` and
 `.scratch/product-restructure/issue-09.md`.
 
@@ -382,6 +389,7 @@ If a session ends without doing both, the handoff is incomplete.
 | 22 | Storefront share + menu lightbox + KDS drivers | Owner request | customer UI + KDS drivers tab + Order.driverId | ✅ Done · deployed · prod-smoked 2026-07-06 | `.scratch/candidate-22/PRD.md` |
 | Ops | Professional email DNS for `zantap.app` | Owner request | Vercel DNS + Spacemail | ✅ Done · domain verified · 3 mailboxes active · outbound test sent 2026-08-06 | `.scratch/social-account-branding/issue-02.md` |
 | Ops | Shared Codex ↔ Cursor continuity prompt | Owner request | Agent coordination only; no product/deploy change | ✅ Done · durable prompt created 2026-08-09 | `docs/agents/codex-cursor-shared-handoff.md` |
+| 23 | Ops outreach + KDS + marketing batch (Prospects, feature flags, Stock, Profit, marketing polish, scroll-world code) | Owner request · grilled 2026-08-12 | Ops + Store + KDS + marketing | ◐ Implemented on Cursor branch `feat/ops-kds-marketing-batch`; accepted Journey 02 baked on `codex/journey-02-walkthrough`; Journey 03 attempt 1 owner-accepted after one 7-credit generation (job `3f09077f…`, balance 86.72), no retry, and **integrated by Cursor 2026-08-14** (momo.webp poster rebuilt from the accepted PNG; scene-3 QA 10/10 + scroll-world 16/19 known-stale; lint/build green) · not committed/deployed · migration pending prod (ADRs 0057–0058) | `.scratch/ops-kds-marketing-batch/` |
 
 **#22 closed 2026-07-06** — code shipped `e734387` (live on `zantap-psi.vercel.app`
 since #17 deploy); migration `20260705180000_order_driver_assignment` applied.

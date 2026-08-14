@@ -15,8 +15,6 @@ export default async function VendorKdsPage({ params, searchParams }: PageProps)
   const vendor = await store.getVendorBySlug(slug);
   if (!vendor) notFound();
 
-  // Read through the same snapshot the live SSE stream uses, so the initial
-  // render and subsequent updates agree on which orders are visible.
   const [snapshot, drivers] = await Promise.all([
     fetchKdsSnapshot(slug),
     store.getDrivers(slug),
@@ -31,6 +29,7 @@ export default async function VendorKdsPage({ params, searchParams }: PageProps)
       initialTodayGross={snapshot.todayGross}
       initialYesterdayGross={snapshot.yesterdayGross}
       initialKitchenOpen={snapshot.kitchenOpen}
+      initialFeatureFlags={snapshot.featureFlags}
       initialTab={tab}
     />
   );

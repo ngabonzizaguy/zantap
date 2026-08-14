@@ -42,6 +42,24 @@ import {
 } from "@/lib/menu/media";
 import { prisma as defaultPrisma } from "@/lib/prisma";
 import { canonicalizePhone } from "@/lib/format";
+import { canTransitionProspectStatus } from "@/lib/prospects/status";
+import type {
+  BulkCreateProspectsInput,
+  CreateProspectInput,
+  CreateProspectInteractionInput,
+  Prospect,
+  ProspectInteraction,
+  ProspectStatus,
+  UpdateProspectInput,
+} from "@/lib/prospects/types";
+import type {
+  CreateVendorExpenseInput,
+  MarketingSiteSettings,
+  ProfitSnapshot,
+  UpdateMarketingSiteSettingsInput,
+  VendorExpense,
+} from "@/lib/vendor/feature-and-profit-types";
+import { computeGlowScore } from "@/lib/vendor/profit";
 import {
   deriveDriverHue,
   deriveDriverInitials,
@@ -150,6 +168,9 @@ const kdsOrderInclude = {
           isAvailable: true,
           thumbFrom: true,
           thumbTo: true,
+          stockCount: true,
+          lowStockThreshold: true,
+          costPriceRwf: true,
           archivedAt: true,
           createdAt: true,
           updatedAt: true,
@@ -191,6 +212,9 @@ function mapVendor(vendor: PrismaVendor): Vendor {
     logoUrl: vendor.logoUrl ?? undefined,
     coverImageUrl: vendor.coverImageUrl ?? undefined,
     description: vendor.description ?? undefined,
+    featureWhatsappNotify: vendor.featureWhatsappNotify,
+    featureStockTracking: vendor.featureStockTracking,
+    featureProfitInsights: vendor.featureProfitInsights,
     createdAt: vendor.createdAt,
     // ownerTokenHash deliberately omitted — server-only (ADR-0022).
   };
@@ -308,6 +332,9 @@ function mapMenuItem(item: PrismaMenuItemWithImages): MenuItem {
     isAvailable: item.isAvailable,
     thumbFrom: item.thumbFrom ?? undefined,
     thumbTo: item.thumbTo ?? undefined,
+    stockCount: item.stockCount ?? undefined,
+    lowStockThreshold: item.lowStockThreshold ?? undefined,
+    costPriceRwf: item.costPriceRwf ?? undefined,
     archivedAt: item.archivedAt ?? undefined,
     images: images && images.length > 0 ? images : undefined,
   };
@@ -427,6 +454,9 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
           coverImageUrl: input.coverImageUrl ?? null,
           description: input.description ?? null,
           ownerTokenHash: input.ownerTokenHash ?? null,
+          featureWhatsappNotify: false,
+          featureStockTracking: false,
+          featureProfitInsights: false,
         },
       });
       return mapVendor(vendor);
@@ -859,12 +889,31 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
           take: 20,
         }),
       ]);
+
+    const menu = await getMenu(vendorSlug);
+    const tracked = menu.filter((item) => item.stockCount != null);
+    const low = tracked.filter(
+      (item) =>
+        item.stockCount != null &&
+        item.stockCount <= (item.lowStockThreshold ?? 0)
+    );
+    const todayGrossRwf = await getTodayGross(vendorSlug);
+    const weekdayAverageRwf = await getWeekdayAverageGross(vendorSlug);
+    const weekTo = new Date();
+    const weekFrom = new Date(weekTo.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const weekProfit = await getProfitSnapshot(vendorSlug, weekFrom, weekTo);
+
     return {
       vendor,
       menuItemCount,
       activeOrderCount,
       recoveryEventCount,
       recentOrders: recentOrders.map(mapOrder),
+      stockTrackedItemCount: tracked.length,
+      stockLowItemCount: low.length,
+      todayGrossRwf,
+      weekdayAverageRwf,
+      weekProfitRwf: weekProfit?.periodProfitRwf,
     };
   }
 
@@ -892,9 +941,37 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     vendorSlug: string,
     input: OperatorUpdateVendorInput
   ): Promise<Vendor | null> {
-    const { isActive, kitchenOpen: nextKitchenOpen, ...rest } = input;
+    const {
+      isActive,
+      kitchenOpen: nextKitchenOpen,
+      featureWhatsappNotify,
+      featureStockTracking,
+      featureProfitInsights,
+      ...rest
+    } = input;
     const updated = await updateVendor(vendorSlug, rest);
     if (!updated) return null;
+
+    const featureFlagData: Record<string, boolean> = {};
+    if (featureWhatsappNotify !== undefined)
+      featureFlagData.featureWhatsappNotify = featureWhatsappNotify;
+    if (featureStockTracking !== undefined)
+      featureFlagData.featureStockTracking = featureStockTracking;
+    if (featureProfitInsights !== undefined)
+      featureFlagData.featureProfitInsights = featureProfitInsights;
+
+    if (Object.keys(featureFlagData).length > 0) {
+      try {
+        await client.vendor.update({
+          where: { slug: normalizeVendorSlug(vendorSlug) },
+          data: featureFlagData,
+        });
+      } catch (error) {
+        if (isNotFoundError(error)) return null;
+        throw error;
+      }
+    }
+
     if (isActive !== undefined) {
       return setVendorActive(vendorSlug, isActive);
     }
@@ -910,7 +987,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
         throw error;
       }
     }
-    return updated;
+    return getVendorBySlug(vendorSlug);
   }
 
   async function operatorRevokeOwnerToken(
@@ -1112,6 +1189,15 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     }
     if (input.category !== undefined) {
       data.category = input.category.trim() || "General";
+    }
+    if (input.stockCount !== undefined) {
+      data.stockCount = input.stockCount;
+    }
+    if (input.lowStockThreshold !== undefined) {
+      data.lowStockThreshold = input.lowStockThreshold;
+    }
+    if (input.costPriceRwf !== undefined) {
+      data.costPriceRwf = input.costPriceRwf;
     }
 
     try {
@@ -1895,6 +1981,26 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     }
   }
 
+  async function decrementStockOnPaid(orderId: string): Promise<void> {
+    const order = await client.order.findUnique({
+      where: { id: orderId },
+      include: { vendor: { select: { featureStockTracking: true } }, orderItems: true },
+    });
+    if (!order?.vendor.featureStockTracking) return;
+    for (const line of order.orderItems) {
+      const item = await client.menuItem.findUnique({
+        where: { id: line.menuItemId },
+        select: { stockCount: true },
+      });
+      if (item?.stockCount != null) {
+        await client.menuItem.update({
+          where: { id: line.menuItemId },
+          data: { stockCount: Math.max(0, item.stockCount - line.quantity) },
+        });
+      }
+    }
+  }
+
   async function createPayment(
     input: CreatePaymentInput
   ): Promise<CreatePaymentResult> {
@@ -1995,7 +2101,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
         throw new Error("Payment not found during confirm transaction");
       }
       if (current.status === "SUCCESS") {
-        return current;
+        return { row: current, firstPaid: false };
       }
 
       const [paymentRow] = await Promise.all([
@@ -2012,10 +2118,13 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
           },
         }),
       ]);
-      return paymentRow;
+      return { row: paymentRow, firstPaid: true };
     });
 
-    return { ok: true, payment: mapPayment(updated) };
+    if (updated.firstPaid) {
+      await decrementStockOnPaid(payment.orderId);
+    }
+    return { ok: true, payment: mapPayment(updated.row) };
   }
 
   async function confirmManualPayment(
@@ -2088,6 +2197,8 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       ]);
       return { paymentUpdated, orderUpdated };
     });
+
+    await decrementStockOnPaid(orderId);
 
     return {
       ok: true,
@@ -2198,6 +2309,456 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     return null;
   }
 
+  // ─── Prospects (ADR-0054) ───────────────────────────────────────────────────
+
+  function mapProspectInteraction(row: {
+    id: string;
+    prospectId: string;
+    at: Date;
+    channel: string;
+    note: string | null;
+  }): ProspectInteraction {
+    return {
+      id: row.id,
+      prospectId: row.prospectId,
+      at: row.at,
+      channel: row.channel as ProspectInteraction["channel"],
+      note: row.note ?? undefined,
+    };
+  }
+
+  function mapProspect(row: {
+    id: string;
+    businessName: string;
+    contactName: string | null;
+    phone: string | null;
+    area: string | null;
+    source: string | null;
+    mapsUrl: string | null;
+    instagramHandle: string | null;
+    notes: string | null;
+    status: string;
+    nextFollowUpAt: Date | null;
+    convertedVendorId: string | null;
+    convertedLeadId: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    interactions?: Array<{
+      id: string;
+      prospectId: string;
+      at: Date;
+      channel: string;
+      note: string | null;
+    }>;
+  }): Prospect {
+    return {
+      id: row.id,
+      businessName: row.businessName,
+      contactName: row.contactName ?? undefined,
+      phone: row.phone ?? undefined,
+      area: row.area ?? undefined,
+      source: row.source ?? undefined,
+      mapsUrl: row.mapsUrl ?? undefined,
+      instagramHandle: row.instagramHandle ?? undefined,
+      notes: row.notes ?? undefined,
+      status: row.status as ProspectStatus,
+      nextFollowUpAt: row.nextFollowUpAt ?? undefined,
+      convertedVendorId: row.convertedVendorId ?? undefined,
+      convertedLeadId: row.convertedLeadId ?? undefined,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      interactions: row.interactions?.map(mapProspectInteraction),
+    };
+  }
+
+  async function createProspect(input: CreateProspectInput): Promise<Prospect> {
+    const row = await client.prospect.create({
+      data: {
+        businessName: input.businessName.trim(),
+        contactName: input.contactName?.trim() || null,
+        phone: input.phone?.trim() || null,
+        area: input.area?.trim() || null,
+        source: input.source?.trim() || null,
+        mapsUrl: input.mapsUrl?.trim() || null,
+        instagramHandle: input.instagramHandle?.trim() || null,
+        notes: input.notes?.trim() || null,
+        status: "FOUND",
+        nextFollowUpAt: input.nextFollowUpAt ?? null,
+      },
+    });
+    return mapProspect(row);
+  }
+
+  async function bulkCreateProspects(input: BulkCreateProspectsInput): Promise<Prospect[]> {
+    const results: Prospect[] = [];
+    for (const row of input.rows) {
+      results.push(await createProspect(row));
+    }
+    return results;
+  }
+
+  async function listProspects(status?: ProspectStatus): Promise<Prospect[]> {
+    const where = status ? { status } : {};
+    const rows = await client.prospect.findMany({
+      where,
+      include: { interactions: { orderBy: { at: "desc" } } },
+      orderBy: [
+        { nextFollowUpAt: { sort: "asc", nulls: "last" } },
+        { createdAt: "desc" },
+      ],
+    });
+    return rows.map(mapProspect);
+  }
+
+  async function getProspect(prospectId: string): Promise<Prospect | null> {
+    const row = await client.prospect.findUnique({
+      where: { id: prospectId },
+      include: { interactions: { orderBy: { at: "desc" } } },
+    });
+    return row ? mapProspect(row) : null;
+  }
+
+  async function updateProspect(
+    prospectId: string,
+    input: UpdateProspectInput
+  ): Promise<Prospect | null> {
+    const existing = await client.prospect.findUnique({ where: { id: prospectId } });
+    if (!existing) return null;
+
+    if (input.status !== undefined && input.status !== existing.status) {
+      if (!canTransitionProspectStatus(existing.status as ProspectStatus, input.status)) {
+        throw new Error(
+          `Invalid status transition: ${existing.status} → ${input.status}`
+        );
+      }
+    }
+
+    const data: Record<string, unknown> = {};
+    if (input.businessName !== undefined) data.businessName = input.businessName.trim();
+    if (input.contactName !== undefined) data.contactName = input.contactName?.trim() || null;
+    if (input.phone !== undefined) data.phone = input.phone?.trim() || null;
+    if (input.area !== undefined) data.area = input.area?.trim() || null;
+    if (input.source !== undefined) data.source = input.source?.trim() || null;
+    if (input.mapsUrl !== undefined) data.mapsUrl = input.mapsUrl?.trim() || null;
+    if (input.instagramHandle !== undefined)
+      data.instagramHandle = input.instagramHandle?.trim() || null;
+    if (input.notes !== undefined) data.notes = input.notes?.trim() || null;
+    if (input.status !== undefined) data.status = input.status;
+    if (input.nextFollowUpAt !== undefined) data.nextFollowUpAt = input.nextFollowUpAt;
+    if (input.convertedVendorId !== undefined) data.convertedVendorId = input.convertedVendorId;
+    if (input.convertedLeadId !== undefined) data.convertedLeadId = input.convertedLeadId;
+
+    const row = await client.prospect.update({
+      where: { id: prospectId },
+      data,
+      include: { interactions: { orderBy: { at: "desc" } } },
+    });
+    return mapProspect(row);
+  }
+
+  async function addProspectInteraction(
+    prospectId: string,
+    input: CreateProspectInteractionInput
+  ): Promise<ProspectInteraction | null> {
+    const existing = await client.prospect.findUnique({ where: { id: prospectId } });
+    if (!existing) return null;
+    const row = await client.prospectInteraction.create({
+      data: {
+        prospectId,
+        channel: input.channel,
+        note: input.note?.trim() || null,
+        at: input.at ?? new Date(),
+      },
+    });
+    return mapProspectInteraction(row);
+  }
+
+  async function convertProspect(
+    prospectId: string,
+    vendorId: string,
+    leadId?: string
+  ): Promise<Prospect | null> {
+    const existing = await client.prospect.findUnique({ where: { id: prospectId } });
+    if (!existing) return null;
+    if (!canTransitionProspectStatus(existing.status as ProspectStatus, "CONVERTED")) {
+      throw new Error(`Invalid status transition: ${existing.status} → CONVERTED`);
+    }
+    const row = await client.prospect.update({
+      where: { id: prospectId },
+      data: {
+        status: "CONVERTED",
+        convertedVendorId: vendorId,
+        convertedLeadId: leadId ?? null,
+      },
+      include: { interactions: { orderBy: { at: "desc" } } },
+    });
+    return mapProspect(row);
+  }
+
+  // ─── Marketing site settings ──────────────────────────────────────────────────
+
+  async function getMarketingSiteSettings(): Promise<MarketingSiteSettings> {
+    const row = await client.marketingSiteSettings.upsert({
+      where: { id: "default" },
+      create: { id: "default" },
+      update: {},
+    });
+    return {
+      id: row.id,
+      publicPhone: row.publicPhone ?? undefined,
+      publicEmail: row.publicEmail ?? undefined,
+      socialX: row.socialX ?? undefined,
+      socialTiktok: row.socialTiktok ?? undefined,
+      socialInstagram: row.socialInstagram ?? undefined,
+      socialFacebook: row.socialFacebook ?? undefined,
+      socialLinkedin: row.socialLinkedin ?? undefined,
+      socialYoutube: row.socialYoutube ?? undefined,
+      socialWhatsapp: row.socialWhatsapp ?? undefined,
+      updatedAt: row.updatedAt,
+    };
+  }
+
+  async function updateMarketingSiteSettings(
+    input: UpdateMarketingSiteSettingsInput
+  ): Promise<MarketingSiteSettings> {
+    const data: Record<string, string | null> = {};
+    for (const [key, value] of Object.entries(input)) {
+      if (value !== undefined) {
+        data[key] = value === null ? null : (value as string).trim() || null;
+      }
+    }
+    const row = await client.marketingSiteSettings.upsert({
+      where: { id: "default" },
+      create: { id: "default", ...data },
+      update: data,
+    });
+    return {
+      id: row.id,
+      publicPhone: row.publicPhone ?? undefined,
+      publicEmail: row.publicEmail ?? undefined,
+      socialX: row.socialX ?? undefined,
+      socialTiktok: row.socialTiktok ?? undefined,
+      socialInstagram: row.socialInstagram ?? undefined,
+      socialFacebook: row.socialFacebook ?? undefined,
+      socialLinkedin: row.socialLinkedin ?? undefined,
+      socialYoutube: row.socialYoutube ?? undefined,
+      socialWhatsapp: row.socialWhatsapp ?? undefined,
+      updatedAt: row.updatedAt,
+    };
+  }
+
+  // ─── Vendor expenses + profit ─────────────────────────────────────────────────
+
+  async function listVendorExpenses(
+    vendorSlug: string,
+    from?: Date,
+    to?: Date
+  ): Promise<VendorExpense[]> {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: normalizeVendorSlug(vendorSlug) },
+      select: { id: true },
+    });
+    if (!vendor) return [];
+    const where: Prisma.VendorExpenseWhereInput = { vendorId: vendor.id };
+    if (from || to) {
+      where.spentAt = {};
+      if (from) where.spentAt.gte = from;
+      if (to) where.spentAt.lte = to;
+    }
+    const rows = await client.vendorExpense.findMany({
+      where,
+      orderBy: { spentAt: "desc" },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      vendorId: row.vendorId,
+      amountRwf: row.amountRwf,
+      category: row.category,
+      note: row.note ?? undefined,
+      spentAt: row.spentAt,
+      createdAt: row.createdAt,
+    }));
+  }
+
+  async function createVendorExpense(
+    vendorSlug: string,
+    input: CreateVendorExpenseInput
+  ): Promise<VendorExpense> {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: normalizeVendorSlug(vendorSlug) },
+      select: { id: true },
+    });
+    if (!vendor) throw new Error("Vendor not found");
+    const row = await client.vendorExpense.create({
+      data: {
+        vendorId: vendor.id,
+        amountRwf: input.amountRwf,
+        category: input.category.trim(),
+        note: input.note?.trim() || null,
+        spentAt: input.spentAt ?? new Date(),
+      },
+    });
+    return {
+      id: row.id,
+      vendorId: row.vendorId,
+      amountRwf: row.amountRwf,
+      category: row.category,
+      note: row.note ?? undefined,
+      spentAt: row.spentAt,
+      createdAt: row.createdAt,
+    };
+  }
+
+  async function deleteVendorExpense(
+    vendorSlug: string,
+    expenseId: string
+  ): Promise<boolean> {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: normalizeVendorSlug(vendorSlug) },
+      select: { id: true },
+    });
+    if (!vendor) return false;
+    const result = await client.vendorExpense.deleteMany({
+      where: { id: expenseId, vendorId: vendor.id },
+    });
+    return result.count > 0;
+  }
+
+  async function getProfitSnapshot(
+    vendorSlug: string,
+    from: Date,
+    to: Date
+  ): Promise<ProfitSnapshot | null> {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: normalizeVendorSlug(vendorSlug) },
+      select: { id: true },
+    });
+    if (!vendor) return null;
+
+    const [todayGrossRwf, weekdayAverageRwf, periodRevResult, expenses, itemStats] =
+      await Promise.all([
+        getTodayGross(vendorSlug),
+        getWeekdayAverageGross(vendorSlug),
+        client.order.aggregate({
+          where: {
+            vendorId: vendor.id,
+            createdAt: { gte: from, lte: to },
+            status: { in: COUNTED_STATUSES },
+          },
+          _sum: { totalAmount: true },
+        }),
+        client.vendorExpense.aggregate({
+          where: { vendorId: vendor.id, spentAt: { gte: from, lte: to } },
+          _sum: { amountRwf: true },
+        }),
+        client.orderItem.findMany({
+          where: {
+            order: {
+              vendorId: vendor.id,
+              createdAt: { gte: from, lte: to },
+              status: { in: COUNTED_STATUSES },
+            },
+          },
+          include: { menuItem: { select: { id: true, name: true, costPriceRwf: true } } },
+        }),
+      ]);
+
+    const periodRevenueRwf = periodRevResult._sum.totalAmount ?? 0;
+    const periodExpensesRwf = expenses._sum.amountRwf ?? 0;
+
+    const marginMap = new Map<string, {
+      name: string; soldQty: number; revenueRwf: number; costRwf: number;
+    }>();
+    let periodCostOfGoodsRwf = 0;
+    for (const line of itemStats) {
+      const existing = marginMap.get(line.menuItemId) ?? {
+        name: line.menuItem.name,
+        soldQty: 0,
+        revenueRwf: 0,
+        costRwf: 0,
+      };
+      existing.soldQty += line.quantity;
+      existing.revenueRwf += line.quantity * line.unitPriceRwf;
+      const cost = (line.menuItem.costPriceRwf ?? 0) * line.quantity;
+      existing.costRwf += cost;
+      periodCostOfGoodsRwf += cost;
+      marginMap.set(line.menuItemId, existing);
+    }
+
+    const itemMargins = [...marginMap.entries()].map(([menuItemId, data]) => ({
+      menuItemId,
+      name: data.name,
+      soldQty: data.soldQty,
+      revenueRwf: data.revenueRwf,
+      costRwf: data.costRwf,
+      marginRwf: data.revenueRwf - data.costRwf,
+      marginPct: data.revenueRwf > 0
+        ? (data.revenueRwf - data.costRwf) / data.revenueRwf
+        : null,
+    }));
+
+    return {
+      todayGrossRwf,
+      weekdayAverageRwf,
+      glowScore: computeGlowScore(todayGrossRwf, weekdayAverageRwf),
+      periodRevenueRwf,
+      periodExpensesRwf,
+      periodCostOfGoodsRwf,
+      periodProfitRwf: periodRevenueRwf - periodExpensesRwf - periodCostOfGoodsRwf,
+      itemMargins,
+    };
+  }
+
+  async function getWeekdayAverageGross(
+    vendorSlug: string,
+    weeks = 4
+  ): Promise<number> {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: normalizeVendorSlug(vendorSlug) },
+      select: { id: true },
+    });
+    if (!vendor) return 0;
+
+    const now = new Date();
+    const todayStart = startOfDayInTimezone(now);
+    const targetDay = now.getDay();
+
+    let total = 0;
+    let count = 0;
+    for (let w = 1; w <= weeks; w++) {
+      const dayStart = new Date(todayStart.getTime() - w * 7 * 24 * 60 * 60 * 1000);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+      if (dayStart.getDay() !== targetDay) continue;
+      const result = await client.order.aggregate({
+        where: {
+          vendorId: vendor.id,
+          createdAt: { gte: dayStart, lte: dayEnd },
+          status: { in: COUNTED_STATUSES },
+        },
+        _sum: { totalAmount: true },
+      });
+      total += result._sum.totalAmount ?? 0;
+      count++;
+    }
+    return count > 0 ? Math.round(total / count) : 0;
+  }
+
+  async function getAllTimePaidRevenue(vendorSlug: string): Promise<number> {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: normalizeVendorSlug(vendorSlug) },
+      select: { id: true },
+    });
+    if (!vendor) return 0;
+    const result = await client.order.aggregate({
+      where: {
+        vendorId: vendor.id,
+        status: { in: COUNTED_STATUSES },
+      },
+      _sum: { totalAmount: true },
+    });
+    return result._sum.totalAmount ?? 0;
+  }
+
   return {
     getVendorBySlug,
     isSlugAvailable,
@@ -2217,6 +2778,21 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     updateLeadRoutingRecipient,
     removeLeadRoutingRecipient,
     assignLeadRoutingRecipient,
+    createProspect,
+    bulkCreateProspects,
+    listProspects,
+    getProspect,
+    updateProspect,
+    addProspectInteraction,
+    convertProspect,
+    getMarketingSiteSettings,
+    updateMarketingSiteSettings,
+    listVendorExpenses,
+    createVendorExpense,
+    deleteVendorExpense,
+    getProfitSnapshot,
+    getWeekdayAverageGross,
+    getAllTimePaidRevenue,
     listVendors,
     getOperatorVendorDetail,
     setVendorActive,

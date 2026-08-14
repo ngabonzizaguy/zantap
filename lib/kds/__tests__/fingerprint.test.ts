@@ -29,6 +29,11 @@ const baseSnapshot = (): KdsSnapshot => ({
   todayGross: 5000,
   yesterdayGross: 4000,
   kitchenOpen: true,
+  featureFlags: {
+    featureWhatsappNotify: false,
+    featureStockTracking: false,
+    featureProfitInsights: false,
+  },
 });
 
 describe("fingerprintKdsSnapshot", () => {
