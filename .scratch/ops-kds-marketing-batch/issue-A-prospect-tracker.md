@@ -1,6 +1,6 @@
-# Issue A — Ops Prospect tracker
+# Issue A â€” Ops Prospect tracker
 
-**Status:** Done (code on `feat/ops-kds-marketing-batch`; not deployed)  
+**Status:** DONE · SHIPPED 2026-08-14 (`7d87984` → main → `zantap-ozp9b64ja` → `zantap.app`; migration applied; prod smoke PASS)  
 **Branch:** `feat/ops-kds-marketing-batch`  
 **ADR:** 0054
 
@@ -19,7 +19,7 @@ Outbound business outreach tracker in `/ops`, separate from inbound Leads.
 
 ## Locked decisions
 
-- Stages: FOUND → CONTACTED → IN TALKS → CONVERTED; exits DECLINED, UNREACHABLE
+- Stages: FOUND â†’ CONTACTED â†’ IN TALKS â†’ CONVERTED; exits DECLINED, UNREACHABLE
 - Manual entry + bulk paste/CSV; no Maps/social integrations in v1
 - Full interaction log (date, channel, note)
 - Manual link to Vendor (optional Lead) on conversion

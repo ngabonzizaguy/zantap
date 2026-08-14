@@ -226,6 +226,33 @@ database credentials here.
 
 ## Session ledger
 
+### 2026-08-14 — Cursor — candidate #23 batch SHIPPED to production (`7d87984` → `zantap.app`)
+
+- Owner confirmed the batch was reviewed and asked to ship. Committed the full
+  working tree as `7d87984` (238 files: issues A–E code, Journey 02 clip +
+  Journey 03 still, ADRs 0054–0059, per-storefront PWA manifest, batch
+  `.scratch` artifacts per precedent). Excluded: other `.scratch` streams,
+  `__pycache__`, third-party generation `.json`/`.err`, stray root screenshot.
+- Ship order: `npm run db:deploy` applied migration
+  `20260813120000_ops_kds_marketing_batch` to prod FIRST, then pushed
+  fast-forward to `main` (`f57ccbb..7d87984`) → auto Vercel Production
+  `zantap-ozp9b64ja` → `zantap.app` (Ready, 1m build).
+- Prod smoke PASS: core routes 200 (`/`, privacy, terms, storefront, KDS,
+  onboard), `/ops` 307 auth; per-slug PWA manifest 200 with prod vendor name +
+  `start_url`, unknown slug 404, storefront HTML links it; `momo.webp` 200 and
+  `order.mp4` range 206; comparison + footer copy in served HTML; runtime log
+  scan info-only. Data note: prod vendor is named "Inka Steakhouse Smoke"
+  (stale smoke rename; consider restoring via Ops).
+- Gotcha: PowerShell `Set-Content` mangled UTF-8 in `.scratch` issue files
+  during status flips — restored from the commit and redone with the editor
+  tool. Never bulk-edit UTF-8 markdown with `Set-Content` default encoding.
+- Next queued (owner 2026-08-14): install-hint banner (top notice, ~5s
+  auto-hide, storefront + KDS) as the next slice; Web Push now WANTED
+  (supersedes the earlier "not wanted") — needs grill/PRD (SW push handler,
+  permission UX, VAPID, subscriptions through the Store seam, order-paid
+  trigger; iOS 16.4+ installed-only). Owner still owes the Android install
+  smoke, now covering both KDS and storefront installs.
+
 ### 2026-08-14 — Cursor — per-storefront PWA install manifest (branch `feat/ops-kds-marketing-batch`)
 
 - Owner asked whether the PWA covers both storefront and KDS installs. Audit:

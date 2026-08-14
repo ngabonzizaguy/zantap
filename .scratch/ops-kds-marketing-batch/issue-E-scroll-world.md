@@ -1,6 +1,6 @@
 # Issue E — Scroll-world code + shot list
 
-**Status:** Done (not deployed); journey 02/06 accepted and baked on `codex/journey-02-walkthrough`; journey 03/06 attempt 1 owner-accepted, handed to Cursor, and **integrated on `feat/ops-kds-marketing-batch` 2026-08-14** (no retry; not integrated on the Codex branch)  
+**Status:** DONE · SHIPPED 2026-08-14 (`7d87984` → `zantap.app`; journey 02 clip + journey 03 still live in prod); journey 02/06 accepted and baked on `codex/journey-02-walkthrough`; journey 03/06 attempt 1 owner-accepted, handed to Cursor, and **integrated on `feat/ops-kds-marketing-batch` 2026-08-14** (no retry; not integrated on the Codex branch)  
 **Branches:** `feat/ops-kds-marketing-batch` (Cursor batch) and `codex/journey-02-walkthrough` (accepted Journey 02 integration)
 
 ## Checklist

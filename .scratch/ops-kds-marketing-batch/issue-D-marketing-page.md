@@ -1,6 +1,6 @@
 # Issue D — Marketing page polish
 
-**Status:** Done (code on `feat/ops-kds-marketing-batch`; not deployed)  
+**Status:** DONE · SHIPPED 2026-08-14 (`7d87984` → main → `zantap-ozp9b64ja` → `zantap.app`; migration applied; prod smoke PASS)  
 **Branch:** `feat/ops-kds-marketing-batch`
 
 ## Checklist
