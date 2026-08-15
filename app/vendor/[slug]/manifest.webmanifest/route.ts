@@ -13,7 +13,9 @@ export async function GET(_request: Request, { params }: RouteContext) {
       short_name: "ZanTap Kitchen",
       description: "Live kitchen orders and dispatch for your ZanTap storefront.",
       start_url: `/vendor/${encodedSlug}`,
-      scope: "/",
+      // Narrow scope: the KDS is its own installable app, independent from
+      // the marketing root and the storefront apps (see storefront-manifest).
+      scope: `/vendor/${encodedSlug}`,
       display: "standalone",
       background_color: "#0b0b0d",
       theme_color: "#0b0b0d",

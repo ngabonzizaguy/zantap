@@ -14,6 +14,9 @@ describe("storefront PWA manifest", () => {
 
     expect(value.id).toBe("/inka-steakhouse");
     expect(value.start_url).toBe("/inka-steakhouse");
+    // Scope must stay narrowed to the storefront so it installs as its own
+    // app instead of being shadowed by an installed root/KDS app.
+    expect(value.scope).toBe("/inka-steakhouse");
     expect(value.name).toBe("Inka Steakhouse");
     expect(value.description).toBe("Grilled meats in Kigali.");
     expect(value.display).toBe("standalone");

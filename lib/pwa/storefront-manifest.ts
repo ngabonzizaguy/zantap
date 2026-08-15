@@ -31,7 +31,11 @@ export function buildStorefrontManifest(vendor: StorefrontManifestVendor) {
       vendor.description?.trim() ||
       `Order from ${vendor.name} — powered by ZanTap.`,
     start_url: `/${encodedSlug}`,
-    scope: "/",
+    // Narrow scope so the storefront is its own installable app. With the
+    // previous scope "/", any installed ZanTap app (e.g. the marketing root)
+    // covered every storefront page and Chrome suppressed their install
+    // prompts entirely.
+    scope: `/${encodedSlug}`,
     display: "standalone" as const,
     background_color: "#f5f5f5",
     theme_color: "#f5f5f5",

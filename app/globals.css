@@ -395,6 +395,14 @@
   from { opacity: 0; }
 }
 
+/* PWA install-hint top notice (InstallHintBanner). */
+@keyframes installhint {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -12px, 0);
+  }
+}
+
 @keyframes zt-fade-out {
   to { opacity: 0; }
 }

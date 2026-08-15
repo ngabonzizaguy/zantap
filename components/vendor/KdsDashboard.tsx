@@ -47,6 +47,7 @@ import { ProfitPanel } from "@/components/vendor/ProfitPanel";
 import { SetupDrawer, type StorefrontProfile, type VendorBusinessProfile, type VendorPaymentProfile } from "@/components/vendor/SetupDrawer";
 import { HelpModal } from "@/components/vendor/HelpModal";
 import { Coachmark } from "@/components/vendor/Coachmark";
+import { InstallHintBanner } from "@/components/pwa/InstallHintBanner";
 import { Card, GradientOrbs } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 
@@ -389,6 +390,7 @@ export function KdsDashboard({
 
   return (
     <div className="kds-dark kds-surface min-h-screen w-full bg-canvas text-ink">
+      <InstallHintBanner variant="dark" surface="kds" appName="ZanTap Kitchen" />
       <div className="kds-surface relative mx-auto min-h-screen w-full max-w-kds overflow-hidden border-x border-hairline bg-canvas pb-10">
         <GradientOrbs className="opacity-25" />
 
