@@ -2,6 +2,7 @@
 
 Date: 2026-08-14
 Status: Accepted
+Amended: 2026-08-15 (narrowed app scopes + install-hint acceptance)
 Extends: ADR-0051 (PWA baseline)
 
 ## Context
@@ -36,15 +37,32 @@ Launcher icons stay on the approved-Z set for all manifests: vendor
 logos are not guaranteed square, opaque, or maskable-safe. Per-vendor
 launcher icons are a possible future refinement with validation.
 
-`scope` stays `/` (same as the KDS manifest); installed-app identity is
-disambiguated by the manifest `id`, which Chromium uses since the `id`
-member shipped.
+Keep each installed surface inside its own navigation scope:
+
+- root ZanTap marketing app: `/`;
+- customer storefront app: `/{encodedSlug}`;
+- vendor KDS app: `/vendor/{encodedSlug}`.
+
+Manifest `id` still provides stable installed-app identity, but it does not
+replace scope isolation. The former shared `/` scopes let an installed root or
+KDS app claim storefront URLs and could suppress a distinct storefront install.
+
+Both customer and KDS surfaces mount the shared `InstallHintBanner`. It is a
+one-time hint per surface, suppressed in standalone mode, and never requests
+notification permission. Chromium's `beforeinstallprompt` drives the real
+Install action and auto-hides after five seconds; iOS receives delayed
+Add-to-Home-Screen instructions and an eight-second reading window. Restricted
+storage falls back to once per pageview rather than suppressing the hint.
 
 ## Consequences
 
 - Customers install "<Restaurant>" launching into `/{slug}`; vendors install
   "ZanTap Kitchen" launching into `/vendor/{slug}`; the marketing root keeps
   the generic "ZanTap" manifest.
+- Storefront and KDS installs no longer claim the root or each other's routes;
+  the root marketing app remains the only manifest with `/` scope.
+- Install guidance is visible but non-blocking, surface-specific, and absent
+  after installation.
 - One extra `getVendorBySlug` read per storefront render (layout
   `generateMetadata`) — indexed lookup, accepted.
 - Service worker unchanged; notifications remain out of scope (Issue 09b
@@ -52,3 +70,7 @@ member shipped.
 - Verification: 7 new unit tests green (full suite 314/102), lint + `next
   build` clean; local smoke — vendor manifest JSON 200, unknown slug 404,
   storefront HTML links `/{slug}/manifest.webmanifest`.
+- 2026-08-15 follow-up verification: 16/16 focused PWA tests cover the
+  storefront builder, encoded KDS route scope, and install-hint lifecycle;
+  TypeScript, lint, and the production build are clean. Android Chrome and iOS
+  Add-to-Home-Screen acceptance remain physical-device checks.

@@ -1,6 +1,6 @@
 # Codex ↔ Cursor shared continuity prompt
 
-Last reconciled: **2026-08-14 (Africa/Kigali)**
+Last reconciled: **2026-08-15 (Africa/Kigali)**
 Scope: the product-restructure, marketing, lead-capture, PWA/KDS-polish,
 Paypack-preparation work, plus the new **Ops outreach + KDS + marketing batch**
 on branch `feat/ops-kds-marketing-batch` (shared Cursor ↔ Codex).
@@ -33,6 +33,26 @@ Preserve every pre-existing dirty or untracked path unless the current task
 explicitly owns it.
 
 ### Reconciled repository and production state
+
+- **Current checkpoint (2026-08-15):** branch
+  `feat/ops-kds-marketing-batch` is at PWA release candidate `61c4687`. The
+  owner approved only the 10-file PWA/install-hint/scope slice; it was isolated
+  from the shared `KdsDashboard.tsx` Setup hunk and committed. Focused PWA
+  16/16, TypeScript, lint, and a clean production build are green. Push and
+  production deployment are authorized and pending. The preserved uncommitted
+  implementation now comprises 2 Setup-guide paths and 29 marketing-only
+  i18n/Ops CRUD/Store persistence paths (31 unique files). No code was discarded
+  or regenerated; no migration, Web Push, performance pass, footer/social fix,
+  or production "Inka Steakhouse Smoke" cleanup occurred.
+- Audit findings: feature flags are present in full KDS snapshots but absent
+  from the lightweight revision, so Ops toggles do not push over SSE; Marketing
+  Site Settings saves revalidate `/ops/settings` but not `/`, matching the stale
+  social-link symptom; all 30 Lead Form strings are in the Ops-editable key set,
+  but end-to-end CRUD/render tests are missing and translated business-type
+  labels currently double as submitted values. ADR-0059 is now reconciled with
+  the local narrowed scopes; the i18n implementation still has no approved ADR
+  despite the existing deferred-CMS grill requirement. The PWA slice is
+  complete locally; marketing i18n and Setup-guide follow-ups remain owner-gated.
 
 - The Issue 05 behavior-bearing tip is `943efbc` (2026-08-12): multi-recipient
   WhatsApp routing plus its Lead-age hydration review fix on top of the two
@@ -225,6 +245,52 @@ Do not paste secrets, owner tokens, API keys, personal recipient details, or
 database credentials here.
 
 ## Session ledger
+
+### 2026-08-15 — Codex — PWA install-hint/scope release candidate isolated
+
+- Owner explicitly authorized commit, push, and production deployment of the
+  approved PWA slice only. Localization, Setup-guide, footer/social, migration,
+  Web Push, offline queue, and retained artifacts remain excluded.
+- Selectively staged the two PWA hunks in `KdsDashboard.tsx`; its Setup-guide
+  callback remains unstaged. Commit `61c4687` contains exactly 10 PWA paths.
+- Clean-commit verification: focused PWA 16/16, TypeScript, lint, and production
+  build pass. Production push/deployment and physical-device acceptance remain
+  the next gates.
+
+### 2026-08-15 — Codex — approved PWA install-hint/scope slice completed locally
+
+- Owner explicitly approved only the existing PWA slice. No Web Push,
+  marketing i18n, Setup-guide follow-up, performance work, production cleanup,
+  migration, commit, deployment, or production-data work was started.
+- Extracted the install-hint browser lifecycle behind `lib/pwa/install-hint.ts`
+  and kept `InstallHintBanner` as its React view. Eight behavior tests cover
+  prompt capture/install, five-second auto-hide, delayed iOS instructions,
+  `appinstalled` and manual dismissal, standalone suppression, and independent
+  storefront/KDS seen buckets. Restricted storage now shows once per pageview.
+- Added direct KDS manifest route coverage for encoded `id`, `start_url`, and
+  narrowed scope. ADR-0059 and the PWA issue now record root `/`, storefront
+  `/{slug}`, and KDS `/vendor/{slug}` scope ownership.
+- Verification: focused PWA 16/16, `npx tsc --noEmit`, lint, and production
+  build clean. The preserved tree remains unstaged and uncommitted. Remaining
+  PWA gate: Android Chrome + iOS physical-device acceptance.
+
+### 2026-08-15 — Codex — interrupted 37-file follow-up audited; approval gate retained
+
+- Read the required repo rules, continuity file, CONTEXT, ADR-0059, PWA issue,
+  reference image, branch status, all 22 tracked diffs, and all 15 untracked
+  implementation files. Preserved every pre-existing dirty/untracked path.
+- Exact ownership: PWA = 7 files; Setup-guide wiring = 2 files; marketing-only
+  i18n = 29 files; `components/vendor/KdsDashboard.tsx` is shared by PWA and
+  Setup, yielding 37 unique implementation files.
+- Confirmed gaps without changing product code: KDS SSE revision omits feature
+  flags; marketing settings do not revalidate `/`; Ops exposes all 30 Lead Form
+  copy keys but lacks end-to-end CRUD/render coverage; rw/fr/sw each cover 131
+  of 137 marketing keys (six intentionally fall back to English); Web Push,
+  performance work, and production-name cleanup are absent.
+- Only continuity/issue-tracker documentation was updated. No new design
+  decision was accepted, so no ADR was created or amended. No test was rerun,
+  commit created, migration applied, deployment started, or production data
+  changed. Next gate: owner approves the isolated slice order.
 
 ### 2026-08-14 — Cursor — candidate #23 batch SHIPPED to production (`7d87984` → `zantap.app`)
 

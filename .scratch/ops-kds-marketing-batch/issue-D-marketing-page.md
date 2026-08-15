@@ -1,6 +1,6 @@
 # Issue D — Marketing page polish
 
-**Status:** DONE · SHIPPED 2026-08-14 (`7d87984` → main → `zantap-ozp9b64ja` → `zantap.app`; migration applied; prod smoke PASS)  
+**Status:** DONE · SHIPPED 2026-08-14 (`7d87984` → main → `zantap-ozp9b64ja` → `zantap.app`; migration applied; prod smoke PASS) · FOLLOW-UP AUDITED 2026-08-15, owner approval pending
 **Branch:** `feat/ops-kds-marketing-batch`
 
 ## Checklist
@@ -38,3 +38,23 @@
 - Fee machinery deferred; comparison states low-fee promise only
 - Socials: X, TikTok, Instagram, Facebook, LinkedIn, YouTube, WhatsApp
 - Language CMS is a future candidate with its own grill + PRD (not this batch)
+
+## 2026-08-15 interrupted-follow-up audit — local only
+
+- [ ] Owner approval is required before continuing the 29-file marketing-only
+  localization implementation. It adds 137 editable marketing copy keys,
+  rw/fr/sw baselines, Store persistence, migration, Ops CRUD, and root-page
+  locale rendering; it does not translate storefront, KDS, onboarding, Ops,
+  legal pages, receipts/slips, or PWA copy.
+- [ ] Prove word-for-word Ops control for all 30 Lead Form keys: labels,
+  placeholders, five business-type labels, submit/loading, consent,
+  reassurance, four errors, and all success/WhatsApp strings. Keep submitted
+  business-type values canonical rather than storing translated labels.
+- [ ] Add operator/API/action/editor tests, audit-log assertions, save/reset
+  persistence, root-render invalidation, and four-locale browser smoke. Current
+  tests cover pure localization and Store CRUD only.
+- [ ] Fix Marketing Site Settings invalidation (`/` is not revalidated today),
+  validate/normalize social URLs, and browser-test that every saved channel
+  becomes a tappable external anchor with the exact destination.
+- [ ] Replace the stale `deferred-language-cms.md` decision with an approved
+  i18n PRD/ADR before migration or deployment; no such ADR exists yet.

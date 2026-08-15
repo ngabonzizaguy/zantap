@@ -43,8 +43,14 @@ storefront (`lib/pwa/storefront-manifest.ts` + `app/[slug]/manifest.webmanifest`
 route + `app/[slug]/layout.tsx`); tests 314/102, lint/build clean; prod smoke
 PASS (vendor manifest JSON 200, unknown slug 404, storefront links per-slug
 manifest). Android install smoke (owner device) now covers both KDS and
-storefront installs. Next PWA work queued: install-hint banner (5s auto-hide)
-and Web Push for vendors (owner re-requested 2026-08-14; requires grill/PRD). Tracking:
+storefront installs. **Follow-up committed as release candidate `61c4687` and
+authorized for production 2026-08-15:** install-hint banner plus narrowed
+storefront/KDS manifest scopes were isolated from the preserved dirty tree.
+Eight lifecycle tests cover the banner controller used by the UI; one KDS route
+test locks encoded scope; focused PWA 16/16, TypeScript, lint, and a clean
+production build are green. ADR-0059 is reconciled. Deployment and Android/iOS
+physical-device acceptance remain open. Web Push is still not implemented and requires its own
+grill/PRD/ADR. Tracking:
 `.scratch/pwa-kds-paypack-polish/issue-01.md` and
 `.scratch/product-restructure/issue-09.md`.
 
