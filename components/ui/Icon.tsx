@@ -1,5 +1,6 @@
 import {
   Binoculars,
+  ChartNoAxesCombined,
   Check,
   ChevronRight,
   ClipboardList,
@@ -48,7 +49,8 @@ export type IconName =
   | "settings"
   | "prospects"
   | "eye"
-  | "stock";
+  | "stock"
+  | "insights";
 
 const icons: Record<IconName, LucideIcon> = {
   menu: Menu,
@@ -74,6 +76,7 @@ const icons: Record<IconName, LucideIcon> = {
   prospects: Binoculars,
   eye: Eye,
   stock: Package,
+  insights: ChartNoAxesCombined,
 };
 
 interface IconProps extends Omit<LucideProps, "size"> {
@@ -92,7 +95,9 @@ export function Icon({
   className,
   ...props
 }: IconProps) {
-  const Glyph = icons[name];
+  // Keep an unexpected/stale semantic name from taking down the entire app.
+  // This can occur briefly across Fast Refresh when the icon registry changes.
+  const Glyph = icons[name] ?? Package;
   return (
     <Glyph
       size={size}

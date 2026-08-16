@@ -20,8 +20,7 @@ interface MetricsBannerProps {
   kitchenOpen: boolean;
   onToggleKitchen: () => void;
   onOpenMenu: () => void;
-  featureProfitInsights?: boolean;
-  onOpenProfit?: () => void;
+  onOpenProfit: () => void;
 }
 
 function formatGrossDelta(
@@ -52,7 +51,6 @@ export function MetricsBanner({
   kitchenOpen,
   onToggleKitchen,
   onOpenMenu,
-  featureProfitInsights,
   onOpenProfit,
 }: MetricsBannerProps) {
   const grossDelta = formatGrossDelta(todayGross, yesterdayGross);
@@ -126,16 +124,15 @@ export function MetricsBanner({
                 Today&apos;s gross
               </span>
             </div>
-            {featureProfitInsights && onOpenProfit ? (
-              <button
-                type="button"
-                onClick={onOpenProfit}
-                className="flex h-7 w-7 items-center justify-center rounded-brand-sm text-primary/70 transition-colors hover:bg-primary/10 hover:text-primary"
-                aria-label="Know your profit"
-              >
-                <Icon name="eye" size={15} strokeWidth={2.2} />
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={onOpenProfit}
+              className="flex h-8 w-8 items-center justify-center rounded-brand-md bg-[linear-gradient(135deg,#F5A623_0%,#FFD24C_100%)] text-[#1a1205] shadow-[0_0_18px_rgba(245,166,35,0.3)] transition-[filter,transform] hover:brightness-110 active:scale-95"
+              aria-label="Open complete profit insights"
+              title="Know your profit"
+            >
+              <Icon name="eye" size={17} strokeWidth={2.3} />
+            </button>
           </div>
           <div className="mt-1.5 flex items-baseline gap-1">
             <span className="font-display text-display-sm leading-none text-ink">

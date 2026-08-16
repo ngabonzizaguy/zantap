@@ -36,6 +36,7 @@ import type {
   VendorRecoveryEvent,
 } from "@/lib/types";
 import type { ResettableStore } from "@/lib/store/types";
+import type { CreateMarketingFunnelEventInput, MarketingFunnelEvent } from "@/lib/analytics/types";
 import type {
   CreateLeadRoutingRecipientInput,
   CreateLeadInput,
@@ -177,10 +178,15 @@ export function createInMemoryStore(): ResettableStore {
   let prospects: Prospect[] = [];
   let prospectInteractions: ProspectInteraction[] = [];
   let expenses: VendorExpense[] = [];
+  let marketingFunnelEvents: MarketingFunnelEvent[] = [];
   let marketingSettings: MarketingSiteSettings = {
     id: "default",
     updatedAt: new Date(),
   };
+  const siteTranslations = new Map<
+    string,
+    import("@/lib/i18n/site-translation-types").SiteTranslation
+  >();
   let kitchenOpen = true;
   let orderCounter = 0;
   let orderItemCounter = 0;
@@ -197,6 +203,7 @@ export function createInMemoryStore(): ResettableStore {
   let prospectCounter = 0;
   let prospectInteractionCounter = 0;
   let expenseCounter = 0;
+  let marketingFunnelEventCounter = 0;
 
   function cloneVendor(vendor: StoredVendor): Vendor {
     // Strip the server-only owner-token hash — it must never leave the Store.
@@ -299,6 +306,7 @@ export function createInMemoryStore(): ResettableStore {
     prospects = [];
     prospectInteractions = [];
     expenses = [];
+    marketingFunnelEvents = [];
     marketingSettings = { id: "default", updatedAt: new Date() };
     kitchenOpen = true;
     orderCounter = 0;
@@ -313,6 +321,7 @@ export function createInMemoryStore(): ResettableStore {
     prospectCounter = 0;
     prospectInteractionCounter = 0;
     expenseCounter = 0;
+    marketingFunnelEventCounter = 0;
   }
 
   load();
@@ -1632,8 +1641,6 @@ export function createInMemoryStore(): ResettableStore {
   function decrementStockForOrder(orderId: string): void {
     const order = orders.find((o) => o.id === orderId);
     if (!order) return;
-    const vendorRow = vendors.find((v) => v.id === order.vendorId);
-    if (!vendorRow?.featureStockTracking) return;
     for (const line of order.orderItems) {
       const itemIdx = menuItems.findIndex((m) => m.id === line.menuItemId);
       if (itemIdx === -1) continue;
@@ -1979,6 +1986,45 @@ export function createInMemoryStore(): ResettableStore {
     return { ...marketingSettings, updatedAt: new Date(marketingSettings.updatedAt) };
   }
 
+  // ─── Site copy translations ──────────────────────────────────────────────────
+
+  async function listSiteTranslations(locale?: string) {
+    return [...siteTranslations.values()]
+      .filter((t) => !locale || t.locale === locale)
+      .map((t) => ({ ...t, updatedAt: new Date(t.updatedAt) }));
+  }
+
+  async function upsertSiteTranslation(
+    locale: string,
+    key: string,
+    value: string
+  ) {
+    const entry = { locale, key, value, updatedAt: new Date() };
+    siteTranslations.set(`${locale}\u0000${key}`, entry);
+    return { ...entry };
+  }
+
+  async function deleteSiteTranslation(locale: string, key: string) {
+    return siteTranslations.delete(`${locale}\u0000${key}`);
+  }
+
+  async function recordMarketingFunnelEvent(input: CreateMarketingFunnelEventInput) {
+    const row: MarketingFunnelEvent = {
+      ...input,
+      id: `marketing-event-${++marketingFunnelEventCounter}`,
+      createdAt: new Date(),
+    };
+    marketingFunnelEvents.push(row);
+    return { ...row, createdAt: new Date(row.createdAt) };
+  }
+
+  async function listMarketingFunnelEvents(from: Date) {
+    return marketingFunnelEvents
+      .filter((row) => row.createdAt >= from)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .map((row) => ({ ...row, createdAt: new Date(row.createdAt) }));
+  }
+
   // ─── Vendor expenses + profit ─────────────────────────────────────────────────
 
   async function listVendorExpenses(
@@ -2174,6 +2220,11 @@ export function createInMemoryStore(): ResettableStore {
     convertProspect,
     getMarketingSiteSettings,
     updateMarketingSiteSettings,
+    listSiteTranslations,
+    upsertSiteTranslation,
+    deleteSiteTranslation,
+    recordMarketingFunnelEvent,
+    listMarketingFunnelEvents,
     listVendorExpenses,
     createVendorExpense,
     deleteVendorExpense,

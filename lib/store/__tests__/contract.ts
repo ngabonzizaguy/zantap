@@ -1414,9 +1414,8 @@ export function runStoreContract(
         expect(cleared?.costPriceRwf).toBeUndefined();
       });
 
-      it("payment confirms decrement stock when featureStockTracking enabled", async () => {
-        await store.operatorUpdateVendor(slug, { featureStockTracking: true });
-
+      it("payment decrements numeric stock even when the legacy vendor flag is off", async () => {
+        await store.operatorUpdateVendor(slug, { featureStockTracking: false });
         const item = (await store.getAvailableMenu(slug))[0];
         await store.updateMenuItem(slug, item.id, { stockCount: 5 });
 
@@ -1441,8 +1440,6 @@ export function runStoreContract(
       });
 
       it("stock decrement floors at 0", async () => {
-        await store.operatorUpdateVendor(slug, { featureStockTracking: true });
-
         const item = (await store.getAvailableMenu(slug))[0];
         await store.updateMenuItem(slug, item.id, { stockCount: 1 });
 
@@ -1467,8 +1464,6 @@ export function runStoreContract(
       });
 
       it("items without stockCount are unchanged on payment", async () => {
-        await store.operatorUpdateVendor(slug, { featureStockTracking: true });
-
         const item = (await store.getAvailableMenu(slug))[0];
         const beforeStock = (await store.getMenuItem(slug, item.id))?.stockCount;
 
@@ -1596,6 +1591,54 @@ export function runStoreContract(
           publicPhone: null,
         });
         expect(cleared.publicPhone).toBeUndefined();
+      });
+    });
+
+    describe("site translations", () => {
+      it("upserts, lists, filters by locale, and deletes overrides", async () => {
+        await store.upsertSiteTranslation("rw", "hero.headline", "Umutwe mushya");
+        await store.upsertSiteTranslation("fr", "hero.headline", "Nouveau titre");
+
+        const rw = await store.listSiteTranslations("rw");
+        expect(rw.some((t) => t.key === "hero.headline" && t.value === "Umutwe mushya")).toBe(true);
+        expect(rw.every((t) => t.locale === "rw")).toBe(true);
+
+        // Upsert replaces, never duplicates.
+        await store.upsertSiteTranslation("rw", "hero.headline", "Umutwe wa kabiri");
+        const rwAgain = await store.listSiteTranslations("rw");
+        expect(rwAgain.filter((t) => t.key === "hero.headline")).toHaveLength(1);
+        expect(rwAgain.find((t) => t.key === "hero.headline")?.value).toBe("Umutwe wa kabiri");
+
+        const all = await store.listSiteTranslations();
+        expect(all.length).toBeGreaterThanOrEqual(2);
+
+        expect(await store.deleteSiteTranslation("rw", "hero.headline")).toBe(true);
+        expect(await store.deleteSiteTranslation("rw", "hero.headline")).toBe(false);
+        const afterDelete = await store.listSiteTranslations("rw");
+        expect(afterDelete.some((t) => t.key === "hero.headline")).toBe(false);
+      });
+    });
+
+    describe("marketing funnel events", () => {
+      it("records privacy-minimal events and filters them by date", async () => {
+        const created = await store.recordMarketingFunnelEvent({
+          sessionId: "session-a",
+          event: "cta_click",
+          target: "hero-lead-cta",
+          locale: "rw",
+          path: "/",
+          utmSource: "instagram",
+        });
+        expect(created.id).toBeTruthy();
+        const rows = await store.listMarketingFunnelEvents(
+          new Date(Date.now() - 60_000)
+        );
+        expect(rows).toContainEqual(expect.objectContaining({
+          sessionId: "session-a",
+          event: "cta_click",
+          target: "hero-lead-cta",
+        }));
+        expect(await store.listMarketingFunnelEvents(new Date(Date.now() + 60_000))).toEqual([]);
       });
     });
 

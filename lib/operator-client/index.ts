@@ -29,6 +29,15 @@ import type {
   MarketingSiteSettings,
   UpdateMarketingSiteSettingsInput,
 } from "@/lib/vendor/feature-and-profit-types";
+import type { SiteTranslation } from "@/lib/i18n/site-translation-types";
+import type { MarketingInsights } from "@/lib/analytics/types";
+
+export async function getMarketingInsights(days = 30): Promise<MarketingInsights> {
+  const data = await operatorFetch<{ insights: MarketingInsights }>(
+    `/marketing-insights?days=${days}`
+  );
+  return data.insights;
+}
 
 export function getOperatorApiBaseUrl(): string {
   const configured = process.env.ZANTAP_OPERATOR_API_URL?.trim();
@@ -447,4 +456,42 @@ export async function patchMarketingSiteSettings(
     }
   );
   return data.settings;
+}
+
+// --- Site copy translations (Ops → Settings → Languages) ---
+
+export async function listSiteTranslations(
+  locale?: string
+): Promise<SiteTranslation[]> {
+  const query = locale ? `?locale=${encodeURIComponent(locale)}` : "";
+  const data = await operatorFetch<{ translations: SiteTranslation[] }>(
+    `/site-translations${query}`
+  );
+  return data.translations;
+}
+
+export async function upsertSiteTranslation(
+  locale: string,
+  key: string,
+  value: string
+): Promise<SiteTranslation> {
+  const data = await operatorFetch<{ translation: SiteTranslation }>(
+    "/site-translations",
+    {
+      method: "PATCH",
+      body: JSON.stringify({ locale, key, value }),
+    }
+  );
+  return data.translation;
+}
+
+export async function deleteSiteTranslation(
+  locale: string,
+  key: string
+): Promise<boolean> {
+  const data = await operatorFetch<{ deleted: boolean }>("/site-translations", {
+    method: "DELETE",
+    body: JSON.stringify({ locale, key }),
+  });
+  return data.deleted;
 }

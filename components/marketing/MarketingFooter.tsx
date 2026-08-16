@@ -1,10 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FOOTER } from "@/lib/marketing/copy";
+import { FOOTER as FOOTER_EN } from "@/lib/marketing/copy";
+import type { Localized } from "@/lib/i18n/localize";
 import type { MarketingSiteSettings } from "@/lib/vendor/feature-and-profit-types";
 
 interface Props {
   settings: MarketingSiteSettings;
+  copy?: Localized<typeof FOOTER_EN>;
 }
 
 const SOCIAL_ICONS: {
@@ -66,7 +68,8 @@ const HIDDEN_WHEN_EMPTY: ReadonlySet<keyof MarketingSiteSettings> = new Set([
   "socialYoutube",
 ]);
 
-export function MarketingFooter({ settings }: Props) {
+export function MarketingFooter({ settings, copy }: Props) {
+  const FOOTER = copy ?? FOOTER_EN;
   const socials = SOCIAL_ICONS.map((s) => {
     const raw = settings[s.key];
     const value = typeof raw === "string" ? raw.trim() : "";

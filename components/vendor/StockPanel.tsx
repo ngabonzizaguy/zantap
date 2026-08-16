@@ -12,7 +12,6 @@ import { cn } from "@/lib/cn";
 interface StockPanelProps {
   vendorSlug: string;
   items: MenuItem[];
-  enabled: boolean;
   onRefresh: () => Promise<void>;
 }
 
@@ -40,7 +39,6 @@ function parseFloatOrNull(v: string): number | null {
 export function StockPanel({
   vendorSlug,
   items,
-  enabled,
   onRefresh,
 }: StockPanelProps) {
   const { token: ownerToken } = useOwnerToken(vendorSlug);
@@ -92,22 +90,6 @@ export function StockPanel({
       setSaving(false);
     }
   };
-
-  if (!enabled) {
-    return (
-      <Card padding="lg" className="text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-hairline bg-surface-strong">
-          <Icon name="stock" size={28} className="text-muted" strokeWidth={1.8} />
-        </div>
-        <p className="font-display text-display-sm text-ink">
-          Stock tracking is not enabled
-        </p>
-        <p className="mt-2 font-body text-body-sm text-muted">
-          Ask ZanTap to enable stock tracking for your kitchen.
-        </p>
-      </Card>
-    );
-  }
 
   return (
     <div className="flex flex-col gap-4 pb-24">

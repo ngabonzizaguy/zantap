@@ -256,3 +256,26 @@ export const FOOTER = {
 } as const;
 
 export const STICKY_CTA = "Get setup";
+
+/**
+ * The full English copy tree. Localization (lib/i18n) addresses every
+ * translatable string by its dot path into THIS object (arrays by index),
+ * e.g. `hero.headline`, `offer.includes.2`. Renaming a key here renames the
+ * translation key — keep the Ops-stored overrides in mind before refactoring.
+ */
+export const MARKETING_COPY = {
+  meta: MARKETING_META,
+  nav: NAV,
+  hero: HERO,
+  leadForm: LEAD_FORM,
+  howItWorks: HOW_IT_WORKS,
+  product: PRODUCT,
+  scrollWorld: SCROLL_WORLD,
+  comparison: COMPARISON,
+  offer: OFFER,
+  close: CLOSE,
+  footer: FOOTER,
+  stickyCta: STICKY_CTA,
+} as const;
+
+export type MarketingCopyTree = typeof MARKETING_COPY;

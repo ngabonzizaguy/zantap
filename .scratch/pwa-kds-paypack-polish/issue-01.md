@@ -2,6 +2,11 @@
 
 Status: **DONE · install-hint/scope follow-up SHIPPED 2026-08-15 (`61c4687` + docs `aafdd47` → `dpl_ETqURpRh9qFyGPZyJBxXtNY5yg1y` → `zantap.app`) · prod smoke PASS · Android/iOS physical-device acceptance PASS 2026-08-15** · Baseline `0b685ea` + `1cf4a5a`
 
+Acceptance closeout shipped 2026-08-16 as documentation commit `06ac77a` →
+Production `dpl_4PxCbQZ8E2HCcvDDFBTs75jMUWea` → `zantap.app`. Core routes retained
+their expected 200/307 statuses, both narrowed manifest scopes remained correct,
+and the release-window logs contained only successful/info requests.
+
 Approved follow-up 2026-08-15 (shipped in isolated release `61c4687`; no
 migration; production deployment `dpl_ETqURpRh9qFyGPZyJBxXtNY5yg1y`): the install-hint
 banner and narrowed storefront/KDS manifest scopes were isolated from the

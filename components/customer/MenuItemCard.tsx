@@ -127,7 +127,6 @@ export const MenuItemCard = memo(function MenuItemCard({
 interface MenuListProps {
   items: MenuItem[];
   cart: Record<string, number>;
-  featureStockTracking?: boolean;
   onAdd: (id: string) => void;
   onOpen: (item: MenuItem) => void;
 }
@@ -135,15 +134,13 @@ interface MenuListProps {
 export function MenuList({
   items,
   cart,
-  featureStockTracking = false,
   onAdd,
   onOpen,
 }: MenuListProps) {
   return (
     <div className="flex flex-col gap-3">
       {items.map((item) => {
-        const soldOut =
-          featureStockTracking && item.stockCount === 0;
+        const soldOut = item.stockCount === 0;
         return (
           <MenuItemCard
             key={item.id}

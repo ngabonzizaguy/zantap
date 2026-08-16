@@ -229,7 +229,7 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
                 </p>
               </Card>
               <Card padding="sm" className="shadow-none">
-                <p className="font-body text-caption-uppercase text-muted">COGS</p>
+                <p className="font-body text-caption-uppercase text-muted">Food costs</p>
                 <p className="mt-1 font-display text-display-sm text-ink">
                   {formatRwf(s.periodCostOfGoodsRwf)}
                 </p>
@@ -280,7 +280,7 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
             {s.itemMargins.length > 0 && (
               <section className="mt-6">
                 <h3 className="font-display text-display-sm text-ink">
-                  Item margins
+                  Profit by menu item
                 </h3>
                 <div className="mt-3 flex flex-col gap-2">
                   {s.itemMargins.map((m) => (
@@ -302,7 +302,7 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
                           )}
                         >
                           {m.marginPct != null
-                            ? `${m.marginPct.toFixed(0)}%`
+                            ? `You keep ${m.marginPct.toFixed(0)}%`
                             : formatRwf(m.marginRwf)}
                         </span>
                       </div>

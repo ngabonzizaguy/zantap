@@ -1,16 +1,10 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { cookies } from "next/headers";
 import { getBaseUrl } from "@/lib/base-url";
 import { getStore } from "@/lib/store";
-import {
-  CLOSE,
-  HERO,
-  HOW_IT_WORKS,
-  MARKETING_META,
-  NAV,
-  OFFER,
-  PRODUCT,
-} from "@/lib/marketing/copy";
+import { LOCALE_COOKIE, resolveLocale } from "@/lib/i18n/config";
+import { getLocalizedMarketingCopy } from "@/lib/i18n/get-marketing-copy";
 import { ComparisonSection } from "@/components/marketing/ComparisonSection";
 import { DeviceFrame } from "@/components/marketing/DeviceFrame";
 import { HeroMedia } from "@/components/marketing/HeroMedia";
@@ -18,6 +12,7 @@ import { LanguageSwitcher } from "@/components/marketing/LanguageSwitcher";
 import { LeadForm } from "@/components/marketing/LeadForm";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingMotion } from "@/components/marketing/MarketingMotion";
+import { MarketingAnalytics } from "@/components/marketing/MarketingAnalytics";
 import { OrbitAccent } from "@/components/marketing/OrbitAccent";
 import { ScreenCardDeck } from "@/components/marketing/ScreenCardDeck";
 import { ScrollWorldSection } from "@/components/marketing/scroll-world/ScrollWorldSection";
@@ -25,24 +20,31 @@ import { StickyCta } from "@/components/marketing/StickyCta";
 
 const OG_IMAGE = "/marketing/kigali-vendor-hero.png";
 
-export function generateMetadata(): Metadata {
+async function resolveRequestLocale() {
+  const jar = await cookies();
+  return resolveLocale(jar.get(LOCALE_COOKIE)?.value);
+}
+
+export async function generateMetadata(): Promise<Metadata> {
   const base = getBaseUrl();
+  const locale = await resolveRequestLocale();
+  const { meta } = await getLocalizedMarketingCopy(locale);
   return {
-    title: MARKETING_META.title,
-    description: MARKETING_META.description,
+    title: meta.title,
+    description: meta.description,
     ...(base ? { metadataBase: new URL(base) } : {}),
     openGraph: {
-      title: MARKETING_META.title,
-      description: MARKETING_META.description,
-      siteName: MARKETING_META.siteName,
+      title: meta.title,
+      description: meta.description,
+      siteName: meta.siteName,
       type: "website",
-      locale: "en_RW",
+      locale: locale === "en" ? "en_RW" : `${locale}_RW`,
       images: [{ url: OG_IMAGE, width: 1376, height: 768 }],
     },
     twitter: {
       card: "summary_large_image",
-      title: MARKETING_META.title,
-      description: MARKETING_META.description,
+      title: meta.title,
+      description: meta.description,
       images: [OG_IMAGE],
     },
   };
@@ -52,7 +54,19 @@ const CTA_PILL_CREAM =
   "inline-flex items-center gap-2 rounded-pill bg-[#faf7f2] px-7 py-4 font-body text-button font-semibold text-[#0c0a09] transition-colors hover:bg-white";
 
 export default async function MarketingPage() {
-  const settings = await getStore().getMarketingSiteSettings();
+  const locale = await resolveRequestLocale();
+  const [settings, copy] = await Promise.all([
+    getStore().getMarketingSiteSettings(),
+    getLocalizedMarketingCopy(locale),
+  ]);
+  const {
+    nav: NAV,
+    hero: HERO,
+    howItWorks: HOW_IT_WORKS,
+    product: PRODUCT,
+    offer: OFFER,
+    close: CLOSE,
+  } = copy;
 
   return (
     <div className="min-h-screen bg-[#0c0a09] text-[#f4f4f3]">
@@ -96,6 +110,7 @@ export default async function MarketingPage() {
             <LanguageSwitcher />
             <a
               href="#lead-form"
+              data-analytics-target="masthead-lead-cta"
               className="rounded-pill bg-[#f5a623] px-5 py-2.5 font-body text-button font-semibold text-[#1a1205] transition-colors hover:bg-[#ffd24c]"
             >
               {NAV.cta}
@@ -159,7 +174,7 @@ export default async function MarketingPage() {
 
           {/* Form ahead of any device on mobile (prototype C) */}
           <div data-mkt-hero className="w-full max-w-md justify-self-center lg:justify-self-end">
-            <LeadForm />
+            <LeadForm copy={copy.leadForm} />
           </div>
         </div>
       </section>
@@ -198,10 +213,10 @@ export default async function MarketingPage() {
       </section>
 
       {/* Scroll-world cinematic — one continuous Kigali walkthrough (Issue 03 preview) */}
-      <ScrollWorldSection />
+      <ScrollWorldSection copy={copy.scrollWorld} />
 
       {/* Comparison: problem → solution */}
-      <ComparisonSection />
+      <ComparisonSection copy={copy.comparison} />
 
       {/* Product: two screens inside device hardware */}
       <section className="relative overflow-hidden border-t border-white/10">
@@ -284,6 +299,7 @@ export default async function MarketingPage() {
             </ul>
             <a
               href="#lead-form"
+              data-analytics-target="offer-lead-cta"
               className="mt-7 flex w-full items-center justify-center gap-2 rounded-pill bg-[#f5a623] px-6 py-4 font-body text-button font-semibold text-[#1a1205] transition-colors hover:bg-[#ffd24c]"
             >
               {OFFER.cta} <span aria-hidden>→</span>
@@ -306,17 +322,18 @@ export default async function MarketingPage() {
               {CLOSE.heading}
             </h2>
           </div>
-          <a data-mkt-reveal href="#lead-form" className={CTA_PILL_CREAM}>
+          <a data-mkt-reveal data-analytics-target="close-lead-cta" href="#lead-form" className={CTA_PILL_CREAM}>
             {CLOSE.cta} <span aria-hidden>↗</span>
           </a>
         </div>
       </section>
 
       {/* Footer */}
-      <MarketingFooter settings={settings} />
+      <MarketingFooter settings={settings} copy={copy.footer} />
 
-      <StickyCta />
+      <StickyCta label={copy.stickyCta} />
       <MarketingMotion />
+      <MarketingAnalytics />
     </div>
   );
 }

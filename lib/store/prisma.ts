@@ -66,6 +66,7 @@ import {
   normalizeDriverName,
 } from "@/lib/vendor/driver-display";
 import type { Store } from "@/lib/store/types";
+import type { CreateMarketingFunnelEventInput, MarketingFunnelEvent, MarketingEventName } from "@/lib/analytics/types";
 import type {
   CreateLeadRoutingRecipientInput,
   CreateLeadInput,
@@ -1984,9 +1985,9 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function decrementStockOnPaid(orderId: string): Promise<void> {
     const order = await client.order.findUnique({
       where: { id: orderId },
-      include: { vendor: { select: { featureStockTracking: true } }, orderItems: true },
+      include: { orderItems: true },
     });
-    if (!order?.vendor.featureStockTracking) return;
+    if (!order) return;
     for (const line of order.orderItems) {
       const item = await client.menuItem.findUnique({
         where: { id: line.menuItemId },
@@ -2547,6 +2548,72 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     };
   }
 
+  // ─── Site copy translations ──────────────────────────────────────────────────
+
+  async function listSiteTranslations(locale?: string) {
+    const rows = await client.siteTranslation.findMany({
+      where: locale ? { locale } : undefined,
+      orderBy: [{ locale: "asc" }, { key: "asc" }],
+    });
+    return rows.map((row) => ({
+      locale: row.locale,
+      key: row.key,
+      value: row.value,
+      updatedAt: row.updatedAt,
+    }));
+  }
+
+  async function upsertSiteTranslation(
+    locale: string,
+    key: string,
+    value: string
+  ) {
+    const row = await client.siteTranslation.upsert({
+      where: { locale_key: { locale, key } },
+      create: { locale, key, value },
+      update: { value },
+    });
+    return {
+      locale: row.locale,
+      key: row.key,
+      value: row.value,
+      updatedAt: row.updatedAt,
+    };
+  }
+
+  async function deleteSiteTranslation(locale: string, key: string) {
+    const result = await client.siteTranslation.deleteMany({
+      where: { locale, key },
+    });
+    return result.count > 0;
+  }
+
+  async function recordMarketingFunnelEvent(input: CreateMarketingFunnelEventInput) {
+    const row = await client.marketingFunnelEvent.create({ data: input });
+    return toMarketingFunnelEvent(row);
+  }
+
+  async function listMarketingFunnelEvents(from: Date) {
+    const rows = await client.marketingFunnelEvent.findMany({
+      where: { createdAt: { gte: from } },
+      orderBy: { createdAt: "desc" },
+      take: 50_000,
+    });
+    return rows.map(toMarketingFunnelEvent);
+  }
+
+  function toMarketingFunnelEvent(row: Awaited<ReturnType<typeof client.marketingFunnelEvent.create>>): MarketingFunnelEvent {
+    return {
+      ...row,
+      event: row.event as MarketingEventName,
+      target: row.target ?? undefined,
+      referrerHost: row.referrerHost ?? undefined,
+      utmSource: row.utmSource ?? undefined,
+      utmMedium: row.utmMedium ?? undefined,
+      utmCampaign: row.utmCampaign ?? undefined,
+    };
+  }
+
   // ─── Vendor expenses + profit ─────────────────────────────────────────────────
 
   async function listVendorExpenses(
@@ -2787,6 +2854,11 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     convertProspect,
     getMarketingSiteSettings,
     updateMarketingSiteSettings,
+    listSiteTranslations,
+    upsertSiteTranslation,
+    deleteSiteTranslation,
+    recordMarketingFunnelEvent,
+    listMarketingFunnelEvents,
     listVendorExpenses,
     createVendorExpense,
     deleteVendorExpense,

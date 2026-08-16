@@ -1,14 +1,20 @@
 import { LeadRoutingSettingsForm } from "@/components/ops/LeadRoutingSettingsForm";
 import { MarketingSiteSettingsForm } from "@/components/ops/MarketingSiteSettingsForm";
+import { SiteTranslationsEditor } from "@/components/ops/SiteTranslationsEditor";
 import {
   getMarketingSiteSettings,
   listLeadRoutingRecipients,
+  listSiteTranslations,
 } from "@/lib/operator-client";
+import { MARKETING_COPY } from "@/lib/marketing/copy";
+import { flattenCopy } from "@/lib/i18n/localize";
+import { BASELINE_TRANSLATIONS } from "@/lib/i18n/baselines";
 
 export default async function OpsSettingsPage() {
-  const [recipients, marketingSettings] = await Promise.all([
+  const [recipients, marketingSettings, translations] = await Promise.all([
     listLeadRoutingRecipients(),
     getMarketingSiteSettings(),
+    listSiteTranslations(),
   ]);
 
   return (
@@ -23,6 +29,11 @@ export default async function OpsSettingsPage() {
       </div>
       <LeadRoutingSettingsForm recipients={recipients} />
       <MarketingSiteSettingsForm settings={marketingSettings} />
+      <SiteTranslationsEditor
+        englishSource={flattenCopy(MARKETING_COPY)}
+        baselines={BASELINE_TRANSLATIONS}
+        overrides={translations}
+      />
     </div>
   );
 }

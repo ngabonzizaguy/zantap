@@ -24,6 +24,10 @@ import {
   deriveOptionalChecklist,
   OPTIONAL_CHECKLIST_ITEMS,
 } from "@/lib/vendor/optional-checklist";
+import {
+  getOnboardingDestination,
+  getOptionalDestination,
+} from "@/lib/vendor/setup-destinations";
 import { isValidVendorSlug, normalizeVendorSlug } from "@/lib/vendor/slug";
 import {
   transferOwnerTokenCache,
@@ -105,12 +109,13 @@ interface SetupDrawerProps {
   profile: StorefrontProfile;
   menu: MenuItem[];
   drivers?: import("@/lib/types").Driver[];
-  featureFlags?: import("@/lib/vendor/feature-and-profit-types").VendorFeatureFlags;
   onProfileSaved?: (profile: StorefrontProfile) => void;
   onBusinessSaved?: (business: VendorBusinessProfile) => void;
   onPaymentsSaved?: (payments: VendorPaymentProfile) => void;
   onRefresh?: () => void;
   onNavigateTab?: (tab: import("@/components/vendor/Tabs").KdsTab) => void;
+  /** Opens the kitchen directly from the "Open the kitchen" step. */
+  onOpenKitchen?: () => void;
   onDriversChange?: (drivers: import("@/lib/types").Driver[]) => void;
 }
 
@@ -124,12 +129,12 @@ export function SetupDrawer({
   profile,
   menu,
   drivers,
-  featureFlags,
   onProfileSaved,
   onBusinessSaved,
   onPaymentsSaved,
   onRefresh,
   onNavigateTab,
+  onOpenKitchen,
   onDriversChange,
 }: SetupDrawerProps) {
   const [driversExpanded, setDriversExpanded] = useState(false);
@@ -603,32 +608,42 @@ export function SetupDrawer({
           <ol className="flex flex-col gap-3">
             {ONBOARDING_STEPS.map((step, index) => {
               const done = checklist[step.id];
-              const stepTabTarget: Record<string, import("@/components/vendor/Tabs").KdsTab | undefined> = {
-                hasMenuItem: "menu",
-                hasPhoto: "menu",
-                hasFirstOrder: "orders",
-                hasDispatch: "orders",
-              };
-              const targetTab = stepTabTarget[step.id];
+              const destination = getOnboardingDestination(step.id);
               const handleStepClick = () => {
-                if (!onNavigateTab || !targetTab) return;
-                onNavigateTab(targetTab);
+                if (destination.kind === "open-kitchen") {
+                  onOpenKitchen?.();
+                  return;
+                }
+                if (destination.kind === "anchor") {
+                  document.getElementById(destination.anchorId)?.scrollIntoView({ behavior: "smooth" });
+                  return;
+                }
+                if (!onNavigateTab) return;
+                onNavigateTab(destination.tab);
                 onClose();
               };
-              const clickable = !!onNavigateTab && !!targetTab;
+              const clickable = destination.kind === "open-kitchen"
+                ? !!onOpenKitchen
+                : !!onNavigateTab;
               return (
                 <li key={step.id}>
                   <Card
                     padding="sm"
                     className={cn(
                       done && "border-primary/30 bg-canvas-soft/60",
-                      clickable && !done && "cursor-pointer hover:border-primary/30"
+                      clickable && "cursor-pointer hover:border-primary/30"
                     )}
-                    {...(clickable && !done
+                    {...(clickable
                       ? {
                           onClick: handleStepClick,
                           role: "button",
                           tabIndex: 0,
+                          onKeyDown: (event: React.KeyboardEvent) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              handleStepClick();
+                            }
+                          },
                         }
                       : {})}
                   >
@@ -680,10 +695,48 @@ export function SetupDrawer({
             <ul className="mt-4 flex flex-col gap-2">
               {OPTIONAL_CHECKLIST_ITEMS.map((item) => {
                 const done = optionalChecklist[item.id];
+                const destination = getOptionalDestination(item.id);
+                const clickable = !item.comingSoon && destination !== null;
+                const handleOptionalClick = () => {
+                  if (!destination) return;
+                  if (destination.kind === "tab") {
+                    onNavigateTab?.(destination.tab);
+                    onClose();
+                    return;
+                  }
+                  if (destination.kind !== "anchor") return;
+                  const target = panelRef.current?.querySelector<HTMLElement>(
+                    `#${destination.anchorId}`
+                  );
+                  if (!target) return;
+                  target.scrollIntoView({ behavior: "smooth", block: "center" });
+                  const field =
+                    target instanceof HTMLTextAreaElement ||
+                    target instanceof HTMLInputElement
+                      ? target
+                      : target.querySelector<HTMLElement>("input, textarea");
+                  field?.focus({ preventScroll: true });
+                };
                 return (
                   <li
                     key={item.id}
-                    className="flex items-start gap-3 rounded-brand-md border border-hairline px-3 py-2.5"
+                    className={cn(
+                      "flex items-start gap-3 rounded-brand-md border border-hairline px-3 py-2.5",
+                      clickable && "cursor-pointer hover:border-primary/30"
+                    )}
+                    {...(clickable
+                      ? {
+                          onClick: handleOptionalClick,
+                          role: "button",
+                          tabIndex: 0,
+                          onKeyDown: (event: React.KeyboardEvent) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              handleOptionalClick();
+                            }
+                          },
+                        }
+                      : {})}
                   >
                     <span
                       className={cn(
@@ -1055,7 +1108,7 @@ export function SetupDrawer({
                 placeholder="4.8"
                 disabled={profileFieldsDisabled}
               />
-              <div className="flex flex-col gap-2">
+              <div id="setup-logo-editor" className="flex flex-col gap-2">
                 <Input
                   label="Logo URL"
                   type="url"
@@ -1095,7 +1148,7 @@ export function SetupDrawer({
                   </div>
                 ) : null}
               </div>
-              <div className="flex flex-col gap-2">
+              <div id="setup-cover-editor" className="flex flex-col gap-2">
                 <Input
                   label="Cover image URL"
                   type="url"
@@ -1215,7 +1268,7 @@ export function SetupDrawer({
             ) : null}
           </section>
 
-          {featureFlags?.featureStockTracking && onNavigateTab ? (
+          {onNavigateTab ? (
             <section className="mt-8">
               <h3 className="font-display text-display-sm text-ink">
                 Stock tracking

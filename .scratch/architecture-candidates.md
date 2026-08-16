@@ -53,7 +53,9 @@ production build are green. **SHIPPED 2026-08-15:** `61c4687` + docs `aafdd47`
 → Production `dpl_ETqURpRh9qFyGPZyJBxXtNY5yg1y` → `zantap.app`; route,
 manifest-scope, bundle-presence, and error/5xx-log smoke passed. ADR-0059 is
 reconciled. Android/iOS physical-device acceptance passed 2026-08-15, closing
-09a. Web Push is
+09a. The acceptance closeout was published as docs commit `06ac77a` and deployed
+2026-08-16 as `dpl_4PxCbQZ8E2HCcvDDFBTs75jMUWea` on `zantap.app`; route,
+manifest-scope, and release-log smoke passed. Web Push is
 still not implemented and requires its own
 grill/PRD/ADR. Tracking:
 `.scratch/pwa-kds-paypack-polish/issue-01.md` and
@@ -403,6 +405,7 @@ If a session ends without doing both, the handoff is incomplete.
 | Ops | Professional email DNS for `zantap.app` | Owner request | Vercel DNS + Spacemail | ✅ Done · domain verified · 3 mailboxes active · outbound test sent 2026-08-06 | `.scratch/social-account-branding/issue-02.md` |
 | Ops | Shared Codex ↔ Cursor continuity prompt | Owner request | Agent coordination only; no product/deploy change | ✅ Done · durable prompt created 2026-08-09 | `docs/agents/codex-cursor-shared-handoff.md` |
 | 23 | Ops outreach + KDS + marketing batch (Prospects, feature flags, Stock, Profit, marketing polish, scroll-world code) | Owner request · grilled 2026-08-12 | Ops + Store + KDS + marketing | ✅ DONE · SHIPPED 2026-08-14 — owner reviewed + approved; `7d87984` → main → `zantap-ozp9b64ja` → `zantap.app`; migration `20260813120000_ops_kds_marketing_batch` applied; prod smoke PASS (routes 200, per-slug PWA manifest live, journey 02 clip + journey 03 still served, comparison/footer/privacy/terms live, runtime log scan clean). Includes ADR-0059 per-storefront PWA manifest. ADRs 0054–0059 | `.scratch/ops-kds-marketing-batch/` |
+| 24 | Launch readiness: universal Stock/Profit, Setup destinations, four-locale CMS, funnel insights, canonical host | Owner request 2026-08-16 | KDS + Ops + marketing + PWA host | 🚀 RELEASE IN PROGRESS — implementation verified locally; analytics migration applied; ADR-0060. Production deploy/smoke pending. Payments and footer social destinations unchanged. | `.scratch/launch-readiness-2026-08-16/` |
 
 **#22 closed 2026-07-06** — code shipped `e734387` (live on `zantap-psi.vercel.app`
 since #17 deploy); migration `20260705180000_order_driver_assignment` applied.

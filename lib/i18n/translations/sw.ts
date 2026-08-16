@@ -1,0 +1,170 @@
+import type { TranslationDict } from "@/lib/i18n/localize";
+
+/**
+ * Kiswahili baseline (agent draft 2026-08-14). Starting point — the owner
+ * overrides word-for-word in Ops → Settings → Languages.
+ */
+export const SW_TRANSLATIONS: TranslationDict = {
+  "meta.siteName": "ZanTap",
+  "meta.title": "ZanTap — Weka biashara yako ya chakula mtandaoni, ukisaidiwa",
+  "meta.description":
+    "ZanTap inawapa wafanyabiashara wa chakula nchini Rwanda kiungo kimoja cha kuagiza, malipo ya MoMo, na skrini ya jikoni ya moja kwa moja. Usanidi wa bure kwa washirika wa mwanzo waliochaguliwa.",
+
+  "nav.howItWorks": "Jinsi inavyofanya kazi",
+  "nav.offer": "Ofa yetu",
+  "nav.cta": "Anza sasa",
+  "nav.openStorefrontDemo": "Tazama duka la moja kwa moja",
+
+  "hero.availability": "Nafasi za washirika wa mwanzo zipo wazi",
+  "hero.kicker": "Tunaanzia Rwanda",
+  "hero.headline": "Weka biashara yako ya chakula mtandaoni — ukisaidiwa.",
+  "hero.summary":
+    "Tunakusanidia kiungo chako cha kuagiza, vyakula vyako vya kwanza kwenye menyu, na mfumo wako wa MoMo. Timu yako inapata skrini ya jikoni ya moja kwa moja.",
+  "hero.promise.0.step": "01",
+  "hero.promise.0.title": "Wateja wanaagiza",
+  "hero.promise.0.detail": "Kupitia kiungo kimoja rahisi",
+  "hero.promise.1.step": "02",
+  "hero.promise.1.title": "Unapokea malipo",
+  "hero.promise.1.detail": "Kupitia MoMo",
+  "hero.promise.2.step": "03",
+  "hero.promise.2.title": "Jikoni lako linafanya kazi",
+  "hero.promise.2.detail": "Kwa kila oda iliyolipwa",
+  "hero.deviceTag.title": "Duka lako liko hewani",
+  "hero.deviceTag.detail": "Shiriki kiungo chako",
+  "hero.audienceNote":
+    "Kwa migahawa, baa, wapishi wa hafla na huduma za chakula kutoka nyumbani.",
+
+  "leadForm.kicker": "Usanidi wa bure wa mapema",
+  "leadForm.heading": "Tuambie kuhusu biashara yako.",
+  "leadForm.subheading": "Tutawasiliana nawe kwa WhatsApp.",
+  "leadForm.fields.businessName.label": "Jina la biashara",
+  "leadForm.fields.businessName.placeholder": "mf. Jiko la Mama Aline",
+  "leadForm.fields.businessType.label": "Aina ya biashara",
+  "leadForm.fields.businessType.placeholder": "Chagua moja",
+  "leadForm.fields.businessType.options.0": "Mgahawa",
+  "leadForm.fields.businessType.options.1": "Baa na nyama choma",
+  "leadForm.fields.businessType.options.2": "Mpishi wa hafla (catering)",
+  "leadForm.fields.businessType.options.3": "Usambazaji wa chakula kutoka nyumbani",
+  "leadForm.fields.businessType.options.4": "Biashara nyingine ya chakula",
+  "leadForm.fields.contactName.label": "Mtu wa mawasiliano",
+  "leadForm.fields.contactName.placeholder": "Jina lako kamili",
+  "leadForm.fields.phone.label": "Namba ya WhatsApp",
+  "leadForm.fields.phone.placeholder": "07•• ••• •••",
+  "leadForm.fields.area.label": "Eneo",
+  "leadForm.fields.area.placeholder": "mf. Kimihurura, Kigali",
+  "leadForm.submit": "Omba usanidi",
+  "leadForm.submitting": "Inatumwa…",
+  "leadForm.consent":
+    "Kwa kutuma hii, unakubali kwamba ZanTap inaweza kuwasiliana nawe kwa WhatsApp kuhusu usanidi wako.",
+  "leadForm.reassurance": "Hakuna mkataba mrefu. Hakuna shinikizo.",
+  "leadForm.errors.required": "Tafadhali jaza sehemu zote.",
+  "leadForm.errors.phone": "Weka namba halali ya simu ya Rwanda (07XX XXX XXX).",
+  "leadForm.errors.rateLimited": "Maombi ni mengi mno. Subiri kidogo kisha ujaribu tena.",
+  "leadForm.errors.submissionFailed": "Hatukuweza kuhifadhi ombi lako. Tafadhali jaribu tena.",
+  "leadForm.success.title": "Umeingia kwenye orodha.",
+  "leadForm.success.detail": "Tutawasiliana nawe kwa WhatsApp na kuendelea kutoka hapo.",
+  "leadForm.success.whatsappCta": "Endelea kwenye WhatsApp",
+  "leadForm.success.whatsappNote": "Kagua ujumbe, kisha bonyeza Tuma ndani ya WhatsApp.",
+
+  "howItWorks.kicker": "Kinachofuata",
+  "howItWorks.heading": "Rahisi tangu siku ya kwanza.",
+  "howItWorks.steps.0.tag": "Siku 01",
+  "howItWorks.steps.0.title": "Tunasanidi pamoja",
+  "howItWorks.steps.0.detail": "Taarifa zako, menyu yako na MoMo.",
+  "howItWorks.steps.1.tag": "Kuanza hewani",
+  "howItWorks.steps.1.title": "Unashiriki kiungo chako",
+  "howItWorks.steps.1.detail": "WhatsApp, Instagram au popote pale.",
+  "howItWorks.steps.2.tag": "Oda ya kwanza",
+  "howItWorks.steps.2.title": "Jikoni lako linaiona",
+  "howItWorks.steps.2.detail": "Imelipwa na tayari kuandaliwa.",
+
+  "product.kicker": "Oda moja. Skrini mbili.",
+  "product.heading": "Kutoka kwenye simu yao hadi jikoni lako.",
+  "product.storefront.title": "Menyu yako mwenyewe ya simu",
+  "product.storefront.detail":
+    "Shiriki kiungo kimoja. Wateja wanachagua, wanaagiza na kulipa kwa MoMo bila kupakua programu.",
+  "product.storefront.alt": "Duka la ZanTap kwenye simu likionyesha menyu na kikapu",
+  "product.kitchen.title": "Jikoni lililo wazi zaidi",
+  "product.kitchen.detail":
+    "Kila oda iliyolipwa inafika kwenye dashibodi ya jikoni lako — mpya, inaandaliwa, tayari. Hakuna kutafuta kwenye jumbe.",
+  "product.kitchen.alt": "Dashibodi ya jikoni ya ZanTap ikionyesha oda mpya iliyolipwa",
+  "product.kitchen.cards.0.caption": "Duka lako, hewani ndani ya dakika chache",
+  "product.kitchen.cards.0.alt":
+    "Skrini ya mafanikio ya ZanTap yenye kiungo cha duka na msimbo wa QR",
+  "product.kitchen.cards.1.caption": "Wateja wanalipa kwa MoMo",
+  "product.kitchen.cards.1.alt":
+    "Skrini ya malipo ya ZanTap ikimwomba mteja kulipa kwa MoMo",
+  "product.kitchen.cards.2.caption": "Oda zinafika jikoni lako",
+  "product.kitchen.cards.2.alt": "Dashibodi ya jikoni ya ZanTap ikionyesha oda zilizolipwa",
+
+  "scrollWorld.kicker": "Oda moja, mwanzo hadi mwisho",
+  "scrollWorld.heading": "Ipitie hatua kwa hatua.",
+  "scrollWorld.hint": "Sogeza chini kupitia safari",
+  "scrollWorld.sections.0.label": "Duka",
+  "scrollWorld.sections.0.eyebrow": "Kigali, jua linapotua",
+  "scrollWorld.sections.0.title": "Inaanzia kaunta yako.",
+  "scrollWorld.sections.0.body":
+    "Chakula kizuri tayari kinavuta watu. ZanTap inawapa njia rahisi zaidi ya kukufikia — popote walipo.",
+  "scrollWorld.sections.1.label": "Oda",
+  "scrollWorld.sections.1.eyebrow": "Kiungo kimoja rahisi",
+  "scrollWorld.sections.1.title": "Wanaagiza kutoka kwenye simu zao.",
+  "scrollWorld.sections.1.body":
+    "Hakuna programu ya kupakua. Menyu yako, bei zako, kiungo kimoja unachoweza kushiriki WhatsApp, Instagram au popote.",
+  "scrollWorld.sections.2.label": "Malipo ya MoMo",
+  "scrollWorld.sections.2.eyebrow": "Imelipwa kabla hujapika",
+  "scrollWorld.sections.2.title": "Malipo ya MoMo, yamethibitishwa.",
+  "scrollWorld.sections.2.body":
+    "Wateja wanalipa kwa MTN MoMo. Unaona pesa kabla jikoni halijaanza — hakuna kufuatilia, hakuna kubahatisha.",
+  "scrollWorld.sections.3.label": "Jikoni",
+  "scrollWorld.sections.3.eyebrow": "Mwonekano wa jikoni",
+  "scrollWorld.sections.3.title": "Kila oda iliyolipwa, kwenye skrini moja.",
+  "scrollWorld.sections.3.body":
+    "Mpya, inaandaliwa, tayari — timu yako inafuata foleni iliyo wazi badala ya kupitia jumbe.",
+  "scrollWorld.sections.4.label": "Usafirishaji",
+  "scrollWorld.sections.4.eyebrow": "Njiani kwa mteja",
+  "scrollWorld.sections.4.title": "Kutoka mlangoni kwako hadi kwao.",
+  "scrollWorld.sections.4.body":
+    "Mpangie dereva na uipeleke oda, pamoja na hati ya usafirishaji yenye kila kitu wanachohitaji.",
+  "scrollWorld.sections.5.label": "Kukua",
+  "scrollWorld.sections.5.eyebrow": "Imetengenezwa Rwanda",
+  "scrollWorld.sections.5.title": "Oda zaidi. Usiku zilizojaa zaidi.",
+  "scrollWorld.sections.5.body":
+    "Washirika wa mwanzo waliochaguliwa wanapata usanidi wa bure wa kusaidiwa. Biashara yako ya chakula, mtandaoni — ukisaidiwa.",
+  "scrollWorld.sections.5.cta": "Anza sasa",
+  "scrollWorld.media.momoLogoAlt": "Nembo ya MoMo kutoka MTN",
+  "scrollWorld.media.momoScreenAlt": "Kulipa kwa MoMo kwenye simu",
+  "scrollWorld.media.storefrontScreenAlt": "Duka la ZanTap kwenye simu",
+  "scrollWorld.media.kitchenScreenAlt": "Dashibodi ya jikoni ya ZanTap",
+
+  "comparison.kicker": "Kwa nini ubadilike?",
+  "comparison.heading": "Chakula kilekile. Mfumo bora zaidi.",
+  "comparison.rows.0.problem": "Ada za kamisheni zinakula faida yako",
+  "comparison.rows.0.solution": "Ada ndogo — mapato yako yanabaki yako",
+  "comparison.rows.1.problem": "Majukwaa ya ushindani yanamiliki wateja wako",
+  "comparison.rows.1.solution": "Dashibodi ya jikoni na kiungo chako mwenyewe",
+  "comparison.rows.2.problem": "Kufuatilia mauzo kwa karatasi na kubahatisha",
+  "comparison.rows.2.solution": "Mfumo wa mauzo wa kidijitali, kumbukumbu wazi",
+  "comparison.rows.3.problem": "Huna taarifa za akiba wala mahitaji",
+  "comparison.rows.3.solution": "Ufuatiliaji wa akiba na mahitaji, umejengwa ndani",
+
+  "offer.kicker": "Ofa ya washirika wa mwanzo",
+  "offer.heading": "Tunakusaidia kuisanidi. Unaanza kupokea oda.",
+  "offer.intro": "Kwa washirika wa biashara za chakula waliochaguliwa nchini Rwanda.",
+  "offer.includes.0": "Kiungo chako mwenyewe cha kuagiza",
+  "offer.includes.1": "Usanidi wa menyu ya kwanza",
+  "offer.includes.2": "Usanidi wa malipo ya MoMo",
+  "offer.includes.3": "Mwongozo binafsi kwa WhatsApp",
+  "offer.cta": "Omba usanidi",
+  "offer.smallPrint": "Hakuna mkataba mrefu. Hakuna shinikizo.",
+
+  "close.kicker": "Imetengenezwa hapa. Tayari kukua.",
+  "close.heading": "Anza Rwanda. Kua Afrika Mashariki.",
+  "close.cta": "Anza sasa",
+
+  "footer.tagline": "Gusa. Hudumia. Kua.",
+  "footer.location": "Kigali, Rwanda",
+  "footer.privacyLabel": "Faragha",
+  "footer.termsLabel": "Masharti",
+
+  stickyCta: "Anza sasa",
+};

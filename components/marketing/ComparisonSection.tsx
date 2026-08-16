@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
-import { COMPARISON } from "@/lib/marketing/copy";
+import { COMPARISON as COMPARISON_EN } from "@/lib/marketing/copy";
+import type { Localized } from "@/lib/i18n/localize";
 
 const ICONS: Record<string, ReactElement> = {
   fees: (
@@ -24,7 +25,12 @@ const ICONS: Record<string, ReactElement> = {
   ),
 };
 
-export function ComparisonSection() {
+export function ComparisonSection({
+  copy,
+}: {
+  copy?: Localized<typeof COMPARISON_EN>;
+} = {}) {
+  const COMPARISON = copy ?? COMPARISON_EN;
   return (
     <section className="border-t border-white/10 bg-[#0e0c0b]">
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-28">

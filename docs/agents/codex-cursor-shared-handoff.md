@@ -44,7 +44,10 @@ explicitly owns it.
   live manifest scopes, install-hint bundle presence, and error/5xx log scans
   pass. The owner confirmed Android storefront + KDS
   install/coexistence/standalone/airplane-mode and iOS Add-to-Home-Screen
-  acceptance PASS on 2026-08-15, closing PWA Issue 09a. The preserved uncommitted
+  acceptance PASS on 2026-08-15, closing PWA Issue 09a. Closeout docs commit
+  `06ac77a` shipped to `main` and deployed on 2026-08-16 as
+  `dpl_4PxCbQZ8E2HCcvDDFBTs75jMUWea`; route, manifest-scope, and release-log
+  smoke passed. The preserved uncommitted
   implementation now comprises 2 Setup-guide paths and 29 marketing-only
   i18n/Ops CRUD/Store persistence paths (31 unique files). No code was discarded
   or regenerated; no migration, Web Push, performance pass, footer/social fix,
@@ -261,9 +264,14 @@ database credentials here.
   Issue 09a complete in the product issue and architecture tracker. ADR-0059 now
   carries the final physical evidence. Issue 09b (offline kitchen-stage writes
   and in-app order chime) remains separate and ready for an approved session.
-- Documentation only. No application code, migration, deployment, production
-  data, footer social links, marketing i18n/Ops CMS implementation, partial
-  Setup Guide wiring, or retained artifact changed.
+- Acceptance recording was documentation-only. No application code, migration,
+  production data, footer social links, marketing i18n/Ops CMS implementation,
+  partial Setup Guide wiring, or retained artifact changed.
+- Published the five-file acceptance closeout as `06ac77a` to `origin/main`.
+  Automatic Production deployment `dpl_4PxCbQZ8E2HCcvDDFBTs75jMUWea` reached
+  Ready on `zantap.app`; root/storefront/KDS/onboard returned 200, Ops retained
+  its expected 307 auth redirect, both manifest scopes remained correct, and
+  the observed release-window logs contained only successful/info requests.
 
 ### 2026-08-15 — Codex — PWA install-hint/scope shipped to production
 
@@ -747,3 +755,19 @@ database credentials here.
   (2026-08-08), with that limitation stated explicitly.
 - Next gate: owner direction on durable lead capture, or the pending Android
   PWA acceptance smoke.
+
+### 2026-08-16 — Codex — launch vendor tools, locales, and funnel insights
+
+- Implemented universal KDS Stock CRUD and complete Profit access, prominent
+  always-visible profit eye, and actionable Setup Guide destinations. Legacy
+  Stock/Profit flags no longer gate vendor functionality.
+- Completed English/Kinyarwanda/French/Kiswahili marketing + Lead Form copy,
+  Store-backed Ops translation CRUD, canonical submitted business-type values,
+  and root invalidation. Footer social destinations and payments are unchanged.
+- Added privacy-minimal first-party funnel events and authenticated Ops Insights.
+  Migration `20260816150000_marketing_funnel_events` applied successfully;
+  translation migration was already applied.
+- Added exact-host permanent redirect from `zantap-psi.vercel.app` to
+  `zantap.app`; existing old-origin installs need one uninstall/reinstall.
+- Local gate: 346 passed / 104 skipped, TypeScript, lint, production build, and
+  mobile browser feature smoke passed. ADR-0060. Production release in progress.

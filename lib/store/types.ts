@@ -54,6 +54,8 @@ import type {
   ProspectStatus,
   UpdateProspectInput,
 } from "@/lib/prospects/types";
+import type { SiteTranslation } from "@/lib/i18n/site-translation-types";
+import type { CreateMarketingFunnelEventInput, MarketingFunnelEvent } from "@/lib/analytics/types";
 import type {
   CreateVendorExpenseInput,
   MarketingSiteSettings,
@@ -140,6 +142,22 @@ export interface Store {
   updateMarketingSiteSettings(
     input: UpdateMarketingSiteSettingsInput
   ): Promise<MarketingSiteSettings>;
+
+  // Site copy translations (Ops word-for-word editor; keys are MARKETING_COPY
+  // dot paths, locales en/rw/fr/sw). Empty `value` is rejected by callers —
+  // deleting the row restores the baseline translation.
+  listSiteTranslations(locale?: string): Promise<SiteTranslation[]>;
+  upsertSiteTranslation(
+    locale: string,
+    key: string,
+    value: string
+  ): Promise<SiteTranslation>;
+  deleteSiteTranslation(locale: string, key: string): Promise<boolean>;
+
+  recordMarketingFunnelEvent(
+    input: CreateMarketingFunnelEventInput
+  ): Promise<MarketingFunnelEvent>;
+  listMarketingFunnelEvents(from: Date): Promise<MarketingFunnelEvent[]>;
 
   // Vendor expenses + profit insights
   listVendorExpenses(

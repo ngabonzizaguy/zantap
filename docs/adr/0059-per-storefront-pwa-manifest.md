@@ -81,3 +81,7 @@ storage falls back to once per pageview rather than suppressing the hint.
   storefront and KDS as coexisting apps, both launched in standalone mode with
   install guidance suppressed, and both retained the explicit offline fallback
   in airplane mode; iOS Add to Home Screen also passed.
+- Acceptance closeout documentation commit `06ac77a` shipped to `main` on
+  2026-08-16 and deployed as `dpl_4PxCbQZ8E2HCcvDDFBTs75jMUWea` on
+  `zantap.app`. Core route statuses, both narrowed manifest scopes, and the
+  release-window log scan passed.

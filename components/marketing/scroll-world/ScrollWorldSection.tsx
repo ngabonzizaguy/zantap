@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { SCROLL_WORLD } from "@/lib/marketing/copy";
+import { SCROLL_WORLD as SCROLL_WORLD_EN } from "@/lib/marketing/copy";
+import type { Localized } from "@/lib/i18n/localize";
 import { TornEdge } from "@/components/marketing/TornPaint";
 import {
   mountScrollWorld,
@@ -15,7 +16,12 @@ import {
  * owner-accepted Journey 03 payment-success still (2026-08-14); scenes 4–6
  * retain their approved stills until their separately gated production passes.
  */
-export function ScrollWorldSection() {
+export function ScrollWorldSection({
+  copy,
+}: {
+  copy?: Localized<typeof SCROLL_WORLD_EN>;
+} = {}) {
+  const SCROLL_WORLD = copy ?? SCROLL_WORLD_EN;
   const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -73,7 +79,7 @@ export function ScrollWorldSection() {
       crossfade: 0.08,
       hint: sw.hint,
     });
-  }, []);
+  }, [SCROLL_WORLD]);
 
   return (
     <section aria-label={SCROLL_WORLD.heading} className="border-t border-white/10">

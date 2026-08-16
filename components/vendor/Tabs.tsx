@@ -8,7 +8,6 @@ export type KdsTab = "orders" | "menu" | "history" | "stock";
 
 interface TabsProps {
   active: KdsTab;
-  showStock: boolean;
   onOrders: () => void;
   onMenu: () => void;
   onHistory: () => void;
@@ -24,7 +23,6 @@ function tabClass(active: boolean) {
 
 export function Tabs({
   active,
-  showStock,
   onOrders,
   onMenu,
   onHistory,
@@ -34,6 +32,7 @@ export function Tabs({
     <div className="relative z-[1] grid grid-cols-2 gap-2.5 px-[18px] pb-1 pt-4 sm:grid-cols-4">
       <Button
         type="button"
+        aria-pressed={active === "orders"}
         variant={active === "orders" ? "primary" : "outline"}
         size="kds"
         radius="xl"
@@ -45,6 +44,7 @@ export function Tabs({
       </Button>
       <Button
         type="button"
+        aria-pressed={active === "menu"}
         variant={active === "menu" ? "primary" : "outline"}
         size="kds"
         radius="xl"
@@ -56,6 +56,7 @@ export function Tabs({
       </Button>
       <Button
         type="button"
+        aria-pressed={active === "history"}
         variant={active === "history" ? "primary" : "outline"}
         size="kds"
         radius="xl"
@@ -65,19 +66,18 @@ export function Tabs({
         <Icon name="clock" size={20} strokeWidth={2.1} />
         History
       </Button>
-      {showStock ? (
-        <Button
-          type="button"
-          variant={active === "stock" ? "primary" : "outline"}
-          size="kds"
-          radius="xl"
-          onClick={onStock}
-          className={tabClass(active === "stock")}
-        >
-          <Icon name="stock" size={20} strokeWidth={2.1} />
-          Stock
-        </Button>
-      ) : null}
+      <Button
+        type="button"
+        aria-pressed={active === "stock"}
+        variant={active === "stock" ? "primary" : "outline"}
+        size="kds"
+        radius="xl"
+        onClick={onStock}
+        className={tabClass(active === "stock")}
+      >
+        <Icon name="stock" size={20} strokeWidth={2.1} />
+        Stock
+      </Button>
     </div>
   );
 }

@@ -1,25 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { submitLead } from "@/lib/actions/lead-submit";
 import type {
   SubmitLeadErrorCode,
   SubmitLeadInput,
 } from "@/lib/leads/types";
-import { LEAD_FORM } from "@/lib/marketing/copy";
+import { LEAD_FORM as LEAD_FORM_EN } from "@/lib/marketing/copy";
+import type { Localized } from "@/lib/i18n/localize";
 import { TornPanelBackdrop } from "@/components/marketing/TornPaint";
 import { toWhatsAppE164 } from "@/lib/whatsapp";
+import { pairLeadBusinessTypeOptions } from "@/lib/leads/business-types";
+import { trackMarketingEvent } from "@/lib/analytics/client";
 
 /**
  * Public marketing lead form. The browser submits through the Server Action;
  * only the server reaches the Store seam (ADR-0046 §9).
+ * `copy` is the (possibly localized) LEAD_FORM tree; defaults to English.
  */
-const submissionErrors: Record<SubmitLeadErrorCode, string> = {
-  INVALID_INPUT: LEAD_FORM.errors.required,
-  INVALID_PHONE: LEAD_FORM.errors.phone,
-  RATE_LIMITED: LEAD_FORM.errors.rateLimited,
-  SUBMISSION_FAILED: LEAD_FORM.errors.submissionFailed,
-};
+export type LeadFormCopy = Localized<typeof LEAD_FORM_EN>;
 
 const inputClass =
   "w-full rounded-brand-md border border-[#d6d3d1] bg-white px-3.5 py-3 font-body text-body-sm text-[#0c0a09] placeholder:text-[#a8a29e] focus:border-[#0c0a09] focus:outline-none";
@@ -27,11 +26,28 @@ const inputClass =
 const labelClass =
   "block font-body text-caption-uppercase uppercase text-[#777169]";
 
-export function LeadForm() {
+export function LeadForm({ copy }: { copy?: LeadFormCopy } = {}) {
+  const LEAD_FORM = copy ?? LEAD_FORM_EN;
+  const businessTypeOptions = pairLeadBusinessTypeOptions(
+    LEAD_FORM.fields.businessType.options
+  );
+  const submissionErrors: Record<SubmitLeadErrorCode, string> = {
+    INVALID_INPUT: LEAD_FORM.errors.required,
+    INVALID_PHONE: LEAD_FORM.errors.phone,
+    RATE_LIMITED: LEAD_FORM.errors.rateLimited,
+    SUBMISSION_FAILED: LEAD_FORM.errors.submissionFailed,
+  };
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
+  const started = useRef(false);
+
+  function trackStart() {
+    if (started.current) return;
+    started.current = true;
+    trackMarketingEvent("lead_form_start");
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -71,6 +87,7 @@ export function LeadForm() {
       }
       setWhatsappUrl(result.whatsappUrl ?? null);
       setSubmitted(true);
+      trackMarketingEvent("lead_submit_success");
     } catch {
       setError(LEAD_FORM.errors.submissionFailed);
     } finally {
@@ -128,7 +145,7 @@ export function LeadForm() {
           </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
+        <form onSubmit={handleSubmit} onFocusCapture={trackStart} className="mt-6 space-y-4" noValidate>
           <div className="absolute -left-[10000px]" aria-hidden="true">
             <label>
               Website
@@ -165,9 +182,9 @@ export function LeadForm() {
               <option value="" disabled>
                 {LEAD_FORM.fields.businessType.placeholder}
               </option>
-              {LEAD_FORM.fields.businessType.options.map((option) => (
-                <option key={option} value={option}>
-                  {option}
+              {businessTypeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>

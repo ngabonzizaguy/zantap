@@ -139,8 +139,12 @@ export default function PrivacyPage() {
             <h2>9. Cookies &amp; analytics</h2>
             <p>
               We use minimal first-party cookies for session management. We do not
-              use third-party advertising trackers. Anonymous analytics may be
-              collected to understand usage patterns.
+              use third-party advertising trackers. We collect anonymous page and
+              funnel events such as a landing-page visit, lead-form view, button
+              click, and successful submission. These events may include a random
+              browser-session ID, selected language, page path, referral host and
+              campaign tags, but never the form values, phone number, email address,
+              raw IP address, or a browser fingerprint.
             </p>
           </section>
 

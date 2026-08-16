@@ -62,8 +62,6 @@ export function VendorDetailPanel({
 
   const [flags, setFlags] = useState({
     featureWhatsappNotify: initialDetail.vendor.featureWhatsappNotify,
-    featureStockTracking: initialDetail.vendor.featureStockTracking,
-    featureProfitInsights: initialDetail.vendor.featureProfitInsights,
   });
 
   const tabs: { id: DetailTab; label: string }[] = [
@@ -143,8 +141,7 @@ export function VendorDetailPanel({
             <p className="text-xs uppercase tracking-wide text-muted">Recovery events</p>
             <p className="mt-1 font-display text-2xl font-light">{detail.recoveryEventCount}</p>
           </Card>
-          {vendor.featureStockTracking ? (
-            <>
+          <>
               <Card className="p-4">
                 <p className="text-xs uppercase tracking-wide text-muted">
                   Stock tracked
@@ -161,10 +158,8 @@ export function VendorDetailPanel({
                   {detail.stockLowItemCount ?? 0}
                 </p>
               </Card>
-            </>
-          ) : null}
-          {vendor.featureProfitInsights ? (
-            <>
+          </>
+          <>
               <Card className="p-4">
                 <p className="text-xs uppercase tracking-wide text-muted">
                   Today&apos;s gross
@@ -185,8 +180,7 @@ export function VendorDetailPanel({
                   {(detail.weekProfitRwf ?? 0).toLocaleString()} RWF
                 </p>
               </Card>
-            </>
-          ) : null}
+          </>
           <Card className="space-y-3 p-4 sm:col-span-2 lg:col-span-3">
             <p className="text-sm font-medium text-ink">Quick actions</p>
             <div className="flex flex-wrap gap-2">
@@ -325,13 +319,12 @@ export function VendorDetailPanel({
         <Card className="space-y-6 p-6">
           <p className="text-sm font-medium text-ink">Feature flags</p>
           <p className="text-xs text-muted">
-            Toggle vendor-level KDS features. Changes take effect immediately.
+            Optional vendor-level features. Stock and complete profit insights are
+            included for every vendor.
           </p>
           {(
             [
               { key: "featureWhatsappNotify", label: "WhatsApp notify", description: "Send WhatsApp alerts for new PAID orders" },
-              { key: "featureStockTracking", label: "Stock tracking", description: "Enable item-level stock count on KDS" },
-              { key: "featureProfitInsights", label: "Profit insights", description: "Show revenue/expense dashboard on KDS" },
             ] as const
           ).map((flag) => (
             <label key={flag.key} className="flex items-center justify-between gap-4">

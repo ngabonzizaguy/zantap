@@ -112,7 +112,7 @@ export function KdsDashboard({
   const [setupOpen, setSetupOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [profitOpen, setProfitOpen] = useState(
-    () => initialTab === "profit" && featureFlags.featureProfitInsights
+    () => initialTab === "profit"
   );
   const [storefrontProfile, setStorefrontProfile] = useState<StorefrontProfile>(
     () => ({
@@ -403,7 +403,6 @@ export function KdsDashboard({
           kitchenOpen={kitchenOpen}
           onToggleKitchen={handleToggleKitchen}
           onOpenMenu={openSetup}
-          featureProfitInsights={featureFlags.featureProfitInsights}
           onOpenProfit={() => setProfitOpen(true)}
         />
 
@@ -415,7 +414,6 @@ export function KdsDashboard({
 
         <Tabs
           active={tab}
-          showStock={featureFlags.featureStockTracking}
           onOrders={() => setTab("orders")}
           onMenu={() => setTab("menu")}
           onHistory={() => setTab("history")}
@@ -463,7 +461,6 @@ export function KdsDashboard({
             <StockPanel
               vendorSlug={vendor.slug}
               items={menu}
-              enabled={featureFlags.featureStockTracking}
               onRefresh={refresh}
             />
           )}
@@ -499,7 +496,6 @@ export function KdsDashboard({
         profile={storefrontProfile}
         menu={menu}
         drivers={drivers}
-        featureFlags={featureFlags}
         onProfileSaved={setStorefrontProfile}
         onBusinessSaved={(saved) => {
           setBusinessProfile(saved);
@@ -509,6 +505,9 @@ export function KdsDashboard({
         onPaymentsSaved={setPaymentProfile}
         onRefresh={refreshOnboarding}
         onNavigateTab={navigateTab}
+        onOpenKitchen={() => {
+          if (!kitchenOpen) void handleToggleKitchen();
+        }}
         onDriversChange={setDrivers}
       />
 

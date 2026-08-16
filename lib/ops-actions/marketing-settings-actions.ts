@@ -10,5 +10,6 @@ export async function patchMarketingSiteSettingsAction(
 ) {
   const settings = await patchMarketingSiteSettings(input);
   revalidatePath("/ops/settings");
+  revalidatePath("/");
   return settings;
 }

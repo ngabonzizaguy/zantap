@@ -1,0 +1,170 @@
+import type { TranslationDict } from "@/lib/i18n/localize";
+
+/**
+ * Kinyarwanda baseline (agent draft 2026-08-14). Every string here is a
+ * STARTING POINT — the owner reviews and overrides word-for-word in
+ * Ops → Settings → Languages. Keys are dot paths into MARKETING_COPY.
+ * Brand words ("ZanTap", "MoMo", "WhatsApp") stay untranslated.
+ */
+export const RW_TRANSLATIONS: TranslationDict = {
+  "meta.siteName": "ZanTap",
+  "meta.title": "ZanTap — Shyira ubucuruzi bwawe bw'ibiribwa kuri interineti, ufashijwe",
+  "meta.description":
+    "ZanTap iha ubucuruzi bw'ibiribwa mu Rwanda umurongo umwe wo gutumiza, kwishyurwa na MoMo, n'ikibaho cy'igikoni kigaragaza buri tegeko ako kanya. Gushyirwaho ku buntu ku bafatanyabikorwa ba mbere batoranyijwe.",
+
+  "nav.howItWorks": "Uko bikora",
+  "nav.offer": "Icyo tuguha",
+  "nav.cta": "Tangira",
+  "nav.openStorefrontDemo": "Reba iduka rikora",
+
+  "hero.availability": "Imyanya y'abafatanyabikorwa ba mbere iracyahari",
+  "hero.kicker": "Duhereye mu Rwanda",
+  "hero.headline": "Shyira ubucuruzi bwawe bw'ibiribwa kuri interineti — ufashijwe.",
+  "hero.summary":
+    "Tugushyiriraho umurongo wo gutumiza, ibiri ku rutonde rwa mbere rw'ibiribwa byawe, n'uburyo bwa MoMo. Itsinda ryawe ribona ikibaho cy'igikoni kigaragaza amategeko ako kanya.",
+  "hero.promise.0.step": "01",
+  "hero.promise.0.title": "Abakiriya baratumiza",
+  "hero.promise.0.detail": "Bakoresheje umurongo umwe woroshye",
+  "hero.promise.1.step": "02",
+  "hero.promise.1.title": "Wakira ubwishyu",
+  "hero.promise.1.detail": "Binyuze kuri MoMo",
+  "hero.promise.2.step": "03",
+  "hero.promise.2.title": "Igikoni cyawe kirakora",
+  "hero.promise.2.detail": "Kuri buri tegeko ryishyuwe",
+  "hero.deviceTag.title": "Iduka ryawe rirakora",
+  "hero.deviceTag.detail": "Sangiza umurongo wawe",
+  "hero.audienceNote":
+    "Ku maresitora, utubari, abateguzi b'amafunguro n'abagemura ibiribwa bahereye mu rugo.",
+
+  "leadForm.kicker": "Gushyirwaho ku buntu hakiri kare",
+  "leadForm.heading": "Tubwire ibyerekeye ubucuruzi bwawe.",
+  "leadForm.subheading": "Tuzakuvugisha kuri WhatsApp.",
+  "leadForm.fields.businessName.label": "Izina ry'ubucuruzi",
+  "leadForm.fields.businessName.placeholder": "urugero: Igikoni cya Mama Aline",
+  "leadForm.fields.businessType.label": "Ubwoko bw'ubucuruzi",
+  "leadForm.fields.businessType.placeholder": "Hitamo kimwe",
+  "leadForm.fields.businessType.options.0": "Resitora",
+  "leadForm.fields.businessType.options.1": "Akabari n'inyama zokeje",
+  "leadForm.fields.businessType.options.2": "Utegura amafunguro (catering)",
+  "leadForm.fields.businessType.options.3": "Ugemura ibiribwa ahereye mu rugo",
+  "leadForm.fields.businessType.options.4": "Ubundi bucuruzi bw'ibiribwa",
+  "leadForm.fields.contactName.label": "Uwo twavugisha",
+  "leadForm.fields.contactName.placeholder": "Amazina yawe yombi",
+  "leadForm.fields.phone.label": "Numero ya WhatsApp",
+  "leadForm.fields.phone.placeholder": "07•• ••• •••",
+  "leadForm.fields.area.label": "Aho uherereye",
+  "leadForm.fields.area.placeholder": "urugero: Kimihurura, Kigali",
+  "leadForm.submit": "Saba gushyirwaho",
+  "leadForm.submitting": "Birimo koherezwa…",
+  "leadForm.consent":
+    "Wohereje ibi, wemeye ko ZanTap ishobora kukuvugisha kuri WhatsApp ku byerekeye gushyirwaho kwawe.",
+  "leadForm.reassurance": "Nta masezerano maremare. Nta gahato.",
+  "leadForm.errors.required": "Nyamuneka uzuza imyanya yose.",
+  "leadForm.errors.phone": "Andika numero ya telefoni y'u Rwanda yemewe (07XX XXX XXX).",
+  "leadForm.errors.rateLimited": "Ibisabwa ni byinshi cyane. Tegereza gato wongere ugerageze.",
+  "leadForm.errors.submissionFailed": "Ntitwashoboye kubika icyo usaba. Ongera ugerageze.",
+  "leadForm.success.title": "Uri ku rutonde.",
+  "leadForm.success.detail": "Tuzakuvugisha kuri WhatsApp maze dukomeze aho.",
+  "leadForm.success.whatsappCta": "Komereza kuri WhatsApp",
+  "leadForm.success.whatsappNote": "Reba ubutumwa, hanyuma ukande Ohereza muri WhatsApp.",
+
+  "howItWorks.kicker": "Ibikurikira",
+  "howItWorks.heading": "Byoroshye kuva ku munsi wa mbere.",
+  "howItWorks.steps.0.tag": "Umunsi 01",
+  "howItWorks.steps.0.title": "Dushyiraho hamwe",
+  "howItWorks.steps.0.detail": "Amakuru yawe, urutonde rw'ibiribwa na MoMo.",
+  "howItWorks.steps.1.tag": "Gutangira",
+  "howItWorks.steps.1.title": "Usangiza umurongo wawe",
+  "howItWorks.steps.1.detail": "Kuri WhatsApp, Instagram cyangwa ahandi hose.",
+  "howItWorks.steps.2.tag": "Itegeko rya mbere",
+  "howItWorks.steps.2.title": "Igikoni cyawe kirarabona",
+  "howItWorks.steps.2.detail": "Ryishyuwe kandi ryiteguye gutegurwa.",
+
+  "product.kicker": "Itegeko rimwe. Ibyuma bibiri.",
+  "product.heading": "Kuva kuri telefoni yabo kugera mu gikoni cyawe.",
+  "product.storefront.title": "Urutonde rw'ibiribwa rwawe kuri telefoni",
+  "product.storefront.detail":
+    "Sangiza umurongo umwe. Abakiriya bahitamo, bagatumiza kandi bakishyura na MoMo nta porogaramu bapakuruye.",
+  "product.storefront.alt": "Iduka rya ZanTap kuri telefoni rigaragaza urutonde rw'ibiribwa n'agatebo",
+  "product.kitchen.title": "Igikoni gisobanutse",
+  "product.kitchen.detail":
+    "Buri tegeko ryishyuwe rigera ku kibaho cy'igikoni cyawe — rishya, ririmo gutegurwa, ryiteguye. Nta gushakisha mu butumwa.",
+  "product.kitchen.alt": "Ikibaho cy'igikoni cya ZanTap kigaragaza itegeko rishya ryishyuwe",
+  "product.kitchen.cards.0.caption": "Iduka ryawe, rikora mu minota mike",
+  "product.kitchen.cards.0.alt": "Urupapuro rwa ZanTap rw'intsinzi rufite umurongo w'iduka na QR code",
+  "product.kitchen.cards.1.caption": "Abakiriya bishyura na MoMo",
+  "product.kitchen.cards.1.alt": "Urupapuro rwa ZanTap rwo kwishyura rusaba umukiriya kwishyura na MoMo",
+  "product.kitchen.cards.2.caption": "Amategeko agera mu gikoni cyawe",
+  "product.kitchen.cards.2.alt": "Ikibaho cy'igikoni cya ZanTap kigaragaza amategeko yishyuwe",
+
+  "scrollWorld.kicker": "Itegeko rimwe, kuva ku ntangiriro kugeza ku iherezo",
+  "scrollWorld.heading": "Nyura muri byo.",
+  "scrollWorld.hint": "Manura urupapuro unyure muri byo",
+  "scrollWorld.sections.0.label": "Iduka",
+  "scrollWorld.sections.0.eyebrow": "Kigali, izuba rirenga",
+  "scrollWorld.sections.0.title": "Bitangirira aho ugurishiriza.",
+  "scrollWorld.sections.0.body":
+    "Ibiribwa byiza bimaze kuzana abantu. ZanTap ibaha inzira yoroshye yo kukugeraho — aho bari hose.",
+  "scrollWorld.sections.1.label": "Itegeko",
+  "scrollWorld.sections.1.eyebrow": "Umurongo umwe woroshye",
+  "scrollWorld.sections.1.title": "Batumiza bakoresheje telefoni yabo.",
+  "scrollWorld.sections.1.body":
+    "Nta porogaramu bapakurura. Urutonde rwawe, ibiciro byawe, umurongo umwe usangiza kuri WhatsApp, Instagram cyangwa ahandi hose.",
+  "scrollWorld.sections.2.label": "Kwishyura na MoMo",
+  "scrollWorld.sections.2.eyebrow": "Byishyuwe mbere yo guteka",
+  "scrollWorld.sections.2.title": "Ubwishyu bwa MoMo, bwemejwe.",
+  "scrollWorld.sections.2.body":
+    "Abakiriya bishyura na MTN MoMo. Ubona amafaranga mbere y'uko igikoni gitangira — nta gukurikirana, nta gukeka.",
+  "scrollWorld.sections.3.label": "Igikoni",
+  "scrollWorld.sections.3.eyebrow": "Ikibaho cy'igikoni",
+  "scrollWorld.sections.3.title": "Buri tegeko ryishyuwe, ku kibaho kimwe.",
+  "scrollWorld.sections.3.body":
+    "Rishya, ririmo gutegurwa, ryiteguye — itsinda ryawe rikurikiza umurongo usobanutse aho kunyura mu butumwa.",
+  "scrollWorld.sections.4.label": "Kohereza",
+  "scrollWorld.sections.4.eyebrow": "Biri mu nzira",
+  "scrollWorld.sections.4.title": "Kuva ku muryango wawe kugera ku wabo.",
+  "scrollWorld.sections.4.body":
+    "Shyiraho umumotari wohereze itegeko, hamwe n'urupapuro rw'itangwa rufite ibyo bakeneye byose.",
+  "scrollWorld.sections.5.label": "Gukura",
+  "scrollWorld.sections.5.eyebrow": "Byakorewe mu Rwanda",
+  "scrollWorld.sections.5.title": "Amategeko menshi. Amajoro yuzuye.",
+  "scrollWorld.sections.5.body":
+    "Abafatanyabikorwa ba mbere batoranyijwe bahabwa gushyirwaho ku buntu. Ubucuruzi bwawe bw'ibiribwa, kuri interineti — ufashijwe.",
+  "scrollWorld.sections.5.cta": "Tangira",
+  "scrollWorld.media.momoLogoAlt": "Ikirango cya MoMo cya MTN",
+  "scrollWorld.media.momoScreenAlt": "Kwishyura na MoMo kuri telefoni",
+  "scrollWorld.media.storefrontScreenAlt": "Iduka rya ZanTap kuri telefoni",
+  "scrollWorld.media.kitchenScreenAlt": "Ikibaho cy'igikoni cya ZanTap",
+
+  "comparison.kicker": "Kuki wahindura?",
+  "comparison.heading": "Ibiribwa bimwe. Uburyo bwiza kurushaho.",
+  "comparison.rows.0.problem": "Amafaranga ya komisiyo arya inyungu zawe",
+  "comparison.rows.0.solution": "Amafaranga make — inyungu zawe zigumana nawe",
+  "comparison.rows.1.problem": "Urubuga rw'abandi nirwo rufite abakiriya bawe",
+  "comparison.rows.1.solution": "Ikibaho cy'igikoni n'umurongo byawe bwite",
+  "comparison.rows.2.problem": "Gukurikirana ibyagurishijwe ku mpapuro no gukeka",
+  "comparison.rows.2.solution": "Uburyo bwa digitale, inyandiko zisobanutse",
+  "comparison.rows.3.problem": "Ntabwo uzi uko ububiko n'ibisabwa bihagaze",
+  "comparison.rows.3.solution": "Gukurikirana ububiko n'ibisabwa, byubatswe imbere",
+
+  "offer.kicker": "Icyo tuguha nk'umufatanyabikorwa wa mbere",
+  "offer.heading": "Tugufasha kubishyiraho. Utangira kwakira amategeko.",
+  "offer.intro": "Ku bafatanyabikorwa b'ubucuruzi bw'ibiribwa batoranyijwe mu Rwanda.",
+  "offer.includes.0": "Umurongo wawe bwite wo gutumiza",
+  "offer.includes.1": "Gushyiraho urutonde rwa mbere rw'ibiribwa",
+  "offer.includes.2": "Gushyiraho ubwishyu bwa MoMo",
+  "offer.includes.3": "Kuyoborwa bwite kuri WhatsApp",
+  "offer.cta": "Saba gushyirwaho",
+  "offer.smallPrint": "Nta masezerano maremare. Nta gahato.",
+
+  "close.kicker": "Byakorewe hano. Byiteguye gukura.",
+  "close.heading": "Tangirira mu Rwanda. Ukwire muri Afurika y'Iburasirazuba.",
+  "close.cta": "Tangira",
+
+  "footer.tagline": "Kanda. Tanga. Kura.",
+  "footer.location": "Kigali, Rwanda",
+  "footer.privacyLabel": "Ubuzima bwite",
+  "footer.termsLabel": "Amabwiriza",
+
+  stickyCta: "Tangira",
+};

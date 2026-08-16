@@ -135,6 +135,41 @@ model MarketingSiteSettings {
   updatedAt        DateTime @updatedAt
 }
 
+/// Owner-editable word-for-word overrides for the marketing-site copy
+/// (Ops → Settings → Languages). `key` is a dot path into MARKETING_COPY
+/// (lib/marketing/copy.ts); `locale` ∈ en/rw/fr/sw. Missing rows fall back to
+/// the in-repo baseline dictionaries, then English.
+model SiteTranslation {
+  id        String   @id @default(cuid())
+  locale    String
+  key       String
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@unique([locale, key])
+  @@index([locale])
+}
+
+/// Privacy-minimal, first-party marketing funnel events. Deliberately excludes
+/// IP addresses, contact details, form values and browser fingerprints.
+model MarketingFunnelEvent {
+  id           String   @id @default(cuid())
+  sessionId    String
+  event        String
+  target       String?
+  locale       String
+  path         String
+  referrerHost String?
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([event, createdAt])
+  @@index([sessionId, createdAt])
+}
+
 model VendorExpense {
   id         String   @id @default(cuid())
   vendorId   String
