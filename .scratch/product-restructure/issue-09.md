@@ -1,6 +1,6 @@
 # Issue 09 — PWA baseline + offline kitchen-stage queue + chime
 
-Status: **in-progress** · 09a merged to main + production deployed + curl-smoked + owner visual PASS (Android install smoke pending) · 09b ready-for-agent · Track 4 · ADR-0046 §11/§13
+Status: **in-progress** · 09a DONE + merged to main + production deployed + curl-smoked + Android/iOS physical-device acceptance PASS 2026-08-15 · 09b ready-for-agent · Track 4 · ADR-0046 §11/§13
 
 **Vendored design skills to consult (PRD §3b):** `mobile-app-ui-design`
 (installed-app feel: touch targets, safe areas, nav/back conventions, offline
@@ -9,7 +9,7 @@ reduced motion), `frontend-design`. DESIGN.md/ADRs win on conflict.
 
 Baseline (09a):
 - [x] Web app manifest: Z icons (from approved set), name/short_name, theme colors per surface, `display: standalone`.
-- [ ] Installability verified on Android Chrome (KDS on kitchen tablets is a selling point).
+- [x] Installability verified on Android Chrome (storefront + KDS coexist, launch standalone, and retain the offline fallback in airplane mode); iOS Add to Home Screen also verified.
 - [x] Service worker: cache-first for static shell/brand assets ONLY; network-first for data; explicit versioned update strategy; NEVER cache API/SSE/payment responses.
 - [x] Clear offline UI states on storefront + KDS (read-only shell + "you're offline").
 - [x] Dark KDS tappable controls retain their resting background through hover/active states (no sticky light overlay after tap/click).
@@ -30,10 +30,12 @@ production-only SW registration, versioned static-shell cache, `/offline`
 fallback, and a safe-area offline status. Local prod HTTP + responsive browser
 checks pass. A 390×844 interaction audit also verifies stable backgrounds across
 all KDS tabs, tickets, filters, Setup, Help, and modal controls with zero console
-errors. The automation browser hides Service Worker APIs, so perform the
-remaining Android Chrome install/airplane-mode smoke after deploy. ADR-0051.
+errors. The automation browser hides Service Worker APIs, so the final install
+and offline checks were performed on physical devices. ADR-0051.
 The approved commits were replayed cleanly onto `origin/main` as `0b685ea` +
 `1cf4a5a`, excluding unaudited durable-leads commit `2d6e391`. Production
 deployment `dpl_6yTBeB4YTo8cdDuBf3ahVgmTS8yn` is Ready at `zantap.app`; curl
-smoke and runtime error scan pass. Physical Android Chrome install, standalone
-launch, and airplane-mode verification remain pending.
+smoke and runtime error scan pass. On 2026-08-15 the owner confirmed PASS for
+Android storefront + KDS install/coexistence, standalone launches and
+airplane-mode fallback, plus iOS Add-to-Home-Screen behavior. This closes 09a;
+09b offline kitchen-stage writes and the in-app order chime remain separate.

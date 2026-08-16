@@ -38,8 +38,13 @@ explicitly owns it.
   `feat/ops-kds-marketing-batch` is at PWA release candidate `61c4687`. The
   owner approved only the 10-file PWA/install-hint/scope slice; it was isolated
   from the shared `KdsDashboard.tsx` Setup hunk and committed. Focused PWA
-  16/16, TypeScript, lint, and a clean production build are green. Push and
-  production deployment are authorized and pending. The preserved uncommitted
+  16/16, TypeScript, lint, and a clean production build are green. Commits
+  `61c4687` + docs `aafdd47` were pushed to main and deployed as Production
+  `dpl_ETqURpRh9qFyGPZyJBxXtNY5yg1y` on `zantap.app`. Core routes, narrowed
+  live manifest scopes, install-hint bundle presence, and error/5xx log scans
+  pass. The owner confirmed Android storefront + KDS
+  install/coexistence/standalone/airplane-mode and iOS Add-to-Home-Screen
+  acceptance PASS on 2026-08-15, closing PWA Issue 09a. The preserved uncommitted
   implementation now comprises 2 Setup-guide paths and 29 marketing-only
   i18n/Ops CRUD/Store persistence paths (31 unique files). No code was discarded
   or regenerated; no migration, Web Push, performance pass, footer/social fix,
@@ -246,7 +251,21 @@ database credentials here.
 
 ## Session ledger
 
-### 2026-08-15 — Codex — PWA install-hint/scope release candidate isolated
+### 2026-08-15 — Codex — PWA physical-device acceptance passed
+
+- Owner confirmed the complete production device matrix PASS: Android Chrome
+  storefront + KDS install/coexistence, correct standalone launches, install-
+  hint suppression, and airplane-mode offline fallback; iOS Safari Add to Home
+  Screen also passed.
+- Closed the remaining acceptance checkbox in the PWA release issue and marked
+  Issue 09a complete in the product issue and architecture tracker. ADR-0059 now
+  carries the final physical evidence. Issue 09b (offline kitchen-stage writes
+  and in-app order chime) remains separate and ready for an approved session.
+- Documentation only. No application code, migration, deployment, production
+  data, footer social links, marketing i18n/Ops CMS implementation, partial
+  Setup Guide wiring, or retained artifact changed.
+
+### 2026-08-15 — Codex — PWA install-hint/scope shipped to production
 
 - Owner explicitly authorized commit, push, and production deployment of the
   approved PWA slice only. Localization, Setup-guide, footer/social, migration,
@@ -254,8 +273,12 @@ database credentials here.
 - Selectively staged the two PWA hunks in `KdsDashboard.tsx`; its Setup-guide
   callback remains unstaged. Commit `61c4687` contains exactly 10 PWA paths.
 - Clean-commit verification: focused PWA 16/16, TypeScript, lint, and production
-  build pass. Production push/deployment and physical-device acceptance remain
-  the next gates.
+  build pass. Pushed `bbf1cdb..aafdd47` to main; Vercel Production
+  `dpl_ETqURpRh9qFyGPZyJBxXtNY5yg1y` is Ready on `zantap.app`.
+- Production smoke: root/storefront/KDS/onboard 200, Ops 307 auth; storefront
+  scope `/inka-steakhouse`, KDS scope `/vendor/inka-steakhouse`; both client
+  bundles carry the hint; error and 5xx scans empty. Remaining gate: physical
+  Android storefront+KDS coexistence/standalone/airplane-mode and iOS A2HS.
 
 ### 2026-08-15 — Codex — approved PWA install-hint/scope slice completed locally
 

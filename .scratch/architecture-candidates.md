@@ -13,7 +13,7 @@ Last verified against the codebase: 2026-07-15.
 
 ## Product architecture audit (2026-08-05)
 
-**🟡 ISSUE 09a (PWA BASELINE) MERGED TO MAIN + PRODUCTION DEPLOYED + CURL-SMOKED · OWNER VISUAL PASS · ANDROID INSTALL SMOKE PENDING
+**✅ ISSUE 09a (PWA BASELINE) DONE · MERGED TO MAIN + PRODUCTION DEPLOYED + PROD-SMOKED · ANDROID/iOS PHYSICAL-DEVICE ACCEPTANCE PASS 2026-08-15
 2026-08-08 (ADR-0051; `fce8360` + `9f0a66d` on branch
 `codex/pwa-kds-paypack-polish`).** Added root and
 vendor-specific install manifests (KDS starts at its vendor route), approved-Z
@@ -32,9 +32,10 @@ Orders status chips in the same swipe rail pattern as History filters.
 Focused 9/9 + full 266/80 tests, lint, build, HTTP manifest/icon checks, and
 responsive desktop/mobile/landscape visual checks pass; the follow-up also
 passes a 390×844 interaction audit across all KDS tabs, tickets, Setup, Help,
-and modal controls with zero console errors. Remaining 09a gate:
-install from Android Chrome, launch standalone into KDS, then airplane-
-mode verify the offline shell/banner. Issue 09b offline stage queue + chime stays
+and modal controls with zero console errors. Physical acceptance passed on
+2026-08-15: Android storefront + KDS installs coexist, launch standalone, and
+retain the explicit offline fallback in airplane mode; iOS Add to Home Screen
+also passed. Issue 09b offline stage queue + chime stays
 separate and ready-for-agent (owner confirmed 2026-08-14: chime yes, Web Push
 not needed). **Per-storefront install manifest SHIPPED 2026-08-14 (ADR-0059,
 in `7d87984` → `zantap.app`):** customers
@@ -48,8 +49,12 @@ authorized for production 2026-08-15:** install-hint banner plus narrowed
 storefront/KDS manifest scopes were isolated from the preserved dirty tree.
 Eight lifecycle tests cover the banner controller used by the UI; one KDS route
 test locks encoded scope; focused PWA 16/16, TypeScript, lint, and a clean
-production build are green. ADR-0059 is reconciled. Deployment and Android/iOS
-physical-device acceptance remain open. Web Push is still not implemented and requires its own
+production build are green. **SHIPPED 2026-08-15:** `61c4687` + docs `aafdd47`
+→ Production `dpl_ETqURpRh9qFyGPZyJBxXtNY5yg1y` → `zantap.app`; route,
+manifest-scope, bundle-presence, and error/5xx-log smoke passed. ADR-0059 is
+reconciled. Android/iOS physical-device acceptance passed 2026-08-15, closing
+09a. Web Push is
+still not implemented and requires its own
 grill/PRD/ADR. Tracking:
 `.scratch/pwa-kds-paypack-polish/issue-01.md` and
 `.scratch/product-restructure/issue-09.md`.

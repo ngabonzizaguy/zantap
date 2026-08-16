@@ -1,9 +1,9 @@
 # Issue 01 — PWA, KDS, icon, and Paypack preparation
 
-Status: **merged baseline deployed · owner visual PASS · Android install smoke pending · install-hint/scope follow-up committed as `61c4687`, release authorized, deployment pending 2026-08-15** · Main `0b685ea` + `1cf4a5a` + source branch `fce8360` + `9f0a66d`
+Status: **DONE · install-hint/scope follow-up SHIPPED 2026-08-15 (`61c4687` + docs `aafdd47` → `dpl_ETqURpRh9qFyGPZyJBxXtNY5yg1y` → `zantap.app`) · prod smoke PASS · Android/iOS physical-device acceptance PASS 2026-08-15** · Baseline `0b685ea` + `1cf4a5a`
 
-Approved follow-up 2026-08-15 (committed in isolated release candidate
-`61c4687`; no migration; production deployment pending): the install-hint
+Approved follow-up 2026-08-15 (shipped in isolated release `61c4687`; no
+migration; production deployment `dpl_ETqURpRh9qFyGPZyJBxXtNY5yg1y`): the install-hint
 banner and narrowed storefront/KDS manifest scopes were isolated from the
 preserved dirty tree. `lib/pwa/install-hint.ts` now owns the
 browser lifecycle behind the interface used by `InstallHintBanner`; 8 behavior
@@ -13,17 +13,25 @@ seen buckets. A direct KDS route test locks encoded `id`/`start_url`/`scope`.
 ADR-0059 now records the narrowed scopes and approved install-hint behavior.
 Verification: focused PWA 16/16, TypeScript, lint, and production build clean.
 
-Remaining acceptance: Android Chrome storefront + KDS install/coexistence,
-standalone suppression, and airplane-mode smoke; iOS Add-to-Home-Screen smoke.
+Physical-device acceptance PASS 2026-08-15: Android Chrome storefront + KDS
+install/coexistence, standalone suppression, and airplane-mode smoke; iOS
+Add-to-Home-Screen smoke.
 Web Push remains a separate grilled PRD/ADR and is not part of this slice. The
 owner authorized commit, push, and production deployment of this PWA slice only;
 no migration or production-data mutation is part of the release.
+
+Production smoke: `/`, storefront, KDS, and `/onboard` returned 200; `/ops`
+retained its expected 307 auth redirect. Storefront manifest scope is
+`/inka-steakhouse`; KDS manifest scope is `/vendor/inka-steakhouse`; both live
+client bundles contain the install-hint copy. Deployment error-level and 5xx
+log scans were empty. The owner subsequently confirmed the complete
+physical-device acceptance matrix PASS.
 
 - [x] Add InstallHintBanner lifecycle behavior coverage.
 - [x] Add KDS manifest-scope route coverage.
 - [x] Reconcile ADR-0059 and this issue with narrowed scopes and install hints.
 - [x] Run focused PWA tests, TypeScript, lint, and production build.
-- [ ] Complete Android Chrome and iOS physical-device acceptance.
+- [x] Complete Android Chrome and iOS physical-device acceptance.
 
 Follow-up 2026-08-14 (ADR-0059, SHIPPED same day in `7d87984` → `zantap.app`,
 prod smoke PASS — manifest JSON 200, unknown slug 404, HTML links per-slug

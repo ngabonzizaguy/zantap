@@ -72,5 +72,12 @@ storage falls back to once per pageview rather than suppressing the hint.
   storefront HTML links `/{slug}/manifest.webmanifest`.
 - 2026-08-15 follow-up verification: 16/16 focused PWA tests cover the
   storefront builder, encoded KDS route scope, and install-hint lifecycle;
-  TypeScript, lint, and the production build are clean. Android Chrome and iOS
-  Add-to-Home-Screen acceptance remain physical-device checks.
+  TypeScript, lint, and the production build are clean.
+- Production release `61c4687` + docs `aafdd47` deployed as
+  `dpl_ETqURpRh9qFyGPZyJBxXtNY5yg1y` on 2026-08-15. Live storefront and KDS
+  manifests expose their narrowed scopes; both client bundles contain the
+  install-hint behavior; core routes and deployment error/5xx scans are clean.
+- Physical-device acceptance passed 2026-08-15: Android Chrome installed the
+  storefront and KDS as coexisting apps, both launched in standalone mode with
+  install guidance suppressed, and both retained the explicit offline fallback
+  in airplane mode; iOS Add to Home Screen also passed.
