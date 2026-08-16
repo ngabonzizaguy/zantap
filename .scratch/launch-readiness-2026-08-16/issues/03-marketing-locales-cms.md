@@ -1,6 +1,6 @@
 # Issue 03 — Four-locale marketing and lead-form Ops CMS
 
-Status: **implemented · locally verified · production smoke pending**
+Status: **done · deployed · locale smoke passed**
 
 - [ ] Approve and record an ADR replacing the stale deferred-language decision.
 - [ ] Complete English/Kinyarwanda/French/Kiswahili SSR locale rendering.

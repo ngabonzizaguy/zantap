@@ -1,6 +1,6 @@
 # Issue 06 — Verification and production release
 
-Status: **release in progress**
+Status: **done · production deployment dpl_6kzBXFKEibFG29ywS6UHvofEMtQ8**
 
 - [ ] Run focused tests after each slice.
 - [ ] Run TypeScript, lint, full tests, and clean production build.

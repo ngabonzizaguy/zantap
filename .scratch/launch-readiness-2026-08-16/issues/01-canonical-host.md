@@ -1,6 +1,6 @@
 # Issue 01 — Canonical production host
 
-Status: **implemented · production smoke pending**
+Status: **done · deployed · production-smoked**
 
 - [x] Permanently redirect exact host `zantap-psi.vercel.app` to
   `https://zantap.app`, preserving path and query.

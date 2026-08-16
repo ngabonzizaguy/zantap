@@ -1,6 +1,6 @@
 # Issue 04 — Privacy-minimal marketing funnel insights
 
-Status: **implemented · migration applied · production smoke pending**
+Status: **done · deployed · analytics/Ops API smoke passed**
 
 - [ ] Record anonymous `landing_view`, `lead_form_view`, `lead_form_start`,
   `cta_click`, and `lead_submit_success` events.

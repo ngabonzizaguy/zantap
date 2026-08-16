@@ -1,6 +1,6 @@
 # Issue 02 — Universal Stock/Profit and complete Setup destinations
 
-Status: **implemented · locally verified · production smoke pending**
+Status: **done · deployed · route/log smoke passed**
 
 - [ ] Always show the Stock tab and allow owner-token-guarded menu-item stock,
   low-threshold, and cost-price CRUD.

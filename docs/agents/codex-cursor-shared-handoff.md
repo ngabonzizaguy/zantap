@@ -770,4 +770,8 @@ database credentials here.
 - Added exact-host permanent redirect from `zantap-psi.vercel.app` to
   `zantap.app`; existing old-origin installs need one uninstall/reinstall.
 - Local gate: 346 passed / 104 skipped, TypeScript, lint, production build, and
-  mobile browser feature smoke passed. ADR-0060. Production release in progress.
+  mobile browser feature smoke passed. ADR-0060.
+- SHIPPED: `1027572` → `dpl_6kzBXFKEibFG29ywS6UHvofEMtQ8` → `zantap.app`.
+  Production smoke passed: legacy host 308 to canonical domain; root,
+  storefront and KDS 200; Ops Insights auth/API healthy; analytics 204;
+  Kinyarwanda/French/Kiswahili SSR copy present; runtime scan had no errors.
