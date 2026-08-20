@@ -1,9 +1,10 @@
 # Codex ↔ Cursor shared continuity prompt
 
-Last reconciled: **2026-08-15 (Africa/Kigali)**
+Last reconciled: **2026-08-20 (Africa/Kigali)**
 Scope: the product-restructure, marketing, lead-capture, PWA/KDS-polish,
 Paypack-preparation work, plus the new **Ops outreach + KDS + marketing batch**
-on branch `feat/ops-kds-marketing-batch` (shared Cursor ↔ Codex).
+on branch `feat/ops-kds-marketing-batch` (shared Cursor ↔ Codex), and candidate
+#25 Inventory/pagination work on `codex/inventory-pagination`.
 
 This is the durable coordination entry point for both agents. It summarizes
 current truth and points to the detailed artifacts; it does not replace issue
@@ -34,6 +35,15 @@ explicitly owns it.
 
 ### Reconciled repository and production state
 
+- **Candidate #25 checkpoint (2026-08-20):** Issues 01–03 are feature-complete
+  locally on `codex/inventory-pagination`. Real supply Inventory is separate
+  from Menu; KDS live Orders/History and storefront dishes page at ten after
+  their filters. Storefront `category`/`search`/`page` URLs preserve cart state,
+  browser history and Menu focus. Focused tests, TypeScript, lint, 362/109 full
+  Vitest, production build and 32/32 mobile/desktop browser smoke pass. ADR-0063.
+  Migration `20260820183000_real_vendor_inventory` remains unapplied and
+  production is untouched. Next gate: review/apply migration, one combined
+  deployment, then production smoke.
 - **Current checkpoint (2026-08-15):** branch
   `feat/ops-kds-marketing-batch` is at PWA release candidate `61c4687`. The
   owner approved only the 10-file PWA/install-hint/scope slice; it was isolated
@@ -194,6 +204,7 @@ Detailed sources:
 | Offline kitchen-stage mutation queue + new-order chime (Issue 09b) | Not implemented | Not shipped |
 | Paypack API integration | Reference document only | Not implemented; manual MoMo unchanged |
 | Ops lead inbox + configurable WhatsApp lead routing (Issue 05) | On main (`5aee9b2`, review fix `943efbc`); multi-recipient CRUD, immutable assignment, concurrency-safe round-robin, one public action | Done: migration applied, prod-smoked, and configured 1 of 2 enabled (`…8786` enabled, `…7771` disabled); post-fix Lead inbox zero console errors |
+| Candidate #25 real Inventory + 10-item pagination | Issues 01–03 feature-complete locally on `codex/inventory-pagination`; ADRs 0061–0063; migration exists | Not deployed; migration unapplied; combined release + production smoke pending |
 
 ### Required engineering boundaries for subsequent work
 
@@ -838,3 +849,20 @@ database credentials here.
 - ADR-0062 records the realtime paging boundary. Production, Vercel and migration
   `20260820183000_real_vendor_inventory` remain untouched. Next isolated slice:
   Issue 03 storefront menu pagination; do not deploy before the combined gate.
+
+### 2026-08-20 — Codex — Issue 03 storefront menu pagination complete locally
+
+- Added a pure storefront menu query/pagination module: unavailable dishes are
+  removed before category/search filtering, safe clamping and ten-item slicing.
+  `category`, `search` and `page` are shareable URL state with defaults omitted
+  and unrelated parameters preserved.
+- The Customer view now provides search plus Previous/Page/Next controls. Page
+  and filter changes keep the mounted cart/customization module, Back/forward
+  restores the view, and page changes return scroll/focus to the Menu heading.
+  Empty and one-page states retain accessible controls.
+- Verification: focused 4/4, TypeScript/lint clean, full tests 362 passed / 109
+  expected skips, production build clean, and local 390×844 + 1280×900 browser
+  smoke passed 32/32 with zero console errors, overlays or overflow. ADR-0063.
+- Candidate #25 is feature-complete locally. Production, Vercel and migration
+  `20260820183000_real_vendor_inventory` remain untouched. Next gate: review and
+  apply that migration, deploy the three-issue release once, then prod-smoke.

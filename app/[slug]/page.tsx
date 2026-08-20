@@ -4,10 +4,11 @@ import { getMomoMode } from "@/lib/momo/mode";
 import { InstallHintBanner } from "@/components/pwa/InstallHintBanner";
 import { Storefront } from "@/components/customer/Storefront";
 import { SuspendedStorefront } from "@/components/customer/SuspendedStorefront";
+import { parseStorefrontMenuQuery } from "@/lib/menu/storefront-pagination";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ from?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export default async function CustomerStorefrontPage({
@@ -15,7 +16,7 @@ export default async function CustomerStorefrontPage({
   searchParams,
 }: PageProps) {
   const { slug } = await params;
-  const { from } = await searchParams;
+  const query = await searchParams;
   const store = getStore();
   const vendor = await store.getVendorBySlug(slug);
   if (!vendor) notFound();
@@ -40,7 +41,8 @@ export default async function CustomerStorefrontPage({
         vendor={vendor}
         menu={menu}
         categories={categories}
-        fromKds={from === "kds"}
+        initialMenuQuery={parseStorefrontMenuQuery(query, categories)}
+        fromKds={query.from === "kds"}
         momoMode={getMomoMode()}
       />
     </>

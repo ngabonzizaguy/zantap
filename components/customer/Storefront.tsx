@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MenuItem, MomoMode, Vendor } from "@/lib/types";
 import { TopBar } from "@/components/customer/TopBar";
 import { Hero } from "@/components/customer/Hero";
@@ -15,11 +15,19 @@ import { UssdModal } from "@/components/customer/UssdModal";
 import { ManualMomoSheet } from "@/components/customer/ManualMomoSheet";
 import { SuccessReceipt } from "@/components/customer/SuccessReceipt";
 import { CartProvider, useCart } from "@/components/customer/CartContext";
+import { Button } from "@/components/ui/primitives/Button";
+import {
+  buildStorefrontMenuHref,
+  paginateStorefrontMenu,
+  parseStorefrontMenuQuery,
+  type StorefrontMenuQuery,
+} from "@/lib/menu/storefront-pagination";
 
 interface StorefrontProps {
   vendor: Vendor;
   menu: MenuItem[];
   categories: string[];
+  initialMenuQuery: StorefrontMenuQuery;
   fromKds?: boolean;
   momoMode?: MomoMode;
 }
@@ -28,12 +36,20 @@ function StorefrontInner({
   vendor,
   menu,
   categories,
+  initialMenuQuery,
   fromKds = false,
   momoMode = "simulate",
 }: StorefrontProps) {
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [menuQuery, setMenuQuery] = useState(() => ({
+    ...initialMenuQuery,
+    page: paginateStorefrontMenu(menu, initialMenuQuery).page,
+  }));
   const [sectorOpen, setSectorOpen] = useState(false);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
+  const menuHeadingRef = useRef<HTMLHeadingElement>(null);
+  const previousPageRef = useRef<number | null>(null);
+  const initialMenuQueryRef = useRef(menuQuery);
+  const initialUrlCanonicalizedRef = useRef(false);
   const { cart, itemNotes, addItem, addFromCustomization, removeItem, resetCart } =
     useCart();
   const checkout = useCheckout(vendor, menu, { momoMode });
@@ -58,18 +74,77 @@ function StorefrontInner({
     setActiveItemId(null);
   };
 
-  const availableMenu = useMemo(
-    () => menu.filter((item) => item.isAvailable),
+  const menuPage = useMemo(
+    () => paginateStorefrontMenu(menu, menuQuery),
+    [menu, menuQuery]
+  );
+
+  const updateMenuQuery = useCallback(
+    (nextQuery: StorefrontMenuQuery, mode: "push" | "replace" = "push") => {
+      const safeQuery = {
+        ...nextQuery,
+        page: paginateStorefrontMenu(menu, nextQuery).page,
+      };
+      const href = buildStorefrontMenuHref(
+        window.location.pathname,
+        new URLSearchParams(window.location.search),
+        safeQuery
+      );
+      window.history[mode === "push" ? "pushState" : "replaceState"](
+        null,
+        "",
+        href
+      );
+      setMenuQuery(safeQuery);
+    },
     [menu]
   );
 
-  const filteredMenu = useMemo(
-    () =>
-      activeCategory === "All"
-        ? availableMenu
-        : availableMenu.filter((item) => item.category === activeCategory),
-    [availableMenu, activeCategory]
-  );
+  useEffect(() => {
+    const canonicalize = (query: StorefrontMenuQuery) => {
+      const href = buildStorefrontMenuHref(
+        window.location.pathname,
+        new URLSearchParams(window.location.search),
+        query
+      );
+      const currentHref = `${window.location.pathname}${window.location.search}`;
+      if (href !== currentHref) window.history.replaceState(null, "", href);
+    };
+    const handlePopState = () => {
+      const parsedQuery = parseStorefrontMenuQuery(
+        Object.fromEntries(new URLSearchParams(window.location.search)),
+        categories
+      );
+      const safeQuery = {
+        ...parsedQuery,
+        page: paginateStorefrontMenu(menu, parsedQuery).page,
+      };
+      canonicalize(safeQuery);
+      setMenuQuery(safeQuery);
+    };
+    if (!initialUrlCanonicalizedRef.current) {
+      canonicalize(initialMenuQueryRef.current);
+      initialUrlCanonicalizedRef.current = true;
+    }
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [categories, menu]);
+
+  useEffect(() => {
+    if (previousPageRef.current === null) {
+      previousPageRef.current = menuPage.page;
+      return;
+    }
+    if (previousPageRef.current === menuPage.page) return;
+    previousPageRef.current = menuPage.page;
+    window.requestAnimationFrame(() => {
+      menuHeadingRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      menuHeadingRef.current?.focus({ preventScroll: true });
+    });
+  }, [menuPage.page]);
 
   const handleReset = () => {
     checkout.reset();
@@ -100,30 +175,102 @@ function StorefrontInner({
         />
 
         <div className="mt-8">
-          <div className="mb-4 flex items-baseline justify-between px-0.5">
-            <h2 className="font-display text-display-sm font-light text-ink">Menu</h2>
-            <span className="font-body text-caption-uppercase uppercase text-muted">
-              {filteredMenu.length}{" "}
-              {filteredMenu.length === 1 ? "dish" : "dishes"}
+          <div className="mb-4 flex items-baseline justify-between gap-4 px-0.5">
+            <h2
+              id="menu"
+              ref={menuHeadingRef}
+              tabIndex={-1}
+              className="scroll-mt-6 font-display text-display-sm font-light text-ink focus:outline-none"
+            >
+              Menu
+            </h2>
+            <span
+              className="font-body text-caption-uppercase uppercase text-muted"
+              aria-live="polite"
+            >
+              {menuPage.total}{" "}
+              {menuPage.total === 1 ? "dish" : "dishes"}
             </span>
           </div>
 
+          <label htmlFor="menu-search" className="sr-only">
+            Search menu
+          </label>
+          <input
+            id="menu-search"
+            type="search"
+            value={menuQuery.search}
+            onChange={(event) =>
+              updateMenuQuery(
+                { ...menuQuery, search: event.target.value, page: 1 },
+                "replace"
+              )
+            }
+            placeholder="Search dishes"
+            className="glass-liquid-pill mb-3 h-11 w-full px-4 font-body text-body-md text-ink outline-none placeholder:text-muted-soft focus-visible:ring-2 focus-visible:ring-ink/70"
+          />
+
           <CategoryChips
             categories={categories}
-            active={activeCategory}
-            onSelect={setActiveCategory}
+            active={menuQuery.category}
+            onSelect={(category) =>
+              updateMenuQuery({ ...menuQuery, category, page: 1 })
+            }
           />
 
           {/* Keyed by category so switching chips replays the rise-in, making
               the filter swap feel fluid instead of an instant list swap. */}
-          <div key={activeCategory} className="zt-list-in mt-5">
-            <MenuList
-              items={filteredMenu}
-              cart={cart}
-              onAdd={addItem}
-              onOpen={handleOpenItem}
-            />
+          <div
+            key={`${menuQuery.category}:${menuQuery.search}:${menuPage.page}`}
+            className="zt-list-in mt-5"
+          >
+            {menuPage.items.length > 0 ? (
+              <MenuList
+                items={menuPage.items}
+                cart={cart}
+                onAdd={addItem}
+                onOpen={handleOpenItem}
+              />
+            ) : (
+              <div className="glass-liquid px-5 py-8 text-center">
+                <p className="font-display text-display-sm font-light text-ink">
+                  No dishes found
+                </p>
+                <p className="mt-2 font-body text-body-sm text-muted">
+                  Try another search or category.
+                </p>
+              </div>
+            )}
           </div>
+
+          <nav
+            className="mt-5 flex items-center justify-between gap-3"
+            aria-label="Menu pages"
+          >
+            <Button
+              variant="outline"
+              disabled={menuPage.page <= 1}
+              onClick={() =>
+                updateMenuQuery({ ...menuQuery, page: menuPage.page - 1 })
+              }
+              className="h-12 min-h-12 px-4"
+            >
+              Previous
+            </Button>
+            <span className="text-center font-body text-body-sm text-muted">
+              Page {menuPage.page} of {menuPage.pageCount}
+            </span>
+            <Button
+              variant="outline"
+              disabled={menuPage.page >= menuPage.pageCount}
+              onClick={() =>
+                updateMenuQuery({ ...menuQuery, page: menuPage.page + 1 })
+              }
+              className="h-12 min-h-12 px-4"
+            >
+              Next
+            </Button>
+          </nav>
         </div>
       </div>
 

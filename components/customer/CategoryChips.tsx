@@ -29,6 +29,7 @@ export function CategoryChips({
           <button
             key={cat}
             type="button"
+            aria-pressed={isActive}
             onClick={() => onSelect(cat)}
             className={cn(
               chipBase,
