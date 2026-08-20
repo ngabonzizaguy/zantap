@@ -9,6 +9,7 @@ import {
 
 const incomplete: OnboardingChecklist = {
   hasMenuItem: false,
+  hasInventoryItem: false,
   hasPhoto: false,
   kitchenOpen: false,
   hasFirstOrder: false,
@@ -17,6 +18,7 @@ const incomplete: OnboardingChecklist = {
 
 const complete: OnboardingChecklist = {
   hasMenuItem: true,
+  hasInventoryItem: true,
   hasPhoto: true,
   kitchenOpen: true,
   hasFirstOrder: true,

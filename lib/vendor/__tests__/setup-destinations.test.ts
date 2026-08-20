@@ -8,6 +8,7 @@ describe("Setup Guide destinations", () => {
   it("routes every getting-started card to an actionable destination", () => {
     expect(getOnboardingDestination("hasMenuItem")).toEqual({ kind: "tab", tab: "menu" });
     expect(getOnboardingDestination("hasPhoto")).toEqual({ kind: "tab", tab: "menu" });
+    expect(getOnboardingDestination("hasInventoryItem")).toEqual({ kind: "tab", tab: "inventory" });
     expect(getOnboardingDestination("kitchenOpen")).toEqual({ kind: "open-kitchen" });
     expect(getOnboardingDestination("hasFirstOrder")).toEqual({ kind: "tab", tab: "orders" });
     expect(getOnboardingDestination("hasDispatch")).toEqual({ kind: "tab", tab: "orders" });

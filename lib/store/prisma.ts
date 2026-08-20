@@ -1,9 +1,12 @@
 import "server-only";
 
 import { randomUUID } from "node:crypto";
+import { Prisma } from "@prisma/client";
 
 import type {
   Driver as PrismaDriver,
+  InventoryAdjustment as PrismaInventoryAdjustment,
+  InventoryItem as PrismaInventoryItem,
   Lead as PrismaLead,
   LeadRoutingAssignment as PrismaLeadRoutingAssignment,
   LeadRoutingRecipient as PrismaLeadRoutingRecipient,
@@ -12,7 +15,6 @@ import type {
   Order as PrismaOrder,
   OrderItem as PrismaOrderItem,
   Payment as PrismaPayment,
-  Prisma,
   PrismaClient,
   Vendor as PrismaVendor,
   VendorRecoveryEvent as PrismaVendorRecoveryEvent,
@@ -128,6 +130,24 @@ import {
   validateCreateMenuItemInput,
   validateUpdateMenuItemInput,
 } from "@/lib/menu/validation";
+import type {
+  CreateInventoryItemInput,
+  InventoryAdjustment,
+  InventoryCategory,
+  InventoryItem,
+  InventoryItemDetail,
+  InventoryListFilters,
+  PaginatedInventory,
+  RecordInventoryAdjustmentInput,
+  UpdateInventoryItemInput,
+} from "@/lib/inventory/types";
+import {
+  inventoryStatus,
+  resolveInventoryUnit,
+  validateCreateInventoryItemInput,
+  validateInventoryAdjustmentInput,
+  validateUpdateInventoryItemInput,
+} from "@/lib/inventory/validation";
 
 // Statuses that count toward a vendor's gross takings for the day.
 const COUNTED_STATUSES: OrderStatus[] = ["PAID", "DISPATCHED", "COMPLETED"];
@@ -135,6 +155,10 @@ const ACTIVE_STATUSES: OrderStatus[] = ["PAID", "DISPATCHED"];
 
 type PrismaMenuItemWithImages = PrismaMenuItem & {
   images?: PrismaMenuImage[];
+};
+
+type PrismaInventoryItemWithHistory = PrismaInventoryItem & {
+  adjustments: PrismaInventoryAdjustment[];
 };
 
 type PrismaOrderWithItems = PrismaOrder & {
@@ -341,6 +365,63 @@ function mapMenuItem(item: PrismaMenuItemWithImages): MenuItem {
   };
 }
 
+const INVENTORY_CATEGORY_TO_PRISMA = {
+  Ingredients: "INGREDIENTS",
+  Drinks: "DRINKS",
+  Packaging: "PACKAGING",
+  Cleaning: "CLEANING",
+  Other: "OTHER",
+} as const;
+
+const INVENTORY_CATEGORY_FROM_PRISMA: Record<string, InventoryCategory> = {
+  INGREDIENTS: "Ingredients",
+  DRINKS: "Drinks",
+  PACKAGING: "Packaging",
+  CLEANING: "Cleaning",
+  OTHER: "Other",
+};
+
+function mapInventoryItem(item: PrismaInventoryItem): InventoryItem {
+  return {
+    id: item.id,
+    vendorId: item.vendorId,
+    name: item.name,
+    quantity: Number(item.quantity),
+    unit: item.unit,
+    lowStockThreshold: Number(item.lowStockThreshold),
+    category: INVENTORY_CATEGORY_FROM_PRISMA[item.category] ?? "Other",
+    unitCostRwf: item.unitCostRwf ?? undefined,
+    note: item.note ?? undefined,
+    archivedAt: item.archivedAt ?? undefined,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  };
+}
+
+function mapInventoryAdjustment(
+  entry: PrismaInventoryAdjustment
+): InventoryAdjustment {
+  return {
+    id: entry.id,
+    inventoryItemId: entry.inventoryItemId,
+    type: entry.type,
+    quantity: Number(entry.quantity),
+    oldQuantity: Number(entry.oldQuantity),
+    newQuantity: Number(entry.newQuantity),
+    note: entry.note ?? undefined,
+    createdAt: entry.createdAt,
+  };
+}
+
+function mapInventoryDetail(
+  row: PrismaInventoryItemWithHistory
+): InventoryItemDetail {
+  return {
+    item: mapInventoryItem(row),
+    history: row.adjustments.map(mapInventoryAdjustment),
+  };
+}
+
 function mapDriver(driver: PrismaDriver): Driver {
   return {
     id: driver.id,
@@ -406,6 +487,15 @@ function isUniqueConstraintError(error: unknown): boolean {
     error !== null &&
     "code" in error &&
     (error as { code?: string }).code === "P2002"
+  );
+}
+
+function isTransactionConflict(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: string }).code === "P2034"
   );
 }
 
@@ -1275,6 +1365,269 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       data: { category: to.trim() || "General" },
     });
     return result.count;
+  }
+
+  async function listInventory(
+    vendorSlug: string,
+    filters: InventoryListFilters,
+    pagination: Pagination
+  ): Promise<PaginatedInventory> {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: normalizeVendorSlug(vendorSlug) },
+      select: { id: true },
+    });
+    const pageSize = pagination.pageSize > 0 ? pagination.pageSize : 10;
+    const requestedPage = pagination.page > 0 ? pagination.page : 1;
+    if (!vendor) {
+      return {
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize,
+        counts: { active: 0, low: 0, out: 0 },
+      };
+    }
+
+    const [activeRows, filteredRows] = await Promise.all([
+      client.inventoryItem.findMany({
+        where: { vendorId: vendor.id, archivedAt: null },
+      }),
+      client.inventoryItem.findMany({
+        where: {
+          vendorId: vendor.id,
+          archivedAt: filters.archived ? { not: null } : null,
+          ...(filters.search?.trim()
+            ? { name: { contains: filters.search.trim(), mode: "insensitive" } }
+            : {}),
+          ...(filters.category && filters.category !== "ALL"
+            ? { category: INVENTORY_CATEGORY_TO_PRISMA[filters.category] }
+            : {}),
+        },
+      }),
+    ]);
+
+    const counts = activeRows.reduce(
+      (result, row) => {
+        result.active += 1;
+        const status = inventoryStatus(
+          Number(row.quantity),
+          Number(row.lowStockThreshold)
+        );
+        if (status === "OUT") result.out += 1;
+        if (status === "LOW") result.low += 1;
+        return result;
+      },
+      { active: 0, low: 0, out: 0 }
+    );
+    const rank = { OUT: 0, LOW: 1, OK: 2 } as const;
+    const rows = filteredRows.sort((a, b) => {
+      const statusDelta =
+        rank[inventoryStatus(Number(a.quantity), Number(a.lowStockThreshold))] -
+        rank[inventoryStatus(Number(b.quantity), Number(b.lowStockThreshold))];
+      return statusDelta || a.name.localeCompare(b.name);
+    });
+    const total = rows.length;
+    const lastPage = Math.max(1, Math.ceil(total / pageSize));
+    const page = Math.min(requestedPage, lastPage);
+    const start = (page - 1) * pageSize;
+    return {
+      items: rows.slice(start, start + pageSize).map(mapInventoryItem),
+      total,
+      page,
+      pageSize,
+      counts,
+    };
+  }
+
+  async function createInventoryItem(
+    vendorSlug: string,
+    input: CreateInventoryItemInput
+  ): Promise<InventoryItem> {
+    validateCreateInventoryItemInput(input);
+    const vendor = await client.vendor.findUnique({
+      where: { slug: normalizeVendorSlug(vendorSlug) },
+      select: { id: true },
+    });
+    if (!vendor) throw new Error("Vendor not found");
+    const created = await client.$transaction(async (tx) => {
+      const item = await tx.inventoryItem.create({
+        data: {
+          vendorId: vendor.id,
+          name: input.name.trim(),
+          quantity: input.quantity,
+          unit: resolveInventoryUnit(input.unit, input.customUnit),
+          lowStockThreshold: input.lowStockThreshold,
+          category: INVENTORY_CATEGORY_TO_PRISMA[input.category],
+          unitCostRwf: input.unitCostRwf,
+          note: input.note?.trim() || null,
+        },
+      });
+      await tx.inventoryAdjustment.create({
+        data: {
+          inventoryItemId: item.id,
+          sequence: 1,
+          type: "CORRECTION",
+          quantity: input.quantity,
+          oldQuantity: 0,
+          newQuantity: input.quantity,
+          note: "Opening quantity",
+        },
+      });
+      return item;
+    });
+    return mapInventoryItem(created);
+  }
+
+  async function getInventoryItem(
+    vendorSlug: string,
+    itemId: string
+  ): Promise<InventoryItemDetail | null> {
+    const item = await client.inventoryItem.findFirst({
+      where: {
+        id: itemId,
+        vendor: { slug: normalizeVendorSlug(vendorSlug) },
+      },
+      include: { adjustments: { orderBy: { sequence: "desc" } } },
+    });
+    return item ? mapInventoryDetail(item) : null;
+  }
+
+  async function updateInventoryItem(
+    vendorSlug: string,
+    itemId: string,
+    input: UpdateInventoryItemInput
+  ): Promise<InventoryItemDetail | null> {
+    validateUpdateInventoryItemInput(input);
+    const existing = await client.inventoryItem.findFirst({
+      where: {
+        id: itemId,
+        vendor: { slug: normalizeVendorSlug(vendorSlug) },
+      },
+      select: { id: true },
+    });
+    if (!existing) return null;
+    await client.inventoryItem.update({
+      where: { id: existing.id },
+      data: {
+        ...(input.name !== undefined ? { name: input.name.trim() } : {}),
+        ...(input.unit !== undefined
+          ? { unit: resolveInventoryUnit(input.unit, input.customUnit) }
+          : {}),
+        ...(input.lowStockThreshold !== undefined
+          ? { lowStockThreshold: input.lowStockThreshold }
+          : {}),
+        ...(input.category !== undefined
+          ? { category: INVENTORY_CATEGORY_TO_PRISMA[input.category] }
+          : {}),
+        ...(input.unitCostRwf !== undefined
+          ? { unitCostRwf: input.unitCostRwf }
+          : {}),
+        ...(input.note !== undefined
+          ? { note: input.note?.trim() || null }
+          : {}),
+      },
+    });
+    return getInventoryItem(vendorSlug, itemId);
+  }
+
+  async function adjustInventoryItem(
+    vendorSlug: string,
+    itemId: string,
+    input: RecordInventoryAdjustmentInput
+  ): Promise<InventoryItemDetail | null> {
+    validateInventoryAdjustmentInput(input);
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const found = await client.$transaction(
+          async (tx) => {
+            const item = await tx.inventoryItem.findFirst({
+              where: {
+                id: itemId,
+                vendor: { slug: normalizeVendorSlug(vendorSlug) },
+              },
+            });
+            if (!item) return false;
+            if (item.archivedAt) {
+              throw new Error("Restore this item before adjusting it");
+            }
+            const oldQuantity = Number(item.quantity);
+            const newQuantity =
+              input.type === "RECEIVED"
+                ? oldQuantity + input.quantity
+                : input.type === "CORRECTION"
+                  ? input.quantity
+                  : oldQuantity - input.quantity;
+            if (newQuantity < 0) throw new Error("Stock cannot go below zero");
+            const latest = await tx.inventoryAdjustment.aggregate({
+              where: { inventoryItemId: item.id },
+              _max: { sequence: true },
+            });
+            await tx.inventoryItem.update({
+              where: { id: item.id },
+              data: { quantity: newQuantity },
+            });
+            await tx.inventoryAdjustment.create({
+              data: {
+                inventoryItemId: item.id,
+                sequence: (latest._max.sequence ?? 0) + 1,
+                type: input.type,
+                quantity: input.quantity,
+                oldQuantity,
+                newQuantity,
+                note: input.note?.trim() || null,
+              },
+            });
+            return true;
+          },
+          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+        );
+        return found ? getInventoryItem(vendorSlug, itemId) : null;
+      } catch (error) {
+        if (attempt < 2 && (isTransactionConflict(error) || isUniqueConstraintError(error))) {
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw new Error("Could not record inventory adjustment");
+  }
+
+  async function archiveInventoryItem(
+    vendorSlug: string,
+    itemId: string
+  ): Promise<InventoryItemDetail | null> {
+    const existing = await client.inventoryItem.findFirst({
+      where: {
+        id: itemId,
+        vendor: { slug: normalizeVendorSlug(vendorSlug) },
+      },
+      select: { id: true },
+    });
+    if (!existing) return null;
+    await client.inventoryItem.update({
+      where: { id: existing.id },
+      data: { archivedAt: new Date() },
+    });
+    return getInventoryItem(vendorSlug, itemId);
+  }
+
+  async function restoreInventoryItem(
+    vendorSlug: string,
+    itemId: string
+  ): Promise<InventoryItemDetail | null> {
+    const existing = await client.inventoryItem.findFirst({
+      where: {
+        id: itemId,
+        vendor: { slug: normalizeVendorSlug(vendorSlug) },
+      },
+      select: { id: true },
+    });
+    if (!existing) return null;
+    await client.inventoryItem.update({
+      where: { id: existing.id },
+      data: { archivedAt: null },
+    });
+    return getInventoryItem(vendorSlug, itemId);
   }
 
   async function addMenuImage(
@@ -2891,6 +3244,13 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     removeMenuImage,
     toggleItemAvailability,
     setAllItemsAvailable,
+    listInventory,
+    createInventoryItem,
+    getInventoryItem,
+    updateInventoryItem,
+    adjustInventoryItem,
+    archiveInventoryItem,
+    restoreInventoryItem,
     listOrders,
     listActiveOrders,
     listKdsOrders,

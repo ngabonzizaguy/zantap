@@ -1271,20 +1271,20 @@ export function SetupDrawer({
           {onNavigateTab ? (
             <section className="mt-8">
               <h3 className="font-display text-display-sm text-ink">
-                Stock tracking
+                Inventory
               </h3>
               <p className="mt-1 font-body text-body-sm text-muted">
-                Set inventory counts and low-stock alerts for your menu items.
+                Track ingredients, drinks, packaging, and other supplies separately from your menu.
               </p>
               <button
                 type="button"
                 onClick={() => {
-                  onNavigateTab("stock");
+                  onNavigateTab("inventory");
                   onClose();
                 }}
                 className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-brand-lg border border-hairline bg-canvas-soft px-5 font-body text-button font-medium text-ink transition-colors hover:bg-canvas"
               >
-                Open stock panel
+                Open inventory
               </button>
             </section>
           ) : null}

@@ -4,14 +4,14 @@ import { cn } from "@/lib/cn";
 import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/primitives";
 
-export type KdsTab = "orders" | "menu" | "history" | "stock";
+export type KdsTab = "orders" | "menu" | "history" | "inventory";
 
 interface TabsProps {
   active: KdsTab;
   onOrders: () => void;
   onMenu: () => void;
   onHistory: () => void;
-  onStock: () => void;
+  onInventory: () => void;
 }
 
 function tabClass(active: boolean) {
@@ -26,7 +26,7 @@ export function Tabs({
   onOrders,
   onMenu,
   onHistory,
-  onStock,
+  onInventory,
 }: TabsProps) {
   return (
     <div className="relative z-[1] grid grid-cols-2 gap-2.5 px-[18px] pb-1 pt-4 sm:grid-cols-4">
@@ -68,15 +68,15 @@ export function Tabs({
       </Button>
       <Button
         type="button"
-        aria-pressed={active === "stock"}
-        variant={active === "stock" ? "primary" : "outline"}
+        aria-pressed={active === "inventory"}
+        variant={active === "inventory" ? "primary" : "outline"}
         size="kds"
         radius="xl"
-        onClick={onStock}
-        className={tabClass(active === "stock")}
+        onClick={onInventory}
+        className={tabClass(active === "inventory")}
       >
-        <Icon name="stock" size={20} strokeWidth={2.1} />
-        Stock
+        <Icon name="inventory" size={20} strokeWidth={2.1} />
+        Inventory
       </Button>
     </div>
   );

@@ -63,6 +63,15 @@ import type {
   UpdateMarketingSiteSettingsInput,
   VendorExpense,
 } from "@/lib/vendor/feature-and-profit-types";
+import type {
+  CreateInventoryItemInput,
+  InventoryItemDetail,
+  InventoryItem,
+  InventoryListFilters,
+  PaginatedInventory,
+  RecordInventoryAdjustmentInput,
+  UpdateInventoryItemInput,
+} from "@/lib/inventory/types";
 
 /**
  * The single seam through which all persistent reads and mutations pass.
@@ -263,6 +272,39 @@ export interface Store {
     itemId: string
   ): Promise<MenuItem | null>;
   setAllItemsAvailable(vendorSlug: string): Promise<MenuItem[]>;
+
+  // Supply inventory. Separate from sellable Menu dishes and profit math.
+  listInventory(
+    vendorSlug: string,
+    filters: InventoryListFilters,
+    pagination: Pagination
+  ): Promise<PaginatedInventory>;
+  createInventoryItem(
+    vendorSlug: string,
+    input: CreateInventoryItemInput
+  ): Promise<InventoryItem>;
+  getInventoryItem(
+    vendorSlug: string,
+    itemId: string
+  ): Promise<InventoryItemDetail | null>;
+  adjustInventoryItem(
+    vendorSlug: string,
+    itemId: string,
+    input: RecordInventoryAdjustmentInput
+  ): Promise<InventoryItemDetail | null>;
+  updateInventoryItem(
+    vendorSlug: string,
+    itemId: string,
+    input: UpdateInventoryItemInput
+  ): Promise<InventoryItemDetail | null>;
+  archiveInventoryItem(
+    vendorSlug: string,
+    itemId: string
+  ): Promise<InventoryItemDetail | null>;
+  restoreInventoryItem(
+    vendorSlug: string,
+    itemId: string
+  ): Promise<InventoryItemDetail | null>;
 
   // Order reads + create + status
   listOrders(vendorSlug: string): Promise<Order[]>;

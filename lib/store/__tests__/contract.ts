@@ -474,6 +474,219 @@ export function runStoreContract(
       });
     });
 
+    describe("inventory", () => {
+      it("creates a supply item without adding a Menu dish", async () => {
+        const menuBefore = await store.getMenu(slug);
+
+        const created = await store.createInventoryItem(slug, {
+          name: "Rice",
+          quantity: 3,
+          unit: "bags",
+          lowStockThreshold: 1,
+          category: "Ingredients",
+        });
+
+        const inventory = await store.listInventory(
+          slug,
+          {},
+          { page: 1, pageSize: 10 }
+        );
+
+        expect(created.name).toBe("Rice");
+        expect(created.quantity).toBe(3);
+        expect(inventory.items.map((item) => item.id)).toContain(created.id);
+        expect(await store.getMenu(slug)).toEqual(menuBefore);
+      });
+
+      it("records immutable quantity history and rejects stock below zero", async () => {
+        const item = await store.createInventoryItem(slug, {
+          name: "Tomato sauce",
+          quantity: 12,
+          unit: "bottles",
+          lowStockThreshold: 3,
+          category: "Ingredients",
+        });
+
+        await store.adjustInventoryItem(slug, item.id, {
+          type: "RECEIVED",
+          quantity: 4,
+          note: "Supplier delivery",
+        });
+        await store.adjustInventoryItem(slug, item.id, {
+          type: "USED",
+          quantity: 5,
+        });
+        await store.adjustInventoryItem(slug, item.id, {
+          type: "WASTED",
+          quantity: 2,
+        });
+        await store.adjustInventoryItem(slug, item.id, {
+          type: "CORRECTION",
+          quantity: 10.5,
+          note: "Counted by hand",
+        });
+
+        const detail = await store.getInventoryItem(slug, item.id);
+        expect(detail?.item.quantity).toBe(10.5);
+        expect(detail?.history.map((entry) => entry.type)).toEqual([
+          "CORRECTION",
+          "WASTED",
+          "USED",
+          "RECEIVED",
+          "CORRECTION",
+        ]);
+        expect(detail?.history.at(-1)).toMatchObject({
+          oldQuantity: 0,
+          newQuantity: 12,
+          note: "Opening quantity",
+        });
+
+        await expect(
+          store.adjustInventoryItem(slug, item.id, {
+            type: "USED",
+            quantity: 11,
+          })
+        ).rejects.toThrow(/below zero/i);
+        expect((await store.getInventoryItem(slug, item.id))?.item.quantity).toBe(10.5);
+      });
+
+      it("edits descriptive fields and archives/restores without losing history", async () => {
+        const created = await store.createInventoryItem(slug, {
+          name: "Takeaway boxes",
+          quantity: 50,
+          unit: "boxes",
+          lowStockThreshold: 10,
+          category: "Packaging",
+        });
+        await store.adjustInventoryItem(slug, created.id, {
+          type: "USED",
+          quantity: 5,
+        });
+
+        const updated = await store.updateInventoryItem(slug, created.id, {
+          name: "Large takeaway boxes",
+          unit: "custom",
+          customUnit: "cartons",
+          category: "Other",
+          lowStockThreshold: 8,
+          unitCostRwf: 1200,
+          note: "Keep dry",
+        });
+        expect(updated?.item).toMatchObject({
+          name: "Large takeaway boxes",
+          unit: "cartons",
+          category: "Other",
+          quantity: 45,
+          unitCostRwf: 1200,
+        });
+
+        expect((await store.archiveInventoryItem(slug, created.id))?.item.archivedAt).toBeInstanceOf(Date);
+        expect((await store.listInventory(slug, {}, { page: 1, pageSize: 10 })).total).toBe(0);
+        expect((await store.listInventory(slug, { archived: true }, { page: 1, pageSize: 10 })).total).toBe(1);
+
+        const restored = await store.restoreInventoryItem(slug, created.id);
+        expect(restored?.item.archivedAt).toBeUndefined();
+        expect(restored?.history).toHaveLength(2);
+      });
+
+      it("filters, status-sorts, counts, paginates ten at a time, and clamps empty pages", async () => {
+        const rows = [
+          ["Zulu out", 0, "Ingredients"],
+          ["Alpha low", 2, "Ingredients"],
+          ["Bravo okay", 8, "Drinks"],
+          ["Charlie", 8, "Packaging"],
+          ["Delta", 8, "Cleaning"],
+          ["Echo", 8, "Other"],
+          ["Foxtrot", 8, "Other"],
+          ["Golf", 8, "Other"],
+          ["Hotel", 8, "Other"],
+          ["India", 8, "Other"],
+          ["Juliet", 8, "Other"],
+        ] as const;
+        for (const [name, quantity, category] of rows) {
+          await store.createInventoryItem(slug, {
+            name,
+            quantity,
+            unit: "pieces",
+            lowStockThreshold: 3,
+            category,
+          });
+        }
+
+        const first = await store.listInventory(slug, {}, { page: 1, pageSize: 10 });
+        expect(first.items).toHaveLength(10);
+        expect(first.items.slice(0, 3).map((item) => item.name)).toEqual([
+          "Zulu out",
+          "Alpha low",
+          "Bravo okay",
+        ]);
+        expect(first.counts).toEqual({ active: 11, low: 1, out: 1 });
+
+        const second = await store.listInventory(slug, {}, { page: 2, pageSize: 10 });
+        expect(second.items).toHaveLength(1);
+        expect(second.total).toBe(11);
+
+        const filtered = await store.listInventory(
+          slug,
+          { category: "Ingredients", search: "alpha" },
+          { page: 99, pageSize: 10 }
+        );
+        expect(filtered.page).toBe(1);
+        expect(filtered.items.map((item) => item.name)).toEqual(["Alpha low"]);
+      });
+
+      it("accepts decimal quantities and custom units while rejecting invalid fields", async () => {
+        const created = await store.createInventoryItem(slug, {
+          name: "Cooking oil",
+          quantity: 2.75,
+          unit: "custom",
+          customUnit: "jerrycans",
+          lowStockThreshold: 0.5,
+          category: "Ingredients",
+          unitCostRwf: 18_000,
+        });
+        expect(created).toMatchObject({ quantity: 2.75, unit: "jerrycans" });
+
+        await expect(
+          store.createInventoryItem(slug, {
+            name: "Bad quantity",
+            quantity: -1,
+            unit: "pieces",
+            lowStockThreshold: 0,
+            category: "Other",
+          })
+        ).rejects.toThrow(/quantity/i);
+        await expect(
+          store.createInventoryItem(slug, {
+            name: "Missing custom unit",
+            quantity: 1,
+            unit: "custom",
+            lowStockThreshold: 0,
+            category: "Other",
+          })
+        ).rejects.toThrow(/custom unit/i);
+        await expect(
+          store.createInventoryItem(slug, {
+            name: "Too precise",
+            quantity: 1.2345,
+            unit: "kg",
+            lowStockThreshold: 0,
+            category: "Ingredients",
+          })
+        ).rejects.toThrow(/3 decimal/i);
+        await expect(
+          store.createInventoryItem(slug, {
+            name: "Fractional RWF",
+            quantity: 1,
+            unit: "pieces",
+            lowStockThreshold: 0,
+            category: "Other",
+            unitCostRwf: 10.5,
+          })
+        ).rejects.toThrow(/unit cost/i);
+      });
+    });
+
     describe("menu images", () => {
       async function createItemForImages() {
         return store.createMenuItem(slug, {

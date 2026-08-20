@@ -3,6 +3,7 @@ import type { MenuItem, Order } from "@/lib/types";
 export interface OnboardingChecklist {
   hasMenuItem: boolean;
   hasPhoto: boolean;
+  hasInventoryItem: boolean;
   kitchenOpen: boolean;
   hasFirstOrder: boolean;
   hasDispatch: boolean;
@@ -24,6 +25,11 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     id: "hasPhoto",
     label: "Add a photo",
     hint: "Edit an item and upload or link an image.",
+  },
+  {
+    id: "hasInventoryItem",
+    label: "Add your first stock item",
+    hint: "Open Inventory and add a supply such as rice, bottles, or packaging.",
   },
   {
     id: "kitchenOpen",
@@ -49,11 +55,13 @@ const DISPATCHED_PLUS = new Set<Order["status"]>(["DISPATCHED", "COMPLETED"]);
 export function deriveOnboardingState(
   menu: MenuItem[],
   kitchenOpen: boolean,
-  orders: Order[]
+  orders: Order[],
+  activeInventoryItemCount = 0
 ): OnboardingChecklist {
   return {
     hasMenuItem: menu.length > 0,
     hasPhoto: menu.some((item) => (item.images?.length ?? 0) > 0),
+    hasInventoryItem: activeInventoryItemCount > 0,
     kitchenOpen,
     hasFirstOrder: orders.some((order) => PAID_PLUS.has(order.status)),
     hasDispatch: orders.some((order) => DISPATCHED_PLUS.has(order.status)),

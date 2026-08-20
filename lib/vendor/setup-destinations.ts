@@ -13,6 +13,7 @@ const ONBOARDING_DESTINATIONS: Record<
 > = {
   hasMenuItem: { kind: "tab", tab: "menu" },
   hasPhoto: { kind: "tab", tab: "menu" },
+  hasInventoryItem: { kind: "tab", tab: "inventory" },
   kitchenOpen: { kind: "open-kitchen" },
   hasFirstOrder: { kind: "tab", tab: "orders" },
   hasDispatch: { kind: "tab", tab: "orders" },

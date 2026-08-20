@@ -116,6 +116,23 @@ import {
 } from "@/lib/vendor/driver-display";
 import { buildKdsSnapshotRevision } from "@/lib/kds/revision";
 import { filterKdsQueueOrders } from "@/lib/kds/visible-orders";
+import type {
+  CreateInventoryItemInput,
+  InventoryAdjustment,
+  InventoryItem,
+  InventoryItemDetail,
+  InventoryListFilters,
+  PaginatedInventory,
+  RecordInventoryAdjustmentInput,
+  UpdateInventoryItemInput,
+} from "@/lib/inventory/types";
+import {
+  inventoryStatus,
+  resolveInventoryUnit,
+  validateCreateInventoryItemInput,
+  validateInventoryAdjustmentInput,
+  validateUpdateInventoryItemInput,
+} from "@/lib/inventory/validation";
 
 const COUNTED_STATUSES: OrderStatus[] = ["PAID", "DISPATCHED", "COMPLETED"];
 
@@ -165,6 +182,8 @@ function clonePayment(payment: Payment): Payment {
  */
 export function createInMemoryStore(): ResettableStore {
   let menuItems: MenuItem[] = [];
+  let inventoryItems: InventoryItem[] = [];
+  let inventoryAdjustments: InventoryAdjustment[] = [];
   let menuImages: MenuImage[] = [];
   let orders: Order[] = [];
   let payments: Payment[] = [];
@@ -192,6 +211,8 @@ export function createInMemoryStore(): ResettableStore {
   let orderItemCounter = 0;
   let paymentCounter = 0;
   let menuItemCounter = 0;
+  let inventoryItemCounter = 0;
+  let inventoryAdjustmentCounter = 0;
   let menuImageCounter = 0;
   let vendorCounter = 0;
   let leadCounter = 0;
@@ -291,6 +312,8 @@ export function createInMemoryStore(): ResettableStore {
 
   function load(): void {
     menuItems = seedMenuItems.map((item) => ({ ...item }));
+    inventoryItems = [];
+    inventoryAdjustments = [];
     menuImages = [];
     orders = seedOrders.map(cloneOrder);
     payments = [];
@@ -312,6 +335,8 @@ export function createInMemoryStore(): ResettableStore {
     orderCounter = 0;
     orderItemCounter = 0;
     paymentCounter = 0;
+    inventoryItemCounter = 0;
+    inventoryAdjustmentCounter = 0;
     vendorCounter = 0;
     recoveryEventCounter = 0;
     driverCounter = 0;
@@ -1015,6 +1040,237 @@ export function createInMemoryStore(): ResettableStore {
       return item;
     });
     return updated;
+  }
+
+  async function listInventory(
+    vendorSlug: string,
+    filters: InventoryListFilters,
+    pagination: Pagination
+  ): Promise<PaginatedInventory> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    const pageSize = pagination.pageSize > 0 ? pagination.pageSize : 10;
+    const requestedPage = pagination.page > 0 ? pagination.page : 1;
+    if (!vendor) {
+      return {
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize,
+        counts: { active: 0, low: 0, out: 0 },
+      };
+    }
+
+    const activeItems = inventoryItems.filter(
+      (item) => item.vendorId === vendor.id && !item.archivedAt
+    );
+    const counts = activeItems.reduce(
+      (result, item) => {
+        result.active += 1;
+        const status = inventoryStatus(item.quantity, item.lowStockThreshold);
+        if (status === "OUT") result.out += 1;
+        if (status === "LOW") result.low += 1;
+        return result;
+      },
+      { active: 0, low: 0, out: 0 }
+    );
+    const search = filters.search?.trim().toLocaleLowerCase() ?? "";
+    const rows = inventoryItems
+      .filter((item) => item.vendorId === vendor.id)
+      .filter((item) => (filters.archived ? !!item.archivedAt : !item.archivedAt))
+      .filter((item) => !search || item.name.toLocaleLowerCase().includes(search))
+      .filter(
+        (item) =>
+          !filters.category ||
+          filters.category === "ALL" ||
+          item.category === filters.category
+      )
+      .sort((a, b) => {
+        const rank = { OUT: 0, LOW: 1, OK: 2 } as const;
+        const statusDelta =
+          rank[inventoryStatus(a.quantity, a.lowStockThreshold)] -
+          rank[inventoryStatus(b.quantity, b.lowStockThreshold)];
+        return statusDelta || a.name.localeCompare(b.name);
+      });
+    const total = rows.length;
+    const lastPage = Math.max(1, Math.ceil(total / pageSize));
+    const page = Math.min(requestedPage, lastPage);
+    const start = (page - 1) * pageSize;
+    return {
+      items: rows.slice(start, start + pageSize).map((item) => ({
+        ...item,
+        archivedAt: item.archivedAt ? new Date(item.archivedAt) : undefined,
+        createdAt: new Date(item.createdAt),
+        updatedAt: new Date(item.updatedAt),
+      })),
+      total,
+      page,
+      pageSize,
+      counts,
+    };
+  }
+
+  async function createInventoryItem(
+    vendorSlug: string,
+    input: CreateInventoryItemInput
+  ): Promise<InventoryItem> {
+    validateCreateInventoryItemInput(input);
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) throw new Error("Vendor not found");
+    const now = new Date();
+    const item: InventoryItem = {
+      id: `inv_${++inventoryItemCounter}_${Date.now()}`,
+      vendorId: vendor.id,
+      name: input.name.trim(),
+      quantity: input.quantity,
+      unit: resolveInventoryUnit(input.unit, input.customUnit),
+      lowStockThreshold: input.lowStockThreshold,
+      category: input.category,
+      unitCostRwf: input.unitCostRwf,
+      note: input.note?.trim() || undefined,
+      createdAt: now,
+      updatedAt: now,
+    };
+    inventoryItems.push(item);
+    inventoryAdjustments.push({
+      id: `inv_adj_${++inventoryAdjustmentCounter}_${Date.now()}`,
+      inventoryItemId: item.id,
+      type: "CORRECTION",
+      quantity: input.quantity,
+      oldQuantity: 0,
+      newQuantity: input.quantity,
+      note: "Opening quantity",
+      createdAt: now,
+    });
+    return { ...item, createdAt: new Date(now), updatedAt: new Date(now) };
+  }
+
+  async function getInventoryItem(
+    vendorSlug: string,
+    itemId: string
+  ): Promise<InventoryItemDetail | null> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return null;
+    const item = inventoryItems.find(
+      (row) => row.id === itemId && row.vendorId === vendor.id
+    );
+    if (!item) return null;
+    return {
+      item: {
+        ...item,
+        archivedAt: item.archivedAt ? new Date(item.archivedAt) : undefined,
+        createdAt: new Date(item.createdAt),
+        updatedAt: new Date(item.updatedAt),
+      },
+      history: inventoryAdjustments
+        .filter((entry) => entry.inventoryItemId === item.id)
+        .reverse()
+        .map((entry) => ({ ...entry, createdAt: new Date(entry.createdAt) })),
+    };
+  }
+
+  async function adjustInventoryItem(
+    vendorSlug: string,
+    itemId: string,
+    input: RecordInventoryAdjustmentInput
+  ): Promise<InventoryItemDetail | null> {
+    validateInventoryAdjustmentInput(input);
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return null;
+    const index = inventoryItems.findIndex(
+      (row) => row.id === itemId && row.vendorId === vendor.id
+    );
+    if (index === -1) return null;
+    const current = inventoryItems[index];
+    if (current.archivedAt) throw new Error("Restore this item before adjusting it");
+    const oldQuantity = current.quantity;
+    const newQuantity =
+      input.type === "RECEIVED"
+        ? oldQuantity + input.quantity
+        : input.type === "CORRECTION"
+          ? input.quantity
+          : oldQuantity - input.quantity;
+    if (newQuantity < 0) throw new Error("Stock cannot go below zero");
+    const now = new Date();
+    inventoryItems[index] = { ...current, quantity: newQuantity, updatedAt: now };
+    inventoryAdjustments.push({
+      id: `inv_adj_${++inventoryAdjustmentCounter}_${Date.now()}`,
+      inventoryItemId: current.id,
+      type: input.type,
+      quantity: input.quantity,
+      oldQuantity,
+      newQuantity,
+      note: input.note?.trim() || undefined,
+      createdAt: now,
+    });
+    return getInventoryItem(vendorSlug, itemId);
+  }
+
+  async function updateInventoryItem(
+    vendorSlug: string,
+    itemId: string,
+    input: UpdateInventoryItemInput
+  ): Promise<InventoryItemDetail | null> {
+    validateUpdateInventoryItemInput(input);
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return null;
+    const index = inventoryItems.findIndex(
+      (row) => row.id === itemId && row.vendorId === vendor.id
+    );
+    if (index === -1) return null;
+    const current = inventoryItems[index];
+    inventoryItems[index] = {
+      ...current,
+      name: input.name !== undefined ? input.name.trim() : current.name,
+      unit:
+        input.unit !== undefined
+          ? resolveInventoryUnit(input.unit, input.customUnit)
+          : current.unit,
+      lowStockThreshold: input.lowStockThreshold ?? current.lowStockThreshold,
+      category: input.category ?? current.category,
+      unitCostRwf:
+        input.unitCostRwf !== undefined
+          ? input.unitCostRwf ?? undefined
+          : current.unitCostRwf,
+      note:
+        input.note !== undefined
+          ? input.note?.trim() || undefined
+          : current.note,
+      updatedAt: new Date(),
+    };
+    return getInventoryItem(vendorSlug, itemId);
+  }
+
+  async function archiveInventoryItem(
+    vendorSlug: string,
+    itemId: string
+  ): Promise<InventoryItemDetail | null> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return null;
+    const index = inventoryItems.findIndex(
+      (row) => row.id === itemId && row.vendorId === vendor.id
+    );
+    if (index === -1) return null;
+    inventoryItems[index] = {
+      ...inventoryItems[index],
+      archivedAt: new Date(),
+      updatedAt: new Date(),
+    };
+    return getInventoryItem(vendorSlug, itemId);
+  }
+
+  async function restoreInventoryItem(
+    vendorSlug: string,
+    itemId: string
+  ): Promise<InventoryItemDetail | null> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return null;
+    const index = inventoryItems.findIndex(
+      (row) => row.id === itemId && row.vendorId === vendor.id
+    );
+    if (index === -1) return null;
+    const { archivedAt: _archivedAt, ...rest } = inventoryItems[index];
+    inventoryItems[index] = { ...rest, updatedAt: new Date() };
+    return getInventoryItem(vendorSlug, itemId);
   }
 
   async function addMenuImage(
@@ -2257,6 +2513,13 @@ export function createInMemoryStore(): ResettableStore {
     removeMenuImage,
     toggleItemAvailability,
     setAllItemsAvailable,
+    listInventory,
+    createInventoryItem,
+    getInventoryItem,
+    adjustInventoryItem,
+    updateInventoryItem,
+    archiveInventoryItem,
+    restoreInventoryItem,
     listOrders,
     listActiveOrders,
     listKdsOrders,

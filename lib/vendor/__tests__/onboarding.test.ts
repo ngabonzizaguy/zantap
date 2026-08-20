@@ -37,11 +37,17 @@ describe("deriveOnboardingState", () => {
     expect(state).toEqual({
       hasMenuItem: false,
       hasPhoto: false,
+      hasInventoryItem: false,
       kitchenOpen: false,
       hasFirstOrder: false,
       hasDispatch: false,
     });
     expect(countCompletedSteps(state)).toBe(0);
+  });
+
+  it("completes inventory setup after the first active supply item", () => {
+    expect(deriveOnboardingState([], false, [], 0).hasInventoryItem).toBe(false);
+    expect(deriveOnboardingState([], false, [], 1).hasInventoryItem).toBe(true);
   });
 
   it("detects menu item and photo from hydrated menu", () => {
@@ -90,6 +96,7 @@ describe("deriveOnboardingState", () => {
       new Set([
         "hasMenuItem",
         "hasPhoto",
+        "hasInventoryItem",
         "kitchenOpen",
         "hasFirstOrder",
         "hasDispatch",

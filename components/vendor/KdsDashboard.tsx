@@ -27,6 +27,8 @@ import { useKdsLiveSnapshot } from "@/lib/kds/useKdsLiveSnapshot";
 import { usePeekVisibility } from "@/lib/kds/usePeekVisibility";
 import { KDS_COACHMARKS_ENABLED } from "@/lib/kds/feature-flags";
 import type { KdsSnapshot } from "@/lib/kds/types";
+import type { PaginatedInventory } from "@/lib/inventory/types";
+import type { InventoryCategory } from "@/lib/inventory/types";
 import type { KitchenStage } from "@/lib/types";
 import { deriveOnboardingState } from "@/lib/vendor/onboarding";
 import {
@@ -42,7 +44,7 @@ import { MenuSection } from "@/components/vendor/MenuSection";
 import { HistoryPanel } from "@/components/vendor/HistoryPanel";
 import { AssignDriverModal } from "@/components/vendor/AssignDriverModal";
 import { DriversPanel } from "@/components/vendor/DriversPanel";
-import { StockPanel } from "@/components/vendor/StockPanel";
+import { InventoryPanel } from "@/components/vendor/InventoryPanel";
 import { ProfitPanel } from "@/components/vendor/ProfitPanel";
 import { SetupDrawer, type StorefrontProfile, type VendorBusinessProfile, type VendorPaymentProfile } from "@/components/vendor/SetupDrawer";
 import { HelpModal } from "@/components/vendor/HelpModal";
@@ -51,9 +53,10 @@ import { InstallHintBanner } from "@/components/pwa/InstallHintBanner";
 import { Card, GradientOrbs } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 
-const KDS_TABS = new Set<KdsTab>(["orders", "menu", "history", "stock"]);
+const KDS_TABS = new Set<KdsTab>(["orders", "menu", "history", "inventory"]);
 
 function parseInitialTab(tab?: string): KdsTab {
+  if (tab === "stock") return "inventory";
   if (tab === "setup") return "orders";
   if (tab === "drivers") return "orders";
   if (tab === "profit") return "orders";
@@ -80,6 +83,13 @@ interface KdsDashboardProps {
   initialYesterdayGross: number;
   initialKitchenOpen: boolean;
   initialFeatureFlags: VendorFeatureFlags;
+  initialInventory: PaginatedInventory;
+  initialInventoryQuery: {
+    page: number;
+    search: string;
+    category: InventoryCategory | "ALL";
+    archived: boolean;
+  };
   initialTab?: string;
 }
 
@@ -92,6 +102,8 @@ export function KdsDashboard({
   initialYesterdayGross,
   initialKitchenOpen,
   initialFeatureFlags,
+  initialInventory,
+  initialInventoryQuery,
   initialTab,
 }: KdsDashboardProps) {
   const [tab, setTab] = useState<KdsTab>(() => parseInitialTab(initialTab));
@@ -102,6 +114,9 @@ export function KdsDashboard({
   const [yesterdayGross, setYesterdayGross] = useState(initialYesterdayGross);
   const [kitchenOpen, setKitchenOpenState] = useState(initialKitchenOpen);
   const [featureFlags, setFeatureFlags] = useState(initialFeatureFlags);
+  const [inventoryActiveCount, setInventoryActiveCount] = useState(
+    initialInventory.counts.active
+  );
   const [expandedId, setExpandedId] = useState<string | null>(
     initialOrders[0]?.id ?? null
   );
@@ -151,8 +166,8 @@ export function KdsDashboard({
   const [sortDirection, setSortDirection] = useState<KdsSortDirection>("newest");
 
   const liveChecklist = useMemo(
-    () => deriveOnboardingState(menu, kitchenOpen, orders),
-    [menu, kitchenOpen, orders]
+    () => deriveOnboardingState(menu, kitchenOpen, orders, inventoryActiveCount),
+    [menu, kitchenOpen, orders, inventoryActiveCount]
   );
   const checklist = onboardingOverride ?? liveChecklist;
 
@@ -252,6 +267,9 @@ export function KdsDashboard({
 
   const navigateTab = useCallback((target: KdsTab) => {
     setTab(target);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", target);
+    window.history.replaceState(null, "", url);
   }, []);
 
   const activeCount = orders.filter(
@@ -414,10 +432,10 @@ export function KdsDashboard({
 
         <Tabs
           active={tab}
-          onOrders={() => setTab("orders")}
-          onMenu={() => setTab("menu")}
-          onHistory={() => setTab("history")}
-          onStock={() => setTab("stock")}
+          onOrders={() => navigateTab("orders")}
+          onMenu={() => navigateTab("menu")}
+          onHistory={() => navigateTab("history")}
+          onInventory={() => navigateTab("inventory")}
         />
         <div key={tab} className="zt-list-in relative z-[1] px-[18px] pt-3.5">
           {tab === "orders" ? (
@@ -458,10 +476,11 @@ export function KdsDashboard({
           ) : tab === "history" ? (
             <HistoryPanel vendorSlug={vendor.slug} />
           ) : (
-            <StockPanel
+            <InventoryPanel
               vendorSlug={vendor.slug}
-              items={menu}
-              onRefresh={refresh}
+              initialResult={initialInventory}
+              initialQuery={initialInventoryQuery}
+              onActiveCountChange={setInventoryActiveCount}
             />
           )}
         </div>

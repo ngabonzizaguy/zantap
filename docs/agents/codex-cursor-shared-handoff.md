@@ -791,3 +791,30 @@ database credentials here.
 - Work is isolated on `codex/inventory-pagination` from stable `df9d530`.
   Published three ready-for-agent issues under `.scratch/inventory-pagination/`.
   No implementation, migration or deployment has occurred yet.
+
+### 2026-08-20 — Codex — Issue 01 Real vendor Inventory complete locally
+
+- Implemented a supply Inventory separate from Menu dishes and Profit/Expenses:
+  both Store adapters now support create/edit, Received/Used/Wasted/Correction,
+  immutable old/new history, non-negative stock, archive/restore, category/search
+  filters, out→low→alphabetical ordering, counts, clamping, and ten-item pages.
+- Added owner-token-guarded async-only Server Actions and the dark KDS Inventory
+  screen with URL-backed search/category/page/archive state, yellow low and red
+  out alerts, reference-only unit costs, online-only mutation controls, and
+  accessible create/edit/adjust/history flows. No WhatsApp or fee path was added.
+- Setup Guide now includes `Add your first stock item`, navigates to Inventory,
+  and completes from the first active supply item. The reachable legacy Stock tab
+  is replaced; Menu dish availability mechanics and Profit calculations are
+  unchanged.
+- Created migration `20260820183000_real_vendor_inventory` but did not apply it.
+  Production and Vercel were not touched.
+- Verification: focused Store 5/5, focused actions/Setup 15/15, TypeScript and
+  lint clean, full tests 354 passed / 109 expected skips, production build clean;
+  local 390×844 + 1280×900 browser smoke passed create → Receive → history →
+  negative guard → archive/restore → Setup completion with zero console errors
+  and no horizontal overflow. Browser verification used webpack dev mode after
+  Turbopack's generated dev cache produced a baseline Icon hydration failure on
+  both Inventory and untouched Orders; the production Turbopack build is clean.
+- Next isolated slice: Issue 02 KDS live Orders + Order History ten-item,
+  URL-backed pagination. Do not deploy until all three issues and the release
+  gate pass.

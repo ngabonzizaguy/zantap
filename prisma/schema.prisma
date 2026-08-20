@@ -31,6 +31,7 @@ model Vendor {
   featureStockTracking  Boolean @default(false)
   featureProfitInsights Boolean @default(false)
   menuItems       MenuItem[]
+  inventoryItems  InventoryItem[]
   orders          Order[]
   drivers         Driver[]
   expenses        VendorExpense[]
@@ -255,6 +256,41 @@ model MenuImage {
   @@index([menuItemId])
 }
 
+model InventoryItem {
+  id                String                @id @default(cuid())
+  vendorId          String
+  vendor            Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  name              String
+  quantity          Decimal               @db.Decimal(15, 3)
+  unit              String
+  lowStockThreshold Decimal               @db.Decimal(15, 3)
+  category          InventoryCategory
+  unitCostRwf       Int?
+  note              String?
+  archivedAt        DateTime?
+  adjustments       InventoryAdjustment[]
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@index([vendorId, archivedAt])
+  @@index([vendorId, category, archivedAt])
+}
+
+model InventoryAdjustment {
+  id              String                  @id @default(cuid())
+  inventoryItemId String
+  inventoryItem   InventoryItem           @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  sequence        Int
+  type            InventoryAdjustmentType
+  quantity        Decimal                 @db.Decimal(15, 3)
+  oldQuantity     Decimal                 @db.Decimal(15, 3)
+  newQuantity     Decimal                 @db.Decimal(15, 3)
+  note            String?
+  createdAt       DateTime                @default(now())
+
+  @@unique([inventoryItemId, sequence])
+}
+
 model Order {
   id             String        @id @default(cuid())
   vendorId       String
@@ -346,6 +382,21 @@ enum PaymentStatus {
   PENDING
   SUCCESS
   FAILED
+}
+
+enum InventoryCategory {
+  INGREDIENTS
+  DRINKS
+  PACKAGING
+  CLEANING
+  OTHER
+}
+
+enum InventoryAdjustmentType {
+  RECEIVED
+  USED
+  WASTED
+  CORRECTION
 }
 
 enum LeadStatus {
