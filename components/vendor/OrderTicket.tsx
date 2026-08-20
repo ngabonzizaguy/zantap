@@ -481,11 +481,18 @@ interface OrdersListProps {
   stageFilter: KdsStageFilter;
   filterCounts: Record<KdsStageFilter, number>;
   sortDirection: KdsSortDirection;
+  page: number;
+  pageCount: number;
+  totalOrders: number;
+  newOrderCount: number;
   featureWhatsappNotify: boolean;
   onStageFilter: (filter: KdsStageFilter) => void;
   onSortDirection: (direction: KdsSortDirection) => void;
+  onPageChange: (page: number) => void;
+  onViewNewOrders: () => void;
   onToggle: (id: string) => void;
   onSelect: (id: string) => void;
+  onSelectAll: () => void;
   onAssign: (id: string) => void;
   onAdvanceStage: (id: string, stage: KitchenStage) => void;
   onToggleBulkMode: () => void;
@@ -513,11 +520,18 @@ export function OrdersList({
   stageFilter,
   filterCounts,
   sortDirection,
+  page,
+  pageCount,
+  totalOrders,
+  newOrderCount,
   featureWhatsappNotify,
   onStageFilter,
   onSortDirection,
+  onPageChange,
+  onViewNewOrders,
   onToggle,
   onSelect,
+  onSelectAll,
   onAssign,
   onAdvanceStage,
   onToggleBulkMode,
@@ -534,6 +548,21 @@ export function OrdersList({
           <span className="font-body text-caption font-medium text-amber-300">
             Reconnecting…
           </span>
+        </div>
+      )}
+
+      {newOrderCount > 0 && (
+        <div
+          className="flex flex-col gap-2 rounded-brand-md border border-amber-500/25 bg-amber-500/10 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="font-body text-body-sm font-medium text-amber-200">
+            {newOrderCount} new order{newOrderCount === 1 ? "" : "s"} — view page 1
+          </span>
+          <Button type="button" variant="outline" size="default" onClick={onViewNewOrders}>
+            View page 1
+          </Button>
         </div>
       )}
 
@@ -578,29 +607,42 @@ export function OrdersList({
       </div>
 
       {orders.length > 0 && (
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={onToggleBulkMode}
-            className={cn(
-              "flex items-center gap-2 font-body text-body-sm font-medium transition-colors",
-              bulkMode ? "text-primary" : "text-muted hover:text-ink"
-            )}
-          >
-            <span
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={onToggleBulkMode}
               className={cn(
-                "flex h-5 w-5 items-center justify-center rounded-brand-sm border",
-                bulkMode
-                  ? "border-primary bg-primary/10"
-                  : "border-hairline-strong"
+                "flex items-center gap-2 font-body text-body-sm font-medium transition-colors",
+                bulkMode ? "text-primary" : "text-muted hover:text-ink"
               )}
             >
-              {bulkMode && (
-                <Icon name="check" size={12} className="text-primary" strokeWidth={2.8} />
-              )}
-            </span>
-            Select
-          </button>
+              <span
+                className={cn(
+                  "flex h-5 w-5 items-center justify-center rounded-brand-sm border",
+                  bulkMode
+                    ? "border-primary bg-primary/10"
+                    : "border-hairline-strong"
+                )}
+              >
+                {bulkMode && (
+                  <Icon name="check" size={12} className="text-primary" strokeWidth={2.8} />
+                )}
+              </span>
+              {bulkMode ? "Done selecting" : "Select"}
+            </button>
+            {bulkMode ? (
+              <button
+                type="button"
+                onClick={onSelectAll}
+                className="font-body text-body-sm font-medium text-muted underline-offset-4 hover:text-ink hover:underline"
+              >
+                {orders.every((order) => selectedIds.has(order.id))
+                  ? "Clear page"
+                  : `Select all ${orders.length}`}
+              </button>
+            ) : null}
+          </div>
 
           <Select
             variant="pill"
@@ -618,6 +660,10 @@ export function OrdersList({
           />
         </div>
       )}
+
+      <p className="font-body text-body-sm text-muted" aria-live="polite">
+        {totalOrders} matching order{totalOrders === 1 ? "" : "s"} · page {page} of {pageCount}
+      </p>
 
       {orders.length === 0 ? (
         <Card padding="lg" className="text-center">
@@ -653,6 +699,30 @@ export function OrdersList({
           ))}
         </div>
       )}
+
+      <nav className="flex items-center justify-between gap-3" aria-label="Live order pages">
+        <Button
+          type="button"
+          variant="outline"
+          size="kds"
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+        >
+          Previous
+        </Button>
+        <span className="font-body text-body-sm text-muted">
+          Page {page} of {pageCount}
+        </span>
+        <Button
+          type="button"
+          variant="outline"
+          size="kds"
+          disabled={page >= pageCount}
+          onClick={() => onPageChange(page + 1)}
+        >
+          Next
+        </Button>
+      </nav>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { getStore } from "@/lib/store";
 import { fetchKdsSnapshot } from "@/lib/kds/snapshot";
 import { KdsDashboard } from "@/components/vendor/KdsDashboard";
 import { INVENTORY_CATEGORIES, type InventoryCategory } from "@/lib/inventory/types";
+import { parseHistoryQuery, parseLiveOrdersQuery } from "@/lib/kds/order-pagination";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -12,6 +13,16 @@ interface PageProps {
     inventorySearch?: string;
     inventoryCategory?: string;
     inventoryArchived?: string;
+    ordersPage?: string;
+    ordersStage?: string;
+    ordersSort?: string;
+    historyPage?: string;
+    historyDate?: string;
+    historyFrom?: string;
+    historyTo?: string;
+    historyStatus?: string;
+    historyPayment?: string;
+    historySearch?: string;
   }>;
 }
 
@@ -32,6 +43,8 @@ export default async function VendorKdsPage({ params, searchParams }: PageProps)
     category: inventoryCategory,
     archived: query.inventoryArchived === "1",
   };
+  const liveOrdersQuery = parseLiveOrdersQuery(query);
+  const historyQuery = parseHistoryQuery(query);
   const store = getStore();
   const vendor = await store.getVendorBySlug(slug);
   if (!vendor) notFound();
@@ -62,6 +75,8 @@ export default async function VendorKdsPage({ params, searchParams }: PageProps)
       initialFeatureFlags={snapshot.featureFlags}
       initialInventory={inventory}
       initialInventoryQuery={inventoryQuery}
+      initialLiveOrdersQuery={liveOrdersQuery}
+      initialHistoryQuery={historyQuery}
       initialTab={tab}
     />
   );

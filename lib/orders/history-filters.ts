@@ -3,7 +3,7 @@ import type { Order, OrderHistoryFilters, Pagination, Payment } from "@/lib/type
 /** Calendar-day boundaries for vendor order history (Rwanda-local). */
 export const ORDER_HISTORY_TIMEZONE = "Africa/Kigali";
 
-export const DEFAULT_ORDER_HISTORY_PAGE_SIZE = 20;
+export const DEFAULT_ORDER_HISTORY_PAGE_SIZE = 10;
 
 function formatDateKey(date: Date, timeZone: string): string {
   return new Intl.DateTimeFormat("en-CA", {

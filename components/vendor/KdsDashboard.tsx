@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Driver, MenuItem, Order, Vendor } from "@/lib/types";
 import type { VendorFeatureFlags } from "@/lib/vendor/feature-and-profit-types";
 import {
@@ -23,6 +23,12 @@ import {
   type KdsSortDirection,
 } from "@/lib/kds/kitchen-stage";
 import { stageFilterGroup, type KdsStageFilter } from "@/lib/kds/stage-styles";
+import {
+  paginateOrders,
+  reconcileDeferredOrderIds,
+  type HistoryQuery,
+  type LiveOrdersQuery,
+} from "@/lib/kds/order-pagination";
 import { useKdsLiveSnapshot } from "@/lib/kds/useKdsLiveSnapshot";
 import { usePeekVisibility } from "@/lib/kds/usePeekVisibility";
 import { KDS_COACHMARKS_ENABLED } from "@/lib/kds/feature-flags";
@@ -90,6 +96,8 @@ interface KdsDashboardProps {
     category: InventoryCategory | "ALL";
     archived: boolean;
   };
+  initialLiveOrdersQuery: LiveOrdersQuery;
+  initialHistoryQuery: HistoryQuery;
   initialTab?: string;
 }
 
@@ -104,6 +112,8 @@ export function KdsDashboard({
   initialFeatureFlags,
   initialInventory,
   initialInventoryQuery,
+  initialLiveOrdersQuery,
+  initialHistoryQuery,
   initialTab,
 }: KdsDashboardProps) {
   const [tab, setTab] = useState<KdsTab>(() => parseInitialTab(initialTab));
@@ -162,8 +172,20 @@ export function KdsDashboard({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
-  const [stageFilter, setStageFilter] = useState<KdsStageFilter>("all");
-  const [sortDirection, setSortDirection] = useState<KdsSortDirection>("newest");
+  const [stageFilter, setStageFilter] = useState<KdsStageFilter>(initialLiveOrdersQuery.stage);
+  const [sortDirection, setSortDirection] = useState<KdsSortDirection>(initialLiveOrdersQuery.sort);
+  const [livePage, setLivePage] = useState(initialLiveOrdersQuery.page);
+  const [deferredOrderIds, setDeferredOrderIds] = useState<Set<string>>(new Set());
+  const ordersRef = useRef(orders);
+  const livePageRef = useRef(livePage);
+
+  useEffect(() => {
+    ordersRef.current = orders;
+  }, [orders]);
+
+  useEffect(() => {
+    livePageRef.current = livePage;
+  }, [livePage]);
 
   const liveChecklist = useMemo(
     () => deriveOnboardingState(menu, kitchenOpen, orders, inventoryActiveCount),
@@ -191,6 +213,14 @@ export function KdsDashboard({
   }, [vendor.slug]);
 
   const applySnapshot = useCallback((snapshot: KdsSnapshot) => {
+    setDeferredOrderIds((current) =>
+      reconcileDeferredOrderIds(
+        ordersRef.current,
+        snapshot.orders,
+        livePageRef.current,
+        current
+      )
+    );
     setOrders(snapshot.orders);
     setMenu(snapshot.menu);
     setTodayGross(snapshot.todayGross);
@@ -203,9 +233,16 @@ export function KdsDashboard({
   const { visible: helpPeekVisible, peekHandlers: helpPeekHandlers } =
     usePeekVisibility();
 
+  const stableOrders = useMemo(
+    () => livePage > 1
+      ? orders.filter((order) => !deferredOrderIds.has(order.id))
+      : orders,
+    [deferredOrderIds, livePage, orders]
+  );
+
   const sortedOrders = useMemo(
-    () => sortKdsQueueOrders(orders, sortDirection),
-    [orders, sortDirection]
+    () => sortKdsQueueOrders(stableOrders, sortDirection),
+    [stableOrders, sortDirection]
   );
 
   const filterCounts = useMemo(() => {
@@ -233,7 +270,7 @@ export function KdsDashboard({
     [filterCounts]
   );
 
-  const visibleOrders = useMemo(() => {
+  const matchingOrders = useMemo(() => {
     if (stageFilter === "all") return sortedOrders;
     return sortedOrders.filter((order) => {
       const stage =
@@ -241,6 +278,12 @@ export function KdsDashboard({
       return stageFilterGroup(stage) === stageFilter;
     });
   }, [sortedOrders, stageFilter]);
+
+  const livePagination = useMemo(
+    () => paginateOrders(matchingOrders, livePage),
+    [livePage, matchingOrders]
+  );
+  const visibleOrders = livePagination.items;
 
   useEffect(() => {
     if (setupAutoOpened) return;
@@ -272,13 +315,56 @@ export function KdsDashboard({
     window.history.replaceState(null, "", url);
   }, []);
 
+  const changeLivePage = useCallback((nextPage: number) => {
+    setLivePage(Math.max(1, nextPage));
+    setSelectedIds(new Set());
+    setBulkMode(false);
+    setExpandedId(null);
+    if (nextPage <= 1) setDeferredOrderIds(new Set());
+  }, []);
+
+  const changeStageFilter = useCallback((filter: KdsStageFilter) => {
+    setStageFilter(filter);
+    changeLivePage(1);
+  }, [changeLivePage]);
+
+  const changeSortDirection = useCallback((direction: KdsSortDirection) => {
+    setSortDirection(direction);
+    changeLivePage(1);
+  }, [changeLivePage]);
+
+  const viewNewOrders = useCallback(() => {
+    setSortDirection("newest");
+    changeLivePage(1);
+  }, [changeLivePage]);
+
+  useEffect(() => {
+    if (livePagination.page !== livePage) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- realtime removals can invalidate the URL-backed page
+      changeLivePage(livePagination.page);
+    }
+  }, [changeLivePage, livePage, livePagination.page]);
+
+  useEffect(() => {
+    if (tab !== "orders") return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", "orders");
+    if (livePagination.page > 1) url.searchParams.set("ordersPage", String(livePagination.page));
+    else url.searchParams.delete("ordersPage");
+    if (stageFilter !== "all") url.searchParams.set("ordersStage", stageFilter);
+    else url.searchParams.delete("ordersStage");
+    if (sortDirection !== "newest") url.searchParams.set("ordersSort", sortDirection);
+    else url.searchParams.delete("ordersSort");
+    window.history.replaceState(null, "", url);
+  }, [livePagination.page, sortDirection, stageFilter, tab]);
+
   const activeCount = orders.filter(
     (o) => o.status === "PAID" || o.status === "DISPATCHED"
   ).length;
 
   const selectedOrders = useMemo(
-    () => orders.filter((order) => selectedIds.has(order.id)),
-    [orders, selectedIds]
+    () => visibleOrders.filter((order) => selectedIds.has(order.id)),
+    [selectedIds, visibleOrders]
   );
   const canBulkAssign =
     selectedOrders.length > 0 &&
@@ -379,7 +465,7 @@ export function KdsDashboard({
   };
 
   const handleBulkAdvance = async (stage: KitchenStage) => {
-    const ids = Array.from(selectedIds);
+    const ids = selectedOrders.map((order) => order.id);
     if (ids.length === 0) return;
     setBulkBusy(true);
     for (const id of ids) {
@@ -403,6 +489,16 @@ export function KdsDashboard({
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
+    });
+  };
+
+  const handleSelectAllVisible = () => {
+    setSelectedIds((current) => {
+      const allSelected = visibleOrders.length > 0 &&
+        visibleOrders.every((order) => current.has(order.id));
+      return allSelected
+        ? new Set()
+        : new Set(visibleOrders.map((order) => order.id));
     });
   };
 
@@ -452,10 +548,17 @@ export function KdsDashboard({
               filterCounts={filterCounts}
               sortDirection={sortDirection}
               featureWhatsappNotify={featureFlags.featureWhatsappNotify}
-              onStageFilter={setStageFilter}
-              onSortDirection={setSortDirection}
+              page={livePagination.page}
+              pageCount={livePagination.pageCount}
+              totalOrders={livePagination.total}
+              newOrderCount={deferredOrderIds.size}
+              onStageFilter={changeStageFilter}
+              onSortDirection={changeSortDirection}
+              onPageChange={changeLivePage}
+              onViewNewOrders={viewNewOrders}
               onToggle={(id) => setExpandedId((prev) => (prev === id ? null : id))}
               onSelect={handleToggleSelect}
+              onSelectAll={handleSelectAllVisible}
               onAssign={(id) => setAssignOrderIds([id])}
               onAdvanceStage={handleAdvanceStage}
               onToggleBulkMode={() => {
@@ -474,7 +577,7 @@ export function KdsDashboard({
               onRefresh={refresh}
             />
           ) : tab === "history" ? (
-            <HistoryPanel vendorSlug={vendor.slug} />
+            <HistoryPanel vendorSlug={vendor.slug} initialQuery={initialHistoryQuery} />
           ) : (
             <InventoryPanel
               vendorSlug={vendor.slug}
@@ -565,12 +668,12 @@ export function KdsDashboard({
       />
 
       <BulkActionBar
-        selectedCount={selectedIds.size}
+        selectedCount={selectedOrders.length}
         busy={bulkBusy || assignBusy}
         canAssignDriver={canBulkAssign}
         onClear={() => setSelectedIds(new Set())}
         onBulkAdvance={handleBulkAdvance}
-        onBulkAssign={() => setAssignOrderIds(Array.from(selectedIds))}
+        onBulkAssign={() => setAssignOrderIds(selectedOrders.map((order) => order.id))}
       />
 
       <ProfitPanel

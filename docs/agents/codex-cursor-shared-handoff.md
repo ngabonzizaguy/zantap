@@ -818,3 +818,23 @@ database credentials here.
 - Next isolated slice: Issue 02 KDS live Orders + Order History ten-item,
   URL-backed pagination. Do not deploy until all three issues and the release
   gate pass.
+
+### 2026-08-20 — Codex — Issue 02 KDS Orders + History pagination complete locally
+
+- Live Orders now filter/sort before ten-item paging with URL-backed
+  `ordersStage`, `ordersSort` and `ordersPage`; invalid and realtime-empty pages
+  clamp backward. Stage/sort changes return to page 1.
+- Later live pages defer newly arriving order IDs and show a polite `new order —
+  view page 1` notice instead of reshuffling. Opening the notice restores
+  newest-first page 1. Selection and bulk mutations are limited to visible
+  tickets and clear on page changes.
+- History now requests ten rows, restores date/status/payment/search/page state
+  from the URL, resets filters to page 1 and clamps empty pages through a safe
+  follow-up read. Accessible result totals and Previous/Page/Next navigation
+  ship on both surfaces.
+- Verification: focused 10/10, TypeScript/lint clean, full tests 358 passed / 109
+  expected skips, production build clean, and local 390×844 + 1280×900 browser
+  smoke passed with zero console errors, overlays or horizontal overflow.
+- ADR-0062 records the realtime paging boundary. Production, Vercel and migration
+  `20260820183000_real_vendor_inventory` remain untouched. Next isolated slice:
+  Issue 03 storefront menu pagination; do not deploy before the combined gate.

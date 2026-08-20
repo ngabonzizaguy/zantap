@@ -8,7 +8,7 @@ import type {
   PaginatedOrders,
 } from "@/lib/types";
 import { loadOrderHistory } from "@/lib/actions/vendor-history";
-import { DEFAULT_ORDER_HISTORY_PAGE_SIZE } from "@/lib/orders/history-filters";
+import { KDS_ORDER_PAGE_SIZE, clampPage, type HistoryQuery } from "@/lib/kds/order-pagination";
 import {
   exportFilename,
   serializeFiltersToSearchParams,
@@ -29,16 +29,10 @@ import { cn } from "@/lib/cn";
 
 interface HistoryPanelProps {
   vendorSlug: string;
+  initialQuery: HistoryQuery;
 }
 
 const OWNER_TOKEN_HEADER = "x-vendor-owner-token";
-
-const DEFAULT_FILTERS: OrderHistoryFilters = {
-  datePreset: "last30",
-  status: "ALL",
-  paymentStatus: "ALL",
-  search: "",
-};
 
 function hydrateOrderHistoryItem(row: OrderHistoryItem): OrderHistoryItem {
   return {
@@ -66,12 +60,18 @@ function paymentLabel(status: OrderHistoryItem["paymentStatus"]): string {
   return "Failed";
 }
 
-export function HistoryPanel({ vendorSlug }: HistoryPanelProps) {
+function dateKey(value?: Date): string | null {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
+}
+
+export function HistoryPanel({ vendorSlug, initialQuery }: HistoryPanelProps) {
   const { token, hasToken, ready } = useOwnerToken(vendorSlug);
-  const [filters, setFilters] = useState<OrderHistoryFilters>(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<OrderHistoryFilters>(initialQuery.filters);
   const [appliedFilters, setAppliedFilters] =
-    useState<OrderHistoryFilters>(DEFAULT_FILTERS);
-  const [page, setPage] = useState(1);
+    useState<OrderHistoryFilters>(initialQuery.filters);
+  const [page, setPage] = useState(initialQuery.page);
   const [result, setResult] = useState<PaginatedOrders | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,23 +92,54 @@ export function HistoryPanel({ vendorSlug }: HistoryPanelProps) {
   }
 
   useEffect(() => {
-    loadOrderHistory(vendorSlug, appliedFilters, {
+    let cancelled = false;
+    void loadOrderHistory(vendorSlug, appliedFilters, {
       page,
-      pageSize: DEFAULT_ORDER_HISTORY_PAGE_SIZE,
-    })
-      .then((data) => {
-        setResult({
-          ...data,
-          orders: data.orders.map(hydrateOrderHistoryItem),
-        });
-      })
-      .catch(() => {
-        setError("Could not load order history. Try again.");
-      })
-      .finally(() => {
-        setLoading(false);
+      pageSize: KDS_ORDER_PAGE_SIZE,
+    }).then((data) => {
+      if (cancelled) return;
+      const safePage = clampPage(page, data.total, KDS_ORDER_PAGE_SIZE);
+      if (safePage !== page) {
+        setPage(safePage);
+        return;
+      }
+      setResult({
+        ...data,
+        orders: data.orders.map(hydrateOrderHistoryItem),
       });
+      setLoading(false);
+    }).catch(() => {
+      if (cancelled) return;
+      setError("Could not load order history. Try again.");
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [vendorSlug, appliedFilters, page]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", "history");
+    if (page > 1) url.searchParams.set("historyPage", String(page));
+    else url.searchParams.delete("historyPage");
+    if (appliedFilters.datePreset && appliedFilters.datePreset !== "last30") {
+      url.searchParams.set("historyDate", appliedFilters.datePreset);
+    } else url.searchParams.delete("historyDate");
+    const from = dateKey(appliedFilters.dateFrom);
+    const to = dateKey(appliedFilters.dateTo);
+    if (appliedFilters.datePreset === "custom" && from) url.searchParams.set("historyFrom", from);
+    else url.searchParams.delete("historyFrom");
+    if (appliedFilters.datePreset === "custom" && to) url.searchParams.set("historyTo", to);
+    else url.searchParams.delete("historyTo");
+    if (appliedFilters.status && appliedFilters.status !== "ALL") url.searchParams.set("historyStatus", appliedFilters.status);
+    else url.searchParams.delete("historyStatus");
+    if (appliedFilters.paymentStatus && appliedFilters.paymentStatus !== "ALL") url.searchParams.set("historyPayment", appliedFilters.paymentStatus);
+    else url.searchParams.delete("historyPayment");
+    if (appliedFilters.search?.trim()) url.searchParams.set("historySearch", appliedFilters.search.trim());
+    else url.searchParams.delete("historySearch");
+    window.history.replaceState(null, "", url);
+  }, [appliedFilters, page]);
 
   const applyFilters = () => {
     setAppliedFilters(filters);
@@ -324,7 +355,7 @@ export function HistoryPanel({ vendorSlug }: HistoryPanelProps) {
             ))}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <nav className="flex flex-wrap items-center justify-between gap-3" aria-label="Order history pages">
             <Button
               type="button"
               variant="outline"
@@ -351,7 +382,7 @@ export function HistoryPanel({ vendorSlug }: HistoryPanelProps) {
             >
               Next
             </Button>
-          </div>
+          </nav>
         </>
       ) : null}
     </div>
