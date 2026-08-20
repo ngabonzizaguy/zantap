@@ -775,3 +775,19 @@ database credentials here.
   Production smoke passed: legacy host 308 to canonical domain; root,
   storefront and KDS 200; Ops Insights auth/API healthy; analytics 204;
   Kinyarwanda/French/Kiswahili SSR copy present; runtime scan had no errors.
+
+### 2026-08-20 — Codex — Inventory + pagination scope approved
+
+- Owner clarified that the shipped Stock screen tracks finished dishes and is
+  not sufficient. Approved a separate supply Inventory with CRUD-like lifecycle,
+  manual Received/Used/Wasted/Correction adjustments, immutable history,
+  archive/restore, units/categories, low/out in-app alerts, and ten-item paging.
+- Inventory stays separate from Menu and Profit/Expenses, is owner-token guarded
+  and online-only. No paid WhatsApp integration; future delivery is an opt-in
+  combined alert no more than once per 30 minutes.
+- Approved ten-per-page live Orders, History, Inventory and storefront dishes;
+  URL-backed filters/pages; page-local KDS bulk selection; stable later pages
+  with a new-order notice; cart-preserving storefront navigation.
+- Work is isolated on `codex/inventory-pagination` from stable `df9d530`.
+  Published three ready-for-agent issues under `.scratch/inventory-pagination/`.
+  No implementation, migration or deployment has occurred yet.
