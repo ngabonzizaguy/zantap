@@ -1,6 +1,6 @@
 # Issue 02 — KDS Orders and History pagination
 
-Status: ✅ DONE locally 2026-08-20 — verified in isolated slice, not deployed
+Status: ✅ DONE · deployed 2026-08-20 · prod-smoked 2026-08-21
 
 ## What to build
 
@@ -37,3 +37,30 @@ None — can start independently of Issue 01.
   horizontal overflow, zero framework overlays and zero console errors.
 - Production, Vercel and migration `20260820183000_real_vendor_inventory` were
   not touched.
+- Combined release 2026-08-20: deployed once as
+  `dpl_7X7XC38sJrWhoXtwTvo68ACKRjAi` on `zantap.app`. Orders and History paging
+  URLs return HTTP 200; release-window error/fatal/5xx scans are empty. The
+  complete browser interaction smoke is still pending because the shared
+  disposable-fixture harness stopped earlier at an Inventory render-timing
+  assertion before reaching these steps; no product error was observed.
+- Final-smoke attempt 2026-08-20 again stopped at the preceding Inventory
+  refresh assertion, so Orders page two, History page two and invalid-page
+  interaction checks remain pending. The fixture cleanup is zero and deployment
+  error/fatal/5xx scans are empty; no migration or redeploy occurred.
+- Follow-up single run 2026-08-20 reached Live Orders page 2 and rendered its
+  `Page 2 of 2` state, but the harness counted `<article>` elements even though
+  `OrderTicket` uses the shared div-rooted `Card`; it therefore reported zero
+  instead of the expected two tickets. The selector now counts the direct
+  ticket cards and was not rerun. History page two and invalid-page checks remain
+  pending. Cleanup is zero and deployment error/fatal/5xx scans are empty.
+- Ticket-selector follow-up 2026-08-20 passed Live Orders page two with exactly
+  two remaining tickets, URL-backed Previous to page one, History page two with
+  two receipts, and invalid `historyPage=999` clamping to page two. The shared
+  run later stopped at storefront Previous behavior, so combined candidate
+  closeout remains pending. Cleanup and deployment scans are clean.
+- Final combined production smoke 2026-08-21: the single authorized harness run
+  passed Live Orders page two with two tickets, Previous to page one, History
+  page two with two receipts, and invalid-page clamping. Independent cleanup
+  verified zero `release-25-*` fixtures across all owned tables, and deployment
+  `dpl_7X7XC38sJrWhoXtwTvo68ACKRjAi` returned zero error, fatal and 5xx logs over
+  the 48-hour scan. No migration was reapplied and no redeploy occurred.

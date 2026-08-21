@@ -1,6 +1,6 @@
 # ADR-0063: Storefront menu paging preserves client cart state
 
-Status: Accepted locally — 2026-08-20 (not deployed)
+Status: Accepted · DONE · deployed 2026-08-20 · prod-smoked 2026-08-21
 
 ## Decision
 
@@ -30,6 +30,8 @@ before totals and pages are calculated.
   session-local and is not persisted by this decision.
 - The Store continues to return the available menu through its existing seam;
   this UI pagination slice introduces no second data path or migration.
-- Production release remains gated on review/application of migration
-  `20260820183000_real_vendor_inventory`, one combined deployment and production
-  smoke for Issues 01–03.
+- The production harness now waits for `networkidle` before storefront control
+  interactions, matching the already-green local smoke and avoiding the
+  server-rendered/pre-hydration race. Its single authorized run passed page
+  navigation, cart persistence, browser Back and URL-backed search on mobile,
+  plus desktop pagination. No product fix or redeploy was required.

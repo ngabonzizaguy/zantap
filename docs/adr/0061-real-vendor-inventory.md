@@ -1,6 +1,6 @@
 # ADR-0061: Real vendor Inventory is separate from Menu stock
 
-Status: Accepted locally — 2026-08-20 (not deployed)
+Status: Accepted · DONE · deployed 2026-08-20 · prod-smoked 2026-08-21
 
 ## Decision
 
@@ -36,8 +36,10 @@ WhatsApp, charges fees, or contributes to Profit, food cost, or Expenses.
 - Setup Guide completion is based on the first active Inventory item and routes
   directly to the Inventory tab.
 - Archived items retain their immutable adjustment history and can be restored.
-- Migration `20260820183000_real_vendor_inventory` must be reviewed and applied at
-  the combined release gate; creating this ADR and implementation does not
-  authorize deployment.
+- Migration `20260820183000_real_vendor_inventory` was reviewed, applied once and
+  verified before deployment `dpl_7X7XC38sJrWhoXtwTvo68ACKRjAi`.
+- The final production harness passed the guarded Inventory lifecycle and direct
+  Postgres history checks; independent fixture cleanup and 48-hour deployment
+  error/fatal/5xx scans were clean. No migration repeat or redeploy was needed.
 - Future recipe deduction, staff identity attribution, offline writes, and the
   opt-in rate-limited combined WhatsApp alert require separate decisions.

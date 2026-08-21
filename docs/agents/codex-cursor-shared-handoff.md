@@ -35,15 +35,18 @@ explicitly owns it.
 
 ### Reconciled repository and production state
 
-- **Candidate #25 checkpoint (2026-08-20):** Issues 01–03 are feature-complete
-  locally on `codex/inventory-pagination`. Real supply Inventory is separate
-  from Menu; KDS live Orders/History and storefront dishes page at ten after
-  their filters. Storefront `category`/`search`/`page` URLs preserve cart state,
-  browser history and Menu focus. Focused tests, TypeScript, lint, 362/109 full
-  Vitest, production build and 32/32 mobile/desktop browser smoke pass. ADR-0063.
-  Migration `20260820183000_real_vendor_inventory` remains unapplied and
-  production is untouched. Next gate: review/apply migration, one combined
-  deployment, then production smoke.
+- **Candidate #25 ✅ DONE · deployed · prod-smoked (2026-08-21):** Issues 01–03
+  shipped at `fbafcee` through the single deployment
+  `dpl_7X7XC38sJrWhoXtwTvo68ACKRjAi` on `zantap.app`; migration
+  `20260820183000_real_vendor_inventory` was applied once and verified. The
+  production harness now waits for `networkidle` before storefront actions and
+  passed all 27 Inventory, KDS Orders/History and storefront pagination/cart/
+  Back/search checks on its one authorized run, including mobile and desktop
+  overflow checks with zero browser errors. Independent Postgres cleanup found
+  zero `release-25-*` vendors, inventory items, adjustments, menu items, orders
+  and payments. Exact-deployment 48-hour error, fatal and 5xx scans returned no
+  entries. The prior storefront stop was conclusively a harness hydration race;
+  no owner intervention, product fix, migration repeat or redeploy was needed.
 - **Current checkpoint (2026-08-15):** branch
   `feat/ops-kds-marketing-batch` is at PWA release candidate `61c4687`. The
   owner approved only the 10-file PWA/install-hint/scope slice; it was isolated
@@ -204,7 +207,7 @@ Detailed sources:
 | Offline kitchen-stage mutation queue + new-order chime (Issue 09b) | Not implemented | Not shipped |
 | Paypack API integration | Reference document only | Not implemented; manual MoMo unchanged |
 | Ops lead inbox + configurable WhatsApp lead routing (Issue 05) | On main (`5aee9b2`, review fix `943efbc`); multi-recipient CRUD, immutable assignment, concurrency-safe round-robin, one public action | Done: migration applied, prod-smoked, and configured 1 of 2 enabled (`…8786` enabled, `…7771` disabled); post-fix Lead inbox zero console errors |
-| Candidate #25 real Inventory + 10-item pagination | Issues 01–03 feature-complete locally on `codex/inventory-pagination`; ADRs 0061–0063; migration exists | Not deployed; migration unapplied; combined release + production smoke pending |
+| Candidate #25 real Inventory + 10-item pagination | ✅ DONE at `fbafcee`; ADRs 0061–0063; migration applied once; hydration-ready harness 27/27 | ✅ Deployed once as `dpl_7X7XC38sJrWhoXtwTvo68ACKRjAi` on `zantap.app` and prod-smoked 2026-08-21; zero fixtures and clean 48-hour error/fatal/5xx scans; no redeploy |
 
 ### Required engineering boundaries for subsequent work
 
@@ -866,3 +869,123 @@ database credentials here.
 - Candidate #25 is feature-complete locally. Production, Vercel and migration
   `20260820183000_real_vendor_inventory` remain untouched. Next gate: review and
   apply that migration, deploy the three-issue release once, then prod-smoke.
+
+### 2026-08-20 — Codex — Candidate #25 combined release deployed; interaction smoke pending
+
+- Reviewed isolated commits `61c25fa`, `3ffc85e`, and `fbafcee`; migration is
+  additive/backward-compatible. Combined gate passed: Prisma schema, TypeScript,
+  lint, 362 passed / 109 skipped, and production build.
+- Applied `20260820183000_real_vendor_inventory`; `prisma migrate status` reports
+  all 16 current and direct `InventoryItem`/`InventoryAdjustment` reads pass.
+- Deployed exactly once: `fbafcee` → `dpl_7X7XC38sJrWhoXtwTvo68ACKRjAi` →
+  `zantap.app` (Ready). Root and all candidate routes return 200; deployment
+  error/fatal/5xx scans are empty.
+- Disposable browser smoke observed successful guarded Inventory create
+  responses but exhausted its two retry cycles on a brittle immediate
+  post-create pagination render assertion before Orders/History/storefront
+  interactions. All `release-25-*` fixture vendors/items were removed after
+  every attempt. No product exception or runtime 5xx was observed.
+- Remaining gate: harden `.scratch/inventory-pagination/prod-smoke.mjs` to wait
+  for refreshed pagination/search state, run it once, record pass evidence, and
+  close candidate #25. Do not reapply the migration or redeploy.
+
+### 2026-08-20 — Codex — Candidate #25 single interaction smoke stopped at refresh race
+
+- Ran `.scratch/inventory-pagination/prod-smoke.mjs` exactly once against
+  `zantap.app`; no migration or deployment command was run.
+- The browser passed Inventory page sizing, create/search/out-state and submitted
+  the Received adjustment. It then failed at `Inventory adjustment updated the
+  visible quantity`: the component publishes `Stock quantity updated` before its
+  awaited `loadInventory` refresh completes, while the harness used an immediate
+  `isVisible()` after the toast. This is a harness synchronization failure; the
+  run did not reach history/archive/restore, KDS Orders/History, or storefront.
+- Patched only that harness boundary to `waitFor()` the refreshed `5 pieces` row.
+  Per the one-run instruction, the harness was not rerun and candidate #25 stays
+  pending rather than being marked prod-smoked.
+- Independent direct-Postgres cleanup check: zero fixture vendors, inventory
+  items, adjustments, menu items, orders and payments. Deployment
+  `dpl_7X7XC38sJrWhoXtwTvo68ACKRjAi` remains Ready; 30-minute error, fatal and
+  5xx scans each returned zero entries.
+- Next gate: run the patched harness once. On a complete pass, mark Issues 01–03,
+  candidate #25 and ADR-0061–0063 DONE/deployed/prod-smoked, update this handoff,
+  and commit only candidate #25 release records plus the harness. Do not reapply
+  migration `20260820183000_real_vendor_inventory` and do not redeploy.
+
+### 2026-08-20 — Codex — Candidate #25 Inventory passed; KDS harness selector stopped closeout
+
+- Ran `.scratch/inventory-pagination/prod-smoke.mjs` exactly once against
+  `zantap.app`; no migration or deployment command was run.
+- Inventory completed page sizing, create/search/out state, Received refresh,
+  immutable history, archive/restore and direct Postgres verification.
+- Live Orders reached URL-backed `Page 2 of 2`, then the harness failed its two-
+  ticket assertion because it searched for `<article>` elements. `OrderTicket`
+  renders the shared `Card`, whose root is a `<div>`. The harness now counts the
+  direct ticket-card children before the Live Orders pagination nav and was not
+  rerun. History page two/invalid-page and storefront page-two/cart/Back/search
+  remain pending; candidate #25 is not marked prod-smoked.
+- Direct Postgres cleanup reports zero `release-25-*` fixture vendors, inventory
+  items, adjustments, menu items, orders and payments. Two-hour deployment-
+  scoped error, fatal and 5xx scans returned zero entries.
+- Next gate: run the newly patched harness once. On a complete pass, mark Issues
+  01–03, candidate #25 and ADR-0061–0063 DONE/deployed/prod-smoked, update this
+  handoff, and commit only candidate #25 release records plus the harness. Do not
+  reapply migration `20260820183000_real_vendor_inventory` and do not redeploy.
+
+### 2026-08-20 — Codex — Candidate #25 KDS passed; storefront Previous stopped closeout
+
+- Ran `.scratch/inventory-pagination/prod-smoke.mjs` exactly once against
+  `zantap.app`; no migration or deployment command was run.
+- Inventory again completed the full production lifecycle and direct Postgres
+  verification. The corrected Live Orders selector passed page two with two
+  tickets and Previous to page one. History passed page two with two receipts
+  and invalid `historyPage=999` clamping to page two.
+- Storefront page two rendered its one remaining dish and the harness added it
+  to the cart. The URL still contained a `page` parameter 30 seconds after
+  clicking Previous, so the run stopped before page-one/cart, browser Back and search.
+  The harness now waits for the page-one label and reports URL plus card count at
+  this boundary; it was not rerun. Candidate #25 remains pending.
+- Direct Postgres cleanup reports zero `release-25-*` fixture vendors, inventory
+  items, adjustments, menu items, orders and payments. Two-hour deployment-
+  scoped error, fatal and 5xx scans returned zero entries.
+- Next gate: diagnose the production storefront Previous transition, then run
+  the patched harness once. On a complete pass, mark Issues 01–03, candidate #25
+  and ADR-0061–0063 DONE/deployed/prod-smoked, update this handoff, and commit
+  only candidate #25 release records plus the harness. Do not reapply migration
+  `20260820183000_real_vendor_inventory` and do not redeploy.
+
+### 2026-08-20 — Codex — Candidate #25 storefront stop diagnosed as hydration race
+
+- No owner intervention is required. The production deployment and product code
+  are not implicated by the failed assertion.
+- Root cause: `.scratch/inventory-pagination/prod-smoke.mjs` starts storefront
+  interactions after `domcontentloaded`. Next.js has already painted the SSR
+  buttons then, but React may not have attached `onClick`/`onChange` handlers.
+  Playwright can successfully click a visible pre-hydration button while no URL
+  state change occurs. The earlier local storefront smoke explicitly waited for
+  `networkidle`, which is why the same behavior passed locally.
+- Read-only production feedback loop on `/inka-steakhouse`: filling the URL-
+  backed search immediately after `domcontentloaded` failed to update the URL in
+  5/5 attempts; waiting for `networkidle` first passed in 5/5 attempts. No fixture
+  or database write was made.
+- Next gate: add an explicit hydration-ready wait before production storefront
+  interactions, then run the full harness exactly once. If PASS, perform the
+  existing cleanup/log checks, mark candidate #25 DONE/deployed/prod-smoked, and
+  commit only its release records and harness. Do not migrate or redeploy.
+
+### 2026-08-21 — Codex — Candidate #25 DONE · deployed · prod-smoked
+
+- Added the explicit `networkidle` hydration boundary before storefront
+  interactions in `.scratch/inventory-pagination/prod-smoke.mjs`, then ran the
+  full production harness exactly once against `zantap.app`.
+- The run passed all 27 checks: guarded Inventory create/adjust/history/archive/
+  restore plus direct Postgres verification; Live Orders and History page-two,
+  Previous and invalid-page behavior; storefront page navigation, default URL,
+  cart persistence, browser Back and URL-backed search; mobile/desktop overflow;
+  and zero browser console/framework errors.
+- The harness cleaned `release-25-mt2fpxqf`. An independent Postgres audit then
+  found zero `release-25-*` vendors, inventory items, adjustments, menu items,
+  orders and payments. Exact deployment `dpl_7X7XC38sJrWhoXtwTvo68ACKRjAi`
+  returned no error, fatal or 5xx logs in the 48-hour scan.
+- Candidate #25 and Issues 01–03 are closed. Migration
+  `20260820183000_real_vendor_inventory` was not reapplied and production was not
+  redeployed; the only behavior change in this closeout is the harness wait.

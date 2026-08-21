@@ -1,6 +1,6 @@
 # ADR-0062: KDS order pagination preserves later-page stability
 
-Status: Accepted locally — 2026-08-20 (not deployed)
+Status: Accepted · DONE · deployed 2026-08-20 · prod-smoked 2026-08-21
 
 ## Decision
 
@@ -32,5 +32,7 @@ clamped and fetched again at the valid page.
   queue from the URL and current snapshot.
 - History exports remain unpaginated and continue to use their existing guarded
   export path; only the visible History list changes to ten records.
-- Production release remains gated on Issue 03 and review/application of the
-  existing Inventory migration.
+- The combined production release is complete. The final single-run harness
+  passed Live Orders page two/Previous and History page two/invalid-page
+  clamping; fixture cleanup and exact-deployment error/fatal/5xx scans were
+  clean. No migration repeat or redeploy was required for closeout.
