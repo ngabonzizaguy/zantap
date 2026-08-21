@@ -989,3 +989,27 @@ database credentials here.
 - Candidate #25 and Issues 01–03 are closed. Migration
   `20260820183000_real_vendor_inventory` was not reapplied and production was not
   redeployed; the only behavior change in this closeout is the harness wait.
+
+### 2026-08-21 — Codex — Candidate #26 customer restaurant hub grilled
+
+- Owner completed the product interview for a single ZanTap customer app that
+  is installed once and retains multiple meaningfully interacted-with
+  storefronts. Candidate #26 is grill-complete and ready for PRD; it is not
+  implemented, migrated, deployed, or prod-smoked.
+- The installed customer app opens its originating storefront immediately after
+  install and `Your restaurants` on later icon launches. Saved vendors are
+  device-local, keyed by stable vendor ID, carried over from pre-install browser
+  activity, retained until manual removal, and searchable only within the
+  private collection. Public discovery and customer accounts are deferred.
+- The home uses a three-day WhatsApp-inspired update tray above the full saved
+  list. Meaningful menu/profile changes auto-publish as immutable snapshots in
+  20-minute rolling batches; one vendor ring opens batches newest to oldest.
+  Viewed state is per displayed batch. Vendors get default-on, global-off and
+  per-change suppression controls plus aggregate-only analytics.
+- Push, identifiable viewer lists, and manual vendor posts are deferred. The
+  hub is read-only offline; checkout remains online-only. ADR-0064 supersedes
+  ADR-0059 only for the customer install identity and preserves the separate KDS
+  PWA. Decisions: `.scratch/customer-restaurant-hub/grill-decisions.md`.
+- Next gate is PRD + isolated issues. Candidate #25 prohibitions remain in
+  force: do not rerun its production harness, reapply migration
+  `20260820183000_real_vendor_inventory`, or redeploy that release.
