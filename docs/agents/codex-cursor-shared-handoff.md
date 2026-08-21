@@ -36,8 +36,7 @@ explicitly owns it.
 
 ### Reconciled repository and production state
 
-- **Candidate #26 🚧 Issue 01 functionally closed; hub redesign awaiting owner
-  visual approval · Issue 02 next · not deployed
+- **Candidate #26 🚧 Issues 01–02 done locally · not deployed
   (2026-08-21):** the
   unified ZanTap customer manifest now launches `/restaurants`; storefronts
   use a versioned IndexedDB/in-memory saved-Vendor repository, meaningful-
@@ -58,7 +57,16 @@ explicitly owns it.
   unchanged. A bounded repository timeout prevents restricted IndexedDB from
   leaving the PWA on its loading skeleton forever. Focused accessibility and
   storage tests, TypeScript, lint, the full 378/110 suite and production build
-  are clean; owner visual approval is still pending.
+  are clean. The owner approved the redesigned hub on 2026-08-21 with no
+  requested refinements; commit `151f18b` is the accepted local baseline.
+  Issue 02 is now complete locally: default-on Store-backed publication,
+  20-minute rolling batches, three-day expiry, public snapshot consolidation,
+  KDS global/per-save controls, preview/counters and ADR-0065 direct recovery
+  across Updates/Menu/Inventory/History. Migration
+  `20260821220000_vendor_update_batches` is authored and Prisma-validated but
+  not applied. Mobile local KDS verification passed; TypeScript, lint and build
+  are clean; Vitest is 388 passed / 113 skipped. Issues 03–04 remain untouched.
+  No migration apply, deploy, push or production smoke is authorized.
 
 - **Candidate #25 ✅ DONE · deployed · prod-smoked (2026-08-21):** Issues 01–03
   shipped at `fbafcee` through the single deployment
@@ -1109,3 +1117,26 @@ database credentials here.
   layout bounds have no horizontal overflow. Owner visual approval is pending.
 - No migration, deployment, push or production smoke. Preserve the unstaged
   Inventory PRD modification and every existing untracked artifact.
+
+### 2026-08-21 — Codex — Candidate #26 Issue 02 complete locally
+
+- The owner visually approved restaurant-passport hub commit `151f18b` with no
+  refinements, clearing Issue 02. Issue 01/ADR-0066 now record that approval.
+- Implemented exactly Issue 02: Store-backed default-on update settings,
+  immutable public entries, rolling 20-minute batches, three-day expiry,
+  repeated-entry consolidation, monotonic batch revisions and aggregate
+  counters in both adapters. Qualifying owner-guarded menu/profile/branding
+  saves publish; normalized no-ops and operational paths remain silent.
+- KDS Menu now exposes on/off, `Don't announce my next qualifying change`,
+  active-batch preview and aggregate totals without changing KDS PWA identity.
+  ADR-0065 is implemented through one in-place recovery dialog used directly by
+  Customer Updates, Menu, Inventory and History with plain Vendor language.
+- Authored migration `20260821220000_vendor_update_batches`; `prisma format` and
+  `prisma validate` pass. The migration was not run/applied. Remote `#prisma`
+  contracts remain opt-in and skipped at this authorization gate.
+- Verification: mobile local KDS at 390×844 PASS (HTTP 200, no overlay/overflow,
+  on/off round-trip restored on, direct dialog + all notice entry points);
+  TypeScript and lint clean; Vitest 388 passed / 113 skipped; production build
+  clean. No deploy, production smoke or push occurred. Issues 03–04 remain
+  untouched. The unstaged Inventory PRD edit and every pre-existing untracked
+  artifact remain preserved.

@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState } from "react";
  */
 
 const STORAGE_PREFIX = "zantap:owner-token:";
+const OWNER_ACCESS_EVENT = "zantap:owner-access-changed";
 
 export function ownerTokenStorageKey(vendorSlug: string): string {
   return `${STORAGE_PREFIX}${vendorSlug}`;
@@ -29,6 +30,11 @@ export function cacheOwnerToken(vendorSlug: string, token: string): void {
     }
   } catch {
     // ignore quota / private-mode failures
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(OWNER_ACCESS_EVENT, { detail: { vendorSlug } })
+    );
   }
 }
 
@@ -61,6 +67,20 @@ export function useOwnerToken(vendorSlug: string) {
     }
     setReady(true);
     /* eslint-enable react-hooks/set-state-in-effect */
+  }, [vendorSlug]);
+
+  useEffect(() => {
+    const refresh = (event: Event) => {
+      const detail = (event as CustomEvent<{ vendorSlug?: string }>).detail;
+      if (detail?.vendorSlug && detail.vendorSlug !== vendorSlug) return;
+      try {
+        setTokenState(localStorage.getItem(ownerTokenStorageKey(vendorSlug)));
+      } catch {
+        setTokenState(null);
+      }
+    };
+    window.addEventListener(OWNER_ACCESS_EVENT, refresh);
+    return () => window.removeEventListener(OWNER_ACCESS_EVENT, refresh);
   }, [vendorSlug]);
 
   const setToken = useCallback(

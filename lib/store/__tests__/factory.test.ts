@@ -47,4 +47,12 @@ describe("getStore factory adapter selection", () => {
     delete process.env.DATABASE_URL;
     expect(getStore()).toBe(getStore());
   });
+
+  it("replaces a hot-reloaded adapter that predates the current Store interface", () => {
+    delete process.env.DATABASE_URL;
+    globalForStore.__zantapStore = { getVendorBySlug: async () => null };
+    const store = getStore();
+    expect(isInMemoryAdapter(store)).toBe(true);
+    expect(typeof store.getVendorUpdateOverview).toBe("function");
+  });
 });

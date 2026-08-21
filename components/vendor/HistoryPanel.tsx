@@ -30,9 +30,11 @@ import { cn } from "@/lib/cn";
 interface HistoryPanelProps {
   vendorSlug: string;
   initialQuery: HistoryQuery;
+  onUnlockEditing: () => void;
 }
 
 const OWNER_TOKEN_HEADER = "x-vendor-owner-token";
+const HISTORY_ACCESS_MESSAGE = "Unlock editing to export order history.";
 
 function hydrateOrderHistoryItem(row: OrderHistoryItem): OrderHistoryItem {
   return {
@@ -66,7 +68,7 @@ function dateKey(value?: Date): string | null {
   return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
 }
 
-export function HistoryPanel({ vendorSlug, initialQuery }: HistoryPanelProps) {
+export function HistoryPanel({ vendorSlug, initialQuery, onUnlockEditing }: HistoryPanelProps) {
   const { token, hasToken, ready } = useOwnerToken(vendorSlug);
   const [filters, setFilters] = useState<OrderHistoryFilters>(initialQuery.filters);
   const [appliedFilters, setAppliedFilters] =
@@ -165,9 +167,7 @@ export function HistoryPanel({ vendorSlug, initialQuery }: HistoryPanelProps) {
 
   const handleExport = async (format: "csv" | "xlsx") => {
     if (!token) {
-      setExportError(
-        "Add your owner token in the Setup guide before exporting."
-      );
+      setExportError(HISTORY_ACCESS_MESSAGE);
       return;
     }
 
@@ -188,7 +188,9 @@ export function HistoryPanel({ vendorSlug, initialQuery }: HistoryPanelProps) {
           error?: string;
         } | null;
         setExportError(
-          payload?.error ?? `Export failed (${response.status}). Try again.`
+          payload?.error?.toLowerCase().includes("owner token")
+            ? HISTORY_ACCESS_MESSAGE
+            : payload?.error ?? `Export failed (${response.status}). Try again.`
         );
         return;
       }
@@ -232,6 +234,17 @@ export function HistoryPanel({ vendorSlug, initialQuery }: HistoryPanelProps) {
       {error ? (
         <Card padding="md" className="border-error/30 bg-error/5">
           <p className="font-body text-body-md text-error">{error}</p>
+        </Card>
+      ) : null}
+
+      {ready && (!hasToken || exportError === HISTORY_ACCESS_MESSAGE) ? (
+        <Card padding="sm" className="flex flex-wrap items-center justify-between gap-3">
+          <p className="font-body text-body-sm text-muted">
+            {HISTORY_ACCESS_MESSAGE}
+          </p>
+          <Button type="button" variant="outline" onClick={onUnlockEditing}>
+            Unlock editing
+          </Button>
         </Card>
       ) : null}
 

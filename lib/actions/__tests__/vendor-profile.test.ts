@@ -99,4 +99,20 @@ describe("updateVendorProfile", () => {
     expect(updated.payoutMethod).toBe("PHONE");
     expect(updated.momoCode).toBe("0788555666");
   });
+
+  it("publishes qualifying profile saves and supports Don't announce", async () => {
+    const { vendor, ownerToken } = await provisionTestVendor();
+    await updateVendorProfile(ownerToken, vendor.slug, { tagline: "Fresh daily" });
+    expect((await getStore().getVendorUpdateOverview(vendor.slug))?.activeBatch)
+      .toEqual(expect.objectContaining({ revision: 1 }));
+
+    await updateVendorProfile(
+      ownerToken,
+      vendor.slug,
+      { description: "Quiet correction" },
+      { announce: false }
+    );
+    expect((await getStore().getVendorUpdateOverview(vendor.slug))?.activeBatch)
+      .toEqual(expect.objectContaining({ revision: 1 }));
+  });
 });

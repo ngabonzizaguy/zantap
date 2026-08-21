@@ -157,6 +157,7 @@ export function SetupDrawer({
   const [coverUploadBusy, setCoverUploadBusy] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [suppressNextAnnouncement, setSuppressNextAnnouncement] = useState(false);
 
   const [nameDraft, setNameDraft] = useState("");
   const [slugDraft, setSlugDraft] = useState("");
@@ -351,7 +352,9 @@ export function SetupDrawer({
     try {
       const formData = new FormData();
       formData.set("file", file);
-      const updated = await uploadBrandingImage(token, vendorSlug, field, formData);
+      const updated = await uploadBrandingImage(token, vendorSlug, field, formData, {
+        announce: !suppressNextAnnouncement,
+      });
       if (field === "logo") {
         setLogoUrlDraft(updated.logoUrl ?? "");
       } else {
@@ -366,6 +369,7 @@ export function SetupDrawer({
         coverImageUrl: updated.coverImageUrl,
         description: updated.description,
       });
+      setSuppressNextAnnouncement(false);
     } catch (error) {
       setProfileError(mapOwnerTokenError(error));
     } finally {
@@ -408,15 +412,20 @@ export function SetupDrawer({
     setProfileSaved(false);
 
     try {
-      const updated = await updateVendorProfile(token, vendorSlug, {
-        tagline: taglineDraft,
-        location: locationDraft,
-        deliveryTime: deliveryTimeDraft,
-        ...(ratingTrimmed ? { rating } : {}),
-        logoUrl: logoUrlDraft,
-        coverImageUrl: coverImageUrlDraft,
-        description: descriptionDraft,
-      });
+      const updated = await updateVendorProfile(
+        token,
+        vendorSlug,
+        {
+          tagline: taglineDraft,
+          location: locationDraft,
+          deliveryTime: deliveryTimeDraft,
+          ...(ratingTrimmed ? { rating } : {}),
+          logoUrl: logoUrlDraft,
+          coverImageUrl: coverImageUrlDraft,
+          description: descriptionDraft,
+        },
+        { announce: !suppressNextAnnouncement }
+      );
       onProfileSaved?.({
         tagline: updated.tagline,
         location: updated.location,
@@ -428,6 +437,7 @@ export function SetupDrawer({
       });
       setProfileSaved(true);
       window.setTimeout(() => setProfileSaved(false), 2000);
+      setSuppressNextAnnouncement(false);
     } catch (error) {
       setProfileError(mapOwnerTokenError(error));
     } finally {
@@ -462,12 +472,17 @@ export function SetupDrawer({
 
     try {
       const phoneNumber = `${phoneDialCodeDraft} ${phoneLocalDraft}`.trim();
-      const updated = await updateVendorProfile(token, vendorSlug, {
-        name: nameDraft,
-        slug: slugDraft,
-        phoneNumber,
-        businessCategory: categoryDraft,
-      });
+      const updated = await updateVendorProfile(
+        token,
+        vendorSlug,
+        {
+          name: nameDraft,
+          slug: slugDraft,
+          phoneNumber,
+          businessCategory: categoryDraft,
+        },
+        { announce: !suppressNextAnnouncement }
+      );
       const savedBusiness: VendorBusinessProfile = {
         name: updated.name,
         slug: updated.slug,
@@ -485,6 +500,7 @@ export function SetupDrawer({
 
       setBusinessSaved(true);
       window.setTimeout(() => setBusinessSaved(false), 2000);
+      setSuppressNextAnnouncement(false);
     } catch (error) {
       setBusinessError(mapOwnerTokenError(error));
     } finally {
@@ -774,6 +790,16 @@ export function SetupDrawer({
               })}
             </ul>
           </section>
+
+          <label className="mt-8 flex min-h-11 cursor-pointer items-center gap-3 rounded-brand-lg border border-hairline bg-surface-card px-4 py-3 font-body text-body-sm text-muted">
+            <input
+              type="checkbox"
+              checked={suppressNextAnnouncement}
+              onChange={(event) => setSuppressNextAnnouncement(event.target.checked)}
+              className="h-5 w-5 rounded border-hairline-strong accent-ink"
+            />
+            Don&apos;t announce my next storefront change
+          </label>
 
           <section className="mt-8">
             <h3 className="font-display text-display-sm text-ink">

@@ -512,6 +512,107 @@ export function runStoreContract(
       });
     });
 
+    describe("Vendor update batches", () => {
+      it("publishes immediately, rolls revisions for 20 minutes, and consolidates repeated changes", async () => {
+        const firstAt = new Date("2026-08-21T08:00:00.000Z");
+        const first = await store.recordVendorUpdate(slug, {
+          at: firstAt,
+          entry: {
+            type: "PRICE_CHANGE",
+            subjectId: "dish-1",
+            name: "Isombe",
+            oldPriceRwf: 4_000,
+            currentPriceRwf: 4_500,
+          },
+        });
+        const revised = await store.recordVendorUpdate(slug, {
+          at: new Date(firstAt.getTime() + 19 * 60 * 1_000),
+          entry: {
+            type: "PRICE_CHANGE",
+            subjectId: "dish-1",
+            name: "Isombe",
+            oldPriceRwf: 4_500,
+            currentPriceRwf: 4_800,
+          },
+        });
+
+        expect(first?.revision).toBe(1);
+        expect(revised?.id).toBe(first?.id);
+        expect(revised?.revision).toBe(2);
+        expect(revised?.entries).toEqual([
+          expect.objectContaining({
+            oldPriceRwf: 4_000,
+            currentPriceRwf: 4_800,
+          }),
+        ]);
+        expect(revised?.expiresAt.getTime()).toBe(
+          firstAt.getTime() + 19 * 60 * 1_000 + 3 * 24 * 60 * 60 * 1_000
+        );
+      });
+
+      it("defaults on but respects global off, per-save suppression, and suspension", async () => {
+        expect(await store.getVendorUpdateSettings(slug)).toEqual({ enabled: true });
+        await store.setVendorUpdatesEnabled(slug, false);
+        expect(
+          await store.recordVendorUpdate(slug, {
+            entry: { type: "NEW_DISH", subjectId: "a", name: "A" },
+          })
+        ).toBeNull();
+
+        await store.setVendorUpdatesEnabled(slug, true);
+        expect(
+          await store.recordVendorUpdate(slug, {
+            announce: false,
+            entry: { type: "NEW_DISH", subjectId: "b", name: "B" },
+          })
+        ).toBeNull();
+
+        await store.setVendorActive(slug, false, "contract test");
+        expect(
+          await store.recordVendorUpdate(slug, {
+            entry: { type: "NEW_DISH", subjectId: "c", name: "C" },
+          })
+        ).toBeNull();
+        expect((await store.getVendorUpdateOverview(slug))?.totals.batches).toBe(0);
+      });
+
+      it("starts a later batch, expires active preview, and persists aggregate counters", async () => {
+        const firstAt = new Date("2026-08-21T08:00:00.000Z");
+        const first = await store.recordVendorUpdate(slug, {
+          at: firstAt,
+          entry: { type: "NEW_DISH", subjectId: "a", name: "A" },
+        });
+        const later = await store.recordVendorUpdate(slug, {
+          at: new Date(firstAt.getTime() + 21 * 60 * 1_000),
+          entry: { type: "NEW_DISH", subjectId: "b", name: "B" },
+        });
+        expect(later?.id).not.toBe(first?.id);
+
+        await store.incrementVendorUpdateCounter(later!.id, "open");
+        await store.incrementVendorUpdateCounter(later!.id, "menuVisit");
+        const overview = await store.getVendorUpdateOverview(
+          slug,
+          new Date(firstAt.getTime() + 22 * 60 * 1_000)
+        );
+        expect(overview?.totals).toEqual({
+          batches: 2,
+          revisions: 2,
+          opens: 1,
+          menuVisits: 1,
+        });
+        expect(overview?.activeBatch?.id).toBe(later?.id);
+
+        expect(
+          (
+            await store.getVendorUpdateOverview(
+              slug,
+              new Date(later!.expiresAt.getTime() + 1)
+            )
+          )?.activeBatch
+        ).toBeNull();
+      });
+    });
+
     describe("inventory", () => {
       it("creates a supply item without adding a Menu dish", async () => {
         const menuBefore = await store.getMenu(slug);

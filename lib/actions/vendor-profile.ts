@@ -23,6 +23,8 @@ import type { PayoutMethod, UpdateVendorInput, Vendor } from "@/lib/types";
 import { assertOwnerToken } from "@/lib/vendor/owner-token-guard";
 
 import { isValidVendorSlug, normalizeVendorSlug } from "@/lib/vendor/slug";
+import { buildProfileUpdateEntry } from "@/lib/vendor-updates/publication";
+import type { VendorSaveOptions } from "@/lib/vendor-updates/types";
 
 
 
@@ -48,7 +50,9 @@ export async function updateVendorProfile(
 
   vendorSlug: string,
 
-  input: UpdateVendorInput
+  input: UpdateVendorInput,
+
+  options: VendorSaveOptions = {}
 
 ): Promise<Vendor> {
 
@@ -58,17 +62,9 @@ export async function updateVendorProfile(
 
   const store = getStore();
 
-  const needsExisting =
+  const existing = await store.getVendorBySlug(vendorSlug);
 
-    input.momoCode !== undefined ||
-
-    input.payoutMethod !== undefined ||
-
-    input.slug !== undefined;
-
-  const existing = needsExisting ? await store.getVendorBySlug(vendorSlug) : null;
-
-  if (needsExisting && !existing) {
+  if (!existing) {
 
     throw new Error("Vendor not found");
 
@@ -248,6 +244,20 @@ export async function updateVendorProfile(
 
   }
 
+  const entry = buildProfileUpdateEntry(existing, updated);
+
+  if (entry) {
+
+    await store.recordVendorUpdate(updated.slug, {
+
+      announce: options.announce,
+
+      entry,
+
+    });
+
+  }
+
   return updated;
 
 }
@@ -262,7 +272,9 @@ export async function uploadBrandingImage(
 
   field: "logo" | "cover",
 
-  formData: FormData
+  formData: FormData,
+
+  options: VendorSaveOptions = {}
 
 ): Promise<Vendor> {
 
@@ -308,11 +320,35 @@ export async function uploadBrandingImage(
 
 
 
-  const updated = await getStore().updateVendor(vendorSlug, patch);
+  const store = getStore();
+
+  const existing = await store.getVendorBySlug(vendorSlug);
+
+  if (!existing) {
+
+    throw new Error("Vendor not found");
+
+  }
+
+  const updated = await store.updateVendor(vendorSlug, patch);
 
   if (!updated) {
 
     throw new Error("Vendor not found");
+
+  }
+
+  const entry = buildProfileUpdateEntry(existing, updated);
+
+  if (entry) {
+
+    await store.recordVendorUpdate(updated.slug, {
+
+      announce: options.announce,
+
+      entry,
+
+    });
 
   }
 

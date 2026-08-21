@@ -9,37 +9,81 @@ datasource db {
 }
 
 model Vendor {
-  id              String                @id @default(cuid())
-  name            String
-  slug            String                @unique
-  phoneNumber     String
-  momoCode        String
-  isActive        Boolean               @default(true)
-  kitchenOpen     Boolean               @default(true)
-  tagline         String?
-  location        String?
-  deliveryTime    String?
-  rating          Float?
-  businessCategory String?
-  payoutMethod    PayoutMethod          @default(MERCHANT_CODE)
-  logoUrl         String?
-  coverImageUrl   String?
-  description     String?
-  ownerTokenHash  String?
+  id                    String                @id @default(cuid())
+  name                  String
+  slug                  String                @unique
+  phoneNumber           String
+  momoCode              String
+  isActive              Boolean               @default(true)
+  kitchenOpen           Boolean               @default(true)
+  tagline               String?
+  location              String?
+  deliveryTime          String?
+  rating                Float?
+  businessCategory      String?
+  payoutMethod          PayoutMethod          @default(MERCHANT_CODE)
+  logoUrl               String?
+  coverImageUrl         String?
+  description           String?
+  ownerTokenHash        String?
   /// Ops-controlled KDS surface flags (ADR-0056). Defaults off.
-  featureWhatsappNotify Boolean @default(false)
-  featureStockTracking  Boolean @default(false)
-  featureProfitInsights Boolean @default(false)
-  menuItems       MenuItem[]
-  inventoryItems  InventoryItem[]
-  orders          Order[]
-  drivers         Driver[]
-  expenses        VendorExpense[]
-  recoveryEvents  VendorRecoveryEvent[]
-  operatorActions OperatorAction[]
-  convertedProspects Prospect[]         @relation("ProspectConvertedVendor")
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  featureWhatsappNotify Boolean               @default(false)
+  featureStockTracking  Boolean               @default(false)
+  featureProfitInsights Boolean               @default(false)
+  /// Candidate #26: automatic public restaurant updates default on.
+  updatesEnabled        Boolean               @default(true)
+  updateBatches         VendorUpdateBatch[]
+  menuItems             MenuItem[]
+  inventoryItems        InventoryItem[]
+  orders                Order[]
+  drivers               Driver[]
+  expenses              VendorExpense[]
+  recoveryEvents        VendorRecoveryEvent[]
+  operatorActions       OperatorAction[]
+  convertedProspects    Prospect[]            @relation("ProspectConvertedVendor")
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+}
+
+enum VendorUpdateType {
+  NEW_DISH
+  DISH_IMAGE
+  PRICE_CHANGE
+  DISH_RESTORED
+  PROFILE_CHANGE
+}
+
+model VendorUpdateBatch {
+  id             String              @id @default(cuid())
+  vendorId       String
+  vendor         Vendor              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  revision       Int                 @default(1)
+  publishedAt    DateTime            @default(now())
+  expiresAt      DateTime
+  openCount      Int                 @default(0)
+  menuVisitCount Int                 @default(0)
+  entries        VendorUpdateEntry[]
+
+  @@index([vendorId, publishedAt])
+  @@index([vendorId, expiresAt])
+}
+
+model VendorUpdateEntry {
+  id              String            @id @default(cuid())
+  batchId         String
+  batch           VendorUpdateBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  type            VendorUpdateType
+  subjectId       String
+  name            String
+  imageUrl        String?
+  oldPriceRwf     Int?
+  currentPriceRwf Int?
+  summary         String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([batchId, type, subjectId])
+  @@index([batchId])
 }
 
 model VendorRecoveryEvent {
@@ -68,43 +112,43 @@ model OperatorAction {
 }
 
 model Lead {
-  id                String                 @id @default(cuid())
-  businessName      String
-  businessType      String
-  contactName       String
-  phone             String
-  area              String
-  message           String?
-  status            LeadStatus             @default(NEW)
-  source            String?
-  consentAt         DateTime
-  createdAt         DateTime               @default(now())
-  routingAssignment LeadRoutingAssignment?
-  convertedProspects Prospect[]            @relation("ProspectConvertedLead")
+  id                 String                 @id @default(cuid())
+  businessName       String
+  businessType       String
+  contactName        String
+  phone              String
+  area               String
+  message            String?
+  status             LeadStatus             @default(NEW)
+  source             String?
+  consentAt          DateTime
+  createdAt          DateTime               @default(now())
+  routingAssignment  LeadRoutingAssignment?
+  convertedProspects Prospect[]             @relation("ProspectConvertedLead")
 
   @@index([status, createdAt])
   @@index([createdAt])
 }
 
 model Prospect {
-  id                 String                 @id @default(cuid())
-  businessName       String
-  contactName        String?
-  phone              String?
-  area               String?
-  source             String?
-  mapsUrl            String?
-  instagramHandle    String?
-  notes              String?
-  status             ProspectStatus         @default(FOUND)
-  nextFollowUpAt     DateTime?
-  convertedVendorId  String?
-  convertedVendor    Vendor?                @relation("ProspectConvertedVendor", fields: [convertedVendorId], references: [id], onDelete: SetNull)
-  convertedLeadId    String?
-  convertedLead      Lead?                  @relation("ProspectConvertedLead", fields: [convertedLeadId], references: [id], onDelete: SetNull)
-  interactions       ProspectInteraction[]
-  createdAt          DateTime               @default(now())
-  updatedAt          DateTime               @updatedAt
+  id                String                @id @default(cuid())
+  businessName      String
+  contactName       String?
+  phone             String?
+  area              String?
+  source            String?
+  mapsUrl           String?
+  instagramHandle   String?
+  notes             String?
+  status            ProspectStatus        @default(FOUND)
+  nextFollowUpAt    DateTime?
+  convertedVendorId String?
+  convertedVendor   Vendor?               @relation("ProspectConvertedVendor", fields: [convertedVendorId], references: [id], onDelete: SetNull)
+  convertedLeadId   String?
+  convertedLead     Lead?                 @relation("ProspectConvertedLead", fields: [convertedLeadId], references: [id], onDelete: SetNull)
+  interactions      ProspectInteraction[]
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
 
   @@index([status, nextFollowUpAt])
   @@index([nextFollowUpAt])
@@ -123,17 +167,17 @@ model ProspectInteraction {
 }
 
 model MarketingSiteSettings {
-  id               String   @id
-  publicPhone      String?
-  publicEmail      String?
-  socialX          String?
-  socialTiktok     String?
-  socialInstagram  String?
-  socialFacebook   String?
-  socialLinkedin   String?
-  socialYoutube    String?
-  socialWhatsapp   String?
-  updatedAt        DateTime @updatedAt
+  id              String   @id
+  publicPhone     String?
+  publicEmail     String?
+  socialX         String?
+  socialTiktok    String?
+  socialInstagram String?
+  socialFacebook  String?
+  socialLinkedin  String?
+  socialYoutube   String?
+  socialWhatsapp  String?
+  updatedAt       DateTime @updatedAt
 }
 
 /// Owner-editable word-for-word overrides for the marketing-site copy
@@ -172,14 +216,14 @@ model MarketingFunnelEvent {
 }
 
 model VendorExpense {
-  id         String   @id @default(cuid())
-  vendorId   String
-  vendor     Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  amountRwf  Int
-  category   String
-  note       String?
-  spentAt    DateTime @default(now())
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  amountRwf Int
+  category  String
+  note      String?
+  spentAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([vendorId, spentAt])
 }
@@ -217,27 +261,27 @@ model LeadRoutingAssignment {
 }
 
 model MenuItem {
-  id          String      @id @default(cuid())
-  vendorId    String
-  vendor      Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  name        String
-  description String?
-  priceRwf    Int
-  imageUrl    String?
-  category    String      @default("General")
-  isAvailable Boolean     @default(true)
-  thumbFrom   String?
-  thumbTo     String?
+  id                String      @id @default(cuid())
+  vendorId          String
+  vendor            Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  name              String
+  description       String?
+  priceRwf          Int
+  imageUrl          String?
+  category          String      @default("General")
+  isAvailable       Boolean     @default(true)
+  thumbFrom         String?
+  thumbTo           String?
   /// Optional dish-level stock (ADR-0055). Null = unlimited / tracking off for this item.
-  stockCount         Int?
-  lowStockThreshold  Int?
+  stockCount        Int?
+  lowStockThreshold Int?
   /// Optional cost to make (RWF) for Know Your Profit margins.
-  costPriceRwf       Int?
-  archivedAt  DateTime?
-  images      MenuImage[]
-  orderItems  OrderItem[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  costPriceRwf      Int?
+  archivedAt        DateTime?
+  images            MenuImage[]
+  orderItems        OrderItem[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
   @@index([vendorId])
   @@index([vendorId, archivedAt])
@@ -313,14 +357,14 @@ model Order {
 }
 
 model OrderItem {
-  id            String   @id @default(cuid())
-  orderId       String
-  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  menuItemId    String
-  menuItem      MenuItem @relation(fields: [menuItemId], references: [id])
-  quantity      Int
-  unitPriceRwf  Int
-  notes         String?
+  id           String   @id @default(cuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId   String
+  menuItem     MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity     Int
+  unitPriceRwf Int
+  notes        String?
 
   @@index([orderId])
 }
@@ -340,15 +384,15 @@ model Driver {
 }
 
 model Payment {
-  id              String        @id @default(cuid())
-  orderId         String        @unique
-  order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  amount          Int
-  provider        PaymentProvider @default(MTN_MOMO)
-  transactionRef  String        @unique
-  status          PaymentStatus @default(PENDING)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id             String          @id @default(cuid())
+  orderId        String          @unique
+  order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount         Int
+  provider       PaymentProvider @default(MTN_MOMO)
+  transactionRef String          @unique
+  status         PaymentStatus   @default(PENDING)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
 
 enum OrderStatus {

@@ -10,7 +10,7 @@ export async function fetchKdsSnapshot(
   vendorSlug: string
 ): Promise<KdsSnapshot> {
   const store = getStore();
-  const [vendor, orders, menu, todayGross, yesterdayGross, kitchenOpen] =
+  const [vendor, orders, menu, todayGross, yesterdayGross, kitchenOpen, vendorUpdates] =
     await Promise.all([
       store.getVendorBySlug(vendorSlug),
       store.listKdsOrders(vendorSlug),
@@ -18,6 +18,7 @@ export async function fetchKdsSnapshot(
       store.getTodayGross(vendorSlug),
       store.getYesterdayGross(vendorSlug),
       store.isKitchenOpen(vendorSlug),
+      store.getVendorUpdateOverview(vendorSlug),
     ]);
   return {
     orders,
@@ -29,6 +30,11 @@ export async function fetchKdsSnapshot(
       featureWhatsappNotify: vendor?.featureWhatsappNotify ?? false,
       featureStockTracking: vendor?.featureStockTracking ?? false,
       featureProfitInsights: vendor?.featureProfitInsights ?? false,
+    },
+    vendorUpdates: vendorUpdates ?? {
+      settings: { enabled: true },
+      activeBatch: null,
+      totals: { batches: 0, revisions: 0, opens: 0, menuVisits: 0 },
     },
   };
 }

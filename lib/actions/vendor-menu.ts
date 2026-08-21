@@ -13,6 +13,13 @@ import {
   validateUpdateMenuItemInput,
 } from "@/lib/menu/validation";
 import { assertOwnerToken } from "@/lib/vendor/owner-token-guard";
+import {
+  buildMenuImageUpdateEntry,
+  buildMenuUpdateEntry,
+  buildNewDishUpdateEntry,
+  buildRestoredDishUpdateEntry,
+} from "@/lib/vendor-updates/publication";
+import type { VendorSaveOptions } from "@/lib/vendor-updates/types";
 
 // NOTE: export only async server actions — no type re-exports (AGENTS.md).
 
@@ -30,33 +37,43 @@ export async function loadMenuCategories(vendorSlug: string): Promise<string[]> 
 export async function createMenuItem(
   ownerToken: string,
   vendorSlug: string,
-  input: CreateMenuItemInput
+  input: CreateMenuItemInput,
+  options: VendorSaveOptions = {}
 ): Promise<MenuItem> {
   await assertOwnerToken(vendorSlug, ownerToken);
   const validationError = validateCreateMenuItemInput(input);
   if (validationError) {
     throw new Error(validationError);
   }
-  return getStore().createMenuItem(vendorSlug, {
+  const store = getStore();
+  const created = await store.createMenuItem(vendorSlug, {
     name: input.name.trim(),
     priceRwf: input.priceRwf,
     description: input.description?.trim() || undefined,
     category: input.category?.trim() || "General",
   });
+  await store.recordVendorUpdate(vendorSlug, {
+    announce: options.announce,
+    entry: buildNewDishUpdateEntry(created),
+  });
+  return created;
 }
 
 export async function updateMenuItem(
   ownerToken: string,
   vendorSlug: string,
   itemId: string,
-  input: UpdateMenuItemInput
+  input: UpdateMenuItemInput,
+  options: VendorSaveOptions = {}
 ): Promise<MenuItem | null> {
   await assertOwnerToken(vendorSlug, ownerToken);
   const validationError = validateUpdateMenuItemInput(input);
   if (validationError) {
     throw new Error(validationError);
   }
-  return getStore().updateMenuItem(vendorSlug, itemId, {
+  const store = getStore();
+  const before = await store.getMenuItem(vendorSlug, itemId);
+  const updated = await store.updateMenuItem(vendorSlug, itemId, {
     name: input.name?.trim(),
     priceRwf: input.priceRwf,
     description:
@@ -71,6 +88,16 @@ export async function updateMenuItem(
     lowStockThreshold: input.lowStockThreshold,
     costPriceRwf: input.costPriceRwf,
   });
+  if (before && updated) {
+    const entry = buildMenuUpdateEntry(before, updated);
+    if (entry) {
+      await store.recordVendorUpdate(vendorSlug, {
+        announce: options.announce,
+        entry,
+      });
+    }
+  }
+  return updated;
 }
 
 export async function archiveMenuItem(
@@ -85,10 +112,19 @@ export async function archiveMenuItem(
 export async function restoreMenuItem(
   ownerToken: string,
   vendorSlug: string,
-  itemId: string
+  itemId: string,
+  options: VendorSaveOptions = {}
 ): Promise<MenuItem | null> {
   await assertOwnerToken(vendorSlug, ownerToken);
-  return getStore().restoreMenuItem(vendorSlug, itemId);
+  const store = getStore();
+  const restored = await store.restoreMenuItem(vendorSlug, itemId);
+  if (restored) {
+    await store.recordVendorUpdate(vendorSlug, {
+      announce: options.announce,
+      entry: buildRestoredDishUpdateEntry(restored),
+    });
+  }
+  return restored;
 }
 
 export async function renameCategory(
@@ -105,7 +141,8 @@ export async function uploadMenuImage(
   ownerToken: string,
   vendorSlug: string,
   itemId: string,
-  formData: FormData
+  formData: FormData,
+  options: VendorSaveOptions = {}
 ): Promise<MenuImage> {
   await assertOwnerToken(vendorSlug, ownerToken);
   const file = formData.get("file");
@@ -119,40 +156,80 @@ export async function uploadMenuImage(
     throw new Error(validationError);
   }
 
-  return getStore().uploadMenuImageBlob(
+  const store = getStore();
+  const before = await store.getMenuItem(vendorSlug, itemId);
+  const image = await store.uploadMenuImageBlob(
     vendorSlug,
     itemId,
     buffer,
     file.type
   );
+  const after = await store.getMenuItem(vendorSlug, itemId);
+  if (before && after) {
+    const entry = buildMenuImageUpdateEntry(before, after);
+    if (entry) {
+      await store.recordVendorUpdate(vendorSlug, {
+        announce: options.announce,
+        entry,
+      });
+    }
+  }
+  return image;
 }
 
 export async function reorderMenuImages(
   ownerToken: string,
   vendorSlug: string,
   itemId: string,
-  imageIds: string[]
+  imageIds: string[],
+  options: VendorSaveOptions = {}
 ): Promise<MenuImage[]> {
   await assertOwnerToken(vendorSlug, ownerToken);
-  return getStore().reorderMenuImages(vendorSlug, itemId, imageIds);
+  const store = getStore();
+  const before = await store.getMenuItem(vendorSlug, itemId);
+  const images = await store.reorderMenuImages(vendorSlug, itemId, imageIds);
+  const after = await store.getMenuItem(vendorSlug, itemId);
+  if (before && after) {
+    const entry = buildMenuImageUpdateEntry(before, after);
+    if (entry) await store.recordVendorUpdate(vendorSlug, { announce: options.announce, entry });
+  }
+  return images;
 }
 
 export async function setPrimaryMenuImage(
   ownerToken: string,
   vendorSlug: string,
   itemId: string,
-  imageId: string
+  imageId: string,
+  options: VendorSaveOptions = {}
 ): Promise<MenuImage | null> {
   await assertOwnerToken(vendorSlug, ownerToken);
-  return getStore().setPrimaryMenuImage(vendorSlug, itemId, imageId);
+  const store = getStore();
+  const before = await store.getMenuItem(vendorSlug, itemId);
+  const image = await store.setPrimaryMenuImage(vendorSlug, itemId, imageId);
+  const after = await store.getMenuItem(vendorSlug, itemId);
+  if (before && after) {
+    const entry = buildMenuImageUpdateEntry(before, after);
+    if (entry) await store.recordVendorUpdate(vendorSlug, { announce: options.announce, entry });
+  }
+  return image;
 }
 
 export async function removeMenuImage(
   ownerToken: string,
   vendorSlug: string,
   itemId: string,
-  imageId: string
+  imageId: string,
+  options: VendorSaveOptions = {}
 ): Promise<boolean> {
   await assertOwnerToken(vendorSlug, ownerToken);
-  return getStore().removeMenuImage(vendorSlug, itemId, imageId);
+  const store = getStore();
+  const before = await store.getMenuItem(vendorSlug, itemId);
+  const removed = await store.removeMenuImage(vendorSlug, itemId, imageId);
+  const after = await store.getMenuItem(vendorSlug, itemId);
+  if (removed && before && after) {
+    const entry = buildMenuImageUpdateEntry(before, after);
+    if (entry) await store.recordVendorUpdate(vendorSlug, { announce: options.announce, entry });
+  }
+  return removed;
 }

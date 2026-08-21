@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/primitives";
 interface RecoverAccessDialogProps {
   open: boolean;
   onClose: () => void;
+  initialSlug?: string;
+  onRecovered?: (vendorSlug: string) => void;
 }
 
 const fieldLabelClass = "font-body text-body-sm font-medium text-ink";
@@ -20,8 +22,13 @@ const fieldControlClass =
 const MISS_MESSAGE =
   "We couldn't match that storefront and phone. Check both and try again.";
 
-export function RecoverAccessDialog({ open, onClose }: RecoverAccessDialogProps) {
-  const [slug, setSlug] = useState("");
+export function RecoverAccessDialog({
+  open,
+  onClose,
+  initialSlug = "",
+  onRecovered,
+}: RecoverAccessDialogProps) {
+  const [slug, setSlug] = useState(initialSlug);
   const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +42,7 @@ export function RecoverAccessDialog({ open, onClose }: RecoverAccessDialogProps)
   const hostPrefix = getDisplayHostPrefix();
 
   const handleClose = () => {
-    setSlug("");
+    setSlug(initialSlug);
     setPhone("");
     setError(null);
     setRecoveredSlug(null);
@@ -53,6 +60,7 @@ export function RecoverAccessDialog({ open, onClose }: RecoverAccessDialogProps)
         // resumes editing on this device with zero typing (ADR-0022).
         cacheOwnerToken(normalizedSlug, result.ownerToken);
         setRecoveredSlug(normalizedSlug);
+        onRecovered?.(normalizedSlug);
       } else {
         setError(MISS_MESSAGE);
       }
@@ -124,11 +132,11 @@ export function RecoverAccessDialog({ open, onClose }: RecoverAccessDialogProps)
                 id="recover-title"
                 className="font-display text-display-sm text-ink"
               >
-                Recover access
+                Unlock editing
               </h2>
               <p className="mt-2 font-body text-body-md text-muted">
-                Enter your storefront URL and the phone number you signed up
-                with. We&apos;ll unlock editing on this device.
+                Enter your store link and signup phone. We&apos;ll unlock editing
+                on this device.
               </p>
             </div>
 
@@ -176,18 +184,18 @@ export function RecoverAccessDialog({ open, onClose }: RecoverAccessDialogProps)
             <div className="flex flex-col gap-3">
               <Button
                 type="button"
-                size="default"
+                size="kds"
                 radius="lg"
                 className="w-full"
                 disabled={!canSubmit}
                 onClick={() => void handleRecover()}
               >
-                {submitting ? "Recovering…" : "Recover access"}
+                {submitting ? "Unlocking…" : "Unlock editing"}
               </Button>
               <button
                 type="button"
                 onClick={handleClose}
-                className="font-body text-body-sm text-muted hover:text-ink"
+                className="min-h-11 font-body text-body-sm text-muted hover:text-ink"
               >
                 Cancel
               </button>

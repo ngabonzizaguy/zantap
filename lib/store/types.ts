@@ -73,6 +73,13 @@ import type {
   UpdateInventoryItemInput,
 } from "@/lib/inventory/types";
 import type { PublicRestaurant } from "@/lib/customer-restaurants/types";
+import type {
+  RecordVendorUpdateInput,
+  VendorUpdateBatch,
+  VendorUpdateCounter,
+  VendorUpdateOverview,
+  VendorUpdateSettings,
+} from "@/lib/vendor-updates/types";
 
 /**
  * The single seam through which all persistent reads and mutations pass.
@@ -90,6 +97,25 @@ export interface Store {
     vendorSlug: string,
     input: UpdateVendorInput
   ): Promise<Vendor | null>;
+
+  // Automatic public Vendor updates (Candidate #26).
+  getVendorUpdateSettings(vendorSlug: string): Promise<VendorUpdateSettings>;
+  setVendorUpdatesEnabled(
+    vendorSlug: string,
+    enabled: boolean
+  ): Promise<VendorUpdateSettings | null>;
+  recordVendorUpdate(
+    vendorSlug: string,
+    input: RecordVendorUpdateInput
+  ): Promise<VendorUpdateBatch | null>;
+  getVendorUpdateOverview(
+    vendorSlug: string,
+    at?: Date
+  ): Promise<VendorUpdateOverview | null>;
+  incrementVendorUpdateCounter(
+    batchId: string,
+    counter: VendorUpdateCounter
+  ): Promise<VendorUpdateBatch | null>;
 
   // Owner token (per-vendor capability, ADR-0022). The hash is server-only and
   // never appears on the domain Vendor; validate via lib/vendor/owner-token.

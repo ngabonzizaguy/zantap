@@ -134,6 +134,18 @@ import {
   validateUpdateInventoryItemInput,
 } from "@/lib/inventory/validation";
 import type { PublicRestaurant } from "@/lib/customer-restaurants/types";
+import type {
+  RecordVendorUpdateInput,
+  VendorUpdateBatch,
+  VendorUpdateCounter,
+  VendorUpdateEntry,
+  VendorUpdateOverview,
+  VendorUpdateSettings,
+} from "@/lib/vendor-updates/types";
+import {
+  VENDOR_UPDATE_BATCH_WINDOW_MS,
+  VENDOR_UPDATE_TTL_MS,
+} from "@/lib/vendor-updates/types";
 
 const COUNTED_STATUSES: OrderStatus[] = ["PAID", "DISPATCHED", "COMPLETED"];
 
@@ -199,6 +211,8 @@ export function createInMemoryStore(): ResettableStore {
   let prospectInteractions: ProspectInteraction[] = [];
   let expenses: VendorExpense[] = [];
   let marketingFunnelEvents: MarketingFunnelEvent[] = [];
+  let vendorUpdateSettings = new Map<string, boolean>();
+  let vendorUpdateBatches: VendorUpdateBatch[] = [];
   let marketingSettings: MarketingSiteSettings = {
     id: "default",
     updatedAt: new Date(),
@@ -226,6 +240,8 @@ export function createInMemoryStore(): ResettableStore {
   let prospectInteractionCounter = 0;
   let expenseCounter = 0;
   let marketingFunnelEventCounter = 0;
+  let vendorUpdateBatchCounter = 0;
+  let vendorUpdateEntryCounter = 0;
 
   function cloneVendor(vendor: StoredVendor): Vendor {
     // Strip the server-only owner-token hash — it must never leave the Store.
@@ -311,6 +327,19 @@ export function createInMemoryStore(): ResettableStore {
     };
   }
 
+  function cloneVendorUpdateBatch(batch: VendorUpdateBatch): VendorUpdateBatch {
+    return {
+      ...batch,
+      publishedAt: new Date(batch.publishedAt),
+      expiresAt: new Date(batch.expiresAt),
+      entries: batch.entries.map((entry) => ({
+        ...entry,
+        createdAt: new Date(entry.createdAt),
+        updatedAt: new Date(entry.updatedAt),
+      })),
+    };
+  }
+
   function load(): void {
     menuItems = seedMenuItems.map((item) => ({ ...item }));
     inventoryItems = [];
@@ -331,6 +360,8 @@ export function createInMemoryStore(): ResettableStore {
     prospectInteractions = [];
     expenses = [];
     marketingFunnelEvents = [];
+    vendorUpdateSettings = new Map();
+    vendorUpdateBatches = [];
     marketingSettings = { id: "default", updatedAt: new Date() };
     kitchenOpen = true;
     orderCounter = 0;
@@ -348,6 +379,8 @@ export function createInMemoryStore(): ResettableStore {
     prospectInteractionCounter = 0;
     expenseCounter = 0;
     marketingFunnelEventCounter = 0;
+    vendorUpdateBatchCounter = 0;
+    vendorUpdateEntryCounter = 0;
   }
 
   load();
@@ -448,6 +481,128 @@ export function createInMemoryStore(): ResettableStore {
     };
     vendors[index] = updated;
     return cloneVendor(updated);
+  }
+
+  async function getVendorUpdateSettings(
+    vendorSlug: string
+  ): Promise<VendorUpdateSettings> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    return { enabled: vendor ? vendorUpdateSettings.get(vendor.id) ?? true : true };
+  }
+
+  async function setVendorUpdatesEnabled(
+    vendorSlug: string,
+    enabled: boolean
+  ): Promise<VendorUpdateSettings | null> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return null;
+    vendorUpdateSettings.set(vendor.id, enabled);
+    return { enabled };
+  }
+
+  async function recordVendorUpdate(
+    vendorSlug: string,
+    input: RecordVendorUpdateInput
+  ): Promise<VendorUpdateBatch | null> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (
+      !vendor ||
+      !vendor.isActive ||
+      input.announce === false ||
+      vendorUpdateSettings.get(vendor.id) === false
+    ) {
+      return null;
+    }
+
+    const at = new Date(input.at ?? Date.now());
+    let batch = [...vendorUpdateBatches]
+      .filter((candidate) => candidate.vendorId === vendor.id)
+      .sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime())[0];
+    const rollsIntoLatest =
+      batch != null &&
+      at.getTime() - batch.publishedAt.getTime() <=
+        VENDOR_UPDATE_BATCH_WINDOW_MS;
+
+    if (!rollsIntoLatest) {
+      batch = {
+        id: `vub_${++vendorUpdateBatchCounter}_${Date.now()}`,
+        vendorId: vendor.id,
+        revision: 0,
+        publishedAt: at,
+        expiresAt: new Date(at.getTime() + VENDOR_UPDATE_TTL_MS),
+        openCount: 0,
+        menuVisitCount: 0,
+        entries: [],
+      };
+      vendorUpdateBatches.push(batch);
+    }
+
+    const existingIndex = batch.entries.findIndex(
+      (entry) =>
+        entry.type === input.entry.type &&
+        entry.subjectId === input.entry.subjectId
+    );
+    if (existingIndex === -1) {
+      const entry: VendorUpdateEntry = {
+        ...input.entry,
+        id: `vue_${++vendorUpdateEntryCounter}_${Date.now()}`,
+        batchId: batch.id,
+        createdAt: at,
+        updatedAt: at,
+      };
+      batch.entries.push(entry);
+    } else {
+      const existing = batch.entries[existingIndex];
+      batch.entries[existingIndex] = {
+        ...existing,
+        ...input.entry,
+        oldPriceRwf: existing.oldPriceRwf ?? input.entry.oldPriceRwf,
+        createdAt: existing.createdAt,
+        updatedAt: at,
+      };
+    }
+    batch.revision += 1;
+    batch.publishedAt = at;
+    batch.expiresAt = new Date(at.getTime() + VENDOR_UPDATE_TTL_MS);
+    return cloneVendorUpdateBatch(batch);
+  }
+
+  async function getVendorUpdateOverview(
+    vendorSlug: string,
+    at = new Date()
+  ): Promise<VendorUpdateOverview | null> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return null;
+    const batches = vendorUpdateBatches.filter(
+      (batch) => batch.vendorId === vendor.id
+    );
+    const activeBatch = [...batches]
+      .filter((batch) => batch.expiresAt.getTime() > at.getTime())
+      .sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime())[0];
+    return {
+      settings: await getVendorUpdateSettings(vendorSlug),
+      activeBatch: activeBatch ? cloneVendorUpdateBatch(activeBatch) : null,
+      totals: batches.reduce(
+        (totals, batch) => ({
+          batches: totals.batches + 1,
+          revisions: totals.revisions + batch.revision,
+          opens: totals.opens + batch.openCount,
+          menuVisits: totals.menuVisits + batch.menuVisitCount,
+        }),
+        { batches: 0, revisions: 0, opens: 0, menuVisits: 0 }
+      ),
+    };
+  }
+
+  async function incrementVendorUpdateCounter(
+    batchId: string,
+    counter: VendorUpdateCounter
+  ): Promise<VendorUpdateBatch | null> {
+    const batch = vendorUpdateBatches.find((candidate) => candidate.id === batchId);
+    if (!batch) return null;
+    if (counter === "open") batch.openCount += 1;
+    else batch.menuVisitCount += 1;
+    return cloneVendorUpdateBatch(batch);
   }
 
   async function getVendorOwnerTokenHash(
@@ -2476,6 +2631,11 @@ export function createInMemoryStore(): ResettableStore {
     isSlugAvailable,
     createVendor,
     updateVendor,
+    getVendorUpdateSettings,
+    setVendorUpdatesEnabled,
+    recordVendorUpdate,
+    getVendorUpdateOverview,
+    incrementVendorUpdateCounter,
     getVendorOwnerTokenHash,
     setVendorOwnerToken,
     recordRecoveryEvent,

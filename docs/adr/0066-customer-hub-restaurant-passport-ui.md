@@ -1,7 +1,7 @@
 # ADR-0066 — Customer hub as a restaurant passport
 
 Date: 2026-08-21
-Status: Accepted for local implementation · owner visual approval pending
+Status: Accepted · owner visually approved 2026-08-21 · local only
 
 ## Context
 
@@ -46,6 +46,6 @@ surfaces remain restrained.
 - The resilient device repository stops waiting after a bounded IndexedDB
   non-response and uses its existing in-memory fallback, preventing a permanent
   loading skeleton in restricted browser contexts.
-- Issue 01 remains functionally closed, but the redesign requires owner visual
-  approval before Issue 02 proceeds.
+- Issue 01 remains functionally closed. The owner visually approved the
+  redesign on 2026-08-21, clearing Issue 02 to proceed.
 - This decision authorizes no migration, deployment, push or production smoke.

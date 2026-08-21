@@ -36,6 +36,7 @@ interface InventoryPanelProps {
     archived: boolean;
   };
   onActiveCountChange: (count: number) => void;
+  onUnlockEditing: () => void;
 }
 
 interface ItemFormState {
@@ -115,11 +116,21 @@ function displayQuantity(quantity: number): string {
   return new Intl.NumberFormat("en-RW", { maximumFractionDigits: 3 }).format(quantity);
 }
 
+const INVENTORY_ACCESS_MESSAGE = "Unlock editing to change inventory.";
+
+function inventoryActionError(cause: unknown, fallback: string): string {
+  const message = cause instanceof Error ? cause.message : fallback;
+  return message.toLowerCase().includes("owner token")
+    ? INVENTORY_ACCESS_MESSAGE
+    : message;
+}
+
 export function InventoryPanel({
   vendorSlug,
   initialResult,
   initialQuery,
   onActiveCountChange,
+  onUnlockEditing,
 }: InventoryPanelProps) {
   const { token: ownerToken } = useOwnerToken(vendorSlug);
   const [result, setResult] = useState(initialResult);
@@ -242,7 +253,7 @@ export function InventoryPanel({
       setEditing(null);
       await refresh(editing === "create" ? 1 : page);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not save inventory item");
+      setError(inventoryActionError(cause, "Could not save inventory item"));
     } finally {
       setSaving(false);
     }
@@ -262,7 +273,7 @@ export function InventoryPanel({
       setSuccess("Stock quantity updated");
       await refresh(page);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not adjust stock");
+      setError(inventoryActionError(cause, "Could not adjust stock"));
     } finally {
       setSaving(false);
     }
@@ -282,7 +293,7 @@ export function InventoryPanel({
       }
       await refresh(page);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not update item");
+      setError(inventoryActionError(cause, "Could not update item"));
     } finally {
       setSaving(false);
     }
@@ -347,10 +358,15 @@ export function InventoryPanel({
           Inventory is online-only. Reconnect to view or update stock.
         </p>
       ) : null}
-      {!ownerToken ? (
-        <p className="font-body text-body-sm text-muted" role="status">
-          Recover owner access in Setup Guide to change inventory.
-        </p>
+      {!ownerToken || error === INVENTORY_ACCESS_MESSAGE ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-brand-lg border border-hairline bg-surface-card p-4" role="status">
+          <p className="font-body text-body-sm text-muted">
+            {INVENTORY_ACCESS_MESSAGE}
+          </p>
+          <Button type="button" variant="outline" onClick={onUnlockEditing}>
+            Unlock editing
+          </Button>
+        </div>
       ) : null}
       {error && !editing && !adjusting ? (
         <p className="font-body text-body-sm text-error" role="alert">{error}</p>

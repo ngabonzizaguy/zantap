@@ -18,6 +18,8 @@ import type {
   PrismaClient,
   Vendor as PrismaVendor,
   VendorRecoveryEvent as PrismaVendorRecoveryEvent,
+  VendorUpdateBatch as PrismaVendorUpdateBatch,
+  VendorUpdateEntry as PrismaVendorUpdateEntry,
 } from "@prisma/client";
 
 import { MOMO_SIM_VALID_PIN } from "@/lib/momo/constants";
@@ -142,6 +144,17 @@ import type {
   UpdateInventoryItemInput,
 } from "@/lib/inventory/types";
 import type { PublicRestaurant } from "@/lib/customer-restaurants/types";
+import type {
+  RecordVendorUpdateInput,
+  VendorUpdateBatch,
+  VendorUpdateCounter,
+  VendorUpdateOverview,
+  VendorUpdateSettings,
+} from "@/lib/vendor-updates/types";
+import {
+  VENDOR_UPDATE_BATCH_WINDOW_MS,
+  VENDOR_UPDATE_TTL_MS,
+} from "@/lib/vendor-updates/types";
 import {
   inventoryStatus,
   resolveInventoryUnit,
@@ -363,6 +376,33 @@ function mapMenuItem(item: PrismaMenuItemWithImages): MenuItem {
     costPriceRwf: item.costPriceRwf ?? undefined,
     archivedAt: item.archivedAt ?? undefined,
     images: images && images.length > 0 ? images : undefined,
+  };
+}
+
+function mapVendorUpdateBatch(
+  batch: PrismaVendorUpdateBatch & { entries: PrismaVendorUpdateEntry[] }
+): VendorUpdateBatch {
+  return {
+    id: batch.id,
+    vendorId: batch.vendorId,
+    revision: batch.revision,
+    publishedAt: batch.publishedAt,
+    expiresAt: batch.expiresAt,
+    openCount: batch.openCount,
+    menuVisitCount: batch.menuVisitCount,
+    entries: batch.entries.map((entry) => ({
+      id: entry.id,
+      batchId: entry.batchId,
+      type: entry.type,
+      subjectId: entry.subjectId,
+      name: entry.name,
+      imageUrl: entry.imageUrl ?? undefined,
+      oldPriceRwf: entry.oldPriceRwf ?? undefined,
+      currentPriceRwf: entry.currentPriceRwf ?? undefined,
+      summary: entry.summary ?? undefined,
+      createdAt: entry.createdAt,
+      updatedAt: entry.updatedAt,
+    })),
   };
 }
 
@@ -612,6 +652,181 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       if (isUniqueConstraintError(error)) {
         throw new Error("Slug already taken");
       }
+      throw error;
+    }
+  }
+
+  async function getVendorUpdateSettings(
+    vendorSlug: string
+  ): Promise<VendorUpdateSettings> {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: normalizeVendorSlug(vendorSlug) },
+      select: { updatesEnabled: true },
+    });
+    return { enabled: vendor?.updatesEnabled ?? true };
+  }
+
+  async function setVendorUpdatesEnabled(
+    vendorSlug: string,
+    enabled: boolean
+  ): Promise<VendorUpdateSettings | null> {
+    try {
+      const vendor = await client.vendor.update({
+        where: { slug: normalizeVendorSlug(vendorSlug) },
+        data: { updatesEnabled: enabled },
+        select: { updatesEnabled: true },
+      });
+      return { enabled: vendor.updatesEnabled };
+    } catch (error) {
+      if (isNotFoundError(error)) return null;
+      throw error;
+    }
+  }
+
+  async function recordVendorUpdate(
+    vendorSlug: string,
+    input: RecordVendorUpdateInput
+  ): Promise<VendorUpdateBatch | null> {
+    if (input.announce === false) return null;
+    const at = new Date(input.at ?? Date.now());
+
+    return client.$transaction(async (tx) => {
+      const vendor = await tx.vendor.findUnique({
+        where: { slug: normalizeVendorSlug(vendorSlug) },
+        select: { id: true, isActive: true, updatesEnabled: true },
+      });
+      if (!vendor?.isActive || !vendor.updatesEnabled) return null;
+
+      const latest = await tx.vendorUpdateBatch.findFirst({
+        where: { vendorId: vendor.id },
+        orderBy: { publishedAt: "desc" },
+        include: { entries: true },
+      });
+      const rollsIntoLatest =
+        latest != null &&
+        at.getTime() - latest.publishedAt.getTime() <=
+          VENDOR_UPDATE_BATCH_WINDOW_MS;
+
+      if (!rollsIntoLatest) {
+        const created = await tx.vendorUpdateBatch.create({
+          data: {
+            vendorId: vendor.id,
+            revision: 1,
+            publishedAt: at,
+            expiresAt: new Date(at.getTime() + VENDOR_UPDATE_TTL_MS),
+            entries: {
+              create: {
+                type: input.entry.type,
+                subjectId: input.entry.subjectId,
+                name: input.entry.name,
+                imageUrl: input.entry.imageUrl ?? null,
+                oldPriceRwf: input.entry.oldPriceRwf ?? null,
+                currentPriceRwf: input.entry.currentPriceRwf ?? null,
+                summary: input.entry.summary ?? null,
+                createdAt: at,
+                updatedAt: at,
+              },
+            },
+          },
+          include: { entries: true },
+        });
+        return mapVendorUpdateBatch(created);
+      }
+
+      await tx.vendorUpdateEntry.upsert({
+        where: {
+          batchId_type_subjectId: {
+            batchId: latest.id,
+            type: input.entry.type,
+            subjectId: input.entry.subjectId,
+          },
+        },
+        create: {
+          batchId: latest.id,
+          type: input.entry.type,
+          subjectId: input.entry.subjectId,
+          name: input.entry.name,
+          imageUrl: input.entry.imageUrl ?? null,
+          oldPriceRwf: input.entry.oldPriceRwf ?? null,
+          currentPriceRwf: input.entry.currentPriceRwf ?? null,
+          summary: input.entry.summary ?? null,
+          createdAt: at,
+          updatedAt: at,
+        },
+        update: {
+          name: input.entry.name,
+          imageUrl: input.entry.imageUrl ?? null,
+          currentPriceRwf: input.entry.currentPriceRwf ?? null,
+          summary: input.entry.summary ?? null,
+          updatedAt: at,
+        },
+      });
+      const revised = await tx.vendorUpdateBatch.update({
+        where: { id: latest.id },
+        data: {
+          revision: { increment: 1 },
+          publishedAt: at,
+          expiresAt: new Date(at.getTime() + VENDOR_UPDATE_TTL_MS),
+        },
+        include: { entries: true },
+      });
+      return mapVendorUpdateBatch(revised);
+    });
+  }
+
+  async function getVendorUpdateOverview(
+    vendorSlug: string,
+    at = new Date()
+  ): Promise<VendorUpdateOverview | null> {
+    const vendor = await client.vendor.findUnique({
+      where: { slug: normalizeVendorSlug(vendorSlug) },
+      select: { id: true, updatesEnabled: true },
+    });
+    if (!vendor) return null;
+    const [activeBatch, totals] = await Promise.all([
+      client.vendorUpdateBatch.findFirst({
+        where: { vendorId: vendor.id, expiresAt: { gt: at } },
+        orderBy: { publishedAt: "desc" },
+        include: { entries: true },
+      }),
+      client.vendorUpdateBatch.aggregate({
+        where: { vendorId: vendor.id },
+        _count: { _all: true },
+        _sum: {
+          revision: true,
+          openCount: true,
+          menuVisitCount: true,
+        },
+      }),
+    ]);
+    return {
+      settings: { enabled: vendor.updatesEnabled },
+      activeBatch: activeBatch ? mapVendorUpdateBatch(activeBatch) : null,
+      totals: {
+        batches: totals._count._all,
+        revisions: totals._sum.revision ?? 0,
+        opens: totals._sum.openCount ?? 0,
+        menuVisits: totals._sum.menuVisitCount ?? 0,
+      },
+    };
+  }
+
+  async function incrementVendorUpdateCounter(
+    batchId: string,
+    counter: VendorUpdateCounter
+  ): Promise<VendorUpdateBatch | null> {
+    try {
+      const batch = await client.vendorUpdateBatch.update({
+        where: { id: batchId },
+        data:
+          counter === "open"
+            ? { openCount: { increment: 1 } }
+            : { menuVisitCount: { increment: 1 } },
+        include: { entries: true },
+      });
+      return mapVendorUpdateBatch(batch);
+    } catch (error) {
+      if (isNotFoundError(error)) return null;
       throw error;
     }
   }
@@ -3221,6 +3436,11 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     isSlugAvailable,
     createVendor,
     updateVendor,
+    getVendorUpdateSettings,
+    setVendorUpdatesEnabled,
+    recordVendorUpdate,
+    getVendorUpdateOverview,
+    incrementVendorUpdateCounter,
     getVendorOwnerTokenHash,
     setVendorOwnerToken,
     recordRecoveryEvent,

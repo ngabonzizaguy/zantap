@@ -30,9 +30,11 @@ interface MenuItemModalProps {
   serverError: string | null;
   vendorSlug: string;
   ownerToken: string | null;
+  announceChanges: boolean;
   onClose: () => void;
   onSubmit: (values: MenuItemFormValues, options?: MenuItemSubmitOptions) => void;
   onImagesChange?: (images: MenuImage[]) => void;
+  onImageSaveComplete?: () => void;
   /** Availability toggle for the item being edited (edit mode only). */
   onToggleAvailability?: () => void;
 }
@@ -77,9 +79,11 @@ export function MenuItemModal({
   serverError,
   vendorSlug,
   ownerToken,
+  announceChanges,
   onClose,
   onSubmit,
   onImagesChange,
+  onImageSaveComplete,
   onToggleAvailability,
 }: MenuItemModalProps) {
   const listId = useId();
@@ -310,7 +314,9 @@ export function MenuItemModal({
             itemId={item.id}
             images={galleryImages}
             ownerToken={ownerToken}
+            announceChanges={announceChanges}
             onImagesChange={handleGalleryChange}
+            onSaveComplete={onImageSaveComplete}
             onError={setGalleryError}
             disabled={saving}
           />

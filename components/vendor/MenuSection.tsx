@@ -20,11 +20,7 @@ import { MenuItemModal, type MenuItemFormValues, type MenuItemSubmitOptions } fr
 
 type MenuFilter = "active" | "archived";
 
-// Owner token is auto-issued at provision and cached by slug — it is never
-// typed here. When it is absent (new device / cleared storage) we point the
-// vendor at Setup rather than prompting (ADR-0022; recovery UI lands in Issue 3).
-const NO_TOKEN_MESSAGE =
-  "Owner access required — add your owner token in the Setup guide.";
+const NO_TOKEN_MESSAGE = "Unlock editing to change your menu.";
 
 interface RowAction {
   key: string;
@@ -293,6 +289,7 @@ interface MenuSectionProps {
   onToggle: (id: string) => void;
   onResetAll: () => void;
   onRefresh: () => Promise<void>;
+  onUnlockEditing: () => void;
 }
 
 export function MenuSection({
@@ -301,6 +298,7 @@ export function MenuSection({
   onToggle,
   onResetAll,
   onRefresh,
+  onUnlockEditing,
 }: MenuSectionProps) {
   const { token, hasToken, ready } = useOwnerToken(vendorSlug);
   const [filter, setFilter] = useState<MenuFilter>("active");
@@ -312,6 +310,7 @@ export function MenuSection({
   const [confirmArchiveId, setConfirmArchiveId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [suppressNextAnnouncement, setSuppressNextAnnouncement] = useState(false);
 
   const loadCategories = useCallback(async () => {
     const next = await loadMenuCategories(vendorSlug);
@@ -399,17 +398,25 @@ export function MenuSection({
     let result: MenuItem | null = null;
 
     if (editorMode === "create") {
-      result = await runGuarded(() => createMenuItem(token, vendorSlug, payload));
+      result = await runGuarded(() =>
+        createMenuItem(token, vendorSlug, payload, {
+          announce: !suppressNextAnnouncement,
+        })
+      );
       if (result && options?.pendingPhoto) {
         const formData = new FormData();
         formData.set("file", options.pendingPhoto);
         await runGuarded(() =>
-          uploadMenuImage(token, vendorSlug, result!.id, formData)
+          uploadMenuImage(token, vendorSlug, result!.id, formData, {
+            announce: !suppressNextAnnouncement,
+          })
         );
       }
     } else if (editingItem) {
       result = await runGuarded(() =>
-        updateMenuItem(token, vendorSlug, editingItem.id, payload)
+        updateMenuItem(token, vendorSlug, editingItem.id, payload, {
+          announce: !suppressNextAnnouncement,
+        })
       );
     }
 
@@ -417,6 +424,7 @@ export function MenuSection({
     if (result === null) return;
 
     setEditorOpen(false);
+    setSuppressNextAnnouncement(false);
     await onRefresh();
     await loadCategories();
     if (filter === "archived") await loadArchived();
@@ -430,15 +438,21 @@ export function MenuSection({
     setSaving(true);
     setActionError(null);
     const result = await runGuarded(() =>
-      createMenuItem(token, vendorSlug, {
-        name: `${item.name} (copy)`.slice(0, 60),
-        priceRwf: item.priceRwf,
-        description: item.description,
-        category: item.category,
-      })
+      createMenuItem(
+        token,
+        vendorSlug,
+        {
+          name: `${item.name} (copy)`.slice(0, 60),
+          priceRwf: item.priceRwf,
+          description: item.description,
+          category: item.category,
+        },
+        { announce: !suppressNextAnnouncement }
+      )
     );
     setSaving(false);
     if (result) {
+      setSuppressNextAnnouncement(false);
       await onRefresh();
       await loadCategories();
     }
@@ -464,10 +478,13 @@ export function MenuSection({
     setSaving(true);
     setActionError(null);
     const result = await runGuarded(() =>
-      restoreMenuItem(token, vendorSlug, itemId)
+      restoreMenuItem(token, vendorSlug, itemId, {
+        announce: !suppressNextAnnouncement,
+      })
     );
     setSaving(false);
     if (result) {
+      setSuppressNextAnnouncement(false);
       await onRefresh();
       await loadArchived();
     }
@@ -532,10 +549,27 @@ export function MenuSection({
         </Button>
       </div>
 
+      <label className="mb-4 flex min-h-11 cursor-pointer items-center gap-3 rounded-brand-lg border border-hairline bg-surface-card px-4 py-3 font-body text-body-sm text-muted">
+        <input
+          type="checkbox"
+          checked={suppressNextAnnouncement}
+          onChange={(event) => setSuppressNextAnnouncement(event.target.checked)}
+          className="h-5 w-5 rounded border-hairline-strong accent-ink"
+        />
+        Don&apos;t announce my next qualifying change
+      </label>
+
       {actionError ? (
-        <p className="mb-3 font-body text-caption text-error" role="alert">
-          {actionError}
-        </p>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-brand-lg border border-hairline bg-surface-card p-3">
+          <p className="font-body text-caption text-error" role="alert">
+            {actionError}
+          </p>
+          {actionError === NO_TOKEN_MESSAGE ? (
+            <Button type="button" variant="outline" onClick={onUnlockEditing}>
+              Unlock editing
+            </Button>
+          ) : null}
+        </div>
       ) : null}
 
       {!ready ? (
@@ -589,6 +623,7 @@ export function MenuSection({
         serverError={actionError}
         vendorSlug={vendorSlug}
         ownerToken={token}
+        announceChanges={!suppressNextAnnouncement}
         onClose={() => {
           setEditorOpen(false);
           setActionError(null);
@@ -601,6 +636,7 @@ export function MenuSection({
           );
           void onRefresh();
         }}
+        onImageSaveComplete={() => setSuppressNextAnnouncement(false)}
       />
 
       {confirmArchiveId ? (

@@ -51,6 +51,8 @@ import { HistoryPanel } from "@/components/vendor/HistoryPanel";
 import { AssignDriverModal } from "@/components/vendor/AssignDriverModal";
 import { DriversPanel } from "@/components/vendor/DriversPanel";
 import { InventoryPanel } from "@/components/vendor/InventoryPanel";
+import { VendorUpdatesPanel } from "@/components/vendor/VendorUpdatesPanel";
+import { RecoverAccessDialog } from "@/components/onboard/RecoverAccessDialog";
 import { ProfitPanel } from "@/components/vendor/ProfitPanel";
 import { SetupDrawer, type StorefrontProfile, type VendorBusinessProfile, type VendorPaymentProfile } from "@/components/vendor/SetupDrawer";
 import { HelpModal } from "@/components/vendor/HelpModal";
@@ -89,6 +91,7 @@ interface KdsDashboardProps {
   initialYesterdayGross: number;
   initialKitchenOpen: boolean;
   initialFeatureFlags: VendorFeatureFlags;
+  initialVendorUpdates: KdsSnapshot["vendorUpdates"];
   initialInventory: PaginatedInventory;
   initialInventoryQuery: {
     page: number;
@@ -110,6 +113,7 @@ export function KdsDashboard({
   initialYesterdayGross,
   initialKitchenOpen,
   initialFeatureFlags,
+  initialVendorUpdates,
   initialInventory,
   initialInventoryQuery,
   initialLiveOrdersQuery,
@@ -124,6 +128,7 @@ export function KdsDashboard({
   const [yesterdayGross, setYesterdayGross] = useState(initialYesterdayGross);
   const [kitchenOpen, setKitchenOpenState] = useState(initialKitchenOpen);
   const [featureFlags, setFeatureFlags] = useState(initialFeatureFlags);
+  const [vendorUpdates, setVendorUpdates] = useState(initialVendorUpdates);
   const [inventoryActiveCount, setInventoryActiveCount] = useState(
     initialInventory.counts.active
   );
@@ -136,6 +141,7 @@ export function KdsDashboard({
   const { token: ownerToken } = useOwnerToken(vendor.slug);
   const [setupOpen, setSetupOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [profitOpen, setProfitOpen] = useState(
     () => initialTab === "profit"
   );
@@ -227,6 +233,7 @@ export function KdsDashboard({
     setYesterdayGross(snapshot.yesterdayGross);
     setKitchenOpenState(snapshot.kitchenOpen);
     setFeatureFlags(snapshot.featureFlags);
+    setVendorUpdates(snapshot.vendorUpdates);
   }, []);
 
   const { sseReconnecting } = useKdsLiveSnapshot(vendor.slug, applySnapshot);
@@ -569,21 +576,31 @@ export function KdsDashboard({
               }}
             />
           ) : tab === "menu" ? (
-            <MenuSection
-              vendorSlug={vendor.slug}
-              items={menu}
-              onToggle={handleToggleItem}
-              onResetAll={handleResetAll}
-              onRefresh={refresh}
-            />
+            <>
+              <VendorUpdatesPanel
+                key={`${vendorUpdates.activeBatch?.id ?? "empty"}-${vendorUpdates.activeBatch?.revision ?? 0}-${vendorUpdates.settings.enabled}`}
+                vendorSlug={vendor.slug}
+                initialOverview={vendorUpdates}
+                onUnlockEditing={() => setRecoveryOpen(true)}
+              />
+              <MenuSection
+                vendorSlug={vendor.slug}
+                items={menu}
+                onToggle={handleToggleItem}
+                onResetAll={handleResetAll}
+                onRefresh={refresh}
+                onUnlockEditing={() => setRecoveryOpen(true)}
+              />
+            </>
           ) : tab === "history" ? (
-            <HistoryPanel vendorSlug={vendor.slug} initialQuery={initialHistoryQuery} />
+            <HistoryPanel vendorSlug={vendor.slug} initialQuery={initialHistoryQuery} onUnlockEditing={() => setRecoveryOpen(true)} />
           ) : (
             <InventoryPanel
               vendorSlug={vendor.slug}
               initialResult={initialInventory}
               initialQuery={initialInventoryQuery}
               onActiveCountChange={setInventoryActiveCount}
+              onUnlockEditing={() => setRecoveryOpen(true)}
             />
           )}
         </div>
@@ -608,6 +625,13 @@ export function KdsDashboard({
         vendorSlug={vendor.slug}
       />
 
+      <RecoverAccessDialog
+        open={recoveryOpen}
+        onClose={() => setRecoveryOpen(false)}
+        initialSlug={vendor.slug}
+        onRecovered={() => setRecoveryOpen(false)}
+      />
+
       <SetupDrawer
         open={setupOpen}
         onClose={closeSetup}
@@ -618,11 +642,15 @@ export function KdsDashboard({
         profile={storefrontProfile}
         menu={menu}
         drivers={drivers}
-        onProfileSaved={setStorefrontProfile}
+        onProfileSaved={(saved) => {
+          setStorefrontProfile(saved);
+          void refresh();
+        }}
         onBusinessSaved={(saved) => {
           setBusinessProfile(saved);
           setVendorName(saved.name);
           setVendorPhone(saved.phoneNumber);
+          void refresh();
         }}
         onPaymentsSaved={setPaymentProfile}
         onRefresh={refreshOnboarding}

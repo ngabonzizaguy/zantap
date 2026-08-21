@@ -22,10 +22,13 @@ const globalForStore = globalThis as unknown as {
  * directly rather than going through this factory.
  */
 export function getStore(): Store {
-  if (!globalForStore.__zantapStore) {
-    globalForStore.__zantapStore = process.env.DATABASE_URL
-      ? createPrismaStore()
-      : createInMemoryStore();
+  const cached = globalForStore.__zantapStore;
+  if (cached && typeof cached.getVendorUpdateOverview === "function") {
+    return cached;
   }
-  return globalForStore.__zantapStore;
+  const store = process.env.DATABASE_URL
+    ? createPrismaStore()
+    : createInMemoryStore();
+  globalForStore.__zantapStore = store;
+  return store;
 }

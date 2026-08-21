@@ -73,6 +73,7 @@ export default async function VendorKdsPage({ params, searchParams }: PageProps)
       initialYesterdayGross={snapshot.yesterdayGross}
       initialKitchenOpen={snapshot.kitchenOpen}
       initialFeatureFlags={snapshot.featureFlags}
+      initialVendorUpdates={snapshot.vendorUpdates}
       initialInventory={inventory}
       initialInventoryQuery={inventoryQuery}
       initialLiveOrdersQuery={liveOrdersQuery}

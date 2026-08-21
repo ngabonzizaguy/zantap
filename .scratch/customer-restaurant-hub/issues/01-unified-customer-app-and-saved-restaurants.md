@@ -1,6 +1,6 @@
 # Issue 01 — Unified customer app and saved restaurants
 
-Status: done · owner-requested hub redesign implemented locally · visual approval pending · not deployed
+Status: done · owner-approved restaurant-passport redesign committed locally · not deployed
 
 ## Parent
 
@@ -64,7 +64,8 @@ None — can start immediately.
   semantics changed. The resilient repository now falls back after a bounded
   IndexedDB non-response so restricted browsers cannot leave the hub loading
   forever. Focused accessibility/storage tests, TypeScript, lint, full Vitest
-  (378 passed / 110 skipped) and production build are clean. Owner visual
-  approval remains pending.
+  (378 passed / 110 skipped) and production build are clean. The owner approved
+  the redesigned hub on 2026-08-21 with no requested refinements; commit
+  `151f18b` is the accepted local visual baseline.
 - Issues 02–04 remain untouched. No migration, deployment or production smoke
   was performed.

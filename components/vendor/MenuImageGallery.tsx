@@ -17,8 +17,10 @@ interface MenuImageGalleryProps {
   itemId: string;
   images: MenuImage[];
   ownerToken: string;
+  announceChanges: boolean;
   onImagesChange: (images: MenuImage[]) => void;
   onError: (message: string) => void;
+  onSaveComplete?: () => void;
   disabled?: boolean;
 }
 
@@ -27,8 +29,10 @@ export function MenuImageGallery({
   itemId,
   images,
   ownerToken,
+  announceChanges,
   onImagesChange,
   onError,
+  onSaveComplete,
   disabled = false,
 }: MenuImageGalleryProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -57,15 +61,20 @@ export function MenuImageGallery({
     const formData = new FormData();
     formData.set("file", file);
     const result = await run(() =>
-      uploadMenuImage(ownerToken, vendorSlug, itemId, formData)
+      uploadMenuImage(ownerToken, vendorSlug, itemId, formData, {
+        announce: announceChanges,
+      })
     );
     if (!result) return;
     onImagesChange([...sorted, result]);
+    onSaveComplete?.();
   };
 
   const handleSetPrimary = async (imageId: string) => {
     const result = await run(() =>
-      setPrimaryMenuImage(ownerToken, vendorSlug, itemId, imageId)
+      setPrimaryMenuImage(ownerToken, vendorSlug, itemId, imageId, {
+        announce: announceChanges,
+      })
     );
     if (!result) return;
     onImagesChange(
@@ -74,11 +83,14 @@ export function MenuImageGallery({
         isPrimary: image.id === imageId,
       }))
     );
+    onSaveComplete?.();
   };
 
   const handleRemove = async (imageId: string) => {
     const ok = await run(() =>
-      removeMenuImage(ownerToken, vendorSlug, itemId, imageId)
+      removeMenuImage(ownerToken, vendorSlug, itemId, imageId, {
+        announce: announceChanges,
+      })
     );
     if (!ok) return;
     setConfirmRemoveId(null);
@@ -87,6 +99,7 @@ export function MenuImageGallery({
       remaining[0] = { ...remaining[0], isPrimary: true };
     }
     onImagesChange(remaining);
+    onSaveComplete?.();
   };
 
   const handleDrop = async (targetId: string) => {
@@ -101,9 +114,14 @@ export function MenuImageGallery({
     setDraggingId(null);
 
     const result = await run(() =>
-      reorderMenuImages(ownerToken, vendorSlug, itemId, ids)
+      reorderMenuImages(ownerToken, vendorSlug, itemId, ids, {
+        announce: announceChanges,
+      })
     );
-    if (result) onImagesChange(result);
+    if (result) {
+      onImagesChange(result);
+      onSaveComplete?.();
+    }
   };
 
   return (
