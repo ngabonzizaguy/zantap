@@ -1,8 +1,8 @@
 # ADR-0064 — Single installed customer app with restaurant updates
 
 Date: 2026-08-21
-Status: Accepted · PRD/issues published · not implemented
-Amended: 2026-08-21 (implementation boundaries resolved for PRD)
+Status: Accepted · Issue 01 implemented locally · Issues 02–04 pending
+Amended: 2026-08-21 (Issue 01 implementation recorded)
 Supersedes: ADR-0059 customer-storefront install decision only
 Preserves: ADR-0059 separate vendor KDS install
 
@@ -95,3 +95,25 @@ checkout continues to require connectivity.
 The full PRD and four `ready-for-agent` issues live under
 `.scratch/customer-restaurant-hub/`. This amendment does not authorize feature
 code, schema migration, deployment or production smoke.
+
+## Issue 01 implementation amendment
+
+Issue 01 implements the customer-app foundation without starting the update
+feed, vendor controls or offline-menu slices:
+
+- `/restaurants` is the root customer manifest launch target and a reserved
+  vendor slug. Storefronts advertise that root manifest; KDS advertising and
+  legacy per-storefront manifest endpoints remain intact.
+- Saved restaurants use one `SavedRestaurantRepository` seam with a versioned
+  IndexedDB adapter, an in-memory contract-test adapter and a resilient runtime
+  fallback. Browser components do not call storage APIs directly.
+- Public refresh is bounded to 50 supplied stable Vendor IDs and passes through
+  `Store.resolvePublicRestaurants` in both adapters. Its route exposes only the
+  public hub read model; it stores no device or saved-list identity server-side.
+- Install prompting is unlocked by meaningful engagement rather than arrival.
+  Saved state exists before installation, installation does not navigate away,
+  and the installed app subsequently opens the hub.
+
+This is an implementation of the existing decision, not a new architectural
+direction. Issues 02–04 remain isolated and unimplemented. No migration,
+deployment or production smoke is authorized or recorded here.

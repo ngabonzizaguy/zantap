@@ -1,10 +1,11 @@
 # Codex ↔ Cursor shared continuity prompt
 
-Last reconciled: **2026-08-20 (Africa/Kigali)**
+Last reconciled: **2026-08-21 (Africa/Kigali)**
 Scope: the product-restructure, marketing, lead-capture, PWA/KDS-polish,
 Paypack-preparation work, plus the new **Ops outreach + KDS + marketing batch**
 on branch `feat/ops-kds-marketing-batch` (shared Cursor ↔ Codex), and candidate
-#25 Inventory/pagination work on `codex/inventory-pagination`.
+#25 Inventory/pagination work and Candidate #26 customer-app work on
+`codex/customer-restaurant-hub`.
 
 This is the durable coordination entry point for both agents. It summarizes
 current truth and points to the detailed artifacts; it does not replace issue
@@ -34,6 +35,16 @@ Preserve every pre-existing dirty or untracked path unless the current task
 explicitly owns it.
 
 ### Reconciled repository and production state
+
+- **Candidate #26 🚧 Issue 01 done locally · not deployed (2026-08-21):** the
+  unified ZanTap customer manifest now launches `/restaurants`; storefronts
+  use a versioned IndexedDB/in-memory saved-Vendor repository, meaningful-
+  engagement save triggers, a bounded public Store resolver and a private hub
+  with recency, saved-only search, confirmed removal and unavailable recovery.
+  The install invitation is engagement-gated and legacy storefront/KDS install
+  paths remain compatible. Local evidence: 377 passed / 110 skipped, lint and
+  production build clean, responsive browser smoke PASS. Issues 02–04 remain
+  untouched. No migration, deployment or production smoke was performed.
 
 - **Candidate #25 ✅ DONE · deployed · prod-smoked (2026-08-21):** Issues 01–03
   shipped at `fbafcee` through the single deployment
@@ -1034,3 +1045,20 @@ database credentials here.
 - No Candidate #26 feature code, migration, deployment or production smoke and
   no Candidate #25 harness/migration repeat occurred. Next session takes exactly
   one issue and keeps the remaining slices isolated.
+
+### 2026-08-21 — Codex — Candidate #26 Issue 01 complete locally
+
+- Implemented exactly Issue 01 on `codex/customer-restaurant-hub`: one root
+  customer PWA launching `/restaurants`, one versioned browser repository keyed
+  by stable Vendor ID, meaningful-engagement persistence, bounded public Store
+  resolution, and the private saved-restaurant hub.
+- New storefront visits remain passive. Explicit save, first cart addition,
+  checkout start and Order placement update the collection; existing saved
+  state carries into installation and unlocks the one-time customer invitation.
+- Legacy per-storefront manifest endpoints and KDS install identity are
+  preserved. The service worker/offline menu work and all update feed/vendor
+  controls remain isolated in Issues 02–04.
+- Verification: `npm test` 377 passed / 110 skipped; lint and production build
+  clean; local browser save → hub → public refresh and responsive checks PASS
+  with zero browser errors/overflow. No migration, deployment, production smoke
+  or push occurred.

@@ -133,6 +133,7 @@ import {
   validateInventoryAdjustmentInput,
   validateUpdateInventoryItemInput,
 } from "@/lib/inventory/validation";
+import type { PublicRestaurant } from "@/lib/customer-restaurants/types";
 
 const COUNTED_STATUSES: OrderStatus[] = ["PAID", "DISPATCHED", "COMPLETED"];
 
@@ -1040,6 +1041,27 @@ export function createInMemoryStore(): ResettableStore {
       return item;
     });
     return updated;
+  }
+
+  async function resolvePublicRestaurants(
+    vendorIds: string[]
+  ): Promise<PublicRestaurant[]> {
+    const uniqueIds = [...new Set(vendorIds)];
+    return uniqueIds.flatMap((vendorId) => {
+      const vendor = vendors.find((row) => row.id === vendorId);
+      if (!vendor) return [];
+      return [
+        {
+          vendorId: vendor.id,
+          slug: vendor.slug,
+          name: vendor.name,
+          isAvailable: vendor.isActive,
+          logoUrl: vendor.logoUrl,
+          location: vendor.location,
+          tagline: vendor.tagline,
+        },
+      ];
+    });
   }
 
   async function listInventory(
@@ -2450,6 +2472,7 @@ export function createInMemoryStore(): ResettableStore {
 
   return {
     getVendorBySlug,
+    resolvePublicRestaurants,
     isSlugAvailable,
     createVendor,
     updateVendor,

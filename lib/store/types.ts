@@ -72,6 +72,7 @@ import type {
   RecordInventoryAdjustmentInput,
   UpdateInventoryItemInput,
 } from "@/lib/inventory/types";
+import type { PublicRestaurant } from "@/lib/customer-restaurants/types";
 
 /**
  * The single seam through which all persistent reads and mutations pass.
@@ -82,6 +83,7 @@ import type {
 export interface Store {
   // Vendor reads + provision
   getVendorBySlug(slug: string): Promise<Vendor | null>;
+  resolvePublicRestaurants(vendorIds: string[]): Promise<PublicRestaurant[]>;
   isSlugAvailable(slug: string): Promise<boolean>;
   createVendor(input: CreateVendorInput): Promise<Vendor>;
   updateVendor(

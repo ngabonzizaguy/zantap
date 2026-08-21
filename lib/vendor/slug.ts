@@ -13,6 +13,7 @@ export const RESERVED_VENDOR_SLUGS: ReadonlySet<string> = new Set([
   "api",
   "onboard",
   "ops",
+  "restaurants",
   "slip",
   "vendor",
   // Public asset folders served from the same origin

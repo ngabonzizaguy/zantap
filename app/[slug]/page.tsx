@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { getStore } from "@/lib/store";
 import { getMomoMode } from "@/lib/momo/mode";
-import { InstallHintBanner } from "@/components/pwa/InstallHintBanner";
 import { Storefront } from "@/components/customer/Storefront";
 import { SuspendedStorefront } from "@/components/customer/SuspendedStorefront";
 import { parseStorefrontMenuQuery } from "@/lib/menu/storefront-pagination";
@@ -31,20 +30,13 @@ export default async function CustomerStorefrontPage({
   ]);
 
   return (
-    <>
-      <InstallHintBanner
-        variant="light"
-        surface="storefront"
-        appName={vendor.name}
-      />
-      <Storefront
-        vendor={vendor}
-        menu={menu}
-        categories={categories}
-        initialMenuQuery={parseStorefrontMenuQuery(query, categories)}
-        fromKds={query.from === "kds"}
-        momoMode={getMomoMode()}
-      />
-    </>
+    <Storefront
+      vendor={vendor}
+      menu={menu}
+      categories={categories}
+      initialMenuQuery={parseStorefrontMenuQuery(query, categories)}
+      fromKds={query.from === "kds"}
+      momoMode={getMomoMode()}
+    />
   );
 }

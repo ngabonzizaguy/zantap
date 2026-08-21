@@ -23,15 +23,18 @@ interface InstallHintBannerProps {
   /** Visual theme: light storefront canvas vs dark KDS surface. */
   variant: "light" | "dark";
   /** Once-per-visitor bucket — storefront and KDS hints are independent. */
-  surface: "storefront" | "kds";
+  surface: "customer" | "storefront" | "kds";
   /** App name shown in the notice (vendor name or "ZanTap Kitchen"). */
   appName: string;
+  /** Customer installs stay gated until a meaningful storefront action. */
+  unlocked?: boolean;
 }
 
 export function InstallHintBanner({
   variant,
   surface,
   appName,
+  unlocked = true,
 }: InstallHintBannerProps) {
   const [mode, setMode] = useState<InstallHintMode>(null);
   const controllerRef = useRef<ReturnType<
@@ -47,6 +50,7 @@ export function InstallHintBanner({
       surface,
       runtime: createBrowserInstallHintRuntime(),
       onModeChange: setMode,
+      startsUnlocked: surface !== "customer",
     });
     controllerRef.current = controller;
     controller.start();
@@ -56,6 +60,10 @@ export function InstallHintBanner({
       if (controllerRef.current === controller) controllerRef.current = null;
     };
   }, [surface]);
+
+  useEffect(() => {
+    if (surface !== "customer" || unlocked) controllerRef.current?.unlock();
+  }, [surface, unlocked]);
 
   const install = useCallback(async () => {
     await controllerRef.current?.install();
@@ -99,9 +107,13 @@ export function InstallHintBanner({
               dark ? "text-white/55" : "text-muted",
             ].join(" ")}
           >
-            {mode === "ios"
-              ? "Tap Share, then \u201CAdd to Home Screen\u201D."
-              : "Add it to your home screen for quick access."}
+            {surface === "customer"
+              ? mode === "ios"
+                ? "Save restaurants and updates: tap Share, then Add to Home Screen."
+                : "Keep saved restaurants and menu updates in one place."
+              : mode === "ios"
+                ? "Tap Share, then \u201CAdd to Home Screen\u201D."
+                : "Add it to your home screen for quick access."}
           </p>
         </div>
         {mode === "prompt" ? (

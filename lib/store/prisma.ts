@@ -141,6 +141,7 @@ import type {
   RecordInventoryAdjustmentInput,
   UpdateInventoryItemInput,
 } from "@/lib/inventory/types";
+import type { PublicRestaurant } from "@/lib/customer-restaurants/types";
 import {
   inventoryStatus,
   resolveInventoryUnit,
@@ -1365,6 +1366,41 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       data: { category: to.trim() || "General" },
     });
     return result.count;
+  }
+
+  async function resolvePublicRestaurants(
+    vendorIds: string[]
+  ): Promise<PublicRestaurant[]> {
+    const uniqueIds = [...new Set(vendorIds)];
+    if (uniqueIds.length === 0) return [];
+    const rows = await client.vendor.findMany({
+      where: { id: { in: uniqueIds } },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        isActive: true,
+        logoUrl: true,
+        location: true,
+        tagline: true,
+      },
+    });
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    return uniqueIds.flatMap((vendorId) => {
+      const row = byId.get(vendorId);
+      if (!row) return [];
+      return [
+        {
+          vendorId: row.id,
+          slug: row.slug,
+          name: row.name,
+          isAvailable: row.isActive,
+          logoUrl: row.logoUrl ?? undefined,
+          location: row.location ?? undefined,
+          tagline: row.tagline ?? undefined,
+        },
+      ];
+    });
   }
 
   async function listInventory(
@@ -3181,6 +3217,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   return {
     getVendorBySlug,
+    resolvePublicRestaurants,
     isSlugAvailable,
     createVendor,
     updateVendor,

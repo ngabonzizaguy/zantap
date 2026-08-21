@@ -6,7 +6,9 @@ describe("PWA manifest", () => {
     const value = manifest();
 
     expect(value.display).toBe("standalone");
-    expect(value.start_url).toBe("/");
+    expect(value.id).toBe("/");
+    expect(value.scope).toBe("/");
+    expect(value.start_url).toBe("/restaurants");
     expect(value.theme_color).toBe("#f5f5f5");
     expect(value.icons).toEqual(
       expect.arrayContaining([

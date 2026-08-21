@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { GradientOrbs } from "@/components/ui/primitives";
 import type { Vendor } from "@/lib/types";
 
@@ -16,6 +17,12 @@ export function SuspendedStorefront({ vendor }: SuspendedStorefrontProps) {
         <p className="mt-4 text-body text-muted">
           This storefront is temporarily unavailable. Please check back later.
         </p>
+        <Link
+          href="/restaurants"
+          className="mt-7 inline-flex min-h-11 items-center justify-center rounded-pill border border-hairline-strong px-5 font-body text-button font-medium text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        >
+          Your restaurants
+        </Link>
       </main>
     </div>
   );

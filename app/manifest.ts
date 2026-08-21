@@ -6,8 +6,8 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "ZanTap",
     short_name: "ZanTap",
     description:
-      "Orders, payments, and kitchen operations for local food businesses.",
-    start_url: "/",
+      "Keep your saved restaurants and their latest menu updates together.",
+    start_url: "/restaurants",
     scope: "/",
     display: "standalone",
     background_color: "#f5f5f5",
@@ -41,6 +41,11 @@ export default function manifest(): MetadataRoute.Manifest {
       },
     ],
     shortcuts: [
+      {
+        name: "Your restaurants",
+        short_name: "Restaurants",
+        url: "/restaurants",
+      },
       {
         name: "Create a storefront",
         short_name: "Get started",

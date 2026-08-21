@@ -1,5 +1,5 @@
 export type InstallHintMode = "prompt" | "ios" | null;
-export type InstallHintSurface = "storefront" | "kds";
+export type InstallHintSurface = "customer" | "storefront" | "kds";
 
 const AUTO_HIDE_PROMPT_MS = 5000;
 const AUTO_HIDE_IOS_MS = 8000;
@@ -80,6 +80,7 @@ interface InstallHintControllerOptions {
   surface: InstallHintSurface;
   runtime: InstallHintRuntime;
   onModeChange(mode: InstallHintMode): void;
+  startsUnlocked?: boolean;
 }
 
 /**
@@ -90,8 +91,10 @@ export function createInstallHintController({
   surface,
   runtime,
   onModeChange,
+  startsUnlocked = true,
 }: InstallHintControllerOptions) {
   let shown = false;
+  let unlocked = startsUnlocked;
   let hideTimerId: number | null = null;
   let iosTimerId: number | null = null;
   let promptEvent: InstallPromptEvent | null = null;
@@ -103,7 +106,7 @@ export function createInstallHintController({
   };
 
   const show = (mode: Exclude<InstallHintMode, null>, autoHideMs: number) => {
-    if (shown) return;
+    if (shown || !unlocked) return;
     shown = true;
     runtime.markSeen(surface);
     onModeChange(mode);
@@ -116,23 +119,32 @@ export function createInstallHintController({
     show("prompt", AUTO_HIDE_PROMPT_MS);
   };
 
+  const scheduleIosHint = () => {
+    if (iosTimerId !== null || shown || !unlocked) return;
+    iosTimerId = runtime.setTimeout(() => {
+      iosTimerId = null;
+      show("ios", AUTO_HIDE_IOS_MS);
+    }, IOS_SETTLE_MS);
+  };
+
   return {
     start() {
       if (runtime.isStandalone() || runtime.hasSeen(surface)) return;
       runtime.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
       runtime.addEventListener("appinstalled", hide);
-      if (runtime.isIosSafariLike()) {
-        iosTimerId = runtime.setTimeout(
-          () => show("ios", AUTO_HIDE_IOS_MS),
-          IOS_SETTLE_MS
-        );
-      }
+      if (runtime.isIosSafariLike()) scheduleIosHint();
     },
     stop() {
       runtime.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
       runtime.removeEventListener("appinstalled", hide);
       if (iosTimerId !== null) runtime.clearTimeout(iosTimerId);
       if (hideTimerId !== null) runtime.clearTimeout(hideTimerId);
+    },
+    unlock() {
+      if (unlocked) return;
+      unlocked = true;
+      if (promptEvent) show("prompt", AUTO_HIDE_PROMPT_MS);
+      else if (runtime.isIosSafariLike()) scheduleIosHint();
     },
     hide,
     async install() {

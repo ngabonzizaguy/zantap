@@ -1,6 +1,6 @@
 # Issue 01 — Unified customer app and saved restaurants
 
-Status: ready-for-agent
+Status: done · locally verified · not deployed
 
 ## Parent
 
@@ -18,24 +18,36 @@ hub, and existing restaurant-specific and KDS installs remain functional.
 
 ## Acceptance criteria
 
-- [ ] New storefronts advertise one ZanTap customer manifest launching the hub;
+- [x] New storefronts advertise one ZanTap customer manifest launching the hub;
       the Vendor KDS manifest is unchanged.
-- [ ] Generic ZanTap installs have a compatible upgrade path, while legacy
+- [x] Generic ZanTap installs have a compatible upgrade path, while legacy
       restaurant endpoints/icons keep launching their storefront with a hub link.
-- [ ] One versioned repository supports browser IndexedDB and an in-memory test
+- [x] One versioned repository supports browser IndexedDB and an in-memory test
       adapter without scattered direct storage calls.
-- [ ] Explicit save, first cart addition, checkout start and Order placement
+- [x] Explicit save, first cart addition, checkout start and Order placement
       idempotently save/update a Vendor; passive views do not.
-- [ ] Pre-install state carries into the installed app, and install acceptance
+- [x] Pre-install state carries into the installed app, and install acceptance
       does not navigate away from the current storefront.
-- [ ] The one-time ZanTap invitation explains saved restaurants/updates, appears
+- [x] The one-time ZanTap invitation explains saved restaurants/updates, appears
       only after engagement and does not automatically nag after dismissal.
-- [ ] The hub resolves only supplied stable IDs, follows slug changes, sorts by
+- [x] The hub resolves only supplied stable IDs, follows slug changes, sorts by
       recency, searches only saved Vendors and supports confirmed removal.
-- [ ] Suspended/missing Vendors remain unavailable and recover on later resolution.
-- [ ] Manifest, public resolution, repository, trigger, hub, accessibility and
+- [x] Suspended/missing Vendors remain unavailable and recover on later resolution.
+- [x] Manifest, public resolution, repository, trigger, hub, accessibility and
       responsive tests pass.
 
 ## Blocked by
 
 None — can start immediately.
+
+## Completion evidence
+
+- Implemented test-first repository, engagement, public-resolution and hub
+  seams, including IndexedDB persistence with a resilient in-memory fallback.
+- `npm test`: 377 passed / 110 skipped; `npm run lint`: clean;
+  `npm run build`: clean.
+- Local browser verification covered passive storefront behavior, explicit
+  save, the saved-only hub, refreshed public resolution, responsive two-column
+  layout and zero browser errors/overflow.
+- Issues 02–04 remain untouched. No migration, deployment or production smoke
+  was performed.

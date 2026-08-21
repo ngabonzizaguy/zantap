@@ -23,6 +23,7 @@ describe("isReservedVendorSlug", () => {
     expect(isReservedVendorSlug("onboard")).toBe(true);
     expect(isReservedVendorSlug("api")).toBe(true);
     expect(isReservedVendorSlug("slip")).toBe(true);
+    expect(isReservedVendorSlug("restaurants")).toBe(true);
     expect(isReservedVendorSlug("  Pricing ")).toBe(true);
   });
 

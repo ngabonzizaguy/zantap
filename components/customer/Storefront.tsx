@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import type { MenuItem, MomoMode, Vendor } from "@/lib/types";
 import { TopBar } from "@/components/customer/TopBar";
 import { Hero } from "@/components/customer/Hero";
@@ -16,6 +17,10 @@ import { ManualMomoSheet } from "@/components/customer/ManualMomoSheet";
 import { SuccessReceipt } from "@/components/customer/SuccessReceipt";
 import { CartProvider, useCart } from "@/components/customer/CartContext";
 import { Button } from "@/components/ui/primitives/Button";
+import { InstallHintBanner } from "@/components/pwa/InstallHintBanner";
+import { placeOrder } from "@/lib/actions/customer";
+import { getBrowserSavedRestaurantRepository } from "@/lib/customer-restaurants/browser";
+import { createCustomerEngagementController } from "@/lib/customer-restaurants/engagement";
 import {
   buildStorefrontMenuHref,
   paginateStorefrontMenu,
@@ -50,9 +55,84 @@ function StorefrontInner({
   const previousPageRef = useRef<number | null>(null);
   const initialMenuQueryRef = useRef(menuQuery);
   const initialUrlCanonicalizedRef = useRef(false);
+  const [restaurantSaved, setRestaurantSaved] = useState(false);
+  const [installUnlocked, setInstallUnlocked] = useState(false);
   const { cart, itemNotes, addItem, addFromCustomization, removeItem, resetCart } =
     useCart();
-  const checkout = useCheckout(vendor, menu, { momoMode });
+  const savedRestaurantRepository = useMemo(
+    () => getBrowserSavedRestaurantRepository(),
+    []
+  );
+  const savedRestaurantIdentity = useMemo(
+    () => ({
+      vendorId: vendor.id,
+      slug: vendor.slug,
+      name: vendor.name,
+      logoUrl: vendor.logoUrl,
+      location: vendor.location,
+      tagline: vendor.tagline,
+    }),
+    [
+      vendor.id,
+      vendor.location,
+      vendor.logoUrl,
+      vendor.name,
+      vendor.slug,
+      vendor.tagline,
+    ]
+  );
+  const engagement = useMemo(
+    () =>
+      createCustomerEngagementController({
+        repository: savedRestaurantRepository,
+        restaurant: savedRestaurantIdentity,
+        onSaved: () => {
+          setRestaurantSaved(true);
+          setInstallUnlocked(true);
+        },
+      }),
+    [savedRestaurantIdentity, savedRestaurantRepository]
+  );
+  const checkout = useCheckout(vendor, menu, {
+    momoMode,
+    deps: {
+      placeOrder: async (input) => {
+        const order = await placeOrder(input);
+        await engagement.record("order-place");
+        return order;
+      },
+    },
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    void savedRestaurantRepository.list().then((restaurants) => {
+      if (cancelled) return;
+      const alreadySaved = restaurants.some(
+        (restaurant) => restaurant.vendorId === vendor.id
+      );
+      setRestaurantSaved(alreadySaved);
+      setInstallUnlocked(alreadySaved);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [savedRestaurantRepository, vendor.id]);
+
+  const recordEngagement = useCallback(
+    (reason: Parameters<typeof engagement.record>[0]) => {
+      void engagement.record(reason).catch(() => undefined);
+    },
+    [engagement]
+  );
+
+  const handleAddItem = useCallback(
+    (itemId: string) => {
+      addItem(itemId);
+      recordEngagement("cart-add");
+    },
+    [addItem, recordEngagement]
+  );
 
   const activeItem = useMemo(
     () => menu.find((item) => item.id === activeItemId) ?? null,
@@ -71,6 +151,7 @@ function StorefrontInner({
    */
   const handleAddToOrder = (selection: CustomizationSelection) => {
     addFromCustomization(selection);
+    recordEngagement("cart-add");
     setActiveItemId(null);
   };
 
@@ -153,6 +234,12 @@ function StorefrontInner({
 
   return (
     <div className="storefront-dark relative min-h-screen w-full overflow-x-hidden bg-canvas text-ink">
+      <InstallHintBanner
+        variant="light"
+        surface="customer"
+        appName="ZanTap"
+        unlocked={installUnlocked}
+      />
       <div className="zt-hidescroll relative z-[1] mx-auto min-h-screen w-full max-w-customer px-5 pb-40">
         <Hero
           vendorSlug={vendor.slug}
@@ -173,6 +260,26 @@ function StorefrontInner({
             />
           }
         />
+
+        <nav
+          aria-label="Saved restaurants"
+          className="mt-5 flex flex-wrap items-center gap-2"
+        >
+          <Button
+            variant="outline"
+            disabled={restaurantSaved}
+            onClick={() => recordEngagement("explicit-save")}
+            className="min-h-11"
+          >
+            {restaurantSaved ? "Restaurant saved" : "Save restaurant"}
+          </Button>
+          <Link
+            href="/restaurants"
+            className="inline-flex min-h-11 items-center justify-center rounded-pill px-5 font-body text-button font-medium text-ink underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            Your restaurants
+          </Link>
+        </nav>
 
         <div className="mt-8">
           <div className="mb-4 flex items-baseline justify-between gap-4 px-0.5">
@@ -228,7 +335,7 @@ function StorefrontInner({
               <MenuList
                 items={menuPage.items}
                 cart={cart}
-                onAdd={addItem}
+                onAdd={handleAddItem}
                 onOpen={handleOpenItem}
               />
             ) : (
@@ -283,7 +390,10 @@ function StorefrontInner({
       <StickyCartBar
         count={checkout.count}
         total={checkout.total}
-        onOpen={() => checkout.applyStage("open_cart")}
+        onOpen={() => {
+          recordEngagement("checkout-start");
+          checkout.applyStage("open_cart");
+        }}
       />
 
       <CheckoutSheet

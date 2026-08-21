@@ -64,6 +64,32 @@ class FakeInstallHintRuntime implements InstallHintRuntime {
 }
 
 describe("InstallHintBanner behavior", () => {
+  it("captures the customer prompt before engagement but shows it only after unlock", () => {
+    const runtime = new FakeInstallHintRuntime();
+    const onModeChange = vi.fn();
+    const controller = createInstallHintController({
+      surface: "customer",
+      runtime,
+      onModeChange,
+      startsUnlocked: false,
+    });
+    const promptEvent = Object.assign(new Event("beforeinstallprompt"), {
+      prompt: vi.fn(async () => undefined),
+      userChoice: Promise.resolve({ outcome: "accepted" as const }),
+    });
+
+    controller.start();
+    runtime.emit("beforeinstallprompt", promptEvent);
+
+    expect(onModeChange).not.toHaveBeenCalled();
+    expect(runtime.seen).not.toContain("customer");
+
+    controller.unlock();
+
+    expect(onModeChange).toHaveBeenCalledWith("prompt");
+    expect(runtime.seen).toContain("customer");
+  });
+
   it("shows an eligible browser prompt once and records the storefront surface", () => {
     const runtime = new FakeInstallHintRuntime();
     const onModeChange = vi.fn();

@@ -48,6 +48,43 @@ export function runStoreContract(
       it("returns null for an unknown vendor", async () => {
         expect(await store.getVendorBySlug("does-not-exist")).toBeNull();
       });
+
+      it("resolves only supplied stable Vendor IDs with current slug and availability", async () => {
+        const first = await store.createVendor({
+          name: "Saved One",
+          slug: "saved-one-old",
+          phoneNumber: "0788000001",
+          momoCode: "SAVE001",
+        });
+        const second = await store.createVendor({
+          name: "Saved Two",
+          slug: "saved-two",
+          phoneNumber: "0788000002",
+          momoCode: "SAVE002",
+        });
+        await store.updateVendor(first.slug, { slug: "saved-one-new" });
+        await store.setVendorActive(second.slug, false, "contract test");
+
+        expect(
+          await store.resolvePublicRestaurants([
+            second.id,
+            "missing-vendor",
+            first.id,
+            first.id,
+          ])
+        ).toEqual([
+          expect.objectContaining({
+            vendorId: second.id,
+            slug: "saved-two",
+            isAvailable: false,
+          }),
+          expect.objectContaining({
+            vendorId: first.id,
+            slug: "saved-one-new",
+            isAvailable: true,
+          }),
+        ]);
+      });
     });
 
     describe("vendor provision", () => {
@@ -61,6 +98,7 @@ export function runStoreContract(
         expect(await store.isSlugAvailable("ops")).toBe(false);
         expect(await store.isSlugAvailable("vendor")).toBe(false);
         expect(await store.isSlugAvailable("onboard")).toBe(false);
+        expect(await store.isSlugAvailable("restaurants")).toBe(false);
         expect(await store.isSlugAvailable("pricing")).toBe(false);
       });
 
