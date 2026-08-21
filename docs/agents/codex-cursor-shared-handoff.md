@@ -36,7 +36,8 @@ explicitly owns it.
 
 ### Reconciled repository and production state
 
-- **Candidate #26 🚧 Issue 01 closed locally · Issue 02 next · not deployed
+- **Candidate #26 🚧 Issue 01 functionally closed; hub redesign awaiting owner
+  visual approval · Issue 02 next · not deployed
   (2026-08-21):** the
   unified ZanTap customer manifest now launches `/restaurants`; storefronts
   use a versioned IndexedDB/in-memory saved-Vendor repository, meaningful-
@@ -51,6 +52,13 @@ explicitly owns it.
   without a Setup Guide detour, using short everyday language and no `owner
   token` wording (ADR-0065). Issues 03–04 remain untouched. No migration,
   deployment, push or production smoke is authorized.
+  A same-day owner follow-up rejected the original hub presentation. ADR-0066
+  replaces it locally with a mobile-first restaurant-passport layout, prominent
+  saved-place cards and direct `Open menu`, while keeping all Issue 01 behavior
+  unchanged. A bounded repository timeout prevents restricted IndexedDB from
+  leaving the PWA on its loading skeleton forever. Focused accessibility and
+  storage tests, TypeScript, lint, the full 378/110 suite and production build
+  are clean; owner visual approval is still pending.
 
 - **Candidate #25 ✅ DONE · deployed · prod-smoked (2026-08-21):** Issues 01–03
   shipped at `fbafcee` through the single deployment
@@ -1082,3 +1090,22 @@ database credentials here.
 - Issues 03–04 were not started. No migration, deployment, push or production
   smoke was performed or authorized. The unstaged Inventory PRD modification
   and all pre-existing untracked artifacts remain preserved.
+
+### 2026-08-21 — Codex — Candidate #26 hub UI/UX redesign
+
+- After the functional walkthrough passed, the owner rejected the `/restaurants`
+  visual experience and requested a more creative mobile/PWA treatment.
+- Reworked only `RestaurantHub`: asymmetrical editorial split on desktop,
+  phone-first stacking, a high-contrast saved-restaurant destination card,
+  direct `Open menu`, icon-only secondary removal, useful-only search, a guided
+  empty state, safe-area padding, visible focus and reduced-motion behavior.
+  The design direction is recorded in ADR-0066.
+- No saved-data semantics, resolver, install manifest, engagement trigger or
+  Store behavior changed. The resilient browser repository now falls back to
+  memory after a bounded IndexedDB non-response instead of loading forever.
+  Issues 02–04 remain untouched.
+- Verification: focused accessibility/storage PASS; TypeScript clean; lint
+  clean; full Vitest 378 passed / 110 skipped; production build clean; 390px and desktop
+  layout bounds have no horizontal overflow. Owner visual approval is pending.
+- No migration, deployment, push or production smoke. Preserve the unstaged
+  Inventory PRD modification and every existing untracked artifact.

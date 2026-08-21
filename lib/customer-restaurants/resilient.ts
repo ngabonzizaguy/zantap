@@ -2,9 +2,23 @@ import type {
   SavedRestaurantRepository,
 } from "@/lib/customer-restaurants/types";
 
+interface ResilientRepositoryOptions {
+  timeoutMs?: number;
+}
+
+function rejectAfter(timeoutMs: number): Promise<never> {
+  return new Promise((_, reject) => {
+    globalThis.setTimeout(
+      () => reject(new Error("Customer storage did not respond")),
+      timeoutMs
+    );
+  });
+}
+
 export function createResilientSavedRestaurantRepository(
   primary: SavedRestaurantRepository,
-  fallback: SavedRestaurantRepository
+  fallback: SavedRestaurantRepository,
+  { timeoutMs = 1500 }: ResilientRepositoryOptions = {}
 ): SavedRestaurantRepository {
   let active = primary;
 
@@ -12,7 +26,7 @@ export function createResilientSavedRestaurantRepository(
     operation: (repository: SavedRestaurantRepository) => Promise<T>
   ): Promise<T> {
     try {
-      return await operation(active);
+      return await Promise.race([operation(active), rejectAfter(timeoutMs)]);
     } catch {
       active = fallback;
       return operation(fallback);

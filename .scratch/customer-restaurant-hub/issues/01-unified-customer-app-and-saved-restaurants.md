@@ -1,6 +1,6 @@
 # Issue 01 — Unified customer app and saved restaurants
 
-Status: done · automated + owner walkthrough verified locally · not deployed
+Status: done · owner-requested hub redesign implemented locally · visual approval pending · not deployed
 
 ## Parent
 
@@ -55,5 +55,16 @@ None — can start immediately.
   no reported acceptance failure. Issue 01 remains closed.
   - Passed: the complete requested local Issue 01 walkthrough.
   - Failed: none reported.
+- Owner-requested UI/UX refinement 2026-08-21 (ADR-0066): replaced the flat
+  collection header and utility cards with a mobile-first restaurant-passport
+  composition: editorial split layout on desktop, compact phone header,
+  high-contrast saved-place cards, direct `Open menu`, quiet remove action,
+  search only when useful, an instructive empty state, safe-area padding and
+  reduced-motion handling. No persistence, resolver, install or PWA identity
+  semantics changed. The resilient repository now falls back after a bounded
+  IndexedDB non-response so restricted browsers cannot leave the hub loading
+  forever. Focused accessibility/storage tests, TypeScript, lint, full Vitest
+  (378 passed / 110 skipped) and production build are clean. Owner visual
+  approval remains pending.
 - Issues 02–04 remain untouched. No migration, deployment or production smoke
   was performed.

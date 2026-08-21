@@ -33,4 +33,19 @@ describe("resilient saved restaurant storage", () => {
       expect.objectContaining({ vendorId: "vendor-1" }),
     ]);
   });
+
+  it("falls back when browser storage hangs instead of leaving the hub loading forever", async () => {
+    const hanging: SavedRestaurantRepository = {
+      list: () => new Promise(() => undefined),
+      save: () => new Promise(() => undefined),
+      remove: () => new Promise(() => undefined),
+    };
+    const repository = createResilientSavedRestaurantRepository(
+      hanging,
+      createInMemorySavedRestaurantRepository(),
+      { timeoutMs: 10 }
+    );
+
+    expect(await repository.list()).toEqual([]);
+  });
 });
