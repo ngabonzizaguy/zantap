@@ -79,3 +79,7 @@ None — can start immediately.
   menu items, orders and payments. Deployment `dpl_7X7XC38sJrWhoXtwTvo68ACKRjAi`
   returned zero error, fatal and 5xx logs over the 48-hour scan. No migration was
   reapplied and no redeploy occurred.
+- Main integration 2026-08-21: `7028e5b` was fast-forwarded to `main` and
+  deployed as `dpl_874DQNUcV2fG7eXsbtLeFTqdeJJd` at `zantap.app`. Inventory
+  and core routes return HTTP 200 and the initial exact-deployment error scan is
+  empty. The migration and 27-check production harness were not repeated.

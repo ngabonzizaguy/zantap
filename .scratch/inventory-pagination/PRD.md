@@ -1,6 +1,6 @@
 # Real Inventory and 10-item pagination
 
-Status: approved 2026-08-20
+Status: DONE · MERGED TO MAIN · DEPLOYED · PROD-SMOKED 2026-08-21
 Branch: `codex/inventory-pagination` from stable launch commit `df9d530`
 
 ## Goal

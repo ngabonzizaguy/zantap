@@ -76,3 +76,7 @@ None — can start independently of Issues 01 and 02.
   errors or framework overlays. Independent cleanup found zero `release-25-*`
   fixtures, and the exact deployment's 48-hour error/fatal/5xx scans were empty.
   No product change, migration repeat or redeploy was required.
+- Main integration 2026-08-21: `7028e5b` was fast-forwarded to `main` and
+  deployed as `dpl_874DQNUcV2fG7eXsbtLeFTqdeJJd` at `zantap.app`. The
+  storefront returns HTTP 200 and the initial exact-deployment error scan is
+  empty. The migration and 27-check production harness were not repeated.

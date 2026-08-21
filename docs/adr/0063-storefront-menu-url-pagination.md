@@ -35,3 +35,7 @@ before totals and pages are calculated.
   server-rendered/pre-hydration race. Its single authorized run passed page
   navigation, cart persistence, browser Back and URL-backed search on mobile,
   plus desktop pagination. No product fix or redeploy was required.
+- Release closeout `7028e5b` was later fast-forwarded to `main` and deployed as
+  `dpl_874DQNUcV2fG7eXsbtLeFTqdeJJd` on 2026-08-21. Storefront route checks and
+  the initial exact-deployment error scan passed; neither migration nor
+  production harness was repeated.

@@ -43,3 +43,7 @@ WhatsApp, charges fees, or contributes to Profit, food cost, or Expenses.
   error/fatal/5xx scans were clean. No migration repeat or redeploy was needed.
 - Future recipe deduction, staff identity attribution, offline writes, and the
   opt-in rate-limited combined WhatsApp alert require separate decisions.
+- Release closeout `7028e5b` was later fast-forwarded to `main` and deployed as
+  `dpl_874DQNUcV2fG7eXsbtLeFTqdeJJd` on 2026-08-21. Route checks and the
+  initial exact-deployment error scan passed; neither migration nor production
+  harness was repeated.

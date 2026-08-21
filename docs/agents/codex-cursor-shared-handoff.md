@@ -989,3 +989,18 @@ database credentials here.
 - Candidate #25 and Issues 01–03 are closed. Migration
   `20260820183000_real_vendor_inventory` was not reapplied and production was not
   redeployed; the only behavior change in this closeout is the harness wait.
+
+### 2026-08-21 — Codex — Candidate #25 merged to main and released
+
+- Owner authorized integration of closeout `7028e5b`. Branch
+  `codex/inventory-pagination` was pushed, `main` fast-forwarded without
+  divergence, and `origin/main` now points to `7028e5b`.
+- The Git-triggered Production deployment
+  `dpl_874DQNUcV2fG7eXsbtLeFTqdeJJd` is Ready and aliased to `zantap.app`.
+  Root, `inka-steakhouse`, its KDS, and `?tab=inventory` each return HTTP 200;
+  the initial exact-deployment error scan returned no entries.
+- Migration `20260820183000_real_vendor_inventory` was not reapplied, the
+  Candidate #25 production harness was not rerun, and there was no manual or
+  duplicate deployment.
+- Candidate #26 restaurant updates remain isolated on
+  `codex/customer-restaurant-hub`; no Candidate #26 file entered this release.
