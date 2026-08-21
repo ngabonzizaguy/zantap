@@ -31,6 +31,12 @@ silent, suspended Vendors publish nothing, and both Store adapters agree.
 - [ ] Updates default on; global off and per-save `Don't announce` work through
       existing owner-token guards.
 - [ ] KDS exposes active-batch preview and aggregate counts without changing its PWA.
+- [ ] Any missing-owner-access notice used by these controls provides a direct
+      button that opens the recovery input dialog in place; the Vendor must not
+      have to detour through Setup Guide or another page.
+- [ ] Owner-access copy uses short, everyday Vendor language (for example,
+      `Unlock editing` and `Enter your store link and signup phone`) and avoids
+      implementation terms such as `owner token`.
 - [ ] Suspended Vendors and seed/migration paths do not publish.
 - [ ] Migration review, contracts, actions, KDS interactions, accessibility,
       TypeScript, lint, full tests and build pass locally; production is untouched.
@@ -38,3 +44,12 @@ silent, suspended Vendors publish nothing, and both Store adapters agree.
 ## Blocked by
 
 None — can start independently of Issue 01.
+
+## Locked owner-access UX follow-up
+
+Owner decision 2026-08-21 (ADR-0065): Issue 02 must reuse one direct recovery
+dialog entry point anywhere its KDS controls discover missing owner access.
+The same interaction should be reusable by the existing Menu, Inventory and
+History notices so Vendors can open the inputs immediately instead of being
+sent through Setup Guide. Setup may retain its access section as a secondary
+route, but it is not the required path. Keep the explanation brief and plain.

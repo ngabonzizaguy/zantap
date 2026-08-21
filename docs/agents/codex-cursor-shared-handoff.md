@@ -36,15 +36,21 @@ explicitly owns it.
 
 ### Reconciled repository and production state
 
-- **Candidate #26 🚧 Issue 01 done locally · not deployed (2026-08-21):** the
+- **Candidate #26 🚧 Issue 01 closed locally · Issue 02 next · not deployed
+  (2026-08-21):** the
   unified ZanTap customer manifest now launches `/restaurants`; storefronts
   use a versioned IndexedDB/in-memory saved-Vendor repository, meaningful-
   engagement save triggers, a bounded public Store resolver and a private hub
   with recency, saved-only search, confirmed removal and unavailable recovery.
   The install invitation is engagement-gated and legacy storefront/KDS install
   paths remain compatible. Local evidence: 377 passed / 110 skipped, lint and
-  production build clean, responsive browser smoke PASS. Issues 02–04 remain
-  untouched. No migration, deployment or production smoke was performed.
+  production build clean, responsive browser smoke PASS. The owner then
+  completed the local manual walkthrough and reported no failed checks, so
+  Issue 01 remains closed. The next session takes exactly Issue 02. Its locked
+  owner-access UX addition is a direct button that opens the recovery inputs
+  without a Setup Guide detour, using short everyday language and no `owner
+  token` wording (ADR-0065). Issues 03–04 remain untouched. No migration,
+  deployment, push or production smoke is authorized.
 
 - **Candidate #25 ✅ DONE · deployed · prod-smoked (2026-08-21):** Issues 01–03
   shipped at `fbafcee` through the single deployment
@@ -1062,3 +1068,17 @@ database credentials here.
   clean; local browser save → hub → public refresh and responsive checks PASS
   with zero browser errors/overflow. No migration, deployment, production smoke
   or push occurred.
+
+### 2026-08-21 — Codex — Candidate #26 Issue 01 owner walkthrough closeout
+
+- The owner manually tested Issue 01 locally and reported no failed walkthrough
+  checks. Issue 01 remains closed; no product code changed in this closeout.
+- The next session is exactly Issue 02. The owner additionally requires every
+  missing-access notice reached by the Vendor controls to offer a direct button
+  that opens the recovery input dialog, rather than sending the Vendor through
+  Setup Guide. Copy must be short, everyday English and avoid `owner token`.
+  This is locked in Issue 02 and ADR-0065; the existing Menu, Inventory and
+  History notices should reuse the same entry point while that surface is open.
+- Issues 03–04 were not started. No migration, deployment, push or production
+  smoke was performed or authorized. The unstaged Inventory PRD modification
+  and all pre-existing untracked artifacts remain preserved.

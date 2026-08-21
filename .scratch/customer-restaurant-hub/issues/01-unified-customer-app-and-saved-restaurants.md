@@ -1,6 +1,6 @@
 # Issue 01 — Unified customer app and saved restaurants
 
-Status: done · locally verified · not deployed
+Status: done · automated + owner walkthrough verified locally · not deployed
 
 ## Parent
 
@@ -49,5 +49,11 @@ None — can start immediately.
 - Local browser verification covered passive storefront behavior, explicit
   save, the saved-only hub, refreshed public resolution, responsive two-column
   layout and zero browser errors/overflow.
+- Owner walkthrough 2026-08-21: PASS with no failed checks. The owner confirmed
+  the Issue 01 local experience after manually exercising the customer flow;
+  the saved-restaurant behavior, hub behavior and responsive presentation had
+  no reported acceptance failure. Issue 01 remains closed.
+  - Passed: the complete requested local Issue 01 walkthrough.
+  - Failed: none reported.
 - Issues 02–04 remain untouched. No migration, deployment or production smoke
   was performed.
