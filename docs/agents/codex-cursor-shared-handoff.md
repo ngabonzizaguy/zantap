@@ -1013,3 +1013,24 @@ database credentials here.
 - Next gate is PRD + isolated issues. Candidate #25 prohibitions remain in
   force: do not rerun its production harness, reapply migration
   `20260820183000_real_vendor_inventory`, or redeploy that release.
+
+### 2026-08-21 — Codex — Candidate #25 merged/live; Candidate #26 planning ready
+
+- Candidate #25 `main` was fast-forwarded/pushed to `7028e5b`; Production
+  `dpl_874DQNUcV2fG7eXsbtLeFTqdeJJd` is Ready on `zantap.app`. Root,
+  storefront, KDS and Inventory checks returned 200 and the initial exact-
+  deployment error scan was clean. Migration `20260820183000_real_vendor_inventory`
+  was not reapplied and the Candidate #25 harness was not rerun. Release docs
+  are commit `1c36437` on `codex/inventory-pagination`.
+- Candidate #26 now has a complete PRD and four `ready-for-agent` tracer bullets:
+  01 unified customer PWA + device-local saved-Vendor hub; 02 Store-backed
+  rolling updates + Vendor controls; 03 bounded public tray/viewer + aggregate-
+  only analytics; 04 offline hub + read-only cached menus. Issues 01/02 may
+  begin independently; 03 depends on both; 04 follows the customer read models.
+- New storefronts advertise the retained root ZanTap manifest identity launching
+  the hub; legacy per-storefront manifests keep installed icons working; KDS is
+  unchanged. Local state uses one versioned IndexedDB repository and persistent
+  update/feed/counter work stays behind the Store seam. ADR-0064 is amended.
+- No Candidate #26 feature code, migration, deployment or production smoke and
+  no Candidate #25 harness/migration repeat occurred. Next session takes exactly
+  one issue and keeps the remaining slices isolated.

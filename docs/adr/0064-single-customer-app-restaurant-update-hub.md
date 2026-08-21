@@ -1,7 +1,8 @@
 # ADR-0064 — Single installed customer app with restaurant updates
 
 Date: 2026-08-21
-Status: Accepted · not implemented
+Status: Accepted · PRD/issues published · not implemented
+Amended: 2026-08-21 (implementation boundaries resolved for PRD)
 Supersedes: ADR-0059 customer-storefront install decision only
 Preserves: ADR-0059 separate vendor KDS install
 
@@ -74,3 +75,23 @@ checkout continues to require connectivity.
 - Implementation requires a PRD and isolated issues. No schema migration,
   implementation, deployment, or production validation is part of this ADR
   session.
+
+## PRD implementation amendment
+
+- Retain the root ZanTap manifest identity and launch the customer hub from it;
+  new storefronts advertise that manifest and the KDS manifest stays unchanged.
+- Keep legacy per-storefront manifest endpoints/launch URLs valid for installed
+  icons, but stop advertising them to new storefront visitors. Do not force
+  uninstall, replacement or redirect behavior browsers cannot guarantee.
+- Use one versioned IndexedDB repository with an in-memory test adapter for
+  stable saved Vendor IDs, recency, viewed revisions, analytics-sent markers
+  and cached public read models.
+- Extend the Store and both adapters for update persistence, bounded public feed
+  reads and aggregate counters. Store no customer device, saved-list or
+  individual-viewer records server-side.
+- Issues 01 and 02 are independent foundations; Issue 03 joins them for the
+  viewer/feed, and Issue 04 adds offline behavior.
+
+The full PRD and four `ready-for-agent` issues live under
+`.scratch/customer-restaurant-hub/`. This amendment does not authorize feature
+code, schema migration, deployment or production smoke.
