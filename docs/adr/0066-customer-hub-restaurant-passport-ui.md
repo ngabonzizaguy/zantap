@@ -1,7 +1,7 @@
 # ADR-0066 — Customer hub as a restaurant passport
 
 Date: 2026-08-21
-Status: Amended · original deployed 2026-08-22 · reference composition complete locally
+Status: Amended · reference composition deployed and production-smoked 2026-08-22
 
 ## Context
 
@@ -61,7 +61,8 @@ the section heading and on each affected Vendor ring; it counts unseen entries,
 while saved-restaurant count remains separate. Labels are shortened without
 changing device-local privacy, feed ordering, viewed state or analytics.
 
-The amendment is locally verified but does not authorize push or deployment.
+The amendment was locally verified before the separately authorized release
+recorded below.
 
 ### Reference composition clarification (2026-08-22)
 
@@ -76,5 +77,18 @@ the design must not imply an action that does not exist.
 
 This remains a visual refinement only; saved-state, update-feed, analytics,
 offline and Store boundaries do not change. Local 390px and 1440px production-
-mode renders have no overflow or unexpected console errors. A new exact commit
-and a separate owner release approval are required before push or deployment.
+mode renders have no overflow or unexpected console errors.
+
+### Release record (2026-08-22)
+
+The owner approved exact commit `5672cdf`. It was pushed and deployed from a
+detached clean worktree as Vercel Production deployment
+`dpl_5erYVZ7RYDhy5DyQVk2o9GdA1Qu4`, `READY` on `zantap.app`. Production
+`/restaurants` returned 200 and passed responsive browser smoke at 390×844 and
+1440×1000 with saved Vendor identity and the primary menu action rendered, no
+horizontal overflow, no failed responses, no framework overlay, and no console
+or page errors. The production Vendor had no active update batch during the
+release window, so live update-row rendering was not exercised; the approved
+production-mode fixture evidence and deterministic test coverage remain the
+gate for that state. Exact-deployment error, fatal, warning and 5xx scans were
+empty. No migration or Issue 04 work occurred.

@@ -1,6 +1,6 @@
 # Issue 03 — Update tray, viewer and aggregate analytics
 
-Status: deployed · owner production-smoked · reference-matched local visual pass awaiting release approval
+Status: done · reference composition deployed and production-smoked 2026-08-22
 
 ## Parent
 
@@ -115,6 +115,22 @@ console errors and no horizontal overflow. Local Vercel telemetry 404s are
 explicitly excluded by the untracked review harness; every other 404 still
 fails the gate. Nothing was pushed or deployed and Issue 04 was not started.
 A new exact commit requires owner visual/release approval before release.
+
+## Reference composition release closeout (2026-08-22)
+
+The owner approved exact commit `5672cdf`. It was pushed without altering the
+pre-existing Inventory PRD edit or any untracked artifact, then deployed from a
+detached clean worktree as Production deployment
+`dpl_5erYVZ7RYDhy5DyQVk2o9GdA1Qu4` (`READY`) on `zantap.app`.
+
+Production `/restaurants` smoke passed at 390×844 and 1440×1000: HTTP 200,
+saved Inka identity and `Open menu` rendered, document width matched each
+viewport, and there were no failed responses, framework overlays, console
+errors or page errors. No Inka update batch was active during the release
+window, so the live update row did not render; its reference composition remains
+covered by the approved production-mode evidence and the 397 passed / 114
+skipped suite. Exact-deployment scans returned zero error, fatal, warning and
+5xx entries. No migration was required or applied. Issue 04 was not started.
 
 ## Blocked by
 

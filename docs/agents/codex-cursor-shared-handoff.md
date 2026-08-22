@@ -85,13 +85,15 @@ explicitly owns it.
   Issue 03 was then pushed and deployed at exact commit `c587898` as
   `dpl_GbKD1CAFNyP37v9kqcP5hJFwcszA`; the owner production-smoked the flow.
   Local commits `d970cc2` and `3353851` established compact change badges and
-  the KDS palette but remained unreleased. The owner's compact phone reference
-  is now implemented in the working tree: quiet saved count, dense update rows,
-  and a roughly 220px restaurant pass. Verification remains 397/114 with
-  TypeScript, lint and production build clean; 390px/1440px production-mode
-  review passes without overflow or unexpected console errors. This final
-  visual pass is not pushed or deployed pending owner approval. Issue 04 remains
-  deferred and requires a separate owner request.
+  the KDS palette; `5672cdf` completed the owner's compact phone reference with
+  a quiet saved count, dense update rows and a roughly 220px restaurant pass.
+  Owner approval pushed and deployed exact commit `5672cdf` from a detached
+  clean worktree as Production `dpl_5erYVZ7RYDhy5DyQVk2o9GdA1Qu4`, `READY` on
+  `zantap.app`. Production `/restaurants` passed 390×844 and 1440×1000 smoke
+  with HTTP 200, saved Vendor/menu action, no overflow, no failed responses or
+  browser errors; the release window had no active Inka update batch. Exact-
+  deployment error/fatal/warning/5xx scans were empty. Issue 04 remains deferred
+  and requires a separate owner request.
 
 - **Candidate #25 ✅ DONE · deployed · prod-smoked (2026-08-21):** Issues 01–03
   shipped at `fbafcee` through the single deployment
@@ -1314,3 +1316,18 @@ database credentials here.
 - No push, deployment, migration, production data or Issue 04 work occurred.
   Await owner visual/release approval for the new exact local commit. The
   Inventory PRD edit and all untracked artifacts remain preserved.
+
+### 2026-08-22 — Codex — Candidate #26 reference composition released
+
+- Owner explicitly approved exact commit `5672cdf`. The feature branch was
+  pushed, and a detached clean worktree ensured that Vercel received only that
+  commit. Production deployment `dpl_5erYVZ7RYDhy5DyQVk2o9GdA1Qu4` is `READY`
+  on `zantap.app`; no migration was needed or applied.
+- Production `/restaurants` smoke passed at 390×844 and 1440×1000: HTTP 200,
+  saved Inka identity and `Open menu`, exact viewport width, and zero failed
+  responses, overlays, console errors or page errors. No Inka update batch was
+  active during the release, so the live update row did not render; the approved
+  production-mode fixture review and 397/114 test evidence cover that state.
+- Exact-deployment error, fatal, warning and 5xx scans returned no entries. The
+  Inventory PRD edit and every pre-existing untracked artifact remain preserved.
+  Issue 04 was not started and remains separately gated.
