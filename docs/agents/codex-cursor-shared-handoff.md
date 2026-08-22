@@ -1252,3 +1252,27 @@ database credentials here.
 - Issue 03 is complete locally but uncommitted/unreleased. Preserve the Inventory
   PRD modification and every untracked artifact. No migration, deployment,
   production smoke, push or Issue 04 work occurred.
+
+### 2026-08-22 — Codex — Candidate #26 Issue 03 released; hub polish local
+
+- Owner authorization pushed `14cb78c`, `82e2657` and `c587898`. Production
+  schema was already current, so no migration write occurred. Exact commit
+  `c587898` deployed READY as `dpl_GbKD1CAFNyP37v9kqcP5hJFwcszA` and holds the
+  `zantap.app` aliases.
+- The tracked production harness needed its IndexedDB open version raised from
+  1 to 2 after Issue 03's repository upgrade. The pre-existing Candidate #26
+  flow then passed 7/7. Automated viewer smoke found no active Inka batch; the
+  owner subsequently exercised the production flow and reported it works as
+  expected.
+- Owner-requested `/restaurants` polish is complete locally: numeric gold
+  badges state total unseen changes in the section and per Vendor ring; the
+  improvised dark card is replaced by ZanTap white/ink/gold-orange styling; and
+  labels are shorter plain English. ADR-0066 records the amendment.
+- Verification is 397 passed / 114 skipped with TypeScript, lint and production
+  build clean. A production-mode review at 390px and 1440px passed with no
+  overflow or console errors. Screenshots and the local review harness remain
+  untracked under `.scratch/customer-restaurant-hub/`.
+- The polish is not pushed or deployed pending explicit owner visual/release
+  approval. Preserve the unstaged Inventory PRD modification and all prior
+  untracked artifacts. Issue 04 remains deferred and must not begin without a
+  separate owner request.

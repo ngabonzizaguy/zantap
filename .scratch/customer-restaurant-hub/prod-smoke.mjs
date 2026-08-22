@@ -31,7 +31,7 @@ try {
   await page.getByRole("button", { name: "Restaurant saved" }).waitFor();
   await page.waitForFunction(async () => {
     const database = await new Promise((resolve, reject) => {
-      const request = indexedDB.open("zantap-customer", 1);
+      const request = indexedDB.open("zantap-customer", 2);
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
@@ -54,6 +54,47 @@ try {
   await page.getByRole("link", { name: /Open Inka Steakhouse/ }).waitFor();
   await page.getByText(/Inka Steakhouse/).first().waitFor();
   pass("Issue 01 saved-only restaurant hub", "saved Vendor resolves and opens");
+
+  const savedVendorId = await page.evaluate(async () => {
+    const database = await new Promise((resolve, reject) => {
+      const request = indexedDB.open("zantap-customer", 2);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const rows = await new Promise((resolve, reject) => {
+      const request = database
+        .transaction("savedRestaurants", "readonly")
+        .objectStore("savedRestaurants")
+        .getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    database.close();
+    return rows.find((row) => row.slug === "inka-steakhouse")?.vendorId ?? null;
+  });
+  if (!savedVendorId) throw new Error("Saved Vendor ID was not persisted");
+  const feed = await page.evaluate(async (vendorId) => {
+    const response = await fetch(`/api/customer/updates?ids=${encodeURIComponent(vendorId)}`);
+    if (!response.ok) throw new Error(`Update feed returned ${response.status}`);
+    return response.json();
+  }, savedVendorId);
+  const publicVendor = feed.updates?.[0];
+  const activeBatch = publicVendor?.batches?.[0];
+  if (!activeBatch) throw new Error("No active Inka update batch is available for Issue 03 smoke");
+  if (Object.hasOwn(activeBatch, "openCount") || Object.hasOwn(activeBatch, "menuVisitCount")) {
+    throw new Error("Public feed leaked aggregate counters");
+  }
+  pass("Issue 03 bounded public feed", `active revision ${activeBatch.revision}`);
+
+  await page.getByRole("heading", { name: "New changes" }).waitFor();
+  await page.getByRole("button", { name: "View updates from Inka Steakhouse" }).click();
+  const viewer = page.getByRole("dialog", { name: "Inka Steakhouse updates" });
+  await viewer.waitFor();
+  await viewer.getByRole("link", { name: "View menu" }).waitFor();
+  pass("Issue 03 update viewer", "displayed revision and current menu link render");
+  await viewer.getByRole("button", { name: "Close updates" }).click();
+  await page.getByRole("heading", { name: "0 new updates" }).waitFor();
+  pass("Issue 03 displayed-seen state", "opening the rendered revision clears unseen count");
 
   await page.goto(`${baseUrl}/vendor/inka-steakhouse?tab=menu`, { waitUntil: "networkidle", timeout: 60_000 });
   const updatesPanel = page.locator("section, div").filter({ hasText: "Share meaningful menu changes" }).last();

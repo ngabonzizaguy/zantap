@@ -85,6 +85,13 @@ export function RestaurantUpdates({ vendorIds, repository }: RestaurantUpdatesPr
 
   const tray = useMemo(() => buildUpdateTray(feed, states), [feed, states]);
   const newUpdateCount = tray.filter((entry) => entry.hasUnseen).length;
+  const newChangeCount = tray.reduce((total, { vendor, hasUnseen }) => {
+    if (!hasUnseen) return total;
+    return total + vendor.batches.reduce((count, batch) => {
+      const viewedRevision = states.get(batch.id)?.viewedRevision ?? 0;
+      return count + (batch.revision > viewedRevision ? batch.entries.length : 0);
+    }, 0);
+  }, 0);
   const activeVendor = feed.find((vendor) => vendor.vendorId === activeVendorId) ?? null;
   const activeBatch = activeVendor?.batches[activeBatchIndex] ?? null;
 
@@ -160,29 +167,37 @@ export function RestaurantUpdates({ vendorIds, repository }: RestaurantUpdatesPr
   if (tray.length === 0) return null;
 
   return (
-    <section className="mb-9 border-b border-hairline pb-8" aria-labelledby="restaurant-updates-heading">
-      <div className="flex items-end justify-between gap-4">
+    <section className="mb-7 rounded-brand-xl border border-gold/30 bg-surface-card p-4 shadow-brand-soft sm:p-5" aria-labelledby="restaurant-updates-heading">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="font-body text-caption-uppercase uppercase text-muted">Fresh from your places</p>
-          <h2 id="restaurant-updates-heading" className="mt-1 font-display text-display-sm font-light text-ink">
-            {newUpdateCount} new {newUpdateCount === 1 ? "update" : "updates"}
+          <p className="font-body text-caption-uppercase uppercase text-muted">Restaurant updates</p>
+          <h2 id="restaurant-updates-heading" className="mt-1 flex items-center gap-2 font-display text-display-sm font-light text-ink">
+            New changes
+            <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-momo px-1.5 font-body text-caption font-semibold text-momo-dark" aria-label={`${newChangeCount} new ${newChangeCount === 1 ? "change" : "changes"}`}>
+              {newChangeCount}
+            </span>
           </h2>
         </div>
         {newUpdateCount > 0 ? (
           <button type="button" onClick={() => void markAllSeen()} className="inline-flex min-h-11 items-center gap-2 rounded-pill px-3 font-body text-caption text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
-            <CheckCheck size={17} aria-hidden /> Mark all as seen
+            <CheckCheck size={17} aria-hidden /> <span className="whitespace-nowrap">Mark all seen</span>
           </button>
         ) : null}
       </div>
 
-      <ul className="mt-5 flex gap-4 overflow-x-auto pb-2" aria-label="Restaurant updates">
+      <ul className="mt-4 flex gap-4 overflow-x-auto pb-2" aria-label="Restaurant updates">
         {tray.map(({ vendor, hasUnseen }) => (
           <li key={vendor.vendorId} className="w-[76px] flex-none text-center">
             <button type="button" onClick={() => openVendor(vendor)} className="group w-full rounded-brand-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4" aria-label={`View updates from ${vendor.name}`}>
-              <span className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full p-[3px] ${hasUnseen ? "bg-ink" : "bg-hairline-strong"}`}>
+              <span className={`relative mx-auto flex h-16 w-16 items-center justify-center rounded-full p-[3px] ${hasUnseen ? "bg-momo" : "bg-hairline-strong"}`}>
                 <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-canvas bg-surface-card font-display text-title-sm text-ink">
                   {vendor.logoUrl ? <Image src={vendor.logoUrl} alt="" width={64} height={64} className="h-full w-full object-cover" /> : vendor.name.slice(0, 1)}
                 </span>
+                {hasUnseen ? (
+                  <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-momo px-1 font-body text-[10px] font-semibold leading-none text-momo-dark" aria-hidden>
+                    {vendor.batches.reduce((count, batch) => count + ((batch.revision > (states.get(batch.id)?.viewedRevision ?? 0)) ? batch.entries.length : 0), 0)}
+                  </span>
+                ) : null}
               </span>
               <span className="mt-2 block truncate font-body text-caption text-body">{vendor.name}</span>
             </button>

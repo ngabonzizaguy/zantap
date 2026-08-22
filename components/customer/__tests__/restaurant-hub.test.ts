@@ -32,7 +32,7 @@ describe("saved restaurant list accessibility", () => {
     expect(markup).not.toContain('href="/paused-restaurant"');
     expect(markup).toContain("Open menu");
     expect(markup).toContain("Temporarily unavailable");
-    expect(markup).toContain("Saved on this phone");
+    expect(markup).toContain(">Saved</span>");
     expect(markup).toContain(
       'aria-label="Remove Paused Restaurant from saved restaurants"'
     );

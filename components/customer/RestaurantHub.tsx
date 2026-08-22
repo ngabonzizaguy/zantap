@@ -57,27 +57,18 @@ export function SavedRestaurantList({
         return (
           <li
             key={restaurant.vendorId}
-            className={
-              available
-                ? "group relative isolate flex min-h-[280px] flex-col overflow-hidden rounded-brand-xxl bg-primary p-5 text-on-primary shadow-[0_20px_50px_rgba(12,10,9,0.16)] sm:p-6"
-                : "relative flex min-h-[280px] flex-col overflow-hidden rounded-brand-xxl border border-hairline bg-surface-card p-5 text-ink shadow-brand-soft sm:p-6"
-            }
+            className="group relative isolate flex min-h-[250px] flex-col overflow-hidden rounded-brand-xxl border border-gold/25 bg-surface-card p-5 text-ink shadow-brand-soft sm:p-6"
           >
             {available ? (
               <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-                <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-gradient-peach/35 blur-3xl transition-transform duration-700 group-hover:scale-110" />
-                <div className="absolute -bottom-24 -left-16 h-56 w-56 rounded-full bg-gradient-mint/20 blur-3xl" />
-                <div className="absolute inset-0 bg-[linear-gradient(125deg,transparent_30%,rgba(255,255,255,0.035)_30%,rgba(255,255,255,0.035)_50%,transparent_50%)]" />
+                <div className="absolute -right-20 -top-24 h-56 w-56 rounded-full bg-gold/20 blur-3xl transition-transform duration-700 group-hover:scale-110 motion-reduce:transform-none" />
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-gold via-momo to-gold" />
               </div>
             ) : null}
 
             <div className="flex items-start justify-between gap-4">
               <div
-                className={
-                  available
-                    ? "flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-brand-xl border border-white/15 bg-white/10 font-display text-title-md text-white shadow-inner"
-                    : "flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-brand-xl border border-hairline bg-surface-strong font-display text-title-md text-ink"
-                }
+                className="flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-brand-xl border border-gold/30 bg-gold/10 font-display text-title-md text-ink"
               >
               {restaurant.logoUrl ? (
                 // Public Vendor branding can be remote; the fixed shell prevents layout shift.
@@ -92,24 +83,14 @@ export function SavedRestaurantList({
               )}
               </div>
               <div className="flex flex-col items-end gap-2">
-                <span
-                  className={
-                    available
-                      ? "inline-flex items-center gap-1.5 rounded-pill border border-white/10 bg-white/10 px-3 py-1.5 font-body text-caption text-white/80"
-                      : "inline-flex items-center gap-1.5 rounded-pill bg-surface-strong px-3 py-1.5 font-body text-caption text-muted"
-                  }
-                >
+                <span className="inline-flex items-center gap-1.5 rounded-pill bg-gold/15 px-3 py-1.5 font-body text-caption text-momo-dark">
                   <Smartphone size={14} aria-hidden />
-                  Saved on this phone
+                  Saved
                 </span>
                 <button
                   type="button"
                   onClick={() => onRemove(restaurant)}
-                  className={
-                    available
-                      ? "inline-flex h-11 w-11 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                      : "inline-flex h-11 w-11 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-strong hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-                  }
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-strong hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                   aria-label={`Remove ${restaurant.name} from saved restaurants`}
                   title="Remove restaurant"
                 >
@@ -118,28 +99,16 @@ export function SavedRestaurantList({
               </div>
             </div>
 
-            <div className="mt-8 flex-1">
+            <div className="mt-7 flex-1">
               {!available ? (
                 <p className="mb-3 inline-flex rounded-pill bg-surface-strong px-3 py-1 font-body text-caption font-medium text-muted">
                   Temporarily unavailable
                 </p>
               ) : null}
-              <h2
-                className={
-                  available
-                    ? "max-w-[14ch] font-display text-[34px] leading-[1.05] text-white"
-                    : "max-w-[14ch] font-display text-[34px] leading-[1.05] text-ink"
-                }
-              >
+              <h2 className="max-w-[14ch] font-display text-[34px] font-light leading-[1.05] text-ink">
                 {restaurant.name}
               </h2>
-              <p
-                className={
-                  available
-                    ? "mt-3 flex items-center gap-2 font-body text-body-sm text-white/65"
-                    : "mt-3 flex items-center gap-2 font-body text-body-sm text-muted"
-                }
-              >
+              <p className="mt-3 flex items-center gap-2 font-body text-body-sm text-muted">
                 <MapPin size={16} aria-hidden />
                 <span className="truncate">
                   {restaurant.location || restaurant.tagline || "Your saved restaurant"}
@@ -148,22 +117,16 @@ export function SavedRestaurantList({
             </div>
 
             <div className="mt-7 flex items-end justify-between gap-4">
-              <p
-                className={
-                  available
-                    ? "font-body text-caption text-white/50"
-                    : "font-body text-caption text-muted-soft"
-                }
-              >
-                Last opened<br />
-                <span className={available ? "text-white/80" : "text-muted"}>
+              <p className="font-body text-caption text-muted-soft">
+                Opened<br />
+                <span className="text-muted">
                   {formatInteraction(restaurant.lastInteractedAt)}
                 </span>
               </p>
               {available ? (
                 <Link
                   href={`/${encodeURIComponent(restaurant.slug)}`}
-                  className="inline-flex min-h-12 items-center gap-2 rounded-pill bg-white px-5 font-body text-button font-medium text-ink transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transform-none"
+                  className="inline-flex min-h-12 items-center gap-2 rounded-pill bg-primary px-5 font-body text-button font-medium text-on-primary transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink motion-reduce:transform-none"
                   aria-label={`Open ${restaurant.name}`}
                 >
                   Open menu
@@ -247,8 +210,8 @@ export function RestaurantHub() {
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-canvas px-5 pb-[max(48px,env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))] text-ink sm:px-8 lg:pt-8">
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[520px] overflow-hidden">
-        <div className="absolute -left-32 -top-44 h-96 w-96 rounded-full bg-gradient-mint/30 blur-3xl" />
-        <div className="absolute -right-40 top-12 h-80 w-80 rounded-full bg-gradient-peach/35 blur-3xl" />
+        <div className="absolute -left-32 -top-44 h-96 w-96 rounded-full bg-gold/15 blur-3xl" />
+        <div className="absolute -right-40 top-12 h-80 w-80 rounded-full bg-momo/10 blur-3xl" />
       </div>
 
       <div className="relative mx-auto w-full max-w-6xl">
@@ -266,7 +229,7 @@ export function RestaurantHub() {
           </Link>
           <span className="inline-flex items-center gap-2 rounded-pill border border-white/60 bg-surface-card/70 px-3 py-2 font-body text-caption text-muted shadow-brand-soft backdrop-blur-xl">
             <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />
-            Private to this device
+            On this phone
           </span>
         </header>
 
@@ -274,16 +237,16 @@ export function RestaurantHub() {
           <section className="lg:sticky lg:top-10 lg:self-start" aria-labelledby="restaurants-heading">
             <div className="inline-flex items-center gap-2 font-body text-caption-uppercase uppercase text-muted">
               <Bookmark size={15} aria-hidden />
-              Your places
+              Your restaurants
             </div>
             <h1
               id="restaurants-heading"
               className="mt-4 max-w-[11ch] font-display text-[46px] leading-[0.98] tracking-[-0.02em] text-ink sm:text-[60px] lg:text-[68px]"
             >
-              Good food, remembered.
+              Your restaurants.
             </h1>
             <p className="mt-6 max-w-sm font-body text-body-md leading-relaxed text-body">
-              Save a restaurant once. Come back whenever you&apos;re hungry—no account needed.
+              Your saved menus, ready when you are.
             </p>
 
             <div className="mt-8 flex items-center gap-3">
@@ -291,15 +254,14 @@ export function RestaurantHub() {
                 {restaurants.length}
               </span>
               <p className="font-body text-body-sm text-muted">
-                {restaurants.length === 1 ? "restaurant saved" : "restaurants saved"}<br />
-                on this phone
+                {restaurants.length === 1 ? "saved restaurant" : "saved restaurants"}
               </p>
             </div>
 
             <div className="mt-10 hidden max-w-sm items-start gap-3 border-t border-hairline pt-5 text-muted lg:flex">
               <Smartphone size={19} className="mt-0.5 flex-none" aria-hidden />
               <p className="font-body text-caption leading-relaxed">
-                Your list lives only on this device. Clearing browser data removes it.
+                This list stays on this phone.
               </p>
             </div>
           </section>
@@ -339,10 +301,10 @@ export function RestaurantHub() {
                   <Utensils size={24} aria-hidden />
                 </div>
                 <h2 className="relative mt-12 max-w-sm font-display text-display-md text-ink">
-                  Your first favorite starts with a tap.
+                  No saved restaurants yet.
                 </h2>
                 <p className="relative mt-3 max-w-md font-body text-body-md text-muted">
-                  Open a restaurant from its link or QR code, then save it or add your first dish.
+                  Open a restaurant menu and tap Save.
                 </p>
               </section>
             ) : visibleRestaurants.length === 0 ? (
@@ -365,7 +327,7 @@ export function RestaurantHub() {
             <div className="mt-7 flex items-start gap-3 border-t border-hairline pt-5 text-muted lg:hidden">
               <Smartphone size={19} className="mt-0.5 flex-none" aria-hidden />
               <p className="font-body text-caption leading-relaxed">
-                Your list lives only on this device. Clearing browser data removes it.
+                This list stays on this phone.
               </p>
             </div>
           </section>

@@ -1,6 +1,6 @@
 # Issue 03 — Update tray, viewer and aggregate analytics
 
-Status: complete locally · browser-verified · release authorization pending
+Status: deployed · owner production-smoked · local visual polish awaiting release approval
 
 ## Parent
 
@@ -78,6 +78,23 @@ for unseen-first multi-Vendor ordering, newest-unseen start and preservation of
 undisplayed revisions. Final verification: 397 passed / 114 skipped, TypeScript,
 lint and production build clean. No migration, deployment, production smoke or
 push was performed. Issue 04 remains deferred.
+
+## Production release and visual polish (2026-08-22)
+
+Owner authorization pushed `14cb78c`, `82e2657` and `c587898`. The existing
+`20260821220000_vendor_update_batches` migration was already applied, and exact
+commit `c587898` deployed READY as `dpl_GbKD1CAFNyP37v9kqcP5hJFwcszA` on
+`zantap.app`. The owner completed the production flow and reported that it
+works as expected.
+
+The requested follow-up is complete locally: `/restaurants` now shows compact
+gold numeric badges for total unseen changes globally and per Vendor, replaces
+the improvised dark card with the ZanTap white/ink/gold-orange palette, and
+uses shorter plain-English labels. The responsive production-mode review
+passed at 390px and 1440px with no overflow or console errors. Verification:
+397 passed / 114 skipped, TypeScript, lint and production build clean. This
+polish is not pushed or deployed pending owner visual/release approval. Issue
+04 remains deferred.
 
 ## Blocked by
 
