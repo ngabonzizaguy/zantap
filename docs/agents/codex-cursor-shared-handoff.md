@@ -1165,3 +1165,17 @@ database credentials here.
   scope `P2024` on `happy-eateries` KDS SSE; Candidate #26 smoke routes passed.
 - Issues 03–04 were not started. The Inventory PRD modification and all prior
   untracked artifacts remain preserved.
+
+### 2026-08-22 — Owner sequencing decision under Codex usage constraint
+
+- The owner reported approximately 15% of the current Codex plan allowance
+  remains and wants to preserve capacity for several other tasks.
+- Candidate #26 Issue 03 is the next priority because it exposes the already-
+  published Vendor batches to Customers as an unseen-update tray on
+  `/restaurants`, completing the customer-visible value of Issues 01–02.
+- Issue 04 is deferred. It would keep the saved-restaurants hub and previously
+  viewed menus readable during weak/no connectivity, clearly mark cached data
+  as potentially stale, and keep ordering/checkout disabled until online.
+- Do not start Issue 03 or Issue 04 merely from this handoff. Begin Issue 03
+  only when the owner explicitly requests it; keep its implementation and
+  verification tightly scoped. Issue 04 requires a later, separate decision.
