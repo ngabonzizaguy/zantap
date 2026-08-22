@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, CheckCheck, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronRight, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SavedRestaurantRepository } from "@/lib/customer-restaurants/types";
 import {
@@ -167,39 +167,42 @@ export function RestaurantUpdates({ vendorIds, repository }: RestaurantUpdatesPr
   if (tray.length === 0) return null;
 
   return (
-    <section className="mb-7 rounded-brand-xl border border-primary/40 bg-surface-card p-4 shadow-brand-soft sm:p-5" aria-labelledby="restaurant-updates-heading">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="font-body text-caption-uppercase uppercase text-muted">Restaurant updates</p>
-          <h2 id="restaurant-updates-heading" className="mt-1 flex items-center gap-2 font-display text-display-sm font-light text-ink">
-            New changes
-            <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-momo px-1.5 font-body text-caption font-semibold text-momo-dark" aria-label={`${newChangeCount} new ${newChangeCount === 1 ? "change" : "changes"}`}>
-              {newChangeCount}
-            </span>
-          </h2>
-        </div>
+    <section className="mb-3 rounded-brand-lg border border-hairline bg-surface-card p-2.5 shadow-brand-soft sm:p-3.5" aria-labelledby="restaurant-updates-heading">
+      <div className="flex min-h-8 items-center justify-between gap-3">
+        <h2 id="restaurant-updates-heading" className="flex items-center gap-2 font-body text-body-sm font-medium text-ink">
+          Updates
+          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-momo px-1.5 font-body text-[11px] font-semibold text-momo-dark" aria-label={`${newChangeCount} new ${newChangeCount === 1 ? "change" : "changes"}`}>
+            {newChangeCount}
+          </span>
+        </h2>
         {newUpdateCount > 0 ? (
-          <button type="button" onClick={() => void markAllSeen()} className="inline-flex min-h-11 items-center gap-2 rounded-pill px-3 font-body text-caption text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
-            <CheckCheck size={17} aria-hidden /> <span className="whitespace-nowrap">Mark all seen</span>
+          <button type="button" onClick={() => void markAllSeen()} className="inline-flex min-h-11 items-center gap-1.5 rounded-pill px-2 font-body text-[12px] text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+            <Check size={15} aria-hidden /> <span className="whitespace-nowrap">Mark all seen</span>
           </button>
         ) : null}
       </div>
 
-      <ul className="mt-4 flex gap-4 overflow-x-auto pb-2" aria-label="Restaurant updates">
+      <ul className="divide-y divide-hairline" aria-label="Restaurant updates">
         {tray.map(({ vendor, hasUnseen }) => (
-          <li key={vendor.vendorId} className="w-[76px] flex-none text-center">
-            <button type="button" onClick={() => openVendor(vendor)} className="group w-full rounded-brand-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4" aria-label={`View updates from ${vendor.name}`}>
-              <span className={`relative mx-auto flex h-16 w-16 items-center justify-center rounded-full p-[3px] ${hasUnseen ? "bg-momo" : "bg-hairline-strong"}`}>
+          <li key={vendor.vendorId}>
+            <button type="button" onClick={() => openVendor(vendor)} className="group flex min-h-[52px] w-full items-center gap-3 rounded-brand-md text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" aria-label={`View updates from ${vendor.name}`}>
+              <span className={`relative flex h-11 w-11 flex-none items-center justify-center rounded-full p-[2px] ${hasUnseen ? "bg-momo" : "bg-hairline-strong"}`}>
                 <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-canvas bg-surface-card font-display text-title-sm text-ink">
-                  {vendor.logoUrl ? <Image src={vendor.logoUrl} alt="" width={64} height={64} className="h-full w-full object-cover" /> : vendor.name.slice(0, 1)}
+                  {vendor.logoUrl ? <Image src={vendor.logoUrl} alt="" width={44} height={44} className="h-full w-full object-cover" /> : vendor.name.slice(0, 1)}
                 </span>
                 {hasUnseen ? (
-                  <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-momo px-1 font-body text-[10px] font-semibold leading-none text-momo-dark" aria-hidden>
+                  <span className="absolute -right-1 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-surface-card bg-momo px-1 font-body text-[9px] font-semibold leading-none text-momo-dark" aria-hidden>
                     {vendor.batches.reduce((count, batch) => count + ((batch.revision > (states.get(batch.id)?.viewedRevision ?? 0)) ? batch.entries.length : 0), 0)}
                   </span>
                 ) : null}
               </span>
-              <span className="mt-2 block truncate font-body text-caption text-body">{vendor.name}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-body text-caption font-medium text-ink">{vendor.name}</span>
+                <span className="mt-0.5 block truncate font-body text-[11px] text-muted">
+                  {vendor.batches[0] ? summaryFor(vendor.batches[0]) : "Menu updated"}
+                </span>
+              </span>
+              <ChevronRight size={17} className="flex-none text-muted" aria-hidden />
             </button>
           </li>
         ))}

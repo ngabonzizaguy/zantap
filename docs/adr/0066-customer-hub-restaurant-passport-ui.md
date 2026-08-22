@@ -1,7 +1,7 @@
 # ADR-0066 — Customer hub as a restaurant passport
 
 Date: 2026-08-21
-Status: Amended · original deployed 2026-08-22 · brand/count polish complete locally
+Status: Amended · original deployed 2026-08-22 · reference composition complete locally
 
 ## Context
 
@@ -62,3 +62,19 @@ while saved-restaurant count remains separate. Labels are shortened without
 changing device-local privacy, feed ordering, viewed state or analytics.
 
 The amendment is locally verified but does not authorize push or deployment.
+
+### Reference composition clarification (2026-08-22)
+
+The owner selected a denser phone-first composition as the visual target: a
+compact header, short editorial intro, single-row updates summary, and one
+tightly grouped restaurant card whose date and primary action share the final
+row. The implementation replaces the large saved-count medallion with a quiet
+eyebrow count, presents each Vendor update as an informative row, and reduces
+the destination card to a compact pass while keeping 44px interaction targets.
+The reference hamburger is omitted because the hub has no navigation drawer;
+the design must not imply an action that does not exist.
+
+This remains a visual refinement only; saved-state, update-feed, analytics,
+offline and Store boundaries do not change. Local 390px and 1440px production-
+mode renders have no overflow or unexpected console errors. A new exact commit
+and a separate owner release approval are required before push or deployment.

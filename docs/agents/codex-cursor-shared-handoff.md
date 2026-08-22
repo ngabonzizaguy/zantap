@@ -36,7 +36,7 @@ explicitly owns it.
 
 ### Reconciled repository and production state
 
-- **Candidate #26 🚧 Issues 01–02 deployed + production-smoked
+- **Candidate #26 🚧 Issues 01–03 deployed + production-smoked
   (2026-08-22):** the
   unified ZanTap customer manifest now launches `/restaurants`; storefronts
   use a versioned IndexedDB/in-memory saved-Vendor repository, meaningful-
@@ -82,8 +82,16 @@ explicitly owns it.
   desktop production-mode local walkthrough passed revision reactivation,
   displayed-seen, mark-all, unavailable labeling, current-slug menu routing,
   aggregate counters, keyboard/touch handling, overflow and console checks.
-  Issue 03 is not pushed, deployed or production-smoked. Issue 04 remains deferred
-  and requires a separate owner request.
+  Issue 03 was then pushed and deployed at exact commit `c587898` as
+  `dpl_GbKD1CAFNyP37v9kqcP5hJFwcszA`; the owner production-smoked the flow.
+  Local commits `d970cc2` and `3353851` established compact change badges and
+  the KDS palette but remained unreleased. The owner's compact phone reference
+  is now implemented in the working tree: quiet saved count, dense update rows,
+  and a roughly 220px restaurant pass. Verification remains 397/114 with
+  TypeScript, lint and production build clean; 390px/1440px production-mode
+  review passes without overflow or unexpected console errors. This final
+  visual pass is not pushed or deployed pending owner approval. Issue 04 remains
+  deferred and requires a separate owner request.
 
 - **Candidate #25 ✅ DONE · deployed · prod-smoked (2026-08-21):** Issues 01–03
   shipped at `fbafcee` through the single deployment
@@ -1276,3 +1284,33 @@ database credentials here.
   approval. Preserve the unstaged Inventory PRD modification and all prior
   untracked artifacts. Issue 04 remains deferred and must not begin without a
   separate owner request.
+
+### 2026-08-22 — Codex — Candidate #26 owner reference assessed
+
+- The owner supplied the intended compact phone-first `/restaurants` reference.
+  The KDS palette in local commit `3353851` is directionally correct, but the
+  current render is materially taller and sparser than the reference: oversized
+  intro/count, sparse update tray and oversized restaurant card.
+- No product code, push, deployment, migration or Issue 04 work occurred. Release
+  approval remains withheld; `3353851` must not ship. The next pass, if the owner
+  authorizes it, is a local composition-only refinement followed by fresh visual
+  approval and a new exact release commit.
+- The Inventory PRD edit and every pre-existing untracked artifact remain
+  preserved.
+
+### 2026-08-22 — Codex — Candidate #26 reference composition completed locally
+
+- Owner authorization implemented only the compact `/restaurants` composition:
+  quiet eyebrow saved count, one-row update summaries with per-Vendor badges,
+  and a roughly 220px restaurant pass with grouped date/menu/remove actions.
+  The dark KDS palette, desktop split and every Issue 03 behavior remain.
+- The screenshot hamburger was intentionally omitted because no real navigation
+  drawer exists. Touch targets remain at least 44px; focus and reduced-motion
+  behavior are preserved.
+- Verification: 397 passed / 114 skipped, TypeScript, lint and production build
+  clean. Production-mode 390px and 1440px review passes with no horizontal
+  overflow or unexpected console errors. The untracked harness ignores only
+  the expected localhost 404s for Vercel Analytics/Speed Insights.
+- No push, deployment, migration, production data or Issue 04 work occurred.
+  Await owner visual/release approval for the new exact local commit. The
+  Inventory PRD edit and all untracked artifacts remain preserved.

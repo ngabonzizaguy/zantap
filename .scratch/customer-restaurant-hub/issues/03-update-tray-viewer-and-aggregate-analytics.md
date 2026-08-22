@@ -1,6 +1,6 @@
 # Issue 03 — Update tray, viewer and aggregate analytics
 
-Status: deployed · owner production-smoked · local visual polish awaiting release approval
+Status: deployed · owner production-smoked · reference-matched local visual pass awaiting release approval
 
 ## Parent
 
@@ -95,6 +95,26 @@ passed at 390px and 1440px with no overflow or console errors. Verification:
 397 passed / 114 skipped, TypeScript, lint and production build clean. This
 polish is not pushed or deployed pending owner visual/release approval. Issue
 04 remains deferred.
+
+## Owner reference follow-up (2026-08-22)
+
+The owner supplied a compact phone-frame reference and confirmed that this is
+the intended `/restaurants` direction. The authorized local refinement is now
+complete: the oversized saved-count medallion became a quiet count in the
+eyebrow, the update tray became a compact summary row with ring, change count,
+description and chevron, and the Vendor destination became a roughly 220px
+pass with date, `Open menu` and removal grouped on one row. The page keeps its
+KDS charcoal/grain/warm-white/MoMo-orange palette and the desktop split.
+
+The reference's hamburger was deliberately omitted because this surface has no
+real navigation drawer; no dead control was introduced. All existing 44px touch
+targets, focus treatment, reduced-motion behavior and Issue 03 semantics remain.
+Verification: 397 passed / 114 skipped, TypeScript, lint and production build
+clean; production-mode 390px and 1440px renders pass with zero unexpected
+console errors and no horizontal overflow. Local Vercel telemetry 404s are
+explicitly excluded by the untracked review harness; every other 404 still
+fails the gate. Nothing was pushed or deployed and Issue 04 was not started.
+A new exact commit requires owner visual/release approval before release.
 
 ## Blocked by
 

@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowUpRight,
-  Bookmark,
   MapPin,
   Search,
   Smartphone,
@@ -51,24 +50,23 @@ export function SavedRestaurantList({
   onRemove: (restaurant: SavedRestaurant) => void;
 }) {
   return (
-    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2" aria-label="Saved restaurants">
+    <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2" aria-label="Saved restaurants">
       {restaurants.map((restaurant) => {
         const available = restaurant.isAvailable !== false;
         return (
           <li
             key={restaurant.vendorId}
-            className="group relative isolate flex min-h-[250px] flex-col overflow-hidden rounded-brand-xxl border border-primary/40 bg-surface-card p-5 text-ink shadow-brand-soft sm:p-6"
+            className="group relative isolate flex min-h-[220px] flex-col overflow-hidden rounded-brand-xl border border-hairline bg-surface-card p-4 text-ink shadow-brand-soft"
           >
             {available ? (
               <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-                <div className="absolute -right-20 -top-24 h-56 w-56 rounded-full bg-primary/10 blur-3xl transition-transform duration-700 group-hover:scale-110 motion-reduce:transform-none" />
-                <div className="absolute inset-x-0 top-0 h-1 bg-primary" />
+                <div className="absolute -right-14 -top-20 h-44 w-44 rounded-full bg-primary/10 blur-3xl transition-transform duration-700 group-hover:scale-110 motion-reduce:transform-none" />
               </div>
             ) : null}
 
             <div className="flex items-start justify-between gap-4">
               <div
-                className="flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-brand-xl border border-primary/40 bg-primary/10 font-display text-title-md text-ink"
+                className="flex h-[52px] w-[52px] flex-none items-center justify-center overflow-hidden rounded-brand-lg border border-primary/40 bg-primary/10 font-display text-title-sm text-ink"
               >
               {restaurant.logoUrl ? (
                 // Public Vendor branding can be remote; the fixed shell prevents layout shift.
@@ -82,61 +80,61 @@ export function SavedRestaurantList({
                 restaurantInitials(restaurant.name)
               )}
               </div>
-              <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center">
                 <span className="inline-flex items-center gap-1.5 rounded-pill bg-primary/10 px-3 py-1.5 font-body text-caption text-primary">
                   <Smartphone size={14} aria-hidden />
                   Saved
                 </span>
-                <button
-                  type="button"
-                  onClick={() => onRemove(restaurant)}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-strong hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-                  aria-label={`Remove ${restaurant.name} from saved restaurants`}
-                  title="Remove restaurant"
-                >
-                  <Trash2 size={18} aria-hidden />
-                </button>
               </div>
             </div>
 
-            <div className="mt-7 flex-1">
+            <div className="mt-3 flex-1">
               {!available ? (
-                <p className="mb-3 inline-flex rounded-pill bg-surface-strong px-3 py-1 font-body text-caption font-medium text-muted">
+                <p className="mb-2 inline-flex rounded-pill bg-surface-strong px-3 py-1 font-body text-caption font-medium text-muted">
                   Temporarily unavailable
                 </p>
               ) : null}
-              <h2 className="max-w-[14ch] font-display text-[34px] font-light leading-[1.05] text-ink">
+              <h2 className="max-w-[18ch] font-display text-[27px] font-light leading-[1.05] text-ink">
                 {restaurant.name}
               </h2>
-              <p className="mt-3 flex items-center gap-2 font-body text-body-sm text-muted">
-                <MapPin size={16} aria-hidden />
+              <p className="mt-1.5 flex items-center gap-1.5 font-body text-caption text-muted">
+                <MapPin size={14} aria-hidden />
                 <span className="truncate">
                   {restaurant.location || restaurant.tagline || "Your saved restaurant"}
                 </span>
               </p>
             </div>
 
-            <div className="mt-7 flex items-end justify-between gap-4">
-              <p className="font-body text-caption text-muted-soft">
+            <div className="mt-3 flex items-start justify-between gap-4 border-t border-hairline pt-3">
+              <p className="pt-1 font-body text-[12px] leading-[1.45] text-muted-soft">
                 Opened<br />
-                <span className="text-muted">
-                  {formatInteraction(restaurant.lastInteractedAt)}
-                </span>
+                <span className="text-muted">{formatInteraction(restaurant.lastInteractedAt)}</span>
               </p>
-              {available ? (
-                <Link
-                  href={`/${encodeURIComponent(restaurant.slug)}`}
-                  className="inline-flex min-h-12 items-center gap-2 rounded-pill bg-primary px-5 font-body text-button font-medium text-on-primary transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink motion-reduce:transform-none"
-                  aria-label={`Open ${restaurant.name}`}
+              <div className="flex items-center gap-2">
+                {available ? (
+                  <Link
+                    href={`/${encodeURIComponent(restaurant.slug)}`}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-brand-lg bg-primary px-4 font-body text-button font-medium text-on-primary transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink motion-reduce:transform-none"
+                    aria-label={`Open ${restaurant.name}`}
+                  >
+                    Open menu
+                    <ArrowUpRight size={16} aria-hidden />
+                  </Link>
+                ) : (
+                  <span className="inline-flex min-h-11 items-center rounded-brand-lg bg-surface-strong px-4 font-body text-button text-muted" aria-disabled="true">
+                    Menu offline
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onRemove(restaurant)}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-hairline text-muted transition-colors hover:bg-surface-strong hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                  aria-label={`Remove ${restaurant.name} from saved restaurants`}
+                  title="Remove restaurant"
                 >
-                  Open menu
-                  <ArrowUpRight size={17} aria-hidden />
-                </Link>
-              ) : (
-                <span className="inline-flex min-h-12 items-center rounded-pill bg-surface-strong px-5 font-body text-button text-muted" aria-disabled="true">
-                  Menu offline
-                </span>
-              )}
+                  <Trash2 size={17} aria-hidden />
+                </button>
+              </div>
             </div>
           </li>
         );
@@ -208,9 +206,9 @@ export function RestaurantHub() {
   };
 
   return (
-    <main className="kds-dark relative min-h-screen overflow-x-hidden bg-canvas px-5 pb-[max(48px,env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))] text-ink sm:px-8 lg:pt-8">
-      <div className="kds-surface relative mx-auto min-h-[calc(100vh-3rem)] w-full max-w-6xl rounded-brand-xxl px-0 sm:px-5 lg:px-8">
-        <header className="flex items-center justify-between gap-4">
+    <main className="kds-dark relative min-h-screen overflow-x-hidden bg-canvas p-1 pb-[max(4px,env(safe-area-inset-bottom))] pt-[max(4px,env(safe-area-inset-top))] text-ink sm:p-6 lg:p-8">
+      <div className="kds-surface relative mx-auto min-h-[calc(100svh-8px)] w-full max-w-6xl rounded-[20px] border border-primary/25 px-4 pb-4 pt-3 sm:min-h-[calc(100vh-3rem)] sm:px-6 sm:pb-6 sm:pt-4 lg:px-8">
+        <header className="flex min-h-11 items-center justify-between gap-4">
           <Link href="/" aria-label="ZanTap home" className="flex items-center gap-2.5">
             <Image
               src="/brand/approved-z/zantap-z-mark-2048-remove-bg-io.png"
@@ -218,42 +216,35 @@ export function RestaurantHub() {
               width={2048}
               height={2048}
               priority
-              className="h-9 w-9"
+              className="h-8 w-8"
             />
-            <span className="font-body text-title-sm font-medium">ZanTap</span>
+            <span className="font-body text-body-md font-medium">ZanTap</span>
           </Link>
-          <span className="inline-flex items-center gap-2 rounded-pill border border-hairline-strong bg-surface-card px-3 py-2 font-body text-caption text-muted shadow-brand-soft">
+          <span className="inline-flex items-center gap-2 rounded-pill border border-hairline-strong bg-surface-card px-3 py-1.5 font-body text-[12px] text-muted shadow-brand-soft">
             <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />
             On this phone
           </span>
         </header>
 
-        <div className="grid gap-10 pb-8 pt-12 sm:pt-16 lg:grid-cols-[minmax(260px,0.7fr)_minmax(0,1.3fr)] lg:gap-16 lg:pt-24">
+        <div className="grid gap-4 pb-1 pt-5 sm:gap-7 sm:pt-9 lg:grid-cols-[minmax(260px,0.7fr)_minmax(0,1.3fr)] lg:gap-14 lg:pt-16">
           <section className="lg:sticky lg:top-10 lg:self-start" aria-labelledby="restaurants-heading">
-            <div className="inline-flex items-center gap-2 font-body text-caption-uppercase uppercase text-muted">
-              <Bookmark size={15} aria-hidden />
-              Your restaurants
+            <div className="flex items-center justify-between gap-4 font-body text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">
+              <span>Your restaurants</span>
+              <span className="normal-case tracking-normal text-muted" aria-live="polite">
+                {restaurants.length} saved
+              </span>
             </div>
             <h1
               id="restaurants-heading"
-              className="mt-4 max-w-[11ch] font-display text-[46px] leading-[0.98] tracking-[-0.02em] text-ink sm:text-[60px] lg:text-[68px]"
+              className="mt-2 font-display text-[36px] font-light leading-none tracking-[-0.02em] text-ink sm:text-[48px] lg:max-w-[11ch] lg:text-[60px]"
             >
               Your restaurants.
             </h1>
-            <p className="mt-6 max-w-sm font-body text-body-md leading-relaxed text-body">
+            <p className="mt-2 max-w-sm font-body text-body-sm leading-relaxed text-body sm:mt-4">
               Your saved menus, ready when you are.
             </p>
 
-            <div className="mt-8 flex items-center gap-3">
-              <span className="flex h-12 min-w-12 items-center justify-center rounded-full bg-primary px-4 font-display text-title-sm text-on-primary" aria-live="polite">
-                {restaurants.length}
-              </span>
-              <p className="font-body text-body-sm text-muted">
-                {restaurants.length === 1 ? "saved restaurant" : "saved restaurants"}
-              </p>
-            </div>
-
-            <div className="mt-10 hidden max-w-sm items-start gap-3 border-t border-hairline pt-5 text-muted lg:flex">
+            <div className="mt-7 hidden max-w-sm items-start gap-3 border-t border-hairline pt-4 text-muted lg:flex">
               <Smartphone size={19} className="mt-0.5 flex-none" aria-hidden />
               <p className="font-body text-caption leading-relaxed">
                 This list stays on this phone.
@@ -266,7 +257,7 @@ export function RestaurantHub() {
               <RestaurantUpdates vendorIds={savedVendorIds} repository={repository} />
             ) : null}
             {restaurants.length > 1 ? (
-              <div className="relative mb-5">
+              <div className="relative mb-3">
                 <label htmlFor="saved-restaurant-search" className="sr-only">
                   Search your saved restaurants
                 </label>
@@ -283,19 +274,19 @@ export function RestaurantHub() {
             ) : null}
 
             {loading ? (
-              <div role="status" className="min-h-[280px] animate-pulse rounded-brand-xxl bg-surface-card p-6 shadow-brand-soft motion-reduce:animate-none">
+              <div role="status" className="min-h-[220px] animate-pulse rounded-brand-xl bg-surface-card p-5 shadow-brand-soft motion-reduce:animate-none">
                 <span className="sr-only">Loading your restaurants…</span>
                 <div className="h-16 w-16 rounded-brand-xl bg-surface-strong" />
                 <div className="mt-12 h-8 w-2/3 rounded-pill bg-surface-strong" />
                 <div className="mt-4 h-4 w-1/2 rounded-pill bg-surface-strong" />
               </div>
             ) : restaurants.length === 0 ? (
-              <section className="relative min-h-[320px] overflow-hidden rounded-brand-xxl border border-hairline bg-surface-card p-7 shadow-brand-soft sm:p-10">
+              <section className="relative min-h-[240px] overflow-hidden rounded-brand-xl border border-hairline bg-surface-card p-6 shadow-brand-soft sm:p-8">
                 <div aria-hidden className="absolute -right-14 -top-14 h-48 w-48 rounded-full bg-gradient-peach/35 blur-3xl" />
                 <div className="relative flex h-14 w-14 items-center justify-center rounded-brand-xl bg-primary text-on-primary">
                   <Utensils size={24} aria-hidden />
                 </div>
-                <h2 className="relative mt-12 max-w-sm font-display text-display-md text-ink">
+                <h2 className="relative mt-8 max-w-sm font-display text-display-md text-ink">
                   No saved restaurants yet.
                 </h2>
                 <p className="relative mt-3 max-w-md font-body text-body-md text-muted">
@@ -303,7 +294,7 @@ export function RestaurantHub() {
                 </p>
               </section>
             ) : visibleRestaurants.length === 0 ? (
-              <div role="status" className="rounded-brand-xxl border border-hairline bg-surface-card p-8 text-center shadow-brand-soft">
+              <div role="status" className="rounded-brand-xl border border-hairline bg-surface-card p-8 text-center shadow-brand-soft">
                 <Search size={24} className="mx-auto text-muted-soft" aria-hidden />
                 <p className="mt-4 font-body text-body-md text-muted">
                   No saved restaurant matches “{query}”.
@@ -319,9 +310,9 @@ export function RestaurantHub() {
               />
             )}
 
-            <div className="mt-7 flex items-start gap-3 border-t border-hairline pt-5 text-muted lg:hidden">
-              <Smartphone size={19} className="mt-0.5 flex-none" aria-hidden />
-              <p className="font-body text-caption leading-relaxed">
+            <div className="mt-4 flex items-start gap-3 border-t border-hairline pt-4 text-muted lg:hidden">
+              <Smartphone size={17} className="mt-0.5 flex-none" aria-hidden />
+              <p className="font-body text-[12px] leading-relaxed">
                 This list stays on this phone.
               </p>
             </div>
