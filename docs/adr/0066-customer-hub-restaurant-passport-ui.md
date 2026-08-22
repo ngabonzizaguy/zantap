@@ -50,13 +50,13 @@ surfaces remain restrained.
   redesign on 2026-08-21, clearing Issue 02 to proceed.
 - This decision authorizes no migration, deployment, push or production smoke.
 
-## Amendment — clearer update counts and ZanTap palette (2026-08-22)
+## Amendment — clearer update counts and KDS palette (2026-08-22)
 
 The owner approved the functional production flow but asked the hub to use
 fewer words, the recognizable ZanTap palette, and a small badge that states how
-many changes occurred. The earlier dark destination card is therefore replaced
-with a white/ink card, restrained gold-orange edge and atmosphere, and the
-canonical ink menu action. Update volume appears as a compact numeric badge in
+many changes occurred. The hub therefore reuses the established KDS operational
+theme: charcoal grain canvas, deep cards, warm-white type and MoMo orange for
+active signals and primary actions. Update volume appears as a compact numeric badge in
 the section heading and on each affected Vendor ring; it counts unseen entries,
 while saved-restaurant count remains separate. Labels are shortened without
 changing device-local privacy, feed ordering, viewed state or analytics.

@@ -57,18 +57,18 @@ export function SavedRestaurantList({
         return (
           <li
             key={restaurant.vendorId}
-            className="group relative isolate flex min-h-[250px] flex-col overflow-hidden rounded-brand-xxl border border-gold/25 bg-surface-card p-5 text-ink shadow-brand-soft sm:p-6"
+            className="group relative isolate flex min-h-[250px] flex-col overflow-hidden rounded-brand-xxl border border-primary/40 bg-surface-card p-5 text-ink shadow-brand-soft sm:p-6"
           >
             {available ? (
               <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-                <div className="absolute -right-20 -top-24 h-56 w-56 rounded-full bg-gold/20 blur-3xl transition-transform duration-700 group-hover:scale-110 motion-reduce:transform-none" />
-                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-gold via-momo to-gold" />
+                <div className="absolute -right-20 -top-24 h-56 w-56 rounded-full bg-primary/10 blur-3xl transition-transform duration-700 group-hover:scale-110 motion-reduce:transform-none" />
+                <div className="absolute inset-x-0 top-0 h-1 bg-primary" />
               </div>
             ) : null}
 
             <div className="flex items-start justify-between gap-4">
               <div
-                className="flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-brand-xl border border-gold/30 bg-gold/10 font-display text-title-md text-ink"
+                className="flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-brand-xl border border-primary/40 bg-primary/10 font-display text-title-md text-ink"
               >
               {restaurant.logoUrl ? (
                 // Public Vendor branding can be remote; the fixed shell prevents layout shift.
@@ -83,7 +83,7 @@ export function SavedRestaurantList({
               )}
               </div>
               <div className="flex flex-col items-end gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-pill bg-gold/15 px-3 py-1.5 font-body text-caption text-momo-dark">
+                <span className="inline-flex items-center gap-1.5 rounded-pill bg-primary/10 px-3 py-1.5 font-body text-caption text-primary">
                   <Smartphone size={14} aria-hidden />
                   Saved
                 </span>
@@ -208,13 +208,8 @@ export function RestaurantHub() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-canvas px-5 pb-[max(48px,env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))] text-ink sm:px-8 lg:pt-8">
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[520px] overflow-hidden">
-        <div className="absolute -left-32 -top-44 h-96 w-96 rounded-full bg-gold/15 blur-3xl" />
-        <div className="absolute -right-40 top-12 h-80 w-80 rounded-full bg-momo/10 blur-3xl" />
-      </div>
-
-      <div className="relative mx-auto w-full max-w-6xl">
+    <main className="kds-dark relative min-h-screen overflow-x-hidden bg-canvas px-5 pb-[max(48px,env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))] text-ink sm:px-8 lg:pt-8">
+      <div className="kds-surface relative mx-auto min-h-[calc(100vh-3rem)] w-full max-w-6xl rounded-brand-xxl px-0 sm:px-5 lg:px-8">
         <header className="flex items-center justify-between gap-4">
           <Link href="/" aria-label="ZanTap home" className="flex items-center gap-2.5">
             <Image
@@ -227,7 +222,7 @@ export function RestaurantHub() {
             />
             <span className="font-body text-title-sm font-medium">ZanTap</span>
           </Link>
-          <span className="inline-flex items-center gap-2 rounded-pill border border-white/60 bg-surface-card/70 px-3 py-2 font-body text-caption text-muted shadow-brand-soft backdrop-blur-xl">
+          <span className="inline-flex items-center gap-2 rounded-pill border border-hairline-strong bg-surface-card px-3 py-2 font-body text-caption text-muted shadow-brand-soft">
             <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />
             On this phone
           </span>

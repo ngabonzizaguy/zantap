@@ -167,7 +167,7 @@ export function RestaurantUpdates({ vendorIds, repository }: RestaurantUpdatesPr
   if (tray.length === 0) return null;
 
   return (
-    <section className="mb-7 rounded-brand-xl border border-gold/30 bg-surface-card p-4 shadow-brand-soft sm:p-5" aria-labelledby="restaurant-updates-heading">
+    <section className="mb-7 rounded-brand-xl border border-primary/40 bg-surface-card p-4 shadow-brand-soft sm:p-5" aria-labelledby="restaurant-updates-heading">
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="font-body text-caption-uppercase uppercase text-muted">Restaurant updates</p>

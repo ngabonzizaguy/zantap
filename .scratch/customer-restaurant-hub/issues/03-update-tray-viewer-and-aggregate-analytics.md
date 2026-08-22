@@ -88,9 +88,9 @@ commit `c587898` deployed READY as `dpl_GbKD1CAFNyP37v9kqcP5hJFwcszA` on
 works as expected.
 
 The requested follow-up is complete locally: `/restaurants` now shows compact
-gold numeric badges for total unseen changes globally and per Vendor, replaces
-the improvised dark card with the ZanTap white/ink/gold-orange palette, and
-uses shorter plain-English labels. The responsive production-mode review
+orange numeric badges for total unseen changes globally and per Vendor, uses
+the KDS charcoal/grain/warm-white/MoMo-orange theme, and keeps shorter plain-
+English labels. The responsive production-mode review
 passed at 390px and 1440px with no overflow or console errors. Verification:
 397 passed / 114 skipped, TypeScript, lint and production build clean. This
 polish is not pushed or deployed pending owner visual/release approval. Issue

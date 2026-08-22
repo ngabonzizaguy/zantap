@@ -1264,10 +1264,10 @@ database credentials here.
   flow then passed 7/7. Automated viewer smoke found no active Inka batch; the
   owner subsequently exercised the production flow and reported it works as
   expected.
-- Owner-requested `/restaurants` polish is complete locally: numeric gold
-  badges state total unseen changes in the section and per Vendor ring; the
-  improvised dark card is replaced by ZanTap white/ink/gold-orange styling; and
-  labels are shorter plain English. ADR-0066 records the amendment.
+- Owner-requested `/restaurants` polish is complete locally: numeric orange
+  badges state total unseen changes in the section and per Vendor ring; the hub
+  reuses the KDS charcoal/grain/warm-white/MoMo-orange theme; and labels are
+  shorter plain English. ADR-0066 records the amendment.
 - Verification is 397 passed / 114 skipped with TypeScript, lint and production
   build clean. A production-mode review at 390px and 1440px passed with no
   overflow or console errors. Screenshots and the local review harness remain
