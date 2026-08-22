@@ -1,6 +1,6 @@
 # Issue 02 — Automatic update batches and Vendor controls
 
-Status: done locally · migration authored and validated but not applied · not deployed
+Status: done · migration applied · deployed and production-smoked 2026-08-22
 
 ## Parent
 
@@ -80,3 +80,16 @@ route, but it is not the required path. Keep the explanation brief and plain.
   `npx prisma validate`: clean.
 - Issues 03–04 remain untouched. No migration was run/applied; no deployment,
   production smoke or push occurred.
+- Release authorized 2026-08-22. Branch commit `c7dd0b0` was pushed, migration
+  `20260821220000_vendor_update_batches` applied successfully before deploy,
+  and exact commit `c7dd0b0` shipped as Production deployment
+  `dpl_8ay4NowsrHf1HYR97CKJrFRhhrR3` on `zantap.app`.
+- Production browser smoke passed: update overview/active preview/counters,
+  direct plain-language recovery, and update-settings switch off/on round-trip
+  with the original ON state restored. The final harness result was 7/7 across
+  Issues 01–02 with no browser console/page errors or mobile overflow. Two
+  earlier diagnostic recovery attempts also succeeded and therefore added two
+  legitimate recovery audit events while the harness was being corrected.
+- Exact-deployment logs contained one concurrent, out-of-scope `P2024` pool
+  timeout on `/api/vendor/happy-eateries/kds-stream`; no Candidate #26 smoke
+  route failed. Issues 03–04 remain untouched.

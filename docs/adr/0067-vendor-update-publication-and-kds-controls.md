@@ -1,7 +1,7 @@
 # ADR-0067 — Vendor update publication and KDS controls
 
 Date: 2026-08-21
-Status: Accepted · implemented locally in Candidate #26 Issue 02 · not deployed
+Status: Accepted · deployed and production-smoked 2026-08-22
 
 ## Context
 

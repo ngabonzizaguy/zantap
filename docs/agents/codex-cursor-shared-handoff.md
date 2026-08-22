@@ -1,6 +1,6 @@
 # Codex ↔ Cursor shared continuity prompt
 
-Last reconciled: **2026-08-21 (Africa/Kigali)**
+Last reconciled: **2026-08-22 (Africa/Kigali)**
 Scope: the product-restructure, marketing, lead-capture, PWA/KDS-polish,
 Paypack-preparation work, plus the new **Ops outreach + KDS + marketing batch**
 on branch `feat/ops-kds-marketing-batch` (shared Cursor ↔ Codex), and candidate
@@ -36,8 +36,8 @@ explicitly owns it.
 
 ### Reconciled repository and production state
 
-- **Candidate #26 🚧 Issues 01–02 done locally · not deployed
-  (2026-08-21):** the
+- **Candidate #26 🚧 Issues 01–02 deployed + production-smoked
+  (2026-08-22):** the
   unified ZanTap customer manifest now launches `/restaurants`; storefronts
   use a versioned IndexedDB/in-memory saved-Vendor repository, meaningful-
   engagement save triggers, a bounded public Store resolver and a private hub
@@ -63,10 +63,15 @@ explicitly owns it.
   20-minute rolling batches, three-day expiry, public snapshot consolidation,
   KDS global/per-save controls, preview/counters and ADR-0065 direct recovery
   across Updates/Menu/Inventory/History. Migration
-  `20260821220000_vendor_update_batches` is authored and Prisma-validated but
-  not applied. Mobile local KDS verification passed; TypeScript, lint and build
-  are clean; Vitest is 388 passed / 113 skipped. Issues 03–04 remain untouched.
-  No migration apply, deploy, push or production smoke is authorized.
+  `20260821220000_vendor_update_batches` was authored and Prisma-validated;
+  mobile local KDS verification passed, TypeScript/lint/build were clean, and
+  Vitest was 388 passed / 113 skipped before release. Issues 03–04 remain untouched.
+  Release authorization was received. Commit `c7dd0b0` was pushed, migration
+  `20260821220000_vendor_update_batches` applied, and exact commit `c7dd0b0`
+  deployed as `dpl_8ay4NowsrHf1HYR97CKJrFRhhrR3` on `zantap.app`. Production
+  browser smoke passed 7/7 across Issues 01–02; the update toggle was restored
+  ON and there were no browser errors or mobile overflow. Issues 03–04 remain
+  untouched.
 
 - **Candidate #25 ✅ DONE · deployed · prod-smoked (2026-08-21):** Issues 01–03
   shipped at `fbafcee` through the single deployment
@@ -1140,3 +1145,23 @@ database credentials here.
   clean. No deploy, production smoke or push occurred. Issues 03–04 remain
   untouched. The unstaged Inventory PRD edit and every pre-existing untracked
   artifact remain preserved.
+
+### 2026-08-22 — Codex — Candidate #26 Issues 01–02 released
+
+- Owner explicitly authorized push, migration, exact-commit production deploy
+  and scoped production smoke. `codex/customer-restaurant-hub` was pushed at
+  `c7dd0b0`; migration `20260821220000_vendor_update_batches` applied cleanly.
+- A detached temporary worktree guaranteed Vercel received exact commit
+  `c7dd0b0`, excluding the unstaged Inventory PRD edit and every pre-existing
+  untracked artifact. Production `dpl_8ay4NowsrHf1HYR97CKJrFRhhrR3` is READY
+  and aliased to `zantap.app`.
+- `.scratch/customer-restaurant-hub/prod-smoke.mjs` passed 7/7 at 390×844:
+  unified customer manifest, explicit saved-Vendor persistence, public resolver
+  and hub, KDS update overview/preview, direct recovery, update toggle round-trip
+  restored ON, zero browser console/page errors and zero horizontal overflow.
+- Two early harness assertions were corrected (accessible menu-link name and
+  KDS auto-closing the recovery dialog); both recovery calls succeeded and left
+  valid audit events. Release-window logs also showed one concurrent out-of-
+  scope `P2024` on `happy-eateries` KDS SSE; Candidate #26 smoke routes passed.
+- Issues 03–04 were not started. The Inventory PRD modification and all prior
+  untracked artifacts remain preserved.

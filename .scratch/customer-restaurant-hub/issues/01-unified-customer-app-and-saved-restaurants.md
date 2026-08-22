@@ -1,6 +1,6 @@
 # Issue 01 — Unified customer app and saved restaurants
 
-Status: done · owner-approved restaurant-passport redesign committed locally · not deployed
+Status: done · deployed and production-smoked 2026-08-22
 
 ## Parent
 
@@ -69,3 +69,9 @@ None — can start immediately.
   `151f18b` is the accepted local visual baseline.
 - Issues 02–04 remain untouched. No migration, deployment or production smoke
   was performed.
+- Release authorized 2026-08-22 and shipped in exact commit `c7dd0b0` through
+  Production deployment `dpl_8ay4NowsrHf1HYR97CKJrFRhhrR3` on `zantap.app`.
+  The 390×844 production browser smoke verified the unified manifest, explicit
+  IndexedDB save, public stable-ID resolution, restaurant-passport hub and
+  accessible menu link. Issue 01 production checks passed with no browser
+  console/page errors or horizontal overflow.

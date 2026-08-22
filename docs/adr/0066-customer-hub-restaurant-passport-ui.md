@@ -1,7 +1,7 @@
 # ADR-0066 — Customer hub as a restaurant passport
 
 Date: 2026-08-21
-Status: Accepted · owner visually approved 2026-08-21 · local only
+Status: Accepted · owner visually approved 2026-08-21 · deployed and production-smoked 2026-08-22
 
 ## Context
 
