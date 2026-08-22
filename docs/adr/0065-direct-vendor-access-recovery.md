@@ -1,7 +1,7 @@
 # ADR-0065 — Direct, plain-language Vendor access recovery
 
 Date: 2026-08-21
-Status: Accepted · implementation assigned to Candidate #26 Issue 02
+Status: Accepted · implemented · stale-credential validation amended 2026-08-22
 
 ## Context
 
@@ -41,3 +41,12 @@ specifically requires those terms.
   Server Action guard. It only changes the entry point and Vendor-facing copy.
 - Implementation belongs to Candidate #26 Issue 02. This closeout does not
   authorize Issue 03 or 04, migration, deployment, push, or production smoke.
+
+## Stale-credential amendment
+
+The KDS must not equate a cached credential's presence with valid editing
+access. On load it validates the cached credential against the current Vendor.
+An invalid credential is an expected recoverable state after token reissue,
+revocation or a local in-memory Store reset: clear only that Vendor's cached
+credential and open the existing plain-language recovery dialog. Validation
+returns a boolean rather than exposing guard errors to the client.

@@ -5,6 +5,7 @@ import {
   checkSlugAvailable,
   provisionVendor,
   recoverOwnerToken,
+  validateOwnerAccess,
 } from "@/lib/actions/vendor-provision";
 import { getStore } from "@/lib/store";
 import { DEMO_VENDOR_SLUG } from "@/lib/store/seed-data";
@@ -250,6 +251,19 @@ describe("vendor-provision actions", () => {
       await expect(
         recoverOwnerToken("sunrise-cafe", "0700000000")
       ).rejects.toThrow(RateLimitError);
+    });
+  });
+
+  describe("validateOwnerAccess", () => {
+    it("distinguishes the current owner token from a stale cached token", async () => {
+      const { ownerToken } = await provisionVendor(validInput);
+
+      await expect(
+        validateOwnerAccess("sunrise-cafe", ownerToken)
+      ).resolves.toBe(true);
+      await expect(
+        validateOwnerAccess("sunrise-cafe", "stale-cached-token")
+      ).resolves.toBe(false);
     });
   });
 });

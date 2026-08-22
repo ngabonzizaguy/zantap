@@ -74,9 +74,15 @@ explicitly owns it.
   explicitly requested Issue 03: its implementation is complete locally with a bounded
   Store feed, device-local per-revision seen/sent markers, one-ring tray,
   full-screen accessible viewer and aggregate-only analytics (ADR-0068).
-  TypeScript/lint/build are clean and Vitest is 396 passed / 114 skipped. A
-  mobile/desktop browser walkthrough remains because `playwright` is not
-  installed. Issue 03 is not pushed, deployed or production-smoked. Issue 04 remains deferred
+  Issue 03 is now complete locally and browser-verified. The stale cached-owner
+  blocker was fixed by validating access on KDS load, clearing only an invalid
+  Vendor credential and opening direct recovery (ADR-0065 amendment); the
+  Issue 03 empty-feed effect was also made lint-safe. Verification is 397 passed
+  / 114 skipped with TypeScript, lint and production build clean. Mobile and
+  desktop production-mode local walkthrough passed revision reactivation,
+  displayed-seen, mark-all, unavailable labeling, current-slug menu routing,
+  aggregate counters, keyboard/touch handling, overflow and console checks.
+  Issue 03 is not pushed, deployed or production-smoked. Issue 04 remains deferred
   and requires a separate owner request.
 
 - **Candidate #25 ✅ DONE · deployed · prod-smoked (2026-08-21):** Issues 01–03
@@ -1212,3 +1218,37 @@ database credentials here.
   untracked artifact. Do not push the earlier local handoff commit `14cb78c`
   or this Issue 03 commit without explicit authorization. Issue 04 remains
   deferred and must not begin without a separate owner request.
+
+### 2026-08-22 — Codex — Candidate #26 Issue 03 browser gate attempted
+
+- Reused the committed `82e2657` implementation without source changes and
+  attempted the local KDS-to-hub walkthrough in the in-app browser.
+- `next dev` reached the shared `Icon` runtime fault. The existing production
+  build rendered the KDS, but a stale cached owner credential was rejected by
+  the freshly seeded in-memory Store even though Setup labeled the device
+  unlocked. Clearing browser storage was not authorized, so no qualifying
+  update fixture was published and no Issue 03 acceptance checkbox was closed.
+- Preserved the Inventory PRD modification and all untracked artifacts. No
+  migration, deployment, production smoke, push, Issue 04 work or new ADR.
+
+### 2026-08-22 — Codex — Candidate #26 Issue 03 browser gate closed locally
+
+- Owner authorized clearing localhost ZanTap data, but browser security blocked
+  direct clearing. Fixed the underlying product gap instead: new async
+  `validateOwnerAccess` verifies cached access on KDS load; stale credentials
+  are removed per Vendor and the shared recovery dialog opens automatically.
+  ADR-0065 records the amendment and a focused action test locks the behavior.
+- Fixed the Issue 03 empty-feed effect exposed by the full lint gate. Final
+  verification: 397 passed / 114 skipped, TypeScript, lint and production build
+  clean.
+- Production-mode local browser walkthrough passed on mobile and desktop:
+  revision unseen reactivation, displayed-only seen behavior, mark-all,
+  snapshot prices plus live unavailable status, current-slug menu routing,
+  aggregate opens/menu visits at 1/1, keyboard controls, touch swipe, no
+  horizontal overflow and zero console errors. Multi-Vendor/multi-batch ordering
+  remains deterministically covered by the unit/contract suite because the
+  locked 20-minute local batching window cannot create separate batches during
+  one walkthrough.
+- Issue 03 is complete locally but uncommitted/unreleased. Preserve the Inventory
+  PRD modification and every untracked artifact. No migration, deployment,
+  production smoke, push or Issue 04 work occurred.

@@ -4,7 +4,7 @@ import { normalizePhone, phonesMatchForRecovery } from "@/lib/format";
 import { normalizeMomoPayoutPhoneForStorage } from "@/lib/momo/ussd-dial";
 import { getStore } from "@/lib/store";
 import type { CreateVendorInput, MenuItem, Vendor } from "@/lib/types";
-import { mintOwnerToken } from "@/lib/vendor/owner-token";
+import { mintOwnerToken, verifyOwnerToken } from "@/lib/vendor/owner-token";
 import { assertProvisioningOpen } from "@/lib/vendor/provision-gate";
 import {
   validateProvisionVendorInput,
@@ -25,6 +25,21 @@ export async function checkSlugAvailable(slug: string): Promise<boolean> {
   const normalized = normalizeVendorSlug(slug);
   if (!normalized) return false;
   return getStore().isSlugAvailable(normalized);
+}
+
+/**
+ * Validate a device-cached owner capability before the KDS presents editing as
+ * unlocked. A stale token is expected after recovery, revocation, or a local
+ * in-memory Store reset, so this returns a boolean instead of throwing.
+ */
+export async function validateOwnerAccess(
+  slug: string,
+  ownerToken: string | null | undefined
+): Promise<boolean> {
+  const normalizedSlug = normalizeVendorSlug(slug);
+  if (!normalizedSlug || !ownerToken) return false;
+  const hash = await getStore().getVendorOwnerTokenHash(normalizedSlug);
+  return verifyOwnerToken(ownerToken, hash);
 }
 
 /**

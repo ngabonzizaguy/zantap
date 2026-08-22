@@ -52,8 +52,10 @@ export function RestaurantUpdates({ vendorIds, repository }: RestaurantUpdatesPr
   useEffect(() => {
     let cancelled = false;
     if (vendorIds.length === 0) {
-      setFeed([]);
-      return;
+      void Promise.resolve().then(() => {
+        if (!cancelled) setFeed([]);
+      });
+      return () => { cancelled = true; };
     }
     void fetch(`/api/customer/updates?ids=${encodeURIComponent(vendorIds.join(","))}`, {
       cache: "no-store",

@@ -16,6 +16,7 @@ import {
   bulkAssignOrderDriver,
 } from "@/lib/actions/vendor-drivers";
 import { loadOnboardingState } from "@/lib/actions/vendor-guides";
+import { validateOwnerAccess } from "@/lib/actions/vendor-provision";
 import {
   kitchenStageForOrderStatus,
   orderStatusForKitchenStage,
@@ -138,7 +139,11 @@ export function KdsDashboard({
   const [assignOrderIds, setAssignOrderIds] = useState<string[]>([]);
   const [assignBusy, setAssignBusy] = useState(false);
   const [setupAutoOpened, setSetupAutoOpened] = useState(false);
-  const { token: ownerToken } = useOwnerToken(vendor.slug);
+  const {
+    token: ownerToken,
+    clearToken: clearOwnerToken,
+    ready: ownerTokenReady,
+  } = useOwnerToken(vendor.slug);
   const [setupOpen, setSetupOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [recoveryOpen, setRecoveryOpen] = useState(false);
@@ -184,6 +189,19 @@ export function KdsDashboard({
   const [deferredOrderIds, setDeferredOrderIds] = useState<Set<string>>(new Set());
   const ordersRef = useRef(orders);
   const livePageRef = useRef(livePage);
+
+  useEffect(() => {
+    if (!ownerTokenReady || !ownerToken) return;
+    let cancelled = false;
+    void validateOwnerAccess(vendor.slug, ownerToken).then((valid) => {
+      if (cancelled || valid) return;
+      clearOwnerToken();
+      setRecoveryOpen(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [clearOwnerToken, ownerToken, ownerTokenReady, vendor.slug]);
 
   useEffect(() => {
     ordersRef.current = orders;

@@ -1,7 +1,7 @@
 # ADR-0068 — Public customer update feed and local revision state
 
 Date: 2026-08-22
-Status: Accepted · Issue 03 implemented locally · browser walkthrough pending · not deployed
+Status: Accepted · Issue 03 complete locally and browser-verified · not deployed
 
 ## Context
 
