@@ -23,7 +23,11 @@ const globalForStore = globalThis as unknown as {
  */
 export function getStore(): Store {
   const cached = globalForStore.__zantapStore;
-  if (cached && typeof cached.getVendorUpdateOverview === "function") {
+  if (
+    cached &&
+    typeof cached.getVendorUpdateOverview === "function" &&
+    typeof cached.listPublicVendorUpdates === "function"
+  ) {
     return cached;
   }
   const store = process.env.DATABASE_URL

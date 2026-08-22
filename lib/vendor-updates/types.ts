@@ -62,3 +62,21 @@ export interface VendorSaveOptions {
 }
 
 export type VendorUpdateCounter = "open" | "menuVisit";
+
+export interface PublicVendorUpdateEntry extends VendorUpdateEntry {
+  isCurrentlyAvailable: boolean;
+}
+
+export interface PublicVendorUpdateBatch
+  extends Omit<VendorUpdateBatch, "entries" | "openCount" | "menuVisitCount"> {
+  entries: PublicVendorUpdateEntry[];
+}
+
+export interface PublicVendorUpdateFeedItem {
+  vendorId: string;
+  slug: string;
+  name: string;
+  logoUrl?: string;
+  isAvailable: boolean;
+  batches: PublicVendorUpdateBatch[];
+}

@@ -3,10 +3,12 @@ import {
   sortSavedRestaurants,
   type SavedRestaurant,
   type SavedRestaurantRepository,
+  type CustomerUpdateState,
 } from "@/lib/customer-restaurants/types";
 
 const DEFAULT_DATABASE_NAME = "zantap-customer";
 const SAVED_RESTAURANTS_STORE = "savedRestaurants";
+const UPDATE_STATES_STORE = "updateStates";
 
 interface IndexedDbRepositoryOptions {
   indexedDB: IDBFactory;
@@ -43,6 +45,9 @@ function openCustomerDatabase(
           keyPath: "vendorId",
         });
       }
+      if (!database.objectStoreNames.contains(UPDATE_STATES_STORE)) {
+        database.createObjectStore(UPDATE_STATES_STORE, { keyPath: "batchId" });
+      }
     };
     request.onsuccess = () => {
       const database = request.result;
@@ -60,6 +65,29 @@ export function createIndexedDbSavedRestaurantRepository({
   databaseName = DEFAULT_DATABASE_NAME,
 }: IndexedDbRepositoryOptions): SavedRestaurantRepository {
   const database = openCustomerDatabase(indexedDB, databaseName);
+
+  async function readUpdateState(batchId: string): Promise<CustomerUpdateState> {
+    const db = await database;
+    const transaction = db.transaction(UPDATE_STATES_STORE, "readonly");
+    const completed = transactionComplete(transaction);
+    const row = await requestResult(
+      transaction.objectStore(UPDATE_STATES_STORE).get(batchId)
+    );
+    await completed;
+    return (row as CustomerUpdateState | undefined) ?? {
+      batchId,
+      viewedRevision: 0,
+      openSentRevision: 0,
+      menuVisitSentRevision: 0,
+    };
+  }
+
+  async function writeUpdateState(state: CustomerUpdateState): Promise<void> {
+    const db = await database;
+    const transaction = db.transaction(UPDATE_STATES_STORE, "readwrite");
+    transaction.objectStore(UPDATE_STATES_STORE).put(state);
+    await transactionComplete(transaction);
+  }
 
   return {
     async list() {
@@ -81,9 +109,44 @@ export function createIndexedDbSavedRestaurantRepository({
     },
     async remove(vendorId) {
       const db = await database;
-      const transaction = db.transaction(SAVED_RESTAURANTS_STORE, "readwrite");
+      const transaction = db.transaction(
+        [SAVED_RESTAURANTS_STORE, UPDATE_STATES_STORE],
+        "readwrite"
+      );
       transaction.objectStore(SAVED_RESTAURANTS_STORE).delete(vendorId);
+      const stateStore = transaction.objectStore(UPDATE_STATES_STORE);
+      const states = await requestResult(stateStore.getAll()) as CustomerUpdateState[];
+      states.forEach((state) => {
+        if (state.vendorId === vendorId) stateStore.delete(state.batchId);
+      });
       await transactionComplete(transaction);
+    },
+    async getUpdateState(batchId) {
+      const { batchId: _batchId, vendorId: _vendorId, ...state } = await readUpdateState(batchId);
+      return state;
+    },
+    async markUpdateViewed(batchId, vendorId, revision) {
+      const state = await readUpdateState(batchId);
+      await writeUpdateState({
+        ...state,
+        vendorId,
+        viewedRevision: Math.max(state.viewedRevision, revision),
+      });
+    },
+    async markUpdateAnalyticsSent(batchId, vendorId, kind, revision) {
+      const state = await readUpdateState(batchId);
+      await writeUpdateState({
+        ...state,
+        vendorId,
+        ...(kind === "open"
+          ? { openSentRevision: Math.max(state.openSentRevision, revision) }
+          : {
+              menuVisitSentRevision: Math.max(
+                state.menuVisitSentRevision,
+                revision
+              ),
+            }),
+      });
     },
   };
 }

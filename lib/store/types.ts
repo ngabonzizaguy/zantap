@@ -79,6 +79,7 @@ import type {
   VendorUpdateCounter,
   VendorUpdateOverview,
   VendorUpdateSettings,
+  PublicVendorUpdateFeedItem,
 } from "@/lib/vendor-updates/types";
 
 /**
@@ -116,6 +117,10 @@ export interface Store {
     batchId: string,
     counter: VendorUpdateCounter
   ): Promise<VendorUpdateBatch | null>;
+  listPublicVendorUpdates(
+    vendorIds: string[],
+    at?: Date
+  ): Promise<PublicVendorUpdateFeedItem[]>;
 
   // Owner token (per-vendor capability, ADR-0022). The hash is server-only and
   // never appears on the domain Vendor; validate via lib/vendor/owner-token.

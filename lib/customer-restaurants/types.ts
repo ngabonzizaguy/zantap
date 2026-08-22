@@ -1,4 +1,14 @@
-export const CUSTOMER_RESTAURANT_DB_VERSION = 1;
+export const CUSTOMER_RESTAURANT_DB_VERSION = 2;
+
+export interface CustomerUpdateState {
+  batchId: string;
+  vendorId?: string;
+  viewedRevision: number;
+  openSentRevision: number;
+  menuVisitSentRevision: number;
+}
+
+export type CustomerUpdateAnalyticsKind = "open" | "menuVisit";
 
 export interface SavedRestaurant {
   vendorId: string;
@@ -25,6 +35,14 @@ export interface SavedRestaurantRepository {
   list(): Promise<SavedRestaurant[]>;
   save(restaurant: SavedRestaurant): Promise<SavedRestaurant>;
   remove(vendorId: string): Promise<void>;
+  getUpdateState(batchId: string): Promise<Omit<CustomerUpdateState, "batchId" | "vendorId">>;
+  markUpdateViewed(batchId: string, vendorId: string, revision: number): Promise<void>;
+  markUpdateAnalyticsSent(
+    batchId: string,
+    vendorId: string,
+    kind: CustomerUpdateAnalyticsKind,
+    revision: number
+  ): Promise<void>;
 }
 
 export function sortSavedRestaurants(

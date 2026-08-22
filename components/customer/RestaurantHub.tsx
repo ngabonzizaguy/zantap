@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { getBrowserSavedRestaurantRepository } from "@/lib/customer-restaurants/browser";
+import { RestaurantUpdates } from "@/components/customer/RestaurantUpdates";
 import {
   filterSavedRestaurants,
   reconcileSavedRestaurants,
@@ -226,6 +227,10 @@ export function RestaurantHub() {
     () => filterSavedRestaurants(restaurants, query),
     [restaurants, query]
   );
+  const savedVendorIds = useMemo(
+    () => restaurants.map((restaurant) => restaurant.vendorId),
+    [restaurants]
+  );
 
   const removeRestaurant = async (restaurant: SavedRestaurant) => {
     const removed = await removeSavedRestaurant(
@@ -300,6 +305,9 @@ export function RestaurantHub() {
           </section>
 
           <section aria-label="Your restaurants" className="min-w-0">
+            {!loading && restaurants.length > 0 ? (
+              <RestaurantUpdates vendorIds={savedVendorIds} repository={repository} />
+            ) : null}
             {restaurants.length > 1 ? (
               <div className="relative mb-5">
                 <label htmlFor="saved-restaurant-search" className="sr-only">

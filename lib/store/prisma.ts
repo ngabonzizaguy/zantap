@@ -150,6 +150,7 @@ import type {
   VendorUpdateCounter,
   VendorUpdateOverview,
   VendorUpdateSettings,
+  PublicVendorUpdateFeedItem,
 } from "@/lib/vendor-updates/types";
 import {
   VENDOR_UPDATE_BATCH_WINDOW_MS,
@@ -829,6 +830,68 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       if (isNotFoundError(error)) return null;
       throw error;
     }
+  }
+
+  async function listPublicVendorUpdates(
+    vendorIds: string[],
+    at = new Date()
+  ): Promise<PublicVendorUpdateFeedItem[]> {
+    const uniqueIds = [...new Set(vendorIds)].slice(0, 50);
+    if (uniqueIds.length === 0) return [];
+    const rows = await client.vendor.findMany({
+      where: { id: { in: uniqueIds } },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        logoUrl: true,
+        isActive: true,
+        menuItems: {
+          select: { id: true, isAvailable: true, archivedAt: true },
+        },
+        updateBatches: {
+          where: { expiresAt: { gt: at } },
+          orderBy: { publishedAt: "desc" },
+          include: { entries: true },
+        },
+      },
+    });
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    return uniqueIds.flatMap((vendorId) => {
+      const row = byId.get(vendorId);
+      if (!row) return [];
+      const availability = new Map(
+        row.menuItems.map((item) => [
+          item.id,
+          item.isAvailable && item.archivedAt == null,
+        ])
+      );
+      return [{
+        vendorId: row.id,
+        slug: row.slug,
+        name: row.name,
+        logoUrl: row.logoUrl ?? undefined,
+        isAvailable: row.isActive,
+        batches: row.isActive
+          ? row.updateBatches.map((batch) => {
+              const mapped = mapVendorUpdateBatch(batch);
+              return {
+                id: mapped.id,
+                vendorId: mapped.vendorId,
+                revision: mapped.revision,
+                publishedAt: mapped.publishedAt,
+                expiresAt: mapped.expiresAt,
+                entries: mapped.entries.map((entry) => ({
+                  ...entry,
+                  isCurrentlyAvailable:
+                    entry.type === "PROFILE_CHANGE" ||
+                    availability.get(entry.subjectId) === true,
+                })),
+              };
+            })
+          : [],
+      }];
+    });
   }
 
   async function getVendorOwnerTokenHash(
@@ -3441,6 +3504,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     recordVendorUpdate,
     getVendorUpdateOverview,
     incrementVendorUpdateCounter,
+    listPublicVendorUpdates,
     getVendorOwnerTokenHash,
     setVendorOwnerToken,
     recordRecoveryEvent,

@@ -39,5 +39,13 @@ export function createResilientSavedRestaurantRepository(
       execute((repository) => repository.save(restaurant)),
     remove: (vendorId) =>
       execute((repository) => repository.remove(vendorId)),
+    getUpdateState: (batchId) =>
+      execute((repository) => repository.getUpdateState(batchId)),
+    markUpdateViewed: (batchId, vendorId, revision) =>
+      execute((repository) => repository.markUpdateViewed(batchId, vendorId, revision)),
+    markUpdateAnalyticsSent: (batchId, vendorId, kind, revision) =>
+      execute((repository) =>
+        repository.markUpdateAnalyticsSent(batchId, vendorId, kind, revision)
+      ),
   };
 }

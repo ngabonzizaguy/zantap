@@ -37,6 +37,34 @@ function savedRestaurantRepositoryContract(
       await repository.remove("vendor-1");
       expect(await repository.list()).toEqual([]);
     });
+
+    it("keeps viewed revisions and analytics markers local to each batch revision", async () => {
+      const repository = createRepository();
+
+      expect(await repository.getUpdateState("batch-1")).toEqual({
+        viewedRevision: 0,
+        openSentRevision: 0,
+        menuVisitSentRevision: 0,
+      });
+
+      await repository.markUpdateViewed("batch-1", "vendor-1", 2);
+      await repository.markUpdateViewed("batch-1", "vendor-1", 1);
+      await repository.markUpdateAnalyticsSent("batch-1", "vendor-1", "open", 2);
+      await repository.markUpdateAnalyticsSent("batch-1", "vendor-1", "menuVisit", 3);
+
+      expect(await repository.getUpdateState("batch-1")).toEqual({
+        viewedRevision: 2,
+        openSentRevision: 2,
+        menuVisitSentRevision: 3,
+      });
+
+      await repository.remove("vendor-1");
+      expect(await repository.getUpdateState("batch-1")).toEqual({
+        viewedRevision: 0,
+        openSentRevision: 0,
+        menuVisitSentRevision: 0,
+      });
+    });
   });
 }
 
@@ -72,5 +100,42 @@ describe("IndexedDB install continuity", () => {
     expect(await installedApp.list()).toEqual([
       expect.objectContaining({ vendorId: "vendor-before-install" }),
     ]);
+  });
+
+  it("upgrades version 1 without losing saved restaurants", async () => {
+    const indexedDB = new IDBFactory();
+    const request = indexedDB.open("zantap-v1-upgrade-test", 1);
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      request.onupgradeneeded = () => {
+        request.result.createObjectStore("savedRestaurants", { keyPath: "vendorId" });
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const transaction = database.transaction("savedRestaurants", "readwrite");
+    transaction.objectStore("savedRestaurants").put({
+      vendorId: "vendor-v1",
+      slug: "version-one",
+      name: "Version One",
+      lastInteractedAt: "2026-08-21T10:00:00.000Z",
+    });
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+    database.close();
+
+    const upgraded = createIndexedDbSavedRestaurantRepository({
+      indexedDB,
+      databaseName: "zantap-v1-upgrade-test",
+    });
+    expect(await upgraded.list()).toEqual([
+      expect.objectContaining({ vendorId: "vendor-v1" }),
+    ]);
+    expect(await upgraded.getUpdateState("batch-new")).toEqual({
+      viewedRevision: 0,
+      openSentRevision: 0,
+      menuVisitSentRevision: 0,
+    });
   });
 });

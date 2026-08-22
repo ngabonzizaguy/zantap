@@ -611,6 +611,42 @@ export function runStoreContract(
           )?.activeBatch
         ).toBeNull();
       });
+
+      it("returns a bounded public feed with live dish availability and hides suspended updates", async () => {
+        const vendor = await store.getVendorBySlug(slug);
+        const dish = (await store.getMenu(slug))[0];
+        const at = new Date("2026-08-21T08:00:00.000Z");
+        await store.recordVendorUpdate(slug, {
+          at,
+          entry: { type: "NEW_DISH", subjectId: dish.id, name: dish.name },
+        });
+        await store.archiveMenuItem(slug, dish.id);
+
+        const feed = await store.listPublicVendorUpdates(
+          [vendor!.id, vendor!.id],
+          new Date(at.getTime() + 1_000)
+        );
+        expect(feed).toHaveLength(1);
+        expect(feed[0]).toEqual(
+          expect.objectContaining({
+            vendorId: vendor!.id,
+            slug,
+            isAvailable: true,
+          })
+        );
+        expect(feed[0].batches[0].entries[0]).toEqual(
+          expect.objectContaining({ isCurrentlyAvailable: false })
+        );
+        expect(feed[0].batches[0]).not.toHaveProperty("openCount");
+        expect(feed[0].batches[0]).not.toHaveProperty("menuVisitCount");
+
+        await store.setVendorActive(slug, false, "contract test");
+        expect(
+          await store.listPublicVendorUpdates([vendor!.id], new Date(at.getTime() + 2_000))
+        ).toEqual([
+          expect.objectContaining({ isAvailable: false, batches: [] }),
+        ]);
+      });
     });
 
     describe("inventory", () => {

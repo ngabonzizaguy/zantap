@@ -15,6 +15,15 @@ describe("resilient saved restaurant storage", () => {
       async remove() {
         throw new Error("storage denied");
       },
+      async getUpdateState() {
+        throw new Error("storage denied");
+      },
+      async markUpdateViewed() {
+        throw new Error("storage denied");
+      },
+      async markUpdateAnalyticsSent() {
+        throw new Error("storage denied");
+      },
     };
     const repository = createResilientSavedRestaurantRepository(
       unavailable,
@@ -39,6 +48,9 @@ describe("resilient saved restaurant storage", () => {
       list: () => new Promise(() => undefined),
       save: () => new Promise(() => undefined),
       remove: () => new Promise(() => undefined),
+      getUpdateState: () => new Promise(() => undefined),
+      markUpdateViewed: () => new Promise(() => undefined),
+      markUpdateAnalyticsSent: () => new Promise(() => undefined),
     };
     const repository = createResilientSavedRestaurantRepository(
       hanging,

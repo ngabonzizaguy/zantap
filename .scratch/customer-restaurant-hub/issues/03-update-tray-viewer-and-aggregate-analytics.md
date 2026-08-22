@@ -1,6 +1,6 @@
 # Issue 03 — Update tray, viewer and aggregate analytics
 
-Status: ready-for-agent
+Status: ready-for-human · implementation complete locally · browser walkthrough pending
 
 ## Parent
 
@@ -16,22 +16,35 @@ live truth. Vendors receive only aggregate batch opens and menu visits.
 
 ## Acceptance criteria
 
-- [ ] A bounded feed accepts only deduplicated saved Vendor IDs and returns
+- [x] A bounded feed accepts only deduplicated saved Vendor IDs and returns
       allowlisted public identity, active batches, current slug and availability.
-- [ ] Suspended Vendors return unavailable identity with no updates; the feed is
+- [x] Suspended Vendors return unavailable identity with no updates; the feed is
       not a discovery/search endpoint.
-- [ ] Hub counts separate new updates from total saved restaurants.
-- [ ] Tray includes only active batches; unseen Vendors precede viewed and each
+- [x] Hub counts separate new updates from total saved restaurants.
+- [x] Tray includes only active batches; unseen Vendors precede viewed and each
       group is newest-first without reordering the persistent list.
-- [ ] One ring represents all active Vendor batches and correctly shows unseen/viewed.
-- [ ] Viewer starts at newest unseen, marks only displayed revisions, preserves
+- [x] One ring represents all active Vendor batches and correctly shows unseen/viewed.
+- [x] Viewer starts at newest unseen, marks only displayed revisions, preserves
       other unseen batches and supports explicit `Mark all as seen`.
-- [ ] Snapshots, time, prices and `Currently unavailable` render correctly;
+- [x] Snapshots, time, prices and `Currently unavailable` render correctly;
       `View menu` follows the live slug.
-- [ ] Opens/menu visits increment aggregate counters at most once locally per
+- [x] Opens/menu visits increment aggregate counters at most once locally per
       revision without sending or storing customer identity/event history.
 - [ ] Feed/privacy, ordering, seen state, viewer, analytics, accessibility and
       responsive tests pass.
+
+## Completion note (2026-08-22)
+
+Implemented the bounded Store-backed public feed in both adapters, private
+revision/analytics markers in the existing IndexedDB/in-memory repository,
+one-ring tray ordering, full-screen keyboard/touch viewer, explicit mark-all,
+live availability/menu routing and aggregate-only analytics routes. Removing a
+saved Vendor clears its local update markers. Verification: TypeScript and lint
+clean; Vitest 396 passed / 114 skipped; production build clean. The attempted
+local mobile/desktop browser smoke could not start because this repository does
+not install `playwright` (`ERR_MODULE_NOT_FOUND`); a human walkthrough remains.
+No migration, deployment, production smoke or push was performed. Issue 04
+remains deferred.
 
 ## Blocked by
 

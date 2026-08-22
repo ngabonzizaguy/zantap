@@ -70,8 +70,14 @@ explicitly owns it.
   `20260821220000_vendor_update_batches` applied, and exact commit `c7dd0b0`
   deployed as `dpl_8ay4NowsrHf1HYR97CKJrFRhhrR3` on `zantap.app`. Production
   browser smoke passed 7/7 across Issues 01–02; the update toggle was restored
-  ON and there were no browser errors or mobile overflow. Issues 03–04 remain
-  untouched.
+  ON and there were no browser errors or mobile overflow. The owner then
+  explicitly requested Issue 03: its implementation is complete locally with a bounded
+  Store feed, device-local per-revision seen/sent markers, one-ring tray,
+  full-screen accessible viewer and aggregate-only analytics (ADR-0068).
+  TypeScript/lint/build are clean and Vitest is 396 passed / 114 skipped. A
+  mobile/desktop browser walkthrough remains because `playwright` is not
+  installed. Issue 03 is not pushed, deployed or production-smoked. Issue 04 remains deferred
+  and requires a separate owner request.
 
 - **Candidate #25 ✅ DONE · deployed · prod-smoked (2026-08-21):** Issues 01–03
   shipped at `fbafcee` through the single deployment
@@ -1179,3 +1185,30 @@ database credentials here.
 - Do not start Issue 03 or Issue 04 merely from this handoff. Begin Issue 03
   only when the owner explicitly requests it; keep its implementation and
   verification tightly scoped. Issue 04 requires a later, separate decision.
+
+### 2026-08-22 — Codex — Candidate #26 Issue 03 implementation complete locally
+
+- The owner explicitly requested Issue 03 under the usage constraint. Added a
+  bounded/deduplicated public feed through the Store and both adapters; active
+  non-expired batches expose only public snapshots plus live dish availability,
+  while suspended Vendors expose no batches.
+- Upgraded the existing customer repository to IndexedDB version 2 with local
+  per-batch viewed/open-sent/menu-visit-sent revisions and a matching in-memory
+  adapter. Confirmed Vendor removal clears those markers. No customer identity,
+  saved list or individual event history is sent to or stored by the server.
+- `/restaurants` now shows a separate unseen-update count and one ring per
+  Vendor, preserving the persistent list's recency. The full-screen viewer
+  starts at the newest unseen revision, marks only rendered content, supports
+  buttons/keyboard/swipe, shows immutable snapshots with live availability,
+  routes `View menu` through the current slug and offers explicit mark-all.
+- Aggregate open/menu-visit POSTs are sent at most once locally per batch
+  revision. ADR-0068 records the interface/privacy decisions. Verification:
+  TypeScript and lint clean; Vitest 396 passed / 114 skipped; production build
+  clean. A local mobile/desktop browser harness could not start because the
+  repository does not install `playwright` (`ERR_MODULE_NOT_FOUND`), so the
+  responsive interaction walkthrough remains a human gate. No migration,
+  deployment, production smoke or push occurred.
+- Preserve the unstaged Inventory PRD modification and every pre-existing
+  untracked artifact. Do not push the earlier local handoff commit `14cb78c`
+  or this Issue 03 commit without explicit authorization. Issue 04 remains
+  deferred and must not begin without a separate owner request.

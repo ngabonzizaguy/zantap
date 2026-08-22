@@ -1,8 +1,8 @@
 # ADR-0064 — Single installed customer app with restaurant updates
 
 Date: 2026-08-21
-Status: Accepted · Issue 01 implemented locally · Issues 02–04 pending
-Amended: 2026-08-21 (Issue 01 implementation recorded)
+Status: Accepted · Issues 01–03 implemented · Issue 04 deferred
+Amended: 2026-08-22 (Issue 03 implementation recorded)
 Supersedes: ADR-0059 customer-storefront install decision only
 Preserves: ADR-0059 separate vendor KDS install
 
@@ -114,6 +114,15 @@ feed, vendor controls or offline-menu slices:
   Saved state exists before installation, installation does not navigate away,
   and the installed app subsequently opens the hub.
 
-This is an implementation of the existing decision, not a new architectural
-direction. Issues 02–04 remain isolated and unimplemented. No migration,
-deployment or production smoke is authorized or recorded here.
+This was an implementation of the existing decision, not a new architectural
+direction. At the time, Issues 02–04 remained isolated and unimplemented; the
+later amendments below supersede that historical status.
+
+## Issue 03 implementation amendment
+
+Issue 03 connects the shipped foundations through a bounded public Store feed,
+versioned device-local viewed/analytics markers, one-ring update tray and
+full-screen accessible viewer. Live availability remains separate from
+immutable snapshots, and server analytics remain aggregate-only. The detailed
+seams and privacy consequences are recorded in ADR-0068. Issue 04 offline
+resilience remains deferred. Issue 03 is not deployed or production-smoked.

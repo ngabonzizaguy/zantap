@@ -141,6 +141,7 @@ import type {
   VendorUpdateEntry,
   VendorUpdateOverview,
   VendorUpdateSettings,
+  PublicVendorUpdateFeedItem,
 } from "@/lib/vendor-updates/types";
 import {
   VENDOR_UPDATE_BATCH_WINDOW_MS,
@@ -603,6 +604,52 @@ export function createInMemoryStore(): ResettableStore {
     if (counter === "open") batch.openCount += 1;
     else batch.menuVisitCount += 1;
     return cloneVendorUpdateBatch(batch);
+  }
+
+  async function listPublicVendorUpdates(
+    vendorIds: string[],
+    at = new Date()
+  ): Promise<PublicVendorUpdateFeedItem[]> {
+    const uniqueIds = [...new Set(vendorIds)].slice(0, 50);
+    return uniqueIds.flatMap((vendorId) => {
+      const vendor = vendors.find((row) => row.id === vendorId);
+      if (!vendor) return [];
+      const batches = vendor.isActive
+        ? vendorUpdateBatches
+            .filter(
+              (batch) =>
+                batch.vendorId === vendor.id &&
+                batch.expiresAt.getTime() > at.getTime()
+            )
+            .sort((left, right) => right.publishedAt.getTime() - left.publishedAt.getTime())
+            .map((batch) => ({
+              id: batch.id,
+              vendorId: batch.vendorId,
+              revision: batch.revision,
+              publishedAt: new Date(batch.publishedAt),
+              expiresAt: new Date(batch.expiresAt),
+              entries: batch.entries.map((entry) => {
+                const subject = menuItems.find((item) => item.id === entry.subjectId);
+                return {
+                  ...entry,
+                  createdAt: new Date(entry.createdAt),
+                  updatedAt: new Date(entry.updatedAt),
+                  isCurrentlyAvailable:
+                    entry.type === "PROFILE_CHANGE" ||
+                    Boolean(subject && isActiveItem(subject) && subject.isAvailable),
+                };
+              }),
+            }))
+        : [];
+      return [{
+        vendorId: vendor.id,
+        slug: vendor.slug,
+        name: vendor.name,
+        logoUrl: vendor.logoUrl,
+        isAvailable: vendor.isActive,
+        batches,
+      }];
+    });
   }
 
   async function getVendorOwnerTokenHash(
@@ -2636,6 +2683,7 @@ export function createInMemoryStore(): ResettableStore {
     recordVendorUpdate,
     getVendorUpdateOverview,
     incrementVendorUpdateCounter,
+    listPublicVendorUpdates,
     getVendorOwnerTokenHash,
     setVendorOwnerToken,
     recordRecoveryEvent,
