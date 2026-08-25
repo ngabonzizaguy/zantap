@@ -32,6 +32,20 @@ label and price that were purchased.
   `OrderItem`; client-submitted prices are never trusted.
 - Storefront, checkout, KDS, receipt, WhatsApp, and export views use the stored
   order snapshot for historical display.
+- In the create modal, Category and Photos stack below the `sm` breakpoint and
+  retain the approved two-column layout above it. Desktop grid tracks use
+  `minmax(0, …)` so intrinsic control width cannot introduce horizontal modal
+  scrolling.
+- Sized-item summaries stay compact: the edit header shows the option count and
+  cheapest enabled price, with the full ordered list behind a disclosure.
+- The KDS editor uses one bordered pricing segment and compact accordion rows.
+  Drag, storefront visibility, overflow actions, and expansion use the shared
+  Lucide icon language; only one row expands at a time. The expanded row owns
+  its name, price, visibility switch, and delete action.
+- Storefront customization shows only enabled sizes in a required,
+  single-column selection list at every viewport. The selected option updates
+  the displayed item price and order total. A single column deliberately
+  favors complete labels and scanability over denser two-column packing.
 
 ## Alternatives considered
 
@@ -53,3 +67,9 @@ label and price that were purchased.
   migration before deploying code that writes these fields.
 - Per-size stock, cost, and modifier rules remain out of scope and would require
   a follow-up domain decision.
+- The phone layout is slightly taller, but both controls remain fully visible in
+  normal vertical scrolling and the sticky create actions stay in the thumb
+  zone.
+- Accordion disclosure keeps the KDS editor compact without hiding any
+  capability, while the storefront list spends additional vertical space to
+  keep every enabled size and price legible.

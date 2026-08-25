@@ -1,10 +1,14 @@
 "use client";
 
 import { useId, useMemo, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import type { MenuImage, MenuItem } from "@/lib/types";
 import { formatRwf } from "@/lib/format";
 import { getPrimaryImageUrl } from "@/lib/menu/media";
-import { getMenuItemSizeOptions } from "@/lib/menu/sizes";
+import {
+  getMenuItemSizeOptions,
+  getMenuItemStartingPrice,
+} from "@/lib/menu/sizes";
 import { validateCreateMenuItemInput } from "@/lib/menu/validation";
 import { useDishPhotoPreview } from "@/components/onboard/useDishPhotoPreview";
 import { Badge, Button, Combobox, Modal } from "@/components/ui/primitives";
@@ -123,6 +127,7 @@ export function MenuItemModal({
   const [galleryImages, setGalleryImages] = useState<MenuImage[]>([]);
   const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
   const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const [previewSizesOpen, setPreviewSizesOpen] = useState(false);
   const pendingPhotoPreview = useDishPhotoPreview(pendingPhoto);
 
   const editingItemId = item?.id;
@@ -140,6 +145,7 @@ export function MenuItemModal({
       setGalleryImages(item?.images ?? []);
       setPendingPhoto(null);
       setDescriptionOpen(Boolean(item?.description));
+      setPreviewSizesOpen(false);
     }
   }
 
@@ -193,7 +199,7 @@ export function MenuItemModal({
     >
       <div className="flex flex-col gap-5">
         {mode === "edit" && item ? (
-          <div className="flex items-center gap-3.5">
+          <div className="grid grid-cols-[64px_minmax(0,1fr)] items-start gap-x-3.5">
             <div
               className="relative h-16 w-16 flex-none overflow-hidden rounded-brand-md"
               style={previewImage ? undefined : { background: previewBg }}
@@ -203,15 +209,62 @@ export function MenuItemModal({
                 <img src={previewImage} alt="" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
               ) : null}
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="truncate font-body text-body-md font-semibold text-ink">{item.name}</p>
               <Badge className="mt-1">{item.category}</Badge>
-              <p className="mt-1 line-clamp-2 font-body text-caption font-medium text-primary">
-                {previewSizes.length > 0
-                  ? previewSizes.map((option) => `${option.label} ${formatRwf(option.priceRwf)}`).join(" · ")
-                  : formatRwf(item.priceRwf)}
-              </p>
+              {previewSizes.length > 0 ? (
+                <button
+                  type="button"
+                  disabled={saving}
+                  aria-expanded={previewSizesOpen}
+                  aria-controls={`${listId}-size-summary`}
+                  onClick={() => setPreviewSizesOpen((current) => !current)}
+                  className="mt-1.5 flex min-h-8 max-w-full items-center gap-1.5 rounded-brand-sm pr-1 text-left font-body text-caption font-medium text-primary transition-colors hover:text-ink"
+                >
+                  <span className="truncate">
+                    {previewSizes.length} sizes · From {formatRwf(getMenuItemStartingPrice(item))}
+                  </span>
+                  <ChevronDown
+                    size={15}
+                    strokeWidth={1.8}
+                    className={cn(
+                      "flex-none transition-transform duration-200",
+                      previewSizesOpen && "rotate-180"
+                    )}
+                    aria-hidden
+                  />
+                </button>
+              ) : (
+                <p className="mt-1 font-body text-caption font-medium text-primary">
+                  {formatRwf(item.priceRwf)}
+                </p>
+              )}
             </div>
+
+            {previewSizes.length > 0 && previewSizesOpen ? (
+              <div
+                id={`${listId}-size-summary`}
+                className="col-span-2 mt-3 overflow-hidden rounded-brand-md border border-hairline bg-canvas-soft"
+              >
+                {previewSizes.map((option) => (
+                  <div
+                    key={option.id}
+                    className="flex min-h-10 items-center justify-between gap-3 border-b border-hairline px-3 py-2 last:border-b-0"
+                  >
+                    <span className="min-w-0 truncate font-body text-caption text-ink">
+                      {option.label}
+                    </span>
+                    <span className={cn(
+                      "flex-none font-mono text-caption font-medium",
+                      option.isAvailable ? "text-primary" : "text-muted"
+                    )}>
+                      {formatRwf(option.priceRwf)}
+                      {!option.isAvailable ? " · Hidden" : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -233,7 +286,14 @@ export function MenuItemModal({
           </div>
         </div>
 
-        <div className={cn("grid gap-4", mode === "create" ? "grid-cols-[1fr_0.85fr]" : "grid-cols-1")}>
+        <div
+          className={cn(
+            "grid gap-4",
+            mode === "create"
+              ? "grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]"
+              : "grid-cols-1",
+          )}
+        >
           <Combobox
             id={`${listId}-category`}
             label="Category"

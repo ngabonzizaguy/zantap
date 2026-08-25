@@ -278,10 +278,19 @@ export function MenuItemCustomizeSheet({
 
               {sizeOptions.length > 0 && (
                 <fieldset className="mt-5">
-                  <legend className="font-body text-body-sm font-medium text-ink">
-                    Choose a size
-                  </legend>
-                  <div className="mt-2 grid grid-cols-2 gap-2.5">
+                  <legend className="sr-only">Choose a size</legend>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-body text-body-sm font-medium text-ink">
+                      Choose a size
+                    </span>
+                    <span className="rounded-pill border border-gold/30 bg-gold/10 px-2 py-0.5 font-body text-caption font-medium text-gold">
+                      Required
+                    </span>
+                  </div>
+                  <p className="mt-1 font-body text-caption text-muted">
+                    Select one option for this item.
+                  </p>
+                  <div className="mt-2.5 grid grid-cols-1 gap-2">
                     {sizeOptions.map((option) => {
                       const selected = sizeOptionId === option.id;
                       return (
@@ -291,16 +300,31 @@ export function MenuItemCustomizeSheet({
                           aria-pressed={selected}
                           onClick={() => setSizeOptionId(option.id)}
                           className={cn(
-                            "flex min-h-14 items-center justify-between gap-3 rounded-brand-lg border px-3.5 py-2.5 text-left transition-colors",
+                            "flex min-h-14 items-center gap-3 rounded-brand-lg border px-3.5 py-2.5 text-left transition-[color,background-color,border-color,box-shadow,transform] active:scale-[0.99]",
                             selected
-                              ? "border-primary bg-primary/10"
-                              : "border-hairline bg-surface-card hover:border-hairline-strong"
+                              ? "border-gold/50 bg-gold/10 shadow-[inset_0_0_0_1px_rgba(244,198,87,0.18)]"
+                              : "border-hairline bg-surface-card hover:border-hairline-strong hover:bg-surface-strong"
                           )}
                         >
-                          <span className="font-body text-body-sm font-medium text-ink">
+                          <span
+                            aria-hidden
+                            className={cn(
+                              "flex h-5 w-5 flex-none items-center justify-center rounded-full border transition-colors",
+                              selected
+                                ? "border-gold bg-gold text-gold-on"
+                                : "border-hairline-strong bg-transparent text-transparent"
+                            )}
+                          >
+                            <Icon name="check" size={12} strokeWidth={3} />
+                          </span>
+
+                          <span className="min-w-0 flex-1 truncate font-body text-body-sm font-medium text-ink">
                             {option.label}
                           </span>
-                          <span className={cn("font-body text-caption font-medium", selected ? "text-primary" : "text-muted")}>
+                          <span className={cn(
+                            "flex-none font-mono text-caption font-medium",
+                            selected ? "text-gold" : "text-muted"
+                          )}>
                             {formatRwf(option.priceRwf)}
                           </span>
                         </button>
