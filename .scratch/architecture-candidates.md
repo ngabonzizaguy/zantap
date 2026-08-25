@@ -987,3 +987,41 @@ Options B (server auto-send / WhatsApp Business API) and C (customer success cop
 - #1 (the foundation everything else assumed) is done, so new work is safe as
   long as it goes **through the Store seam** (no competing data paths; no ad-hoc
   Supabase SDK wiring — see `AGENTS.md`).
+
+---
+
+## Menu item size pricing — 🟢 DONE LOCALLY · OWNER APPROVED · RELEASE GATED 2026-08-25
+
+Owner-requested KDS/storefront/order slice for menu items priced by size is
+implemented locally. The reference's dynamic controls are functional: editable
+labels and prices, ordered drag/keyboard reordering, visibility, delete, reset,
+and custom sizes. Ordered options persist through both Store adapters; checkout
+resolves current server prices and snapshots the purchased size onto the order;
+all customer and vendor display surfaces carry the snapshot. Automated tests,
+TypeScript, lint, and production build pass. Commit `7efdf92` and ADR-0069
+record the implementation and decision.
+The stale server was stopped and full local browser verification completed.
+All dynamic controls and the create/edit → storefront → separate cart lines →
+sandbox checkout → KDS snapshot flow passed at mobile and desktop widths with
+zero console errors. The scoped follow-up now stacks Category and Photos below
+`sm` and retains zero-min two-column tracks above it. Fresh create/edit checks
+at 390x844 and 1440x1000 pass: the formerly overflowing mobile scroll region is
+now 341px client width / 341px scroll width, with document and dialog widths
+also exact. Lint and TypeScript pass. Evidence is under
+`output/playwright/menu-item-sizes/`.
+
+The owner then approved a compact generated visual as the exact KDS target and
+requested an equally polished storefront reflection. The edit header now uses
+an expandable `N sizes · From X RWF` summary; the pricing mode is a clean
+single-border segment; and the options are one-open-at-a-time accordion rows
+with consistent Lucide drag, Eye/EyeOff, ellipsis, chevron, reset, add, and
+delete controls. The storefront now presents enabled sizes in a readable
+single-column required selector at mobile and desktop widths, with live item
+and CTA price updates. Headed checks at 390x844 and 1440x1000 pass with full
+Small/Medium/Large/Family labels, exact viewport/dialog widths, functional
+accordion/actions/reorder/add-delete behavior, hidden Medium omitted on the
+storefront, and zero console errors. Final verification is 411 passed / 116
+skipped, TypeScript, lint, focused tests, and diff check. The owner completed
+the final port-3000 review and approved the result. The local closeout consists
+of commits `7efdf92` and `7ae92f4`; no migration, push, deploy, or production
+write occurred. Release remains separately gated.

@@ -1331,3 +1331,122 @@ database credentials here.
 - Exact-deployment error, fatal, warning and 5xx scans returned no entries. The
   Inventory PRD edit and every pre-existing untracked artifact remain preserved.
   Issue 04 was not started and remains separately gated.
+
+### 2026-08-25 — Codex — Menu size pricing reference received
+
+- Began the owner-requested optional menu-size pricing slice on the existing
+  `codex/customer-restaurant-hub` branch while preserving all prior dirty and
+  untracked work. Local, uncommitted work currently includes the issue record,
+  S/M/L domain types/helpers/tests, validation, additive Prisma schema/migration,
+  Store adapter pricing and order-size snapshot seams, and an incomplete first
+  KDS form pass.
+- Focused helper tests pass (5/5), the in-memory Store contract passes (112/112),
+  and TypeScript was clean before the incomplete client-cart edits began.
+  Standard `prisma generate` hit Windows `EPERM` on the locked query-engine DLL;
+  `prisma generate --no-engine` succeeded without stopping the shared process.
+- Owner then supplied the intended KDS UI reference. It requires a segmented
+  Single price / By size editor with dynamic editable/reorderable rows,
+  per-row enable/delete controls, reset, and Add custom size. That materially
+  exceeds the initial fixed S/M/L assumption, so work paused for confirmation
+  before locking the persistence model. No commit, push, deployment, production
+  migration, or production data change occurred.
+
+### 2026-08-25 — Codex — Dynamic menu size pricing implemented locally
+
+- The owner confirmed every control in the reference must be functional. The
+  slice now uses ordered dynamic size options (2–8) with stable IDs, editable
+  labels/prices, drag and keyboard reordering, visibility, delete, reset, and
+  custom-size creation. New lists default to Small/Medium/Large.
+- Both Store adapters persist the list. `MenuItem.priceRwf` remains the derived
+  starting price. Order creation resolves the current enabled option on the
+  server and snapshots its ID, label, and price; cart lines are keyed by menu
+  item plus size. Storefront, checkout, KDS, receipts, WhatsApp text, CSV/XLS
+  exports all carry the selected snapshot. ADR-0069 records the model.
+- Automated verification is clean: focused and full Vitest suites, TypeScript,
+  lint, and production build. Final browser interaction/visual QA remains gated
+  by the already-running stale local `next start` process; it must be manually
+  restarted before the new build can be reviewed. No push, deploy, production
+  migration, or production data change occurred. Preserve every unrelated dirty
+  and untracked artifact.
+- The feature code, migration, focused tests, and ADR were committed as exact
+  local commit `7efdf92` (`feat(menu): add dynamic size pricing`) without
+  staging the unrelated Inventory PRD, marketing assets, reference screenshots,
+  or the pre-existing continuity edits in this file.
+
+### 2026-08-25 — Codex — Dynamic menu size pricing browser gate executed
+
+- Stopped stale local `next start` PID 28584, started the current tree with
+  `npm run dev`, and completed headed Playwright verification at 390x844 and
+  1440x1000. The dev server remains the sole listener on port 3000.
+- Functional PASS: Single price → By size; rename/price edit; pointer drag and
+  keyboard reorder; visibility; delete; reset; custom size; create/edit restore;
+  storefront selection; distinct Small/Large cart lines; sandbox checkout with
+  PIN `12345`; and paid KDS ticket snapshots. Local in-memory order `#7089`
+  carried `Small · 4,500 RWF each` and `Large · 9,000 RWF each`. Hidden Medium
+  was absent from storefront choices. Browser console errors: zero.
+- Visual PASS: desktop create/edit and mobile edit. Visual FAIL: mobile create
+  at 390px. `MenuItemModal`'s create-only Category/Photos grid expands the 293px
+  body to 379px (341px scroll container / 403px scroll width), clipping Photos
+  and producing a horizontal scrollbar. Evidence lives under
+  `output/playwright/menu-item-sizes/`.
+- Issue 01 therefore remains locally implemented but its browser checkbox stays
+  open pending a scoped responsive-layout fix and recheck. No product code,
+  migration, push, deployment, or production data was changed in this pass.
+  Preserve the unrelated Inventory PRD edit and all pre-existing untracked
+  artifacts.
+
+### 2026-08-25 — Codex — Dynamic menu size pricing visual gate closed
+
+- Implemented only the create-modal Category/Photos responsive fix in
+  `MenuItemModal`: the fields stack below `sm`; the approved desktop pair uses
+  zero-min tracks so intrinsic combobox width cannot expand the modal.
+- Headed Playwright create/edit review passed at 390x844 and 1440x1000. Mobile
+  create now measures 341px client width / 341px scroll width (previously
+  341px / 403px); document and dialog widths also match exactly. Desktop keeps
+  Category and Photos side by side. Browser console errors remained zero.
+  Responsive evidence is under `output/playwright/menu-item-sizes/`.
+- `npm run lint` and `npx tsc --noEmit` pass. The prior full functional browser
+  QA, full tests and production build remain valid because the follow-up changed
+  only responsive classes. Issue 01's final browser checkbox is now closed and
+  ADR-0069 records the layout decision.
+- The responsive source/docs changes are uncommitted. No migration, push,
+  deployment or production data change occurred. Preserve the unrelated
+  Inventory PRD edit and all pre-existing dirty/untracked artifacts.
+
+### 2026-08-25 — Codex — Dynamic menu size pricing approved visual implemented
+
+- The owner approved the generated compact KDS visual as the exact target and
+  requested the same size choices to read beautifully on the storefront.
+  Locally, the edit header now uses an expandable
+  `N sizes · From X RWF` summary, the price-mode segment has one clean border,
+  and the dynamic options use one-open-at-a-time accordion rows with consistent
+  Lucide drag, Eye/EyeOff, ellipsis, chevron, reset, add, and delete controls.
+  Standard labels remain complete at 390px.
+- Storefront customization now exposes only enabled sizes in a polished
+  single-column required selector at mobile and desktop widths. Selecting Large
+  updated both the item headline and Add to order total to 9,000 RWF; hidden
+  Medium remained absent while Small, Large, and Family rendered completely.
+- Headed 390x844 and 1440x1000 KDS/storefront review passed with no horizontal
+  overflow and zero console errors/warnings. Accordion exclusivity, overflow
+  actions, visibility round-trip, keyboard reorder, temporary add/delete, and
+  persisted four-row restoration passed. Evidence is under
+  `output/playwright/menu-item-sizes/`.
+- Final checks pass: 411 tests / 116 skipped, 22 focused tests, TypeScript,
+  lint, and diff check. The local server was restarted with database URLs
+  explicitly blank, so all QA fixtures stayed in memory.
+- These KDS/storefront source and documentation changes remain uncommitted
+  pending owner approval. No migration, push, deployment, or production data
+  change occurred. Preserve the unrelated Inventory PRD edit, brand screenshot,
+  marketing work, and every pre-existing dirty/untracked artifact.
+
+### 2026-08-25 — Codex — Dynamic menu size pricing owner-approved closeout
+
+- The owner completed the final local port-3000 review and approved the compact
+  KDS accordion and storefront size selector. The responsive and approved
+  visual follow-ups were committed locally as `7ae92f4` after base
+  implementation `7efdf92`.
+- Candidate status is now done locally and owner-approved. Release remains a
+  separate gate: no migration, push, deployment, or production data change was
+  authorized or performed.
+- Preserve the unrelated Inventory PRD edit, brand/marketing work, and every
+  pre-existing dirty or untracked artifact.
