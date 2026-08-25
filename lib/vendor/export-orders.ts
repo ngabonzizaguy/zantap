@@ -48,7 +48,7 @@ function formatItemsSummary(order: OrderHistoryItem["order"]): string {
   return order.orderItems
     .map((line) => {
       const name = line.menuItem?.name ?? "Item";
-      return `${line.quantity}x ${name}`;
+      return `${line.quantity}x ${name}${line.sizeLabel ? ` (${line.sizeLabel})` : ""}`;
     })
     .join("; ");
 }

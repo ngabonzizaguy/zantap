@@ -23,6 +23,8 @@ const sampleOrder: Order = {
       menuItemId: "m1",
       quantity: 2,
       unitPriceRwf: 3500,
+      sizeOptionId: "large",
+      sizeLabel: "Large",
       menuItem: {
         id: "m1",
         vendorId: "v1",
@@ -76,6 +78,7 @@ describe("buildVendorOrderNotification", () => {
 
     expect(body).toContain("cmqtest0001");
     expect(body).toContain("2x Brochettes");
+    expect(body).toContain("2x Brochettes · Large");
     expect(body).toContain("8,500 RWF");
     expect(body).toContain("Kimironko");
     expect(body).toContain("Near mosque");

@@ -23,7 +23,9 @@ export function buildDeliverySlip(order: Order, vendorName: string): string {
 
   for (const item of order.orderItems) {
     const name = item.menuItem?.name ?? "Item";
-    lines.push(`${item.quantity}x ${name}`);
+    lines.push(
+      `${item.quantity}x ${name}${item.sizeLabel ? ` · ${item.sizeLabel}` : ""}`
+    );
   }
 
   lines.push(
@@ -89,7 +91,10 @@ export function buildVendorOrderNotification(
   slipUrl: string
 ): string {
   const itemLines = order.orderItems
-    .map((i) => `• ${i.quantity}x ${i.menuItem?.name ?? "Item"}`)
+    .map(
+      (i) =>
+        `• ${i.quantity}x ${i.menuItem?.name ?? "Item"}${i.sizeLabel ? ` · ${i.sizeLabel}` : ""}`
+    )
     .join("\n");
 
   return [

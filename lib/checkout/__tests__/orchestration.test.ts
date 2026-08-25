@@ -11,7 +11,15 @@ const validPayInput = {
   vendorName: "Simba Grill",
   vendor: { payoutMethod: "MERCHANT_CODE" as const, momoCode: "123456" },
   momoMode: "simulate" as const,
-  lines: [{ menuItemId: "item-1", name: "Brochettes", qty: 2, lineTotal: 4000 }],
+  lines: [
+    {
+      lineKey: "item-1",
+      menuItemId: "item-1",
+      name: "Brochettes",
+      qty: 2,
+      lineTotal: 4000,
+    },
+  ],
   phone: "0788123456",
   sector: "Kicukiro",
   landmark: "Near Simba",
@@ -58,8 +66,11 @@ describe("executePay", () => {
         ...validPayInput,
         lines: [
           {
+            lineKey: "item-1::large",
             menuItemId: "item-1",
             name: "Brochettes",
+            sizeOptionId: "large",
+            sizeLabel: "Large",
             qty: 2,
             lineTotal: 4000,
             notes: "Well done",
@@ -79,7 +90,14 @@ describe("executePay", () => {
       customerPhone: "0788123456",
       deliverySector: "Kicukiro",
       landmark: "Near Simba",
-      items: [{ menuItemId: "item-1", quantity: 2, notes: "Well done" }],
+      items: [
+        {
+          menuItemId: "item-1",
+          quantity: 2,
+          sizeOptionId: "large",
+          notes: "Well done",
+        },
+      ],
     });
     expect(momoClient.initiateStkPush).toHaveBeenCalledWith({
       orderId: "order-1",

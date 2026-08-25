@@ -107,11 +107,16 @@ export function CheckoutSheet({
             <div className="my-2.5 flex flex-col gap-2">
               {lines.map((line) => (
                 <div
-                  key={line.menuItemId}
+                  key={line.lineKey}
                   className="flex items-center gap-3 rounded-brand-lg border border-hairline bg-canvas-soft p-[11px_13px]"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="font-body text-body-sm font-medium text-ink">{line.name}</div>
+                    {line.sizeLabel ? (
+                      <div className="mt-0.5 font-body text-caption font-medium text-primary">
+                        {line.sizeLabel}
+                      </div>
+                    ) : null}
                     {line.notes && (
                       <div className="mt-0.5 font-body text-caption italic text-muted">
                         &ldquo;{line.notes}&rdquo;
@@ -125,7 +130,7 @@ export function CheckoutSheet({
                     <button
                       type="button"
                       aria-label="Remove one"
-                      onClick={() => onDec(line.menuItemId)}
+                      onClick={() => onDec(line.lineKey)}
                       className="flex h-[30px] w-[30px] items-center justify-center rounded-full font-body text-xl text-muted"
                     >
                       −
@@ -136,7 +141,7 @@ export function CheckoutSheet({
                     <button
                       type="button"
                       aria-label="Add one"
-                      onClick={() => onInc(line.menuItemId)}
+                      onClick={() => onInc(line.lineKey)}
                       className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-primary font-body text-lg text-on-primary"
                     >
                       +

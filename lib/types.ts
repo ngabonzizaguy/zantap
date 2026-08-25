@@ -184,12 +184,23 @@ export interface MenuImage {
   createdAt: Date;
 }
 
+export interface MenuItemSizeOption {
+  /** Stable within this menu item; labels may be renamed without breaking carts. */
+  id: string;
+  label: string;
+  priceRwf: number;
+  isAvailable: boolean;
+}
+
 export interface MenuItem {
   id: string;
   vendorId: string;
   name: string;
   description?: string;
+  /** Canonical single/starting price. Mirrors the cheapest enabled size. */
   priceRwf: number;
+  /** Ordered vendor-defined sizes. Absent for legacy/single-price items. */
+  sizeOptions?: MenuItemSizeOption[];
   imageUrl?: string;
   category: string;
   isAvailable: boolean;
@@ -218,6 +229,7 @@ export interface AddMenuImageInput {
 export interface CreateMenuItemInput {
   name: string;
   priceRwf: number;
+  sizeOptions?: MenuItemSizeOption[];
   description?: string;
   category?: string;
 }
@@ -225,6 +237,8 @@ export interface CreateMenuItemInput {
 export interface UpdateMenuItemInput {
   name?: string;
   priceRwf?: number;
+  /** Null disables size pricing; an array replaces the ordered option list. */
+  sizeOptions?: MenuItemSizeOption[] | null;
   description?: string;
   category?: string;
   stockCount?: number | null;
@@ -239,6 +253,9 @@ export interface OrderItem {
   menuItem?: MenuItem;
   quantity: number;
   unitPriceRwf: number;
+  /** Selected size identity and label snapshot; absent for single-price items. */
+  sizeOptionId?: string;
+  sizeLabel?: string;
   /** Special instructions from the customize modal (one per line item). */
   notes?: string;
 }
@@ -324,7 +341,12 @@ export interface CreateOrderInput {
   customerPhone: string;
   deliverySector: string;
   landmark: string;
-  items: { menuItemId: string; quantity: number; notes?: string }[];
+  items: {
+    menuItemId: string;
+    quantity: number;
+    sizeOptionId?: string;
+    notes?: string;
+  }[];
 }
 
 export interface CreatePaymentInput {

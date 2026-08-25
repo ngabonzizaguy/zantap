@@ -12,6 +12,18 @@ const menu: MenuItem[] = [
     isAvailable: true,
   },
   {
+    id: "item-c",
+    vendorId: "v1",
+    name: "Family Pilau",
+    priceRwf: 5000,
+    sizeOptions: [
+      { id: "small", label: "Small", priceRwf: 5000, isAvailable: true },
+      { id: "family", label: "Family tray", priceRwf: 12000, isAvailable: true },
+    ],
+    category: "Mains",
+    isAvailable: true,
+  },
+  {
     id: "item-b",
     vendorId: "v1",
     name: "Chips",
@@ -43,6 +55,28 @@ describe("computeTotal", () => {
   it("ignores cart keys that are not on the menu", () => {
     expect(computeTotal({ "unknown-id": 5 }, menu)).toBe(0);
   });
+
+  it("prices separate custom-size lines from their persisted option", () => {
+    expect(
+      computeTotal({ "item-c::small": 1, "item-c::family": 2 }, menu)
+    ).toBe(29_000);
+  });
+
+  it("drops a stale cart line when its size is no longer available", () => {
+    const unavailableMenu = menu.map((item) =>
+      item.id === "item-c"
+        ? {
+            ...item,
+            sizeOptions: item.sizeOptions?.map((option) => ({
+              ...option,
+              isAvailable: option.id === "family" ? false : option.isAvailable,
+            })),
+          }
+        : item
+    );
+    expect(computeTotal({ "item-c::family": 1 }, unavailableMenu)).toBe(0);
+    expect(computeLines({ "item-c::family": 1 }, unavailableMenu)).toEqual([]);
+  });
 });
 
 describe("computeLines", () => {
@@ -53,6 +87,7 @@ describe("computeLines", () => {
   it("returns line items with qty and lineTotal", () => {
     expect(computeLines({ "item-a": 2 }, menu)).toEqual([
       {
+        lineKey: "item-a",
         menuItemId: "item-a",
         name: "Brochettes",
         qty: 2,
@@ -64,6 +99,7 @@ describe("computeLines", () => {
   it("preserves menu order and omits zero-qty items", () => {
     expect(computeLines({ "item-b": 1 }, menu)).toEqual([
       {
+        lineKey: "item-b",
         menuItemId: "item-b",
         name: "Chips",
         qty: 1,
@@ -77,11 +113,42 @@ describe("computeLines", () => {
       computeLines({ "item-a": 2 }, menu, { "item-a": "Extra spicy" })
     ).toEqual([
       {
+        lineKey: "item-a",
         menuItemId: "item-a",
         name: "Brochettes",
         qty: 2,
         lineTotal: 6000,
         notes: "Extra spicy",
+      },
+    ]);
+  });
+
+  it("returns one checkout line per selected size", () => {
+    expect(
+      computeLines(
+        { "item-c::small": 1, "item-c::family": 2 },
+        menu,
+        { "item-c::family": "Pack separately" }
+      )
+    ).toEqual([
+      {
+        lineKey: "item-c::small",
+        menuItemId: "item-c",
+        name: "Family Pilau",
+        sizeOptionId: "small",
+        sizeLabel: "Small",
+        qty: 1,
+        lineTotal: 5000,
+      },
+      {
+        lineKey: "item-c::family",
+        menuItemId: "item-c",
+        name: "Family Pilau",
+        sizeOptionId: "family",
+        sizeLabel: "Family tray",
+        qty: 2,
+        lineTotal: 24000,
+        notes: "Pack separately",
       },
     ]);
   });

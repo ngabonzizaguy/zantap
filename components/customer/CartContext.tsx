@@ -9,6 +9,7 @@ import {
 } from "react";
 import type { CustomizationSelection } from "@/lib/menu/customization";
 import { sanitizeItemNotes } from "@/lib/menu/customization";
+import { buildCartLineKey } from "@/lib/menu/sizes";
 
 export type CartMap = Record<string, number>;
 export type CartNotesMap = Record<string, string>;
@@ -39,16 +40,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addFromCustomization = useCallback(
     (selection: CustomizationSelection) => {
+      const lineKey = buildCartLineKey(
+        selection.menuItemId,
+        selection.sizeOptionId
+      );
       setCart((prev) => ({
         ...prev,
-        [selection.menuItemId]:
-          (prev[selection.menuItemId] ?? 0) + selection.qty,
+        [lineKey]: (prev[lineKey] ?? 0) + selection.qty,
       }));
       const notes = sanitizeItemNotes(selection.notes);
       setItemNotes((prev) => {
         const next = { ...prev };
-        if (notes) next[selection.menuItemId] = notes;
-        else delete next[selection.menuItemId];
+        if (notes) next[lineKey] = notes;
+        else delete next[lineKey];
         return next;
       });
     },

@@ -31,7 +31,7 @@ import {
   savePendingCheckout,
 } from "./pending-order-storage";
 import { transition } from "./stages";
-import { computeCount, computeLines, computeTotal } from "./totals";
+import { computeLines } from "./totals";
 import { canProceedToPay } from "./validation";
 
 const initialCheckoutFields = {
@@ -103,11 +103,17 @@ export function useCheckout(
   const [remainingMs, setRemainingMs] = useState(0);
   const resumePromptDismissed = useRef(false);
 
-  const count = useMemo(() => computeCount(cart), [cart]);
-  const total = useMemo(() => computeTotal(cart, menu), [cart, menu]);
   const lines = useMemo(
     () => computeLines(cart, menu, itemNotes),
     [cart, menu, itemNotes]
+  );
+  const count = useMemo(
+    () => lines.reduce((sum, line) => sum + line.qty, 0),
+    [lines]
+  );
+  const total = useMemo(
+    () => lines.reduce((sum, line) => sum + line.lineTotal, 0),
+    [lines]
   );
   const canPay = canProceedToPay(count, phone, sector, landmark);
   const isManualFlow = momoMode === "manual";

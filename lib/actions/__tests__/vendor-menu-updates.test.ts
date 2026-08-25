@@ -62,4 +62,40 @@ describe("Vendor menu update publication", () => {
       "DISH_RESTORED",
     ]);
   });
+
+  it("persists custom ordered size options through the guarded action", async () => {
+    const created = await createMenuItem(
+      DEMO_OWNER_TOKEN,
+      DEMO_VENDOR_SLUG,
+      {
+        name: "Family Pilau",
+        priceRwf: 15_000,
+        sizeOptions: [
+          { id: "small", label: "Small", priceRwf: 15_000, isAvailable: true },
+          { id: "family", label: "Family tray", priceRwf: 40_000, isAvailable: true },
+        ],
+      }
+    );
+    expect(created.sizeOptions?.map((option) => option.label)).toEqual([
+      "Small",
+      "Family tray",
+    ]);
+
+    const updated = await updateMenuItem(
+      DEMO_OWNER_TOKEN,
+      DEMO_VENDOR_SLUG,
+      created.id,
+      {
+        sizeOptions: [
+          { id: "family", label: "Party tray", priceRwf: 42_000, isAvailable: true },
+          { id: "small", label: "Small", priceRwf: 15_000, isAvailable: false },
+        ],
+      }
+    );
+    expect(updated?.priceRwf).toBe(42_000);
+    expect(updated?.sizeOptions?.[0]).toMatchObject({
+      id: "family",
+      label: "Party tray",
+    });
+  });
 });

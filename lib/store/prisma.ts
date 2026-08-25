@@ -36,6 +36,13 @@ import {
 import { deleteMenuImageBlob, putMenuImageBlob } from "@/lib/menu/blob-storage";
 import { sanitizeItemNotes } from "@/lib/menu/customization";
 import {
+  getMenuItemPrice,
+  getMenuItemSizeOption,
+  getSizeOptionsStartingPrice,
+  normalizeMenuItemSizeOptions,
+  parseMenuItemSizeOptions,
+} from "@/lib/menu/sizes";
+import {
   assertCanAddMenuImage,
   buildMenuBlobPathname,
   MenuImageError,
@@ -203,6 +210,7 @@ const kdsOrderInclude = {
           name: true,
           description: true,
           priceRwf: true,
+          sizeOptions: true,
           imageUrl: true,
           category: true,
           isAvailable: true,
@@ -367,6 +375,7 @@ function mapMenuItem(item: PrismaMenuItemWithImages): MenuItem {
     name: item.name,
     description: item.description ?? undefined,
     priceRwf: item.priceRwf,
+    sizeOptions: parseMenuItemSizeOptions(item.sizeOptions),
     imageUrl: item.imageUrl ?? undefined,
     category: item.category,
     isAvailable: item.isAvailable,
@@ -509,6 +518,8 @@ function mapOrder(order: PrismaOrderWithItems): Order {
       menuItem: mapMenuItem(item.menuItem),
       quantity: item.quantity,
       unitPriceRwf: item.unitPriceRwf,
+      sizeOptionId: item.sizeOptionId ?? undefined,
+      sizeLabel: item.sizeLabel ?? undefined,
       notes: item.notes ?? undefined,
     })),
   };
@@ -1521,12 +1532,20 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     if (!vendor) throw new Error("Vendor not found");
 
     const gradient = thumbGradientForId(`new_${Date.now()}`);
+    const sizeOptions = input.sizeOptions
+      ? normalizeMenuItemSizeOptions(input.sizeOptions)
+      : undefined;
     const created = await client.menuItem.create({
       data: {
         vendorId: vendor.id,
         name: input.name.trim(),
         description: input.description?.trim() || null,
-        priceRwf: input.priceRwf,
+        priceRwf: sizeOptions
+          ? getSizeOptionsStartingPrice(sizeOptions)
+          : input.priceRwf,
+        ...(sizeOptions
+          ? { sizeOptions: sizeOptions as unknown as Prisma.InputJsonValue }
+          : {}),
         category: input.category?.trim() || "General",
         isAvailable: true,
         thumbFrom: gradient.thumbFrom,
@@ -1553,7 +1572,19 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
     const data: Prisma.MenuItemUpdateInput = {};
     if (input.name !== undefined) data.name = input.name.trim();
-    if (input.priceRwf !== undefined) data.priceRwf = input.priceRwf;
+    if (input.sizeOptions && input.sizeOptions !== null) {
+      const sizeOptions = normalizeMenuItemSizeOptions(input.sizeOptions);
+      data.priceRwf = getSizeOptionsStartingPrice(sizeOptions);
+      data.sizeOptions = sizeOptions as unknown as Prisma.InputJsonValue;
+    } else if (input.sizeOptions === null) {
+      data.sizeOptions = Prisma.DbNull;
+      if (input.priceRwf !== undefined) data.priceRwf = input.priceRwf;
+    } else if (input.priceRwf !== undefined) {
+      const existingSizes = parseMenuItemSizeOptions(existing.sizeOptions);
+      data.priceRwf = existingSizes
+        ? getSizeOptionsStartingPrice(existingSizes)
+        : input.priceRwf;
+    }
     if (input.description !== undefined) {
       data.description = input.description.trim() || null;
     }
@@ -2341,7 +2372,19 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       return {
         menuItemId: menuItem.id,
         quantity: line.quantity,
-        unitPriceRwf: menuItem.priceRwf,
+        unitPriceRwf: getMenuItemPrice(
+          mapMenuItem(menuItem),
+          line.sizeOptionId
+        ),
+        ...(line.sizeOptionId
+          ? {
+              sizeOptionId: line.sizeOptionId,
+              sizeLabel: getMenuItemSizeOption(
+                mapMenuItem(menuItem),
+                line.sizeOptionId
+              )!.label,
+            }
+          : {}),
         ...(notes ? { notes } : {}),
       };
     });

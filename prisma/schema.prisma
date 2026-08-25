@@ -267,6 +267,8 @@ model MenuItem {
   name              String
   description       String?
   priceRwf          Int
+  /// Ordered [{id,label,priceRwf,isAvailable}] options; null = single price.
+  sizeOptions       Json?
   imageUrl          String?
   category          String      @default("General")
   isAvailable       Boolean     @default(true)
@@ -364,6 +366,8 @@ model OrderItem {
   menuItem     MenuItem @relation(fields: [menuItemId], references: [id])
   quantity     Int
   unitPriceRwf Int
+  sizeOptionId String?
+  sizeLabel    String?
   notes        String?
 
   @@index([orderId])

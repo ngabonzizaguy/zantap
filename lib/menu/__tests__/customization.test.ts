@@ -35,6 +35,16 @@ const customItem: MenuItem = {
   },
 };
 
+const sizedItem: MenuItem = {
+  ...baseItem,
+  id: "item-sized",
+  priceRwf: 5_000,
+  sizeOptions: [
+    { id: "small", label: "Small", priceRwf: 5_000, isAvailable: true },
+    { id: "family", label: "Family tray", priceRwf: 12_000, isAvailable: true },
+  ],
+};
+
 describe("INGREDIENTS_UI_ENABLED", () => {
   it("is false so the customize modal shows images + notes only", () => {
     expect(INGREDIENTS_UI_ENABLED).toBe(false);
@@ -144,5 +154,14 @@ describe("computeCustomizeTotal", () => {
     expect(computeCustomizeTotal(selection, baseItem)).toBe(
       baseItem.priceRwf + first.priceRwf
     );
+  });
+
+  it("uses the selected persisted size price as the base", () => {
+    const selection: CustomizationSelection = {
+      ...emptySelection(sizedItem),
+      sizeOptionId: "family",
+      qty: 2,
+    };
+    expect(computeCustomizeTotal(selection, sizedItem)).toBe(24_000);
   });
 });

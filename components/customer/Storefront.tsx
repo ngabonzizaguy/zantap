@@ -128,10 +128,15 @@ function StorefrontInner({
 
   const handleAddItem = useCallback(
     (itemId: string) => {
+      const item = menu.find((candidate) => candidate.id === itemId);
+      if (item?.sizeOptions?.length) {
+        setActiveItemId(itemId);
+        return;
+      }
       addItem(itemId);
       recordEngagement("cart-add");
     },
-    [addItem, recordEngagement]
+    [addItem, menu, recordEngagement]
   );
 
   const activeItem = useMemo(

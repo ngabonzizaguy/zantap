@@ -76,6 +76,12 @@ import { putMenuImageBlob } from "@/lib/menu/blob-storage";
 import { sanitizeItemNotes } from "@/lib/menu/customization";
 import { thumbGradientForId } from "@/lib/menu/gradients";
 import {
+  getMenuItemPrice,
+  getMenuItemSizeOption,
+  getSizeOptionsStartingPrice,
+  normalizeMenuItemSizeOptions,
+} from "@/lib/menu/sizes";
+import {
   assertCanAddMenuImage,
   buildMenuBlobPathname,
   MenuImageError,
@@ -324,6 +330,7 @@ export function createInMemoryStore(): ResettableStore {
   function cloneMenuItem(item: MenuItem): MenuItem {
     return {
       ...item,
+      sizeOptions: item.sizeOptions?.map((option) => ({ ...option })),
       archivedAt: item.archivedAt ? new Date(item.archivedAt) : undefined,
     };
   }
@@ -1127,12 +1134,18 @@ export function createInMemoryStore(): ResettableStore {
 
     const id = `mi_${++menuItemCounter}_${Date.now()}`;
     const gradient = thumbGradientForId(id);
+    const sizeOptions = input.sizeOptions
+      ? normalizeMenuItemSizeOptions(input.sizeOptions)
+      : undefined;
     const item: MenuItem = {
       id,
       vendorId: vendor.id,
       name: input.name.trim(),
       description: input.description?.trim() || undefined,
-      priceRwf: input.priceRwf,
+      priceRwf: sizeOptions
+        ? getSizeOptionsStartingPrice(sizeOptions)
+        : input.priceRwf,
+      sizeOptions,
       category: input.category?.trim() || "General",
       isAvailable: true,
       ...gradient,
@@ -1160,10 +1173,21 @@ export function createInMemoryStore(): ResettableStore {
     if (index === -1) return null;
 
     const current = menuItems[index];
+    const nextSizeOptions = input.sizeOptions
+      ? normalizeMenuItemSizeOptions(input.sizeOptions)
+      : input.sizeOptions === null
+        ? undefined
+        : current.sizeOptions;
     menuItems[index] = {
       ...current,
       name: input.name !== undefined ? input.name.trim() : current.name,
-      priceRwf: input.priceRwf ?? current.priceRwf,
+      priceRwf:
+        nextSizeOptions
+          ? getSizeOptionsStartingPrice(nextSizeOptions)
+          : input.priceRwf ?? current.priceRwf,
+      ...(input.sizeOptions !== undefined
+        ? { sizeOptions: nextSizeOptions }
+        : {}),
       description:
         input.description !== undefined
           ? input.description.trim() || undefined
@@ -1771,7 +1795,13 @@ export function createInMemoryStore(): ResettableStore {
         menuItemId: menuItem.id,
         menuItem: hydrateMenuItem(menuItem),
         quantity: line.quantity,
-        unitPriceRwf: menuItem.priceRwf,
+        unitPriceRwf: getMenuItemPrice(menuItem, line.sizeOptionId),
+        ...(line.sizeOptionId
+          ? {
+              sizeOptionId: line.sizeOptionId,
+              sizeLabel: getMenuItemSizeOption(menuItem, line.sizeOptionId)!.label,
+            }
+          : {}),
         ...(notes ? { notes } : {}),
       };
     });

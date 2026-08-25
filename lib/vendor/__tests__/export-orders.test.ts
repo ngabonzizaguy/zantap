@@ -30,6 +30,8 @@ function sampleItem(overrides?: Partial<OrderHistoryItem>): OrderHistoryItem {
           menuItem: { id: "m1", vendorId: "v1", name: "Brochette", priceRwf: 2500, category: "Grill", isAvailable: true },
           quantity: 1,
           unitPriceRwf: 2500,
+          sizeOptionId: "medium",
+          sizeLabel: "Medium",
         },
         {
           id: "oi2",
@@ -81,6 +83,7 @@ describe("buildCsv", () => {
     expect(row["Payment Status"]).toBe("Paid");
     expect(row["Order ID"]).toBe("#1204");
     expect(row["Total (RWF)"]).toBe("4500");
+    expect(row.Items).toContain("1x Brochette (Medium)");
   });
 });
 

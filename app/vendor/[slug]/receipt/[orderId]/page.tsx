@@ -99,6 +99,7 @@ export default async function VendorReceiptPage({ params }: PageProps) {
                   <div>
                     <p className="font-body text-body-md text-ink">
                       {line.quantity}× {name}
+                      {line.sizeLabel ? ` · ${line.sizeLabel}` : ""}
                     </p>
                     <p className="font-body text-body-sm text-muted">
                       {formatRwf(line.unitPriceRwf)} each

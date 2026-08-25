@@ -1,6 +1,10 @@
 export interface CheckoutLine {
+  /** Stable cart identity; distinguishes sizes of the same menu item. */
+  lineKey: string;
   menuItemId: string;
   name: string;
+  sizeOptionId?: string;
+  sizeLabel?: string;
   qty: number;
   lineTotal: number;
   notes?: string;

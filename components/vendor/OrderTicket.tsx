@@ -310,6 +310,10 @@ export function OrderTicket({
                       <span className="font-body text-body-md font-medium text-ink">
                         {item.quantity}x {item.menuItem?.name ?? "Item"}
                       </span>
+                      <span className="mt-0.5 block font-body text-caption font-medium text-primary">
+                        {item.sizeLabel ? `${item.sizeLabel} · ` : ""}
+                        {formatRwf(item.unitPriceRwf)} each
+                      </span>
                     </div>
                   </div>
                   {item.notes && (

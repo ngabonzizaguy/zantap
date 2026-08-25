@@ -475,6 +475,89 @@ export function runStoreContract(
         ).rejects.toThrow();
       });
 
+      it("persists ordered custom sizes and snapshots the selected order size", async () => {
+        const sized = await store.createMenuItem(slug, {
+          name: "Family Pilau",
+          priceRwf: 1,
+          sizeOptions: [
+            { id: "small", label: "Small", priceRwf: 15_000, isAvailable: true },
+            { id: "medium", label: "Medium", priceRwf: 25_000, isAvailable: true },
+            { id: "family", label: "Family tray", priceRwf: 40_000, isAvailable: false },
+          ],
+        });
+
+        expect(sized.priceRwf).toBe(15_000);
+        expect(sized.sizeOptions?.map((option) => option.label)).toEqual([
+          "Small",
+          "Medium",
+          "Family tray",
+        ]);
+
+        const updated = await store.updateMenuItem(slug, sized.id, {
+          sizeOptions: [
+            { id: "medium", label: "Regular", priceRwf: 26_000, isAvailable: true },
+            { id: "small", label: "Small", priceRwf: 16_000, isAvailable: true },
+          ],
+        });
+        expect(updated?.priceRwf).toBe(16_000);
+        expect(updated?.sizeOptions?.map((option) => option.id)).toEqual([
+          "medium",
+          "small",
+        ]);
+
+        const order = await store.createOrder({
+          vendorSlug: slug,
+          customerPhone: "0788000333",
+          deliverySector: "Kicukiro",
+          landmark: "Size price test",
+          items: [{ menuItemId: sized.id, quantity: 2, sizeOptionId: "medium" }],
+        });
+        expect(order.totalAmount).toBe(52_000);
+        expect(order.orderItems[0]).toMatchObject({
+          sizeOptionId: "medium",
+          sizeLabel: "Regular",
+          unitPriceRwf: 26_000,
+          quantity: 2,
+        });
+
+        await expect(
+          store.createOrder({
+            vendorSlug: slug,
+            customerPhone: "0788000333",
+            deliverySector: "Kicukiro",
+            landmark: "Missing size test",
+            items: [{ menuItemId: sized.id, quantity: 1 }],
+          })
+        ).rejects.toThrow(/size/i);
+      });
+
+      it("can disable size pricing without breaking the single-price flow", async () => {
+        const sized = await store.createMenuItem(slug, {
+          name: "Sized Fish",
+          priceRwf: 5_000,
+          sizeOptions: [
+            { id: "small", label: "Small", priceRwf: 5_000, isAvailable: true },
+            { id: "large", label: "Large", priceRwf: 12_000, isAvailable: true },
+          ],
+        });
+        const single = await store.updateMenuItem(slug, sized.id, {
+          priceRwf: 6_000,
+          sizeOptions: null,
+        });
+        expect(single?.priceRwf).toBe(6_000);
+        expect(single?.sizeOptions).toBeUndefined();
+
+        await expect(
+          store.createOrder({
+            vendorSlug: slug,
+            customerPhone: "0788000444",
+            deliverySector: "Kicukiro",
+            landmark: "Unexpected size test",
+            items: [{ menuItemId: sized.id, quantity: 1, sizeOptionId: "small" }],
+          })
+        ).rejects.toThrow(/does not offer sizes/i);
+      });
+
       it("getMenuItem returns a single row", async () => {
         const menu = await store.getMenu(slug);
         const item = menu[0];

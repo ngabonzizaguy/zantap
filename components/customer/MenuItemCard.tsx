@@ -8,6 +8,10 @@ import { MenuItemImageCarousel } from "@/components/customer/MenuItemImageCarous
 import { MenuImageLightbox } from "@/components/customer/MenuImageLightbox";
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
+import {
+  getMenuItemStartingPrice,
+  parseCartLineKey,
+} from "@/lib/menu/sizes";
 
 interface MenuItemCardProps {
   item: MenuItem;
@@ -89,7 +93,8 @@ export const MenuItemCard = memo(function MenuItemCard({
             {item.description}
           </div>
           <div className={cn("mt-2.5 font-body text-body-md font-medium", soldOut ? "text-muted" : "text-gold")}>
-            {formatRwf(item.priceRwf)}
+            {item.sizeOptions?.length ? "From " : ""}
+            {formatRwf(getMenuItemStartingPrice(item))}
           </div>
         </div>
 
@@ -141,11 +146,18 @@ export function MenuList({
     <div className="flex flex-col gap-3">
       {items.map((item) => {
         const soldOut = item.stockCount === 0;
+        const quantity = Object.entries(cart).reduce(
+          (total, [lineKey, lineQuantity]) =>
+            parseCartLineKey(lineKey).menuItemId === item.id
+              ? total + lineQuantity
+              : total,
+          0
+        );
         return (
           <MenuItemCard
             key={item.id}
             item={item}
-            qty={cart[item.id] ?? 0}
+            qty={quantity}
             soldOut={soldOut}
             onAdd={soldOut ? () => {} : onAdd}
             onOpen={onOpen}

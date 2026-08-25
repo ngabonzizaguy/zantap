@@ -49,6 +49,7 @@ export async function createMenuItem(
   const created = await store.createMenuItem(vendorSlug, {
     name: input.name.trim(),
     priceRwf: input.priceRwf,
+    sizeOptions: input.sizeOptions,
     description: input.description?.trim() || undefined,
     category: input.category?.trim() || "General",
   });
@@ -76,6 +77,7 @@ export async function updateMenuItem(
   const updated = await store.updateMenuItem(vendorSlug, itemId, {
     name: input.name?.trim(),
     priceRwf: input.priceRwf,
+    sizeOptions: input.sizeOptions,
     description:
       input.description !== undefined
         ? input.description.trim() || undefined

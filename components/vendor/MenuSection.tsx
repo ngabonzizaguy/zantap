@@ -4,6 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { MenuItem } from "@/lib/types";
 import { formatRwf } from "@/lib/format";
 import { getPrimaryImageUrl } from "@/lib/menu/media";
+import {
+  getMenuItemSizeOptions,
+  getSizeOptionsStartingPrice,
+} from "@/lib/menu/sizes";
 import { useOwnerToken } from "@/lib/vendor/useOwnerToken";
 import {
   archiveMenuItem,
@@ -17,6 +21,7 @@ import {
 import { Badge, Button, Card, Modal } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 import { MenuItemModal, type MenuItemFormValues, type MenuItemSubmitOptions } from "@/components/vendor/MenuItemModal";
+import { parsePriceDraft } from "@/components/vendor/SizePricingEditor";
 
 type MenuFilter = "active" | "archived";
 
@@ -185,6 +190,7 @@ function MenuRow({
 }: MenuRowProps) {
   const thumbBg = `radial-gradient(circle at 32% 28%, ${item.thumbFrom ?? "#ffd2b0"}, ${item.thumbTo ?? "#f5945f"})`;
   const primaryImage = getPrimaryImageUrl(item);
+  const sizeOptions = getMenuItemSizeOptions(item);
   const available = item.isAvailable;
 
   const actions: RowAction[] = archived
@@ -249,9 +255,17 @@ function MenuRow({
           <p className="truncate font-body text-body-md font-semibold text-ink">
             {item.name}
           </p>
-          <p className="font-body text-body-sm font-semibold text-primary">
-            {formatRwf(item.priceRwf)}
-          </p>
+          {sizeOptions.length > 0 ? (
+            <p className="truncate font-body text-caption font-medium text-primary">
+              {sizeOptions
+                .map((option) => `${option.label} ${formatRwf(option.priceRwf)}`)
+                .join(" · ")}
+            </p>
+          ) : (
+            <p className="font-body text-body-sm font-semibold text-primary">
+              {formatRwf(item.priceRwf)}
+            </p>
+          )}
           <Badge variant={archived ? "muted" : "default"} className="mt-1">
             {item.category}
           </Badge>
@@ -387,7 +401,15 @@ export function MenuSection({
     if (!token) return;
     setSaving(true);
     setActionError(null);
-    const priceRwf = Number(values.priceRwf);
+    const sizeOptions = values.useSizes
+      ? values.sizeOptions.map((option) => ({
+          ...option,
+          priceRwf: parsePriceDraft(option.priceRwf),
+        }))
+      : undefined;
+    const priceRwf = sizeOptions
+      ? getSizeOptionsStartingPrice(sizeOptions)
+      : parsePriceDraft(values.priceRwf);
     const payload = {
       name: values.name,
       priceRwf,
@@ -399,7 +421,7 @@ export function MenuSection({
 
     if (editorMode === "create") {
       result = await runGuarded(() =>
-        createMenuItem(token, vendorSlug, payload, {
+        createMenuItem(token, vendorSlug, { ...payload, sizeOptions }, {
           announce: !suppressNextAnnouncement,
         })
       );
@@ -414,9 +436,15 @@ export function MenuSection({
       }
     } else if (editingItem) {
       result = await runGuarded(() =>
-        updateMenuItem(token, vendorSlug, editingItem.id, payload, {
+        updateMenuItem(
+          token,
+          vendorSlug,
+          editingItem.id,
+          { ...payload, sizeOptions: values.useSizes ? sizeOptions! : null },
+          {
           announce: !suppressNextAnnouncement,
-        })
+          }
+        )
       );
     }
 
@@ -444,6 +472,7 @@ export function MenuSection({
         {
           name: `${item.name} (copy)`.slice(0, 60),
           priceRwf: item.priceRwf,
+          sizeOptions: item.sizeOptions,
           description: item.description,
           category: item.category,
         },

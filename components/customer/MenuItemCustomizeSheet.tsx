@@ -19,6 +19,10 @@ import {
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { Badge, Button, Card } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
+import {
+  getMenuItemPrice,
+  getMenuItemSizeOptions,
+} from "@/lib/menu/sizes";
 
 const DRAG_CLOSE_PX = 130;
 const FLICK_VELOCITY = 0.6;
@@ -49,6 +53,11 @@ export function MenuItemCustomizeSheet({
   const [addOnQty, setAddOnQty] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState("");
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [sizeOptionId, setSizeOptionId] = useState<string | undefined>(() =>
+    item
+      ? getMenuItemSizeOptions(item, { availableOnly: true })[0]?.id
+      : undefined
+  );
 
   const dragRef = useRef<{ startY: number; startT: number } | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -66,6 +75,9 @@ export function MenuItemCustomizeSheet({
       }
       setNotes("");
       setPhotoIndex(0);
+      setSizeOptionId(
+        getMenuItemSizeOptions(item, { availableOnly: true })[0]?.id
+      );
     }
   }
 
@@ -91,6 +103,7 @@ export function MenuItemCustomizeSheet({
     if (!renderItem) return null;
     return {
       menuItemId: renderItem.id,
+      ...(sizeOptionId ? { sizeOptionId } : {}),
       qty,
       removedIncludedIds: INGREDIENTS_UI_ENABLED ? [...removed] : [],
       addOns: INGREDIENTS_UI_ENABLED
@@ -100,12 +113,15 @@ export function MenuItemCustomizeSheet({
         : [],
       notes,
     };
-  }, [renderItem, qty, removed, addOnQty, notes]);
+  }, [renderItem, qty, removed, addOnQty, notes, sizeOptionId]);
 
   const displayTotal =
     renderItem && selection ? computeCustomizeTotal(selection, renderItem) : 0;
 
   const galleryUrls = renderItem ? getMenuItemGalleryUrls(renderItem) : [];
+  const sizeOptions = renderItem
+    ? getMenuItemSizeOptions(renderItem, { availableOnly: true })
+    : [];
   const fallbackBg = renderItem
     ? `radial-gradient(circle at 32% 28%, ${renderItem.thumbFrom ?? "#ffd2b0"}, ${renderItem.thumbTo ?? "#f5945f"})`
     : "";
@@ -223,7 +239,7 @@ export function MenuItemCustomizeSheet({
                   </div>
                   <div className="mt-2 flex w-full items-center">
                     <span className="flex-none font-body text-title-sm font-medium text-ink">
-                      {formatRwf(renderItem.priceRwf)}
+                      {formatRwf(getMenuItemPrice(renderItem, sizeOptionId))}
                     </span>
                     <div className="ml-auto flex items-center gap-0.5 rounded-pill border border-hairline bg-surface-card p-0.5 shadow-brand-soft">
                       <button
@@ -259,6 +275,40 @@ export function MenuItemCustomizeSheet({
                   <Icon name="close" size={16} strokeWidth={2} />
                 </button>
               </div>
+
+              {sizeOptions.length > 0 && (
+                <fieldset className="mt-5">
+                  <legend className="font-body text-body-sm font-medium text-ink">
+                    Choose a size
+                  </legend>
+                  <div className="mt-2 grid grid-cols-2 gap-2.5">
+                    {sizeOptions.map((option) => {
+                      const selected = sizeOptionId === option.id;
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() => setSizeOptionId(option.id)}
+                          className={cn(
+                            "flex min-h-14 items-center justify-between gap-3 rounded-brand-lg border px-3.5 py-2.5 text-left transition-colors",
+                            selected
+                              ? "border-primary bg-primary/10"
+                              : "border-hairline bg-surface-card hover:border-hairline-strong"
+                          )}
+                        >
+                          <span className="font-body text-body-sm font-medium text-ink">
+                            {option.label}
+                          </span>
+                          <span className={cn("font-body text-caption font-medium", selected ? "text-primary" : "text-muted")}>
+                            {formatRwf(option.priceRwf)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              )}
 
               {INGREDIENTS_UI_ENABLED && customization && (
                 <Card padding="sm" className="mt-5 shadow-none">

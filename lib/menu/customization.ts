@@ -1,4 +1,5 @@
 import type { MenuItem } from "@/lib/types";
+import { getMenuItemPrice } from "@/lib/menu/sizes";
 
 /**
  * Presentation-shaped customization model for the storefront customize modal.
@@ -41,6 +42,7 @@ export interface ItemCustomization {
  */
 export interface CustomizationSelection {
   menuItemId: string;
+  sizeOptionId?: string;
   qty: number;
   removedIncludedIds: string[];
   addOns: { id: string; qty: number }[];
@@ -152,5 +154,5 @@ export function computeCustomizeTotal(
     return sum + option.priceRwf * picked.qty;
   }, 0);
 
-  return (item.priceRwf + addOnTotal) * selection.qty;
+  return (getMenuItemPrice(item, selection.sizeOptionId) + addOnTotal) * selection.qty;
 }

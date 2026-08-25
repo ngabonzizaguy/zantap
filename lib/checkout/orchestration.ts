@@ -77,6 +77,7 @@ export async function executePay(
       items: lines.map((line) => ({
         menuItemId: line.menuItemId,
         quantity: line.qty,
+        ...(line.sizeOptionId ? { sizeOptionId: line.sizeOptionId } : {}),
         ...(line.notes ? { notes: line.notes } : {}),
       })),
     });
