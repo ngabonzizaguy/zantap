@@ -1,16 +1,18 @@
 "use client";
 
 import { useId, useMemo, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Plus, X } from "lucide-react";
 import type { MenuImage, MenuItem } from "@/lib/types";
 import { formatRwf } from "@/lib/format";
-import { getPrimaryImageUrl } from "@/lib/menu/media";
+import { getPrimaryImageUrl, MAX_MENU_IMAGES } from "@/lib/menu/media";
+import { mergePendingMenuImageFiles } from "@/lib/menu/pending-images";
 import {
   getMenuItemSizeOptions,
   getMenuItemStartingPrice,
 } from "@/lib/menu/sizes";
+import { parseSizePriceDraft } from "@/lib/menu/size-price-draft";
 import { validateCreateMenuItemInput } from "@/lib/menu/validation";
-import { useDishPhotoPreview } from "@/components/onboard/useDishPhotoPreview";
+import { useDishPhotoPreviews } from "@/components/onboard/useDishPhotoPreview";
 import { Badge, Button, Combobox, Modal } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 import { MenuImageGallery } from "@/components/vendor/MenuImageGallery";
@@ -30,8 +32,8 @@ export interface MenuItemFormValues {
 }
 
 export interface MenuItemSubmitOptions {
-  /** First photo to upload after create (create mode only). */
-  pendingPhoto?: File | null;
+  /** Ordered photos to upload after create (create mode only). */
+  pendingPhotos?: File[];
 }
 
 interface MenuItemModalProps {
@@ -87,7 +89,7 @@ function formSizeOptions(values: MenuItemFormValues) {
   return values.useSizes
     ? values.sizeOptions.map((option) => ({
         ...option,
-        priceRwf: parsePriceDraft(option.priceRwf),
+        priceRwf: parseSizePriceDraft(option.priceRwf),
       }))
     : undefined;
 }
@@ -125,10 +127,10 @@ export function MenuItemModal({
   const [clientError, setClientError] = useState<string | null>(null);
   const [galleryError, setGalleryError] = useState<string | null>(null);
   const [galleryImages, setGalleryImages] = useState<MenuImage[]>([]);
-  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const [previewSizesOpen, setPreviewSizesOpen] = useState(false);
-  const pendingPhotoPreview = useDishPhotoPreview(pendingPhoto);
+  const pendingPhotoPreviews = useDishPhotoPreviews(pendingPhotos);
 
   const editingItemId = item?.id;
   const [prevFormKey, setPrevFormKey] = useState({ open, editingItemId, mode });
@@ -143,7 +145,7 @@ export function MenuItemModal({
       setClientError(null);
       setGalleryError(null);
       setGalleryImages(item?.images ?? []);
-      setPendingPhoto(null);
+      setPendingPhotos([]);
       setDescriptionOpen(Boolean(item?.description));
       setPreviewSizesOpen(false);
     }
@@ -164,8 +166,14 @@ export function MenuItemModal({
     }
     setClientError(null);
     onSubmit(values, {
-      pendingPhoto: mode === "create" ? pendingPhoto : null,
+      pendingPhotos: mode === "create" ? pendingPhotos : [],
     });
+  };
+
+  const handlePendingPhotos = (files: readonly File[]) => {
+    const next = mergePendingMenuImageFiles(pendingPhotos, files);
+    setPendingPhotos(next.files);
+    setGalleryError(next.error);
   };
 
   const handleGalleryChange = (images: MenuImage[]) => {
@@ -308,43 +316,73 @@ export function MenuItemModal({
             <div>
               <div className="flex items-center justify-between gap-2">
                 <p className={fieldLabelClass}>Photos</p>
-                <p className="font-body text-caption text-muted">{pendingPhoto ? "1/6" : "0/6"}</p>
+                <p className="font-body text-caption text-muted">
+                  {pendingPhotos.length}/{MAX_MENU_IMAGES}
+                </p>
               </div>
               <input
                 ref={createPhotoInputRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
+                multiple
                 className="hidden"
                 onChange={(event) => {
-                  setPendingPhoto(event.target.files?.[0] ?? null);
+                  handlePendingPhotos(Array.from(event.target.files ?? []));
                   event.target.value = "";
                 }}
               />
-              {pendingPhotoPreview ? (
-                <div className="relative mt-1.5 h-16 w-16 overflow-hidden rounded-brand-md border border-primary">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={pendingPhotoPreview} alt="" className="h-full w-full object-cover" draggable={false} />
+              <div className="mt-1.5 grid grid-cols-3 gap-2 min-[420px]:grid-cols-4 sm:grid-cols-3">
+                {pendingPhotos.map((file, index) => (
+                  <div
+                    key={`${file.name}-${file.lastModified}-${index}`}
+                    className={cn(
+                      "relative aspect-square overflow-hidden rounded-brand-md border bg-canvas-soft",
+                      index === 0 ? "border-primary" : "border-hairline"
+                    )}
+                  >
+                    {pendingPhotoPreviews[index] ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={pendingPhotoPreviews[index]}
+                        alt={`Selected photo ${index + 1}: ${file.name}`}
+                        className="h-full w-full object-cover object-center"
+                        draggable={false}
+                      />
+                    ) : null}
+                    {index === 0 ? (
+                      <span className="absolute bottom-1 left-1 rounded-pill bg-ink/70 px-1.5 py-0.5 font-body text-[10px] font-medium text-white">
+                        Cover
+                      </span>
+                    ) : null}
+                    <button
+                      type="button"
+                      aria-label={`Remove photo ${index + 1}`}
+                      disabled={saving}
+                      onClick={() => {
+                        setPendingPhotos((current) =>
+                          current.filter((_, photoIndex) => photoIndex !== index)
+                        );
+                        setGalleryError(null);
+                      }}
+                      className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-ink/75 text-white transition-colors hover:bg-ink disabled:opacity-50"
+                    >
+                      <X size={14} strokeWidth={2} aria-hidden />
+                    </button>
+                  </div>
+                ))}
+
+                {pendingPhotos.length < MAX_MENU_IMAGES ? (
                   <button
                     type="button"
-                    aria-label="Remove photo"
                     disabled={saving}
-                    onClick={() => setPendingPhoto(null)}
-                    className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-ink/70 font-body text-caption text-white"
+                    onClick={() => createPhotoInputRef.current?.click()}
+                    className="flex aspect-square min-h-16 flex-col items-center justify-center gap-1 rounded-brand-md border border-dashed border-hairline-strong font-body text-caption text-muted transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
                   >
-                    ×
+                    <Plus size={18} strokeWidth={1.8} aria-hidden />
+                    {pendingPhotos.length ? "Add more" : "Add photos"}
                   </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  disabled={saving}
-                  onClick={() => createPhotoInputRef.current?.click()}
-                  className="mt-1.5 flex h-16 w-16 flex-col items-center justify-center rounded-brand-md border border-dashed border-hairline-strong font-body text-caption text-muted transition-colors hover:border-primary hover:text-primary"
-                >
-                  <span className="text-lg leading-none">+</span>
-                  Add photo
-                </button>
-              )}
+                ) : null}
+              </div>
             </div>
           ) : null}
         </div>

@@ -8,6 +8,7 @@ import {
   getMenuItemSizeOptions,
   getSizeOptionsStartingPrice,
 } from "@/lib/menu/sizes";
+import { parseSizePriceDraft } from "@/lib/menu/size-price-draft";
 import { useOwnerToken } from "@/lib/vendor/useOwnerToken";
 import {
   archiveMenuItem,
@@ -404,7 +405,7 @@ export function MenuSection({
     const sizeOptions = values.useSizes
       ? values.sizeOptions.map((option) => ({
           ...option,
-          priceRwf: parsePriceDraft(option.priceRwf),
+          priceRwf: parseSizePriceDraft(option.priceRwf),
         }))
       : undefined;
     const priceRwf = sizeOptions
@@ -425,14 +426,17 @@ export function MenuSection({
           announce: !suppressNextAnnouncement,
         })
       );
-      if (result && options?.pendingPhoto) {
-        const formData = new FormData();
-        formData.set("file", options.pendingPhoto);
-        await runGuarded(() =>
-          uploadMenuImage(token, vendorSlug, result!.id, formData, {
-            announce: !suppressNextAnnouncement,
-          })
-        );
+      if (result) {
+        for (const photo of options?.pendingPhotos ?? []) {
+          const formData = new FormData();
+          formData.set("file", photo);
+          const uploaded = await runGuarded(() =>
+            uploadMenuImage(token, vendorSlug, result!.id, formData, {
+              announce: !suppressNextAnnouncement,
+            })
+          );
+          if (!uploaded) break;
+        }
       }
     } else if (editingItem) {
       result = await runGuarded(() =>

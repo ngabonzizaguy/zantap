@@ -17,6 +17,7 @@ import {
   MAX_MENU_ITEM_SIZE_OPTIONS,
   MIN_MENU_ITEM_SIZE_OPTIONS,
 } from "@/lib/menu/sizes";
+import { formatSizePriceDraft } from "@/lib/menu/size-price-draft";
 
 export interface SizeOptionDraft {
   id: string;
@@ -56,7 +57,7 @@ function defaultDrafts(
   basePrice: string,
   current: readonly SizeOptionDraft[] = []
 ): SizeOptionDraft[] {
-  const fallback = displayPrice(basePrice) || "";
+  const fallback = displayPrice(basePrice) || "1";
   return ["Small", "Medium", "Large"].map((label, index) => ({
     id: label.toLowerCase(),
     label,
@@ -83,7 +84,7 @@ function customDraft(
   return {
     id: `custom-${suffix}`,
     label: `Size ${suffix}`,
-    priceRwf: displayPrice(basePrice),
+    priceRwf: displayPrice(basePrice) || "1",
     isAvailable: true,
   };
 }
@@ -436,7 +437,11 @@ export function SizePricingEditor({
                             onChange={(event) =>
                               updateOption(option.id, { priceRwf: event.target.value.replace(/[^0-9,]/g, "") })
                             }
-                            onBlur={() => updateOption(option.id, { priceRwf: displayPrice(option.priceRwf) })}
+                            onBlur={() =>
+                              updateOption(option.id, {
+                                priceRwf: formatSizePriceDraft(option.priceRwf),
+                              })
+                            }
                             className={cn(inputClass, "mt-1.5 w-full px-3 text-right font-mono text-ink")}
                           />
                         </label>
