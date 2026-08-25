@@ -1,6 +1,6 @@
 # Issue 01 — Dynamic menu item size prices
 
-Status: DONE LOCALLY · OWNER APPROVED · RELEASE GATED — visual browser gate PASSED
+Status: DONE · PUSHED · MIGRATED · DEPLOYED · PROD-SMOKED 2026-08-25
 
 ## 2026-08-25 reference update
 
@@ -128,6 +128,27 @@ unchanged on checkout, KDS tickets, receipts, notifications, and exports.
   dev server was restarted with database URLs explicitly blank, so all browser
   fixtures and writes remained in memory.
 
+## 2026-08-25 release attempt
+
+- Owner explicitly authorized push and deploy. Branch
+  `codex/customer-restaurant-hub` was pushed through closeout commit `7c50ddf`
+  (`5672cdf..7c50ddf`).
+- Read-only `npx prisma migrate status` confirmed production is missing
+  `20260825123000_menu_item_sizes`. The migration adds `MenuItem.sizeOptions`
+  plus `OrderItem.sizeOptionId` and `OrderItem.sizeLabel`, which the Prisma
+  adapter in the approved build reads.
+- Owner then explicitly authorized the correct migration. `npm run db:deploy`
+  applied only `20260825123000_menu_item_sizes`; a follow-up migration status
+  reported all 18 migrations up to date.
+- Exact commit `7c50ddf` was deployed from a detached clean worktree as Vercel
+  production deployment `dpl_DABHFN7qt7KrV7wsfvizvs25mMkR`, which reached
+  `READY` and owns `zantap.app`, `www.zantap.app`, and `zantap-psi.vercel.app`.
+- Production smoke passed: storefront, KDS, and onboarding returned HTTP 200
+  without application-error output; deployed KDS/storefront bundles contain the
+  approved dynamic-size controls and selector strings; exact-deployment error,
+  fatal, warning, and 5xx scans were empty. No production fixture/order/menu
+  data was created or changed.
+
 ## Files in scope
 
 - `prisma/schema.prisma` + one additive migration
@@ -143,4 +164,4 @@ unchanged on checkout, KDS tickets, receipts, notifications, and exports.
 
 - Per-size stock or cost-of-goods tracking.
 - Add-on/modifier persistence.
-- Production migration/deployment/smoke without explicit release authorization.
+- Further production changes without explicit authorization.

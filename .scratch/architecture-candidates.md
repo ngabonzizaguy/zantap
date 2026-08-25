@@ -990,7 +990,7 @@ Options B (server auto-send / WhatsApp Business API) and C (customer success cop
 
 ---
 
-## Menu item size pricing — 🟢 DONE LOCALLY · OWNER APPROVED · RELEASE GATED 2026-08-25
+## Menu item size pricing — ✅ DONE · PUSHED · MIGRATED · DEPLOYED · PROD-SMOKED 2026-08-25
 
 Owner-requested KDS/storefront/order slice for menu items priced by size is
 implemented locally. The reference's dynamic controls are functional: editable
@@ -1024,4 +1024,10 @@ storefront, and zero console errors. Final verification is 411 passed / 116
 skipped, TypeScript, lint, focused tests, and diff check. The owner completed
 the final port-3000 review and approved the result. The local closeout consists
 of commits `7efdf92` and `7ae92f4`; no migration, push, deploy, or production
-write occurred. Release remains separately gated.
+write occurred. The owner then authorized push/deploy and separately authorized
+the required migration. `20260825123000_menu_item_sizes` applied successfully;
+all 18 migrations report current. Exact commit `7c50ddf` deployed as Vercel
+Production `dpl_DABHFN7qt7KrV7wsfvizvs25mMkR` (`READY`) on `zantap.app`.
+Storefront, KDS, and onboarding returned 200 without application errors; shipped
+bundles contain the approved KDS/storefront size-pricing markers; exact-deploy
+error/fatal/warning/5xx scans were empty. No production fixture data changed.

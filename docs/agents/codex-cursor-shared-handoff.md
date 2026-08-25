@@ -1450,3 +1450,24 @@ database credentials here.
   authorized or performed.
 - Preserve the unrelated Inventory PRD edit, brand/marketing work, and every
   pre-existing dirty or untracked artifact.
+
+### 2026-08-25 — Codex — Dynamic menu size pricing released
+
+- Owner explicitly authorized push and deploy. Pushed
+  `codex/customer-restaurant-hub` from `5672cdf` through closeout `7c50ddf`.
+- Read-only `npx prisma migrate status` confirmed production has not applied
+  `20260825123000_menu_item_sizes`. It adds the `MenuItem.sizeOptions` and
+  `OrderItem.sizeOptionId` / `sizeLabel` columns read by the new Prisma adapter.
+- Owner then explicitly authorized the correct migration. `npm run db:deploy`
+  applied only `20260825123000_menu_item_sizes`; follow-up status reported all
+  18 repository migrations up to date.
+- A detached clean worktree deployed exact commit `7c50ddf` as Vercel Production
+  `dpl_DABHFN7qt7KrV7wsfvizvs25mMkR` (`READY`), now aliased to `zantap.app`,
+  `www.zantap.app`, and `zantap-psi.vercel.app`.
+- Production smoke passed: storefront `/inka-steakhouse`, KDS
+  `/vendor/inka-steakhouse`, and `/onboard` returned HTTP 200 with no application
+  error; downloaded client bundles contain the approved size-editor and selector
+  markers. Exact-deployment error, fatal, warning, and 5xx scans were empty.
+  No production fixture, menu item, order, or other business data was changed.
+- Preserve the unrelated Inventory PRD edit, brand/marketing work, and every
+  pre-existing dirty or untracked artifact.
