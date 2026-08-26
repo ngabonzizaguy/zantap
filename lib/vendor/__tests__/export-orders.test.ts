@@ -32,6 +32,11 @@ function sampleItem(overrides?: Partial<OrderHistoryItem>): OrderHistoryItem {
           unitPriceRwf: 2500,
           sizeOptionId: "medium",
           sizeLabel: "Medium",
+          addOnSelections: [{
+            groupId: "sauce",
+            groupName: "Choose a sauce",
+            choices: [{ choiceId: "chilli", label: "Chilli", priceRwf: 300 }],
+          }],
         },
         {
           id: "oi2",
@@ -84,6 +89,7 @@ describe("buildCsv", () => {
     expect(row["Order ID"]).toBe("#1204");
     expect(row["Total (RWF)"]).toBe("4500");
     expect(row.Items).toContain("1x Brochette (Medium)");
+    expect(row.Items).toContain("+ Chilli");
   });
 });
 
