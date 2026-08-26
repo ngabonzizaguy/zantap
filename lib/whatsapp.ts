@@ -1,6 +1,7 @@
 import type { Lead } from "@/lib/leads/types";
 import type { Order } from "@/lib/types";
 import { formatRwf, normalizePhone } from "@/lib/format";
+import { formatOrderItemAddOns } from "@/lib/menu/add-ons";
 
 /** Local Rwanda or canonical international number → WhatsApp wa.me path. */
 export function toWhatsAppE164(localPhone: string): string {
@@ -24,7 +25,7 @@ export function buildDeliverySlip(order: Order, vendorName: string): string {
   for (const item of order.orderItems) {
     const name = item.menuItem?.name ?? "Item";
     lines.push(
-      `${item.quantity}x ${name}${item.sizeLabel ? ` · ${item.sizeLabel}` : ""}`
+      `${item.quantity}x ${name}${item.sizeLabel ? ` · ${item.sizeLabel}` : ""}${formatOrderItemAddOns(item.addOnSelections) ? ` · + ${formatOrderItemAddOns(item.addOnSelections)}` : ""}`
     );
   }
 
@@ -93,7 +94,7 @@ export function buildVendorOrderNotification(
   const itemLines = order.orderItems
     .map(
       (i) =>
-        `• ${i.quantity}x ${i.menuItem?.name ?? "Item"}${i.sizeLabel ? ` · ${i.sizeLabel}` : ""}`
+        `• ${i.quantity}x ${i.menuItem?.name ?? "Item"}${i.sizeLabel ? ` · ${i.sizeLabel}` : ""}${formatOrderItemAddOns(i.addOnSelections) ? ` · + ${formatOrderItemAddOns(i.addOnSelections)}` : ""}`
     )
     .join("\n");
 

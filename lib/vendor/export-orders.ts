@@ -2,6 +2,7 @@ import ExcelJS from "exceljs";
 import type { Store } from "@/lib/store/types";
 import type { OrderHistoryFilters, OrderHistoryItem } from "@/lib/types";
 import { hydrateOrderHistoryFilters } from "@/lib/orders/history-filters";
+import { formatOrderItemAddOns } from "@/lib/menu/add-ons";
 import {
   formatKigaliDateTime,
   formatPhoneDisplay,
@@ -48,7 +49,8 @@ function formatItemsSummary(order: OrderHistoryItem["order"]): string {
   return order.orderItems
     .map((line) => {
       const name = line.menuItem?.name ?? "Item";
-      return `${line.quantity}x ${name}${line.sizeLabel ? ` (${line.sizeLabel})` : ""}`;
+      const addOns = formatOrderItemAddOns(line.addOnSelections);
+      return `${line.quantity}x ${name}${line.sizeLabel ? ` (${line.sizeLabel})` : ""}${addOns ? ` + ${addOns}` : ""}`;
     })
     .join("; ");
 }

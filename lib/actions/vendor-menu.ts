@@ -50,6 +50,7 @@ export async function createMenuItem(
     name: input.name.trim(),
     priceRwf: input.priceRwf,
     sizeOptions: input.sizeOptions,
+    addOnGroups: input.addOnGroups,
     description: input.description?.trim() || undefined,
     category: input.category?.trim() || "General",
   });
@@ -78,6 +79,7 @@ export async function updateMenuItem(
     name: input.name?.trim(),
     priceRwf: input.priceRwf,
     sizeOptions: input.sizeOptions,
+    addOnGroups: input.addOnGroups,
     description:
       input.description !== undefined
         ? input.description.trim() || undefined

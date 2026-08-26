@@ -78,6 +78,7 @@ export async function executePay(
         menuItemId: line.menuItemId,
         quantity: line.qty,
         ...(line.sizeOptionId ? { sizeOptionId: line.sizeOptionId } : {}),
+        ...(line.addOnChoiceIds?.length ? { addOnChoiceIds: line.addOnChoiceIds } : {}),
         ...(line.notes ? { notes: line.notes } : {}),
       })),
     });

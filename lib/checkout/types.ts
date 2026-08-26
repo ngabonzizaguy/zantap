@@ -5,6 +5,8 @@ export interface CheckoutLine {
   name: string;
   sizeOptionId?: string;
   sizeLabel?: string;
+  addOnChoiceIds?: string[];
+  addOnLabels?: string[];
   qty: number;
   lineTotal: number;
   notes?: string;

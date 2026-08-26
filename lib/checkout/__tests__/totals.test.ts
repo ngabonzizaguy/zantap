@@ -31,6 +31,17 @@ const menu: MenuItem[] = [
     category: "Sides",
     isAvailable: true,
   },
+  {
+    id: "item-d", vendorId: "v1", name: "Burger", priceRwf: 5000,
+    category: "Mains", isAvailable: true,
+    addOnGroups: [{
+      id: "extras", name: "Extras", required: false, selection: "MULTIPLE", maxSelections: 2,
+      choices: [
+        { id: "avocado", label: "Avocado", priceRwf: 1000, isAvailable: true },
+        { id: "cheese", label: "Cheese", priceRwf: 500, isAvailable: true },
+      ],
+    }],
+  },
 ];
 
 describe("computeCount", () => {
@@ -76,6 +87,15 @@ describe("computeTotal", () => {
     );
     expect(computeTotal({ "item-c::family": 1 }, unavailableMenu)).toBe(0);
     expect(computeLines({ "item-c::family": 1 }, unavailableMenu)).toEqual([]);
+  });
+
+  it("prices add-on signatures as distinct per-unit cart lines", () => {
+    const cart = { "item-d##avocado": 2, "item-d##cheese": 1 };
+    expect(computeTotal(cart, menu)).toBe(17_500);
+    expect(computeLines(cart, menu)).toEqual([
+      { lineKey: "item-d##avocado", menuItemId: "item-d", name: "Burger", addOnChoiceIds: ["avocado"], addOnLabels: ["Avocado"], qty: 2, lineTotal: 12_000 },
+      { lineKey: "item-d##cheese", menuItemId: "item-d", name: "Burger", addOnChoiceIds: ["cheese"], addOnLabels: ["Cheese"], qty: 1, lineTotal: 5_500 },
+    ]);
   });
 });
 

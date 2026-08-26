@@ -9,6 +9,7 @@ import {
 } from "@/lib/format";
 import { PrintReceiptButton } from "@/components/vendor/PrintReceiptButton";
 import { ReceiptBackButton } from "@/components/vendor/ReceiptBackButton";
+import { formatOrderItemAddOns } from "@/lib/menu/add-ons";
 
 interface PageProps {
   params: Promise<{ slug: string; orderId: string }>;
@@ -104,6 +105,9 @@ export default async function VendorReceiptPage({ params }: PageProps) {
                     <p className="font-body text-body-sm text-muted">
                       {formatRwf(line.unitPriceRwf)} each
                     </p>
+                    {formatOrderItemAddOns(line.addOnSelections) ? (
+                      <p className="font-body text-body-sm text-muted">+ {formatOrderItemAddOns(line.addOnSelections)}</p>
+                    ) : null}
                   </div>
                   <p className="font-body text-body-md font-medium text-ink">
                     {formatRwf(lineTotal)}

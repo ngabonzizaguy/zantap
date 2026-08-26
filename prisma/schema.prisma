@@ -269,6 +269,8 @@ model MenuItem {
   priceRwf          Int
   /// Ordered [{id,label,priceRwf,isAvailable}] options; null = single price.
   sizeOptions       Json?
+  /// Ordered item-specific add-on groups and choices.
+  addOnGroups       Json?
   imageUrl          String?
   category          String      @default("General")
   isAvailable       Boolean     @default(true)
@@ -369,6 +371,8 @@ model OrderItem {
   sizeOptionId String?
   sizeLabel    String?
   notes        String?
+  /// Immutable add-on group/choice labels and prices selected at checkout.
+  addOnSelections Json?
 
   @@index([orderId])
 }

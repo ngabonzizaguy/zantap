@@ -140,6 +140,7 @@ export function buildCartLineKey(
 export function parseCartLineKey(
   lineKey: string
 ): { menuItemId: string; sizeOptionId?: string } {
+  lineKey = lineKey.split("##", 1)[0];
   const separator = lineKey.lastIndexOf("::");
   if (separator < 0) return { menuItemId: lineKey };
   const sizeOptionId = lineKey.slice(separator + 2);

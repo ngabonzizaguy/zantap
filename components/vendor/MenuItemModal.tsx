@@ -2,7 +2,7 @@
 
 import { useId, useMemo, useRef, useState } from "react";
 import { ChevronDown, Plus, X } from "lucide-react";
-import type { MenuImage, MenuItem } from "@/lib/types";
+import type { MenuImage, MenuItem, MenuItemAddOnGroup } from "@/lib/types";
 import { formatRwf } from "@/lib/format";
 import { getPrimaryImageUrl, MAX_MENU_IMAGES } from "@/lib/menu/media";
 import { mergePendingMenuImageFiles } from "@/lib/menu/pending-images";
@@ -21,6 +21,7 @@ import {
   SizePricingEditor,
   type SizeOptionDraft,
 } from "@/components/vendor/SizePricingEditor";
+import { AddOnGroupsEditor } from "@/components/vendor/AddOnGroupsEditor";
 
 export interface MenuItemFormValues {
   name: string;
@@ -29,6 +30,7 @@ export interface MenuItemFormValues {
   sizeOptions: SizeOptionDraft[];
   description: string;
   category: string;
+  addOnGroups: MenuItemAddOnGroup[];
 }
 
 export interface MenuItemSubmitOptions {
@@ -54,7 +56,7 @@ interface MenuItemModalProps {
 }
 
 const NAME_MAX = 60;
-const COMING_SOON_SECTIONS = ["Ingredients", "Add-ons", "Options"] as const;
+const COMING_SOON_SECTIONS = ["Ingredients", "Options"] as const;
 const fieldLabelClass = "font-body text-body-sm font-medium text-ink";
 const fieldControlClass =
   "h-11 w-full rounded-brand-md border border-hairline-strong bg-surface-card px-4 font-body text-body-md text-ink placeholder:text-muted-soft focus:border-2 focus:border-primary focus:px-[15px] focus:outline-none";
@@ -67,6 +69,7 @@ function emptyForm(): MenuItemFormValues {
     sizeOptions: [],
     description: "",
     category: "General",
+    addOnGroups: [],
   };
 }
 
@@ -82,6 +85,7 @@ function formFromItem(item: MenuItem): MenuItemFormValues {
       })) ?? [],
     description: item.description ?? "",
     category: item.category,
+    addOnGroups: item.addOnGroups?.map((group) => ({ ...group, choices: group.choices.map((choice) => ({ ...choice })) })) ?? [],
   };
 }
 
@@ -102,6 +106,7 @@ function validateClient(values: MenuItemFormValues): string | null {
     sizeOptions,
     description: values.description,
     category: values.category,
+    addOnGroups: values.addOnGroups,
   });
 }
 
@@ -130,6 +135,7 @@ export function MenuItemModal({
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const [previewSizesOpen, setPreviewSizesOpen] = useState(false);
+  const [addOnsOpen, setAddOnsOpen] = useState(false);
   const pendingPhotoPreviews = useDishPhotoPreviews(pendingPhotos);
 
   const editingItemId = item?.id;
@@ -148,6 +154,7 @@ export function MenuItemModal({
       setPendingPhotos([]);
       setDescriptionOpen(Boolean(item?.description));
       setPreviewSizesOpen(false);
+      setAddOnsOpen(false);
     }
   }
 
@@ -194,7 +201,9 @@ export function MenuItemModal({
       open={open}
       onClose={onClose}
       title={mode === "create" ? "Add menu item" : "Edit menu item"}
-      footer={
+      footer={addOnsOpen ? (
+        <Button size="kds" variant="outline" className="w-full" disabled={saving} onClick={() => setAddOnsOpen(false)}>Back to item</Button>
+      ) :
         <div className="flex gap-2">
           <Button size="kds" variant="outline" className="flex-1" disabled={saving} onClick={onClose}>
             Cancel
@@ -205,7 +214,7 @@ export function MenuItemModal({
         </div>
       }
     >
-      <div className="flex flex-col gap-5">
+      {addOnsOpen ? <AddOnGroupsEditor groups={values.addOnGroups} disabled={saving} onChange={(addOnGroups) => setValues((previous) => ({ ...previous, addOnGroups }))} /> : <div className="flex flex-col gap-5">
         {mode === "edit" && item ? (
           <div className="grid grid-cols-[64px_minmax(0,1fr)] items-start gap-x-3.5">
             <div
@@ -467,6 +476,10 @@ export function MenuItemModal({
             ) : null}
           </div>
 
+          <button type="button" onClick={() => setAddOnsOpen(true)} className="flex min-h-14 items-center justify-between gap-3 rounded-brand-lg border border-hairline bg-surface-card px-4 py-3 text-left">
+            <span><span className="block font-body text-body-md font-medium text-ink">Add-ons</span><span className="mt-0.5 block font-body text-caption text-muted">{values.addOnGroups.length ? `${values.addOnGroups.length} configured` : "Optional groups and choices"}</span></span>
+            <ChevronDown className="-rotate-90 text-muted" size={18} />
+          </button>
           {COMING_SOON_SECTIONS.map((section) => (
             <div key={section} className="flex items-center justify-between gap-3 rounded-brand-lg border border-hairline bg-surface-card px-4 py-3 opacity-60">
               <span className="font-body text-body-md font-medium text-ink">{section}</span>
@@ -476,7 +489,7 @@ export function MenuItemModal({
         </div>
 
         {displayError ? <p className="font-body text-caption text-error" role="alert">{displayError}</p> : null}
-      </div>
+      </div>}
     </Modal>
   );
 }

@@ -1,10 +1,7 @@
 import type { MenuItem } from "@/lib/types";
-import {
-  buildCartLineKey,
-  getMenuItemPrice,
-  parseCartLineKey,
-} from "@/lib/menu/sizes";
+import { getMenuItemPrice, parseCartLineKey } from "@/lib/menu/sizes";
 import type { CartNotes, CartQuantities, CheckoutLine } from "./types";
+import { parseAddOnCartLineKey, resolveAddOnSelection } from "@/lib/menu/add-ons";
 
 export function computeCount(cart: CartQuantities): number {
   return Object.values(cart).reduce((a, b) => a + b, 0);
@@ -13,11 +10,13 @@ export function computeCount(cart: CartQuantities): number {
 export function computeTotal(cart: CartQuantities, menu: MenuItem[]): number {
   const menuById = new Map(menu.map((item) => [item.id, item]));
   return Object.entries(cart).reduce((sum, [lineKey, quantity]) => {
-    const { menuItemId, sizeOptionId } = parseCartLineKey(lineKey);
+    const { baseLineKey, choiceIds } = parseAddOnCartLineKey(lineKey);
+    const { menuItemId, sizeOptionId } = parseCartLineKey(baseLineKey);
     const item = menuById.get(menuItemId);
     if (!item || quantity <= 0) return sum;
     try {
-      return sum + quantity * getMenuItemPrice(item, sizeOptionId);
+      const addOns = resolveAddOnSelection(item.addOnGroups, choiceIds);
+      return sum + quantity * (getMenuItemPrice(item, sizeOptionId) + addOns.surchargeRwf);
     } catch {
       return sum;
     }
@@ -29,41 +28,33 @@ export function computeLines(
   menu: MenuItem[],
   itemNotes: CartNotes = {}
 ): CheckoutLine[] {
-  return menu.flatMap((item) => {
-    const options: Array<{
-      lineKey: string;
-      priceRwf: number;
-      sizeOptionId?: string;
-      sizeLabel?: string;
-    }> = item.sizeOptions?.length
-      ? item.sizeOptions.filter((option) => option.isAvailable).map((option) => ({
-          lineKey: buildCartLineKey(item.id, option.id),
-          sizeOptionId: option.id,
-          sizeLabel: option.label,
-          priceRwf: option.priceRwf,
-        }))
-      : [{ lineKey: item.id, priceRwf: item.priceRwf }];
-
-    return options.flatMap((option) => {
-      const qty = cart[option.lineKey] ?? 0;
-      if (qty <= 0) return [];
-      const notes = itemNotes[option.lineKey];
-      return [
-        {
-          lineKey: option.lineKey,
-          menuItemId: item.id,
-          name: item.name,
-          ...(option.sizeOptionId
-            ? {
-                sizeOptionId: option.sizeOptionId,
-                sizeLabel: option.sizeLabel,
-              }
-            : {}),
-          qty,
-          lineTotal: qty * option.priceRwf,
-          ...(notes ? { notes } : {}),
-        },
-      ];
-    });
+  const menuById = new Map(menu.map((item) => [item.id, item]));
+  return Object.entries(cart).flatMap(([lineKey, qty]) => {
+    if (qty <= 0) return [];
+    const { baseLineKey, choiceIds } = parseAddOnCartLineKey(lineKey);
+    const { menuItemId, sizeOptionId } = parseCartLineKey(baseLineKey);
+    const item = menuById.get(menuItemId);
+    if (!item) return [];
+    try {
+      const addOns = resolveAddOnSelection(item.addOnGroups, choiceIds);
+      const sizeLabel = sizeOptionId
+        ? item.sizeOptions?.find((option) => option.id === sizeOptionId)?.label
+        : undefined;
+      return [{
+        lineKey,
+        menuItemId,
+        name: item.name,
+        ...(sizeOptionId ? { sizeOptionId, sizeLabel } : {}),
+        ...(choiceIds.length ? {
+          addOnChoiceIds: choiceIds,
+          addOnLabels: addOns.groups.flatMap((group) => group.choices.map((choice) => choice.label)),
+        } : {}),
+        qty,
+        lineTotal: qty * (getMenuItemPrice(item, sizeOptionId) + addOns.surchargeRwf),
+        ...(itemNotes[lineKey] ? { notes: itemNotes[lineKey] } : {}),
+      }];
+    } catch {
+      return [];
+    }
   });
 }

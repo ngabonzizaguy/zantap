@@ -74,6 +74,7 @@ import {
 } from "@/lib/orders/history-filters";
 import { putMenuImageBlob } from "@/lib/menu/blob-storage";
 import { sanitizeItemNotes } from "@/lib/menu/customization";
+import { normalizeMenuItemAddOnGroups, resolveAddOnSelection } from "@/lib/menu/add-ons";
 import { thumbGradientForId } from "@/lib/menu/gradients";
 import {
   getMenuItemPrice,
@@ -174,6 +175,10 @@ function cloneOrder(order: Order): Order {
     assignedDriver: order.assignedDriver ? { ...order.assignedDriver } : undefined,
     orderItems: order.orderItems.map((item) => ({
       ...item,
+      addOnSelections: item.addOnSelections?.map((group) => ({
+        ...group,
+        choices: group.choices.map((choice) => ({ ...choice })),
+      })),
       menuItem: item.menuItem
         ? {
             ...item.menuItem,
@@ -331,6 +336,10 @@ export function createInMemoryStore(): ResettableStore {
     return {
       ...item,
       sizeOptions: item.sizeOptions?.map((option) => ({ ...option })),
+      addOnGroups: item.addOnGroups?.map((group) => ({
+        ...group,
+        choices: group.choices.map((choice) => ({ ...choice })),
+      })),
       archivedAt: item.archivedAt ? new Date(item.archivedAt) : undefined,
     };
   }
@@ -1137,6 +1146,9 @@ export function createInMemoryStore(): ResettableStore {
     const sizeOptions = input.sizeOptions
       ? normalizeMenuItemSizeOptions(input.sizeOptions)
       : undefined;
+    const addOnGroups = input.addOnGroups?.length
+      ? normalizeMenuItemAddOnGroups(input.addOnGroups)
+      : undefined;
     const item: MenuItem = {
       id,
       vendorId: vendor.id,
@@ -1146,6 +1158,7 @@ export function createInMemoryStore(): ResettableStore {
         ? getSizeOptionsStartingPrice(sizeOptions)
         : input.priceRwf,
       sizeOptions,
+      addOnGroups,
       category: input.category?.trim() || "General",
       isAvailable: true,
       ...gradient,
@@ -1178,6 +1191,11 @@ export function createInMemoryStore(): ResettableStore {
       : input.sizeOptions === null
         ? undefined
         : current.sizeOptions;
+    const nextAddOnGroups = input.addOnGroups
+      ? normalizeMenuItemAddOnGroups(input.addOnGroups)
+      : input.addOnGroups === null
+        ? undefined
+        : current.addOnGroups;
     menuItems[index] = {
       ...current,
       name: input.name !== undefined ? input.name.trim() : current.name,
@@ -1187,6 +1205,9 @@ export function createInMemoryStore(): ResettableStore {
           : input.priceRwf ?? current.priceRwf,
       ...(input.sizeOptions !== undefined
         ? { sizeOptions: nextSizeOptions }
+        : {}),
+      ...(input.addOnGroups !== undefined
+        ? { addOnGroups: nextAddOnGroups }
         : {}),
       description:
         input.description !== undefined
@@ -1789,13 +1810,14 @@ export function createInMemoryStore(): ResettableStore {
         throw new Error(`Item unavailable: ${line.menuItemId}`);
       }
       const notes = line.notes ? sanitizeItemNotes(line.notes) : undefined;
+      const addOns = resolveAddOnSelection(menuItem.addOnGroups, line.addOnChoiceIds);
       return {
         id: `oi_${++orderItemCounter}_${Date.now()}`,
         orderId: id,
         menuItemId: menuItem.id,
         menuItem: hydrateMenuItem(menuItem),
         quantity: line.quantity,
-        unitPriceRwf: getMenuItemPrice(menuItem, line.sizeOptionId),
+        unitPriceRwf: getMenuItemPrice(menuItem, line.sizeOptionId) + addOns.surchargeRwf,
         ...(line.sizeOptionId
           ? {
               sizeOptionId: line.sizeOptionId,
@@ -1803,6 +1825,7 @@ export function createInMemoryStore(): ResettableStore {
             }
           : {}),
         ...(notes ? { notes } : {}),
+        ...(addOns.groups.length ? { addOnSelections: addOns.groups } : {}),
       };
     });
 

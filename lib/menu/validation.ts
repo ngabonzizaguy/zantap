@@ -5,6 +5,7 @@ import {
   MENU_ITEM_SIZE_LABEL_MAX,
   MIN_MENU_ITEM_SIZE_OPTIONS,
 } from "@/lib/menu/sizes";
+import { validateMenuItemAddOnGroups } from "@/lib/menu/add-ons";
 
 function validateSizeOptions(
   sizeOptions: CreateMenuItemInput["sizeOptions"] | null | undefined
@@ -51,6 +52,8 @@ export function validateCreateMenuItemInput(
   }
   const sizeError = validateSizeOptions(input.sizeOptions);
   if (sizeError) return sizeError;
+  const addOnError = validateMenuItemAddOnGroups(input.addOnGroups);
+  if (addOnError) return addOnError;
   return null;
 }
 
@@ -61,6 +64,7 @@ export function validateUpdateMenuItemInput(
     input.name !== undefined ||
     input.priceRwf !== undefined ||
     input.sizeOptions !== undefined ||
+    input.addOnGroups !== undefined ||
     input.description !== undefined ||
     input.category !== undefined ||
     input.stockCount !== undefined ||
@@ -80,5 +84,7 @@ export function validateUpdateMenuItemInput(
   }
   const sizeError = validateSizeOptions(input.sizeOptions);
   if (sizeError) return sizeError;
+  const addOnError = validateMenuItemAddOnGroups(input.addOnGroups);
+  if (addOnError) return addOnError;
   return null;
 }

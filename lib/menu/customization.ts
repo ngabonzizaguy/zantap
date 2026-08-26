@@ -7,9 +7,8 @@ import { getMenuItemPrice } from "@/lib/menu/sizes";
  * SERVER-SAFE on purpose: no `"use client"`, no React/DOM imports. `icon` is an
  * Icon-name string (resolved to a component by the client), never a component.
  *
- * Types are persistence-shaped so the future "real modifiers" epic is an
- * extension, not a rewrite: every option carries a stable string `id` (the
- * future Order join key) and integer RWF prices (never display strings).
+ * This retains ADR-0019's legacy included-ingredient/fallback shapes. Real
+ * persisted add-ons live in lib/menu/add-ons.ts (ADR-0071).
  */
 
 export interface IngredientOption {
@@ -37,15 +36,17 @@ export interface ItemCustomization {
 }
 
 /**
- * The single structured payload the modal emits. The future line-item cart and
- * `CreateOrderInput.items` grow into exactly this shape (additively).
+ * The single structured payload the modal emits to the line-item cart.
  */
 export interface CustomizationSelection {
   menuItemId: string;
   sizeOptionId?: string;
   qty: number;
   removedIncludedIds: string[];
+  /** Legacy presentation-only shape retained for old in-memory fixtures. */
   addOns: { id: string; qty: number }[];
+  /** Current item-specific choice ids; prices are resolved again by the Store. */
+  addOnChoiceIds?: string[];
   notes: string;
 }
 
@@ -60,15 +61,12 @@ export function sanitizeItemNotes(notes: string): string | undefined {
 }
 
 /**
- * When false, the customize modal shows images + notes only (candidate #21).
- * Types, fallback catalog, and pricing helpers stay for a future modifiers epic.
+ * Legacy included-ingredient UI stays disabled. Real add-ons do not use this flag.
  */
 export const INGREDIENTS_UI_ENABLED = false;
 
 /**
- * Generic, item-agnostic fallback so every item's modal looks complete even
- * though no item carries a real `customization` field yet. This is the seam a
- * future real (Store-backed) catalog grows into.
+ * Legacy item-agnostic fallback retained for ADR-0019 tests/compatibility.
  */
 const GENERIC_FALLBACK: ItemCustomization = {
   included: [
@@ -136,23 +134,21 @@ export function emptySelection(item: MenuItem): CustomizationSelection {
 }
 
 /**
- * Pure display total: `(base + Σ addOn.priceRwf × addOn.qty) × qty`.
- * Removals are price-neutral this slice (no credit).
- *
- * Server-safe and reused verbatim by future server-side re-pricing at the trust
- * boundary so the client and server totals can never drift in logic.
+ * Pure Customer-view total. The Store independently resolves the same stable
+ * choice IDs through resolveAddOnSelection at the trust seam.
  */
 export function computeCustomizeTotal(
   selection: CustomizationSelection,
   item: MenuItem
 ): number {
-  const { addOns } = resolveCustomization(item);
-
-  const addOnTotal = selection.addOns.reduce((sum, picked) => {
-    const option = addOns.find((addOn) => addOn.id === picked.id);
-    if (!option) return sum;
-    return sum + option.priceRwf * picked.qty;
-  }, 0);
+  const addOnTotal = item.addOnGroups?.length
+    ? item.addOnGroups.flatMap((group) => group.choices)
+        .filter((choice) => (selection.addOnChoiceIds ?? []).includes(choice.id))
+        .reduce((sum, choice) => sum + choice.priceRwf, 0)
+    : selection.addOns.reduce((sum, picked) => {
+        const option = resolveCustomization(item).addOns.find((addOn) => addOn.id === picked.id);
+        return sum + (option?.priceRwf ?? 0) * picked.qty;
+      }, 0);
 
   return (getMenuItemPrice(item, selection.sizeOptionId) + addOnTotal) * selection.qty;
 }

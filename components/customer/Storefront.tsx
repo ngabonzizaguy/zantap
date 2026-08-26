@@ -129,7 +129,7 @@ function StorefrontInner({
   const handleAddItem = useCallback(
     (itemId: string) => {
       const item = menu.find((candidate) => candidate.id === itemId);
-      if (item?.sizeOptions?.length) {
+      if (item?.sizeOptions?.length || item?.addOnGroups?.length) {
         setActiveItemId(itemId);
         return;
       }

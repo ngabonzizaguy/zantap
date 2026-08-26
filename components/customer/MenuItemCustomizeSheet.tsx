@@ -8,16 +8,14 @@ import { getMenuItemGalleryUrls } from "@/lib/menu/media";
 import {
   CUSTOMIZATION_NOTES_MAX,
   computeCustomizeTotal,
-  INGREDIENTS_UI_ENABLED,
-  resolveCustomization,
   type CustomizationSelection,
 } from "@/lib/menu/customization";
 import {
   MenuItemImageCarousel,
   MenuItemPhotoStrip,
 } from "@/components/customer/MenuItemImageCarousel";
-import { Icon, type IconName } from "@/components/ui/Icon";
-import { Badge, Button, Card } from "@/components/ui/primitives";
+import { Icon } from "@/components/ui/Icon";
+import { Badge, Button } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 import {
   getMenuItemPrice,
@@ -32,13 +30,6 @@ interface MenuItemCustomizeSheetProps {
   onClose: () => void;
   onAddToOrder: (selection: CustomizationSelection) => void;
 }
-
-/** "Beef Brochettes" → "Customize your brochettes" */
-function customizeSubtitle(name: string): string {
-  const last = name.trim().split(/\s+/).pop()?.toLowerCase();
-  return last ? `Customize your ${last}` : "Customize your order";
-}
-
 export function MenuItemCustomizeSheet({
   item,
   onClose,
@@ -49,8 +40,7 @@ export function MenuItemCustomizeSheet({
   const [renderItem, setRenderItem] = useState<MenuItem | null>(item);
 
   const [qty, setQty] = useState(1);
-  const [removed, setRemoved] = useState<Set<string>>(new Set());
-  const [addOnQty, setAddOnQty] = useState<Record<string, number>>({});
+  const [selectedAddOns, setSelectedAddOns] = useState<Set<string>>(new Set());
   const [notes, setNotes] = useState("");
   const [photoIndex, setPhotoIndex] = useState(0);
   const [sizeOptionId, setSizeOptionId] = useState<string | undefined>(() =>
@@ -69,10 +59,7 @@ export function MenuItemCustomizeSheet({
     if (item) {
       setRenderItem(item);
       setQty(1);
-      if (INGREDIENTS_UI_ENABLED) {
-        setRemoved(new Set());
-        setAddOnQty({});
-      }
+      setSelectedAddOns(new Set());
       setNotes("");
       setPhotoIndex(0);
       setSizeOptionId(
@@ -91,29 +78,18 @@ export function MenuItemCustomizeSheet({
     }
   }, [item]);
 
-  const customization = useMemo(
-    () =>
-      renderItem && INGREDIENTS_UI_ENABLED
-        ? resolveCustomization(renderItem)
-        : null,
-    [renderItem]
-  );
-
   const selection = useMemo<CustomizationSelection | null>(() => {
     if (!renderItem) return null;
     return {
       menuItemId: renderItem.id,
       ...(sizeOptionId ? { sizeOptionId } : {}),
       qty,
-      removedIncludedIds: INGREDIENTS_UI_ENABLED ? [...removed] : [],
-      addOns: INGREDIENTS_UI_ENABLED
-        ? Object.entries(addOnQty)
-            .filter(([, n]) => n > 0)
-            .map(([id, n]) => ({ id, qty: n }))
-        : [],
+      removedIncludedIds: [],
+      addOns: [],
+      addOnChoiceIds: [...selectedAddOns],
       notes,
     };
-  }, [renderItem, qty, removed, addOnQty, notes, sizeOptionId]);
+  }, [renderItem, qty, selectedAddOns, notes, sizeOptionId]);
 
   const displayTotal =
     renderItem && selection ? computeCustomizeTotal(selection, renderItem) : 0;
@@ -126,18 +102,28 @@ export function MenuItemCustomizeSheet({
     ? `radial-gradient(circle at 32% 28%, ${renderItem.thumbFrom ?? "#ffd2b0"}, ${renderItem.thumbTo ?? "#f5945f"})`
     : "";
 
-  const toggleRemoved = (id: string) => {
-    setRemoved((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+  const toggleAddOn = (groupId: string, choiceId: string) => {
+    const group = renderItem?.addOnGroups?.find((candidate) => candidate.id === groupId);
+    if (!group) return;
+    setSelectedAddOns((previous) => {
+      const next = new Set(previous);
+      if (next.has(choiceId)) next.delete(choiceId);
+      else {
+        if (group.selection === "SINGLE") {
+          group.choices.forEach((choice) => next.delete(choice.id));
+        } else {
+          const selectedCount = group.choices.filter((choice) => next.has(choice.id)).length;
+          if (selectedCount >= (group.maxSelections ?? group.choices.length)) return previous;
+        }
+        next.add(choiceId);
+      }
       return next;
     });
   };
 
-  const toggleAddOn = (id: string) => {
-    setAddOnQty((prev) => ({ ...prev, [id]: (prev[id] ?? 0) > 0 ? 0 : 1 }));
-  };
+  const addOnsSatisfied = (renderItem?.addOnGroups ?? []).every((group) =>
+    !group.required || group.choices.some((choice) => selectedAddOns.has(choice.id))
+  );
 
   const handleConfirm = () => {
     if (selection) onAddToOrder(selection);
@@ -239,7 +225,7 @@ export function MenuItemCustomizeSheet({
                   </div>
                   <div className="mt-2 flex w-full items-center">
                     <span className="flex-none font-body text-title-sm font-medium text-ink">
-                      {formatRwf(getMenuItemPrice(renderItem, sizeOptionId))}
+                      {formatRwf(selection ? displayTotal / qty : getMenuItemPrice(renderItem, sizeOptionId))}
                     </span>
                     <div className="ml-auto flex items-center gap-0.5 rounded-pill border border-hairline bg-surface-card p-0.5 shadow-brand-soft">
                       <button
@@ -334,104 +320,33 @@ export function MenuItemCustomizeSheet({
                 </fieldset>
               )}
 
-              {INGREDIENTS_UI_ENABLED && customization && (
-                <Card padding="sm" className="mt-5 shadow-none">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-display text-display-sm text-ink">
-                      Ingredients
-                    </h3>
-                    <Badge variant="muted">Optional</Badge>
+              {(renderItem.addOnGroups ?? []).map((group) => (
+                <fieldset key={group.id} className="mt-5 rounded-brand-xl border border-hairline bg-surface-card p-4">
+                  <legend className="sr-only">{group.name}</legend>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-display text-display-sm text-ink">{group.name}</h3>
+                      <p className="mt-1 font-body text-caption text-muted">
+                        {group.selection === "SINGLE" ? "Choose one" : `Choose up to ${group.maxSelections}`}
+                      </p>
+                    </div>
+                    <Badge variant={group.required ? "default" : "muted"}>{group.required ? "Required" : "Optional"}</Badge>
                   </div>
-                  <p className="mt-1 font-body text-caption text-muted">
-                    {customizeSubtitle(renderItem.name)}
-                  </p>
-
-                  <div className="mt-3 flex flex-col gap-2">
-                    {customization.included.map((inc) => {
-                      const kept = !removed.has(inc.id);
-                      return (
-                        <button
-                          key={inc.id}
-                          type="button"
-                          onClick={() => toggleRemoved(inc.id)}
-                          className="flex items-center gap-3 rounded-brand-lg border border-hairline bg-canvas-soft p-2.5 text-left transition active:scale-[0.99]"
-                        >
-                          <CheckBox checked={kept} />
-                          <RowThumb icon={inc.icon} />
-                          <div className="min-w-0 flex-1">
-                            <div
-                              className={cn(
-                                "truncate font-body text-body-sm font-medium text-ink",
-                                !kept && "line-through opacity-50"
-                              )}
-                            >
-                              {inc.name}
-                            </div>
-                            {inc.description && (
-                              <div className="truncate font-body text-caption text-muted">
-                                {inc.description}
-                              </div>
-                            )}
-                          </div>
-                          {kept ? (
-                            <Badge variant="muted" className="flex-none">
-                              Included
-                            </Badge>
-                          ) : (
-                            <Badge
-                              variant="default"
-                              className="flex-none bg-error/10 text-error"
-                            >
-                              Removed
-                            </Badge>
-                          )}
-                        </button>
-                      );
-                    })}
-
-                    {customization.addOns.map((addOn) => {
-                      const active = (addOnQty[addOn.id] ?? 0) > 0;
-                      return (
-                        <button
-                          key={addOn.id}
-                          type="button"
-                          onClick={() => toggleAddOn(addOn.id)}
-                          className={cn(
-                            "flex items-center gap-3 rounded-brand-lg border p-2.5 text-left transition active:scale-[0.99]",
-                            active
-                              ? "border-hairline-strong bg-surface-card"
-                              : "border-hairline bg-canvas-soft"
-                          )}
-                        >
-                          <CheckBox checked={active} />
-                          <RowThumb icon={addOn.icon} />
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate font-body text-body-sm font-medium text-ink">
-                              {addOn.name}
-                            </div>
-                            {addOn.description && (
-                              <div className="truncate font-body text-caption text-muted">
-                                {addOn.description}
-                              </div>
-                            )}
-                          </div>
-                          <span className="flex-none font-body text-body-sm font-medium text-ink">
-                            + {formatRwf(addOn.priceRwf)}
-                          </span>
-                        </button>
-                      );
+                  <div className="mt-3 grid gap-2">
+                    {group.choices.filter((choice) => choice.isAvailable).map((choice) => {
+                      const active = selectedAddOns.has(choice.id);
+                      return <button key={choice.id} type="button" aria-pressed={active} onClick={() => toggleAddOn(group.id, choice.id)} className={cn("flex min-h-12 items-center gap-3 rounded-brand-lg border px-3 py-2 text-left", active ? "border-gold/50 bg-gold/10" : "border-hairline bg-canvas-soft")}>
+                        <CheckBox checked={active} />
+                        <span className="min-w-0 flex-1 font-body text-body-sm font-medium text-ink">{choice.label}</span>
+                        <span className="flex-none font-mono text-caption text-muted">{choice.priceRwf ? `+ ${formatRwf(choice.priceRwf)}` : "Included"}</span>
+                      </button>;
                     })}
                   </div>
-
-                  <div className="mt-3 flex items-center gap-1.5 font-body text-caption text-muted-soft">
-                    <Icon name="check" size={13} strokeWidth={2.4} />
-                    You can always add more in the notes
-                  </div>
-                </Card>
-              )}
+                </fieldset>
+              ))}
 
               {galleryUrls.length >= 2 && (
-                <div className={cn(INGREDIENTS_UI_ENABLED ? "mt-4" : "mt-5")}>
+                <div className="mt-5">
                   <h3 className="mb-2.5 font-display text-display-sm text-ink">
                     Photos
                   </h3>
@@ -468,6 +383,7 @@ export function MenuItemCustomizeSheet({
                 type="button"
                 radius="lg"
                 onClick={handleConfirm}
+                disabled={!addOnsSatisfied}
                 className="flex h-14 w-full items-center justify-between px-5 shadow-brand-soft active:scale-[0.98]"
               >
                 <span className="flex items-center gap-2.5">
@@ -495,14 +411,6 @@ function CheckBox({ checked }: { checked: boolean }) {
       )}
     >
       <Icon name="check" size={14} strokeWidth={3} />
-    </span>
-  );
-}
-
-function RowThumb({ icon }: { icon?: string }) {
-  return (
-    <span className="flex h-9 w-9 flex-none items-center justify-center rounded-brand-md bg-gradient-to-br from-gradient-peach/50 to-gradient-rose/40 text-muted shadow-brand-soft">
-      <Icon name={(icon as IconName) ?? "plate"} size={16} strokeWidth={2} />
     </span>
   );
 }

@@ -558,6 +558,42 @@ export function runStoreContract(
         ).rejects.toThrow(/does not offer sizes/i);
       });
 
+      it("server-prices add-ons and snapshots labels and prices on the order line", async () => {
+        const item = await store.createMenuItem(slug, {
+          name: "Add-on Burger",
+          priceRwf: 5_000,
+          addOnGroups: [{
+            id: "sauce", name: "Choose a sauce", required: true, selection: "SINGLE",
+            choices: [
+              { id: "mayo", label: "Mayo", priceRwf: 0, isAvailable: true },
+              { id: "chilli", label: "Chilli", priceRwf: 300, isAvailable: true },
+            ],
+          }, {
+            id: "extras", name: "Extras", required: false, selection: "MULTIPLE", maxSelections: 2,
+            choices: [
+              { id: "avocado", label: "Avocado", priceRwf: 1_000, isAvailable: true },
+              { id: "cheese", label: "Cheese", priceRwf: 500, isAvailable: true },
+            ],
+          }],
+        });
+        const order = await store.createOrder({
+          vendorSlug: slug, customerPhone: "0788000555", deliverySector: "Kicukiro", landmark: "Add-on test",
+          items: [{ menuItemId: item.id, quantity: 2, addOnChoiceIds: ["chilli", "avocado"] }],
+        });
+        expect(order.totalAmount).toBe(12_600);
+        expect(order.orderItems[0]).toMatchObject({
+          unitPriceRwf: 6_300,
+          addOnSelections: [
+            { groupName: "Choose a sauce", choices: [{ label: "Chilli", priceRwf: 300 }] },
+            { groupName: "Extras", choices: [{ label: "Avocado", priceRwf: 1_000 }] },
+          ],
+        });
+        await expect(store.createOrder({
+          vendorSlug: slug, customerPhone: "0788000555", deliverySector: "Kicukiro", landmark: "Missing required",
+          items: [{ menuItemId: item.id, quantity: 1 }],
+        })).rejects.toThrow(/Choose one option/);
+      });
+
       it("getMenuItem returns a single row", async () => {
         const menu = await store.getMenu(slug);
         const item = menu[0];

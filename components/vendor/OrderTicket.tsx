@@ -26,6 +26,7 @@ import { Badge, Button, Card, Select } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 import { getBaseUrl } from "@/lib/base-url";
 import { buildVendorWhatsAppUrl, toWhatsAppE164 } from "@/lib/whatsapp";
+import { formatOrderItemAddOns } from "@/lib/menu/add-ons";
 
 const URGENCY_RING: Record<
   ReturnType<typeof getPaidAgeUrgency>,
@@ -320,6 +321,9 @@ export function OrderTicket({
                     <p className="pl-[52px] font-body text-body-sm italic text-muted">
                       &ldquo;{item.notes}&rdquo;
                     </p>
+                  )}
+                  {formatOrderItemAddOns(item.addOnSelections) && (
+                    <p className="pl-[52px] font-body text-body-sm text-muted">+ {formatOrderItemAddOns(item.addOnSelections)}</p>
                   )}
                 </div>
               );

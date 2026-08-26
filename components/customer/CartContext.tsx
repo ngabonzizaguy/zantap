@@ -10,6 +10,7 @@ import {
 import type { CustomizationSelection } from "@/lib/menu/customization";
 import { sanitizeItemNotes } from "@/lib/menu/customization";
 import { buildCartLineKey } from "@/lib/menu/sizes";
+import { buildAddOnCartLineKey } from "@/lib/menu/add-ons";
 
 export type CartMap = Record<string, number>;
 export type CartNotesMap = Record<string, string>;
@@ -40,9 +41,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addFromCustomization = useCallback(
     (selection: CustomizationSelection) => {
-      const lineKey = buildCartLineKey(
-        selection.menuItemId,
-        selection.sizeOptionId
+      const lineKey = buildAddOnCartLineKey(
+        buildCartLineKey(selection.menuItemId, selection.sizeOptionId),
+        selection.addOnChoiceIds ?? selection.addOns.map((addOn) => addOn.id)
       );
       setCart((prev) => ({
         ...prev,

@@ -36,6 +36,11 @@ import {
 import { deleteMenuImageBlob, putMenuImageBlob } from "@/lib/menu/blob-storage";
 import { sanitizeItemNotes } from "@/lib/menu/customization";
 import {
+  normalizeMenuItemAddOnGroups,
+  parseMenuItemAddOnGroups,
+  resolveAddOnSelection,
+} from "@/lib/menu/add-ons";
+import {
   getMenuItemPrice,
   getMenuItemSizeOption,
   getSizeOptionsStartingPrice,
@@ -104,6 +109,7 @@ import type {
   MenuImage,
   MenuItem,
   Order,
+  OrderItem,
   OrderHistoryFilters,
   OrderStatus,
   Pagination,
@@ -211,6 +217,7 @@ const kdsOrderInclude = {
           description: true,
           priceRwf: true,
           sizeOptions: true,
+          addOnGroups: true,
           imageUrl: true,
           category: true,
           isAvailable: true,
@@ -376,6 +383,7 @@ function mapMenuItem(item: PrismaMenuItemWithImages): MenuItem {
     description: item.description ?? undefined,
     priceRwf: item.priceRwf,
     sizeOptions: parseMenuItemSizeOptions(item.sizeOptions),
+    addOnGroups: parseMenuItemAddOnGroups(item.addOnGroups),
     imageUrl: item.imageUrl ?? undefined,
     category: item.category,
     isAvailable: item.isAvailable,
@@ -520,6 +528,9 @@ function mapOrder(order: PrismaOrderWithItems): Order {
       unitPriceRwf: item.unitPriceRwf,
       sizeOptionId: item.sizeOptionId ?? undefined,
       sizeLabel: item.sizeLabel ?? undefined,
+      addOnSelections: Array.isArray(item.addOnSelections)
+        ? (item.addOnSelections as unknown as OrderItem["addOnSelections"])
+        : undefined,
       notes: item.notes ?? undefined,
     })),
   };
@@ -1535,6 +1546,9 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     const sizeOptions = input.sizeOptions
       ? normalizeMenuItemSizeOptions(input.sizeOptions)
       : undefined;
+    const addOnGroups = input.addOnGroups?.length
+      ? normalizeMenuItemAddOnGroups(input.addOnGroups)
+      : undefined;
     const created = await client.menuItem.create({
       data: {
         vendorId: vendor.id,
@@ -1545,6 +1559,9 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
           : input.priceRwf,
         ...(sizeOptions
           ? { sizeOptions: sizeOptions as unknown as Prisma.InputJsonValue }
+          : {}),
+        ...(addOnGroups
+          ? { addOnGroups: addOnGroups as unknown as Prisma.InputJsonValue }
           : {}),
         category: input.category?.trim() || "General",
         isAvailable: true,
@@ -1584,6 +1601,11 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       data.priceRwf = existingSizes
         ? getSizeOptionsStartingPrice(existingSizes)
         : input.priceRwf;
+    }
+    if (input.addOnGroups && input.addOnGroups !== null) {
+      data.addOnGroups = normalizeMenuItemAddOnGroups(input.addOnGroups) as unknown as Prisma.InputJsonValue;
+    } else if (input.addOnGroups === null) {
+      data.addOnGroups = Prisma.DbNull;
     }
     if (input.description !== undefined) {
       data.description = input.description.trim() || null;
@@ -2369,13 +2391,12 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
         throw new Error(`Item unavailable: ${line.menuItemId}`);
       }
       const notes = line.notes ? sanitizeItemNotes(line.notes) : undefined;
+      const domainItem = mapMenuItem(menuItem);
+      const addOns = resolveAddOnSelection(domainItem.addOnGroups, line.addOnChoiceIds);
       return {
         menuItemId: menuItem.id,
         quantity: line.quantity,
-        unitPriceRwf: getMenuItemPrice(
-          mapMenuItem(menuItem),
-          line.sizeOptionId
-        ),
+        unitPriceRwf: getMenuItemPrice(domainItem, line.sizeOptionId) + addOns.surchargeRwf,
         ...(line.sizeOptionId
           ? {
               sizeOptionId: line.sizeOptionId,
@@ -2386,6 +2407,9 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
             }
           : {}),
         ...(notes ? { notes } : {}),
+        ...(addOns.groups.length
+          ? { addOnSelections: addOns.groups as unknown as Prisma.InputJsonValue }
+          : {}),
       };
     });
 

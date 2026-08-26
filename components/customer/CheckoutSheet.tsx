@@ -117,6 +117,9 @@ export function CheckoutSheet({
                         {line.sizeLabel}
                       </div>
                     ) : null}
+                    {line.addOnLabels?.length ? (
+                      <div className="mt-0.5 font-body text-caption text-muted">+ {line.addOnLabels.join(", ")}</div>
+                    ) : null}
                     {line.notes && (
                       <div className="mt-0.5 font-body text-caption italic text-muted">
                         &ldquo;{line.notes}&rdquo;

@@ -416,6 +416,7 @@ export function MenuSection({
       priceRwf,
       description: values.description || undefined,
       category: values.category || "General",
+      addOnGroups: values.addOnGroups,
     };
 
     let result: MenuItem | null = null;
@@ -477,6 +478,7 @@ export function MenuSection({
           name: `${item.name} (copy)`.slice(0, 60),
           priceRwf: item.priceRwf,
           sizeOptions: item.sizeOptions,
+          addOnGroups: item.addOnGroups,
           description: item.description,
           category: item.category,
         },

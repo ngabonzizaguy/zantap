@@ -192,6 +192,28 @@ export interface MenuItemSizeOption {
   isAvailable: boolean;
 }
 
+export interface MenuItemAddOnChoice {
+  id: string;
+  label: string;
+  priceRwf: number;
+  isAvailable: boolean;
+}
+
+export interface MenuItemAddOnGroup {
+  id: string;
+  name: string;
+  required: boolean;
+  selection: "SINGLE" | "MULTIPLE";
+  maxSelections?: number;
+  choices: MenuItemAddOnChoice[];
+}
+
+export interface OrderItemAddOnSnapshot {
+  groupId: string;
+  groupName: string;
+  choices: { choiceId: string; label: string; priceRwf: number }[];
+}
+
 export interface MenuItem {
   id: string;
   vendorId: string;
@@ -201,6 +223,8 @@ export interface MenuItem {
   priceRwf: number;
   /** Ordered vendor-defined sizes. Absent for legacy/single-price items. */
   sizeOptions?: MenuItemSizeOption[];
+  /** Ordered item-specific add-on groups configured by the Vendor. */
+  addOnGroups?: MenuItemAddOnGroup[];
   imageUrl?: string;
   category: string;
   isAvailable: boolean;
@@ -213,12 +237,7 @@ export interface MenuItem {
   costPriceRwf?: number;
   archivedAt?: Date;
   images?: MenuImage[];
-  /**
-   * Optional, presentation-only customization catalog (included ingredients +
-   * paid add-ons) for the storefront customize modal. In-memory passthrough
-   * only today — no persistence. Absent on every item currently (renders a
-   * generic fallback). Forward-compat seam for the future "real modifiers" epic.
-   */
+  /** Legacy presentation-only included-ingredient catalog (ADR-0019). */
   customization?: ItemCustomization;
 }
 
@@ -230,6 +249,7 @@ export interface CreateMenuItemInput {
   name: string;
   priceRwf: number;
   sizeOptions?: MenuItemSizeOption[];
+  addOnGroups?: MenuItemAddOnGroup[];
   description?: string;
   category?: string;
 }
@@ -239,6 +259,8 @@ export interface UpdateMenuItemInput {
   priceRwf?: number;
   /** Null disables size pricing; an array replaces the ordered option list. */
   sizeOptions?: MenuItemSizeOption[] | null;
+  /** Null removes all add-on groups; an array replaces the catalog. */
+  addOnGroups?: MenuItemAddOnGroup[] | null;
   description?: string;
   category?: string;
   stockCount?: number | null;
@@ -256,6 +278,8 @@ export interface OrderItem {
   /** Selected size identity and label snapshot; absent for single-price items. */
   sizeOptionId?: string;
   sizeLabel?: string;
+  /** Immutable labels/prices selected when the Order was created. */
+  addOnSelections?: OrderItemAddOnSnapshot[];
   /** Special instructions from the customize modal (one per line item). */
   notes?: string;
 }
@@ -345,6 +369,7 @@ export interface CreateOrderInput {
     menuItemId: string;
     quantity: number;
     sizeOptionId?: string;
+    addOnChoiceIds?: string[];
     notes?: string;
   }[];
 }
