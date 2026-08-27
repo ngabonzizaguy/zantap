@@ -1,6 +1,6 @@
 # Issue 01 — First-create photos, forgiving size drafts, and add-ons design
 
-Status: FIXES RELEASED · ADD-ONS DONE LOCALLY · BROWSER-SMOKED · NOT RELEASED
+Status: FIXES RELEASED · ADD-ONS RELEASED · PROD-SMOKED
 
 ## User outcomes
 
@@ -59,8 +59,8 @@ Status: FIXES RELEASED · ADD-ONS DONE LOCALLY · BROWSER-SMOKED · NOT RELEASED
 
 - ADR-0071 records the approved catalog, validation, cart identity, pricing and
   immutable snapshot decisions.
-- Additive migration `20260826100000_menu_item_add_ons` is present but has not
-  been applied to any database.
+- Additive migration `20260826100000_menu_item_add_ons` is applied to the
+  production Supabase project; Prisma reports all 19 migrations current.
 - Fresh-server Playwright QA passed the full Vendor → storefront → simulated
   MoMo → KDS → receipt story. The editor round-tripped Required/Single sauces
   (`Chilli +300`, `Mayo +0`) and Optional/Multiple extras (`Avocado +1,000`,
@@ -78,8 +78,8 @@ Status: FIXES RELEASED · ADD-ONS DONE LOCALLY · BROWSER-SMOKED · NOT RELEASED
   passed / 117 skipped, targeted ESLint clean, and production build clean.
 - Follow-up commit `83f27f0` adds explicit checkout-payload, WhatsApp/delivery
   text, and CSV/XLSX summary assertions for immutable add-on snapshots (27/27).
-- No push, deployment, migration application, or production business-data write
-  occurred for add-ons.
+- No production fixture, menu-item, order, or other business data was changed
+  while releasing add-ons.
 - The earlier stale-server blocker cleared on 2026-08-27: port 3000 was free,
   one fresh `npm run dev` process was started, and the final browser gate passed.
 - A post-approval UX correction replaced the add-ons subview's lone Back action
@@ -98,3 +98,16 @@ Status: FIXES RELEASED · ADD-ONS DONE LOCALLY · BROWSER-SMOKED · NOT RELEASED
   warning, and 5xx scans were empty.
 - No migration ran and no production fixture, menu-item, order, or other
   business data changed.
+- Owner authorization pushed implementation `9eac518`, downstream contract
+  evidence `83f27f0`, and explicit-save correction `53c5d24` to
+  `origin/codex/customer-restaurant-hub`.
+- Production migration audit found only
+  `20260826100000_menu_item_add_ons` pending. `npm run db:deploy` applied that
+  migration, and follow-up `prisma migrate status` reported all 19 migrations
+  up to date. The released menu-size migration was not reapplied.
+- A clean detached worktree deployed exact commit `53c5d24` as Vercel
+  Production `dpl_GKFXigG2VbJFFumNEiGLBerkHGCE` (`READY`), aliased to
+  `zantap.app`, `www.zantap.app`, and `zantap-psi.vercel.app`.
+- Exact-deployment and alias smoke returned HTTP 200 for storefront, KDS, and
+  onboarding. The production KDS client bundle contains `Save add-ons`, and
+  exact-deployment error, fatal, warning, and 5xx scans were empty.

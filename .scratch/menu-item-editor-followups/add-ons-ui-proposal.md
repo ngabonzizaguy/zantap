@@ -1,6 +1,6 @@
 # Add-ons UI/UX proposal — approval gate
 
-Status: PROPOSED · OWNER APPROVAL REQUIRED · NOT IMPLEMENTED
+Status: APPROVED 2026-08-26 · IMPLEMENTED · RELEASED 2026-08-27
 Date: 2026-08-25
 
 ![Vendor and customer add-ons concept](./add-ons-ui-proposal.png)
@@ -46,3 +46,8 @@ Please approve or revise these points before implementation:
 No add-ons schema, Store method, checkout logic, order snapshot, KDS ticket,
 receipt, migration, deployment, or production data change is included in this
 proposal.
+
+Implementation and release truth now lives in issue 01 and ADR-0071. The
+shipped add-ons subview also includes an explicit `Save add-ons` action so
+Vendors can persist the guarded menu-item update without returning to the
+parent form first.
