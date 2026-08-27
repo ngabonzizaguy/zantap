@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { BriefingAcknowledgement } from "@/components/briefing/BriefingAcknowledgement";
 import { BriefingAccessGate } from "@/components/briefing/BriefingAccessGate";
 import { BriefingInterest } from "@/components/briefing/BriefingInterest";
 import { BriefingMotion } from "@/components/briefing/BriefingMotion";
@@ -6,15 +7,9 @@ import { BriefingNotice } from "@/components/briefing/BriefingNotice";
 import { BriefingSignalField } from "@/components/briefing/BriefingSignalField";
 import {
   BRIEFING_CHAPTERS,
-  DOCUMENTS,
-  EVIDENCE,
-  ORDER_JOURNEY,
 } from "@/lib/briefing/content";
-import {
-  getBriefingPreviewConfig,
-  hasBriefingPreviewSession,
-  isBriefingPreviewExpired,
-} from "@/lib/briefing/preview-access";
+import { getBriefingPreviewConfig, isBriefingPreviewExpired } from "@/lib/briefing/preview-access";
+import { getBriefingViewerContext } from "@/lib/briefing/viewer-session";
 
 interface BriefingPageProps {
   searchParams: Promise<{ error?: string; state?: string }>;
@@ -22,26 +17,39 @@ interface BriefingPageProps {
 
 export default async function BriefingPage({ searchParams }: BriefingPageProps) {
   const query = await searchParams;
-  const config = getBriefingPreviewConfig();
-  if (!config) return <BriefingAccessGate state="unavailable" />;
-  if (isBriefingPreviewExpired(config)) {
-    return <BriefingAccessGate state="expired" />;
+  const context = await getBriefingViewerContext();
+  if (!context) {
+    const preview = getBriefingPreviewConfig();
+    if (preview && isBriefingPreviewExpired(preview)) {
+      return <BriefingAccessGate state="expired" />;
+    }
+    return <BriefingAccessGate error={Boolean(query.error)} />;
   }
-  if (!(await hasBriefingPreviewSession())) {
-    return <BriefingAccessGate error={query.error === "invalid"} />;
+  if (context.session && !context.session.acknowledgedAt) {
+    return <BriefingAcknowledgement recipient={context.recipient} expiresAt={context.expiresAt} />;
   }
+  const document = context.document;
+  const visibleChapters = [...BRIEFING_CHAPTERS]
+    .filter((chapter) => !document.hiddenChapters.includes(chapter.id))
+    .sort(
+      (left, right) =>
+        document.chapterOrder.indexOf(left.id) - document.chapterOrder.indexOf(right.id)
+    );
+  const chapterStyle = (id: (typeof document.chapterOrder)[number]) => ({
+    order: document.chapterOrder.indexOf(id),
+  });
 
   return (
     <main className="briefing-page">
       <BriefingNotice
-        recipient={config.recipient}
-        expiresAt={config.expiresAt.toISOString()}
+        recipient={context.recipient}
+        expiresAt={context.expiresAt.toISOString()}
       />
       <BriefingMotion />
 
       <header className="briefing-hero" id="top">
         <Image
-          src="/marketing/kigali-vendor-hero.png"
+          src={document.media.hero}
           alt="Atmospheric view of a Kigali food-business setting"
           fill
           priority
@@ -62,7 +70,7 @@ export default async function BriefingPage({ searchParams }: BriefingPageProps) 
             />
           </a>
           <div className="briefing-nav__links">
-            {BRIEFING_CHAPTERS.map((chapter) => (
+            {visibleChapters.map((chapter) => (
               <a key={chapter.id} href={`#${chapter.id}`}>
                 {chapter.label}
               </a>
@@ -71,15 +79,14 @@ export default async function BriefingPage({ searchParams }: BriefingPageProps) 
         </nav>
         <div className="briefing-hero__copy">
           <p className="briefing-kicker" data-briefing-hero>
-            Private briefing · Rwanda, 2026
+            {document.hero.kicker}
           </p>
           <h1 data-briefing-hero>
-            Good food already moves people.
-            <em>ZanTap helps the business move with it.</em>
+            {document.hero.title}
+            <em>{document.hero.emphasis}</em>
           </h1>
           <p className="briefing-hero__summary" data-briefing-hero>
-            One simple link connects a customer&apos;s choice, a familiar MoMo
-            moment and a kitchen that knows what comes next.
+            {document.hero.summary}
           </p>
           <a href="#why" className="briefing-scroll-cue" data-briefing-hero>
             <span>Enter the story</span>
@@ -88,17 +95,15 @@ export default async function BriefingPage({ searchParams }: BriefingPageProps) 
         </div>
       </header>
 
-      <section className="briefing-section briefing-problem" id="why">
+      <div className="briefing-chapter-flow">
+
+      {!document.hiddenChapters.includes("why") ? <section style={chapterStyle("why")} className="briefing-section briefing-problem" id="why">
         <div className="briefing-section__intro" data-briefing-reveal>
-          <p className="briefing-kicker">The opportunity</p>
-          <h2>A busy service should not depend on finding the right message.</h2>
+          <p className="briefing-kicker">{document.opportunity.kicker}</p>
+          <h2>{document.opportunity.title}</h2>
         </div>
         <div className="briefing-problem__grid">
-          {[
-            ["Orders arrive everywhere", "Calls, chats and paper can each hold a different piece of the same order."],
-            ["Payment needs certainty", "The kitchen needs to know when to begin without chasing a conversation."],
-            ["Growth needs memory", "Sales, stock and costs become useful only when today leaves a clear record."],
-          ].map(([title, body]) => (
+          {document.opportunity.cards.map(({ title, body }) => (
             <article key={title} data-briefing-reveal>
               <span aria-hidden />
               <h3>{title}</h3>
@@ -106,30 +111,22 @@ export default async function BriefingPage({ searchParams }: BriefingPageProps) 
             </article>
           ))}
         </div>
-      </section>
+      </section> : null}
 
-      <section className="briefing-section briefing-product" id="product">
+      {!document.hiddenChapters.includes("product") ? <section style={chapterStyle("product")} className="briefing-section briefing-product" id="product">
         <div className="briefing-product__copy" data-briefing-reveal>
-          <p className="briefing-kicker">Meet ZanTap</p>
-          <h2>From their phone to your kitchen—without losing the order between.</h2>
-          <p>
-            ZanTap gives a local food business its own mobile storefront and a
-            live kitchen view. Customers do not need another app. The team does
-            not need to search through a thread.
-          </p>
+          <p className="briefing-kicker">{document.product.kicker}</p>
+          <h2>{document.product.title}</h2>
+          <p>{document.product.body}</p>
           <details>
             <summary>What the working product includes</summary>
-            <p>
-              Menu and branding, order customization, MoMo handoff, kitchen
-              stages, order history, receipts, inventory and profit tools,
-              guided onboarding and an installable experience.
-            </p>
+            <p>{document.product.includes}</p>
           </details>
         </div>
         <div className="briefing-product__stage" data-briefing-reveal>
           <div className="briefing-phone briefing-phone--front">
             <Image
-              src="/brand/UI-screens/new-UI-screens%20%26%20video%20walkthrough/storefront.png"
+              src={document.media.storefront}
               alt="The current ZanTap mobile storefront"
               width={466}
               height={761}
@@ -138,7 +135,7 @@ export default async function BriefingPage({ searchParams }: BriefingPageProps) 
           </div>
           <div className="briefing-screen">
             <Image
-              src="/brand/UI-screens/new-UI-screens%20%26%20video%20walkthrough/kds-inventoryStock.png"
+              src={document.media.dashboard}
               alt="The current ZanTap Inventory dashboard"
               width={376}
               height={805}
@@ -146,15 +143,15 @@ export default async function BriefingPage({ searchParams }: BriefingPageProps) 
             />
           </div>
         </div>
-      </section>
+      </section> : null}
 
-      <section className="briefing-section briefing-journey" id="journey">
+      {!document.hiddenChapters.includes("journey") ? <section style={chapterStyle("journey")} className="briefing-section briefing-journey" id="journey">
         <div className="briefing-section__intro" data-briefing-reveal>
-          <p className="briefing-kicker">One order, start to finish</p>
-          <h2>Six ordinary moments. One continuous view.</h2>
+          <p className="briefing-kicker">{document.journey.kicker}</p>
+          <h2>{document.journey.title}</h2>
         </div>
         <div className="briefing-journey__rail">
-          {ORDER_JOURNEY.map((item, index) => (
+          {document.journey.steps.map((item, index) => (
             <article key={item.step} data-briefing-reveal>
               <span className="briefing-journey__number">{String(index + 1).padStart(2, "0")}</span>
               <p className="briefing-kicker">{item.step}</p>
@@ -165,23 +162,23 @@ export default async function BriefingPage({ searchParams }: BriefingPageProps) 
         </div>
         <figure className="briefing-journey__image" data-briefing-reveal>
           <Image
-            src="/marketing/scroll/kitchen.webp"
+            src={document.media.journey}
             alt="Atmospheric kitchen scene"
             fill
             sizes="100vw"
             data-briefing-parallax
           />
-          <figcaption>Designed around the rhythm of service—not the rhythm of a software demo.</figcaption>
+          <figcaption>{document.journey.caption}</figcaption>
         </figure>
-      </section>
+      </section> : null}
 
-      <section className="briefing-section briefing-proof" id="proof">
+      {!document.hiddenChapters.includes("proof") ? <section style={chapterStyle("proof")} className="briefing-section briefing-proof" id="proof">
         <div className="briefing-section__intro" data-briefing-reveal>
-          <p className="briefing-kicker">Evidence so far · August 2026</p>
-          <h2>The product loop exists. The next work is adoption.</h2>
+          <p className="briefing-kicker">{document.proof.kicker}</p>
+          <h2>{document.proof.title}</h2>
         </div>
         <div className="briefing-proof__grid">
-          {EVIDENCE.map((item) => (
+          {document.proof.evidence.map((item) => (
             <article key={item.label} data-briefing-reveal>
               <p>{item.label}</p>
               <strong>{item.value}</strong>
@@ -190,19 +187,19 @@ export default async function BriefingPage({ searchParams }: BriefingPageProps) 
           ))}
         </div>
         <div className="briefing-docs" data-briefing-reveal>
-          {DOCUMENTS.map((document) => (
-            <details key={document.title}>
-              <summary>{document.title}</summary>
-              <p>{document.body}</p>
+          {document.proof.documents.map((entry) => (
+            <details key={entry.title}>
+              <summary>{entry.title}</summary>
+              <p>{entry.body}</p>
             </details>
           ))}
         </div>
-      </section>
+      </section> : null}
 
-      <section className="briefing-section briefing-future" id="future">
+      {!document.hiddenChapters.includes("future") ? <section style={chapterStyle("future")} className="briefing-section briefing-future" id="future">
         <div className="briefing-future__image" data-briefing-reveal>
           <Image
-            src="/marketing/scroll/grow.webp"
+            src={document.media.future}
             alt="Conceptual Rwanda food-business growth scene"
             fill
             sizes="(max-width: 768px) 100vw, 48vw"
@@ -210,30 +207,21 @@ export default async function BriefingPage({ searchParams }: BriefingPageProps) 
           />
         </div>
         <div className="briefing-future__copy" data-briefing-reveal>
-          <p className="briefing-kicker">Rwanda first</p>
-          <h2>Start close enough to learn. Build strong enough to travel.</h2>
-          <p>
-            ZanTap&apos;s early path is deliberately practical: help real food
-            businesses go live, learn from service, and grow a per-order model
-            around value that can be seen in the kitchen.
-          </p>
+          <p className="briefing-kicker">{document.future.kicker}</p>
+          <h2>{document.future.title}</h2>
+          <p>{document.future.body}</p>
           <ul>
-            <li>Vendors shape the product through real daily use.</li>
-            <li>Partners extend reach, trust and operating capability.</li>
-            <li>Sponsors can widen access to guided digital adoption.</li>
-            <li>Investors can help a working loop become a durable company.</li>
+            {document.future.points.map((point) => <li key={point}>{point}</li>)}
           </ul>
         </div>
-      </section>
+      </section> : null}
+      </div>
 
       <section className="briefing-section briefing-close">
         <div data-briefing-reveal>
-          <p className="briefing-kicker">Continue the conversation</p>
-          <h2>What could ZanTap make possible with you?</h2>
-          <p className="briefing-close__lead">
-            Choose the perspective closest to yours and tell us what you would
-            like to explore.
-          </p>
+          <p className="briefing-kicker">{document.closing.kicker}</p>
+          <h2>{document.closing.title}</h2>
+          <p className="briefing-close__lead">{document.closing.body}</p>
         </div>
         <div data-briefing-reveal>
           <BriefingInterest />

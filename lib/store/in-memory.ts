@@ -150,10 +150,15 @@ import type {
   VendorUpdateSettings,
   PublicVendorUpdateFeedItem,
 } from "@/lib/vendor-updates/types";
+import { createInMemoryBriefingStore } from "@/lib/briefing/store/in-memory";
 import {
   VENDOR_UPDATE_BATCH_WINDOW_MS,
   VENDOR_UPDATE_TTL_MS,
 } from "@/lib/vendor-updates/types";
+import type {
+  BriefingInterest,
+  BriefingInterestInput,
+} from "@/lib/briefing/interest";
 
 const COUNTED_STATUSES: OrderStatus[] = ["PAID", "DISPATCHED", "COMPLETED"];
 
@@ -206,6 +211,7 @@ function clonePayment(payment: Payment): Payment {
  * between runs. ids are generated internally and must not be assumed by callers.
  */
 export function createInMemoryStore(): ResettableStore {
+  const briefing = createInMemoryBriefingStore();
   let menuItems: MenuItem[] = [];
   let inventoryItems: InventoryItem[] = [];
   let inventoryAdjustments: InventoryAdjustment[] = [];
@@ -214,6 +220,7 @@ export function createInMemoryStore(): ResettableStore {
   let payments: Payment[] = [];
   let vendors: StoredVendor[] = [];
   let leads: Lead[] = [];
+  let briefingInterests: BriefingInterest[] = [];
   let leadRoutingRecipients: LeadRoutingRecipient[] = [];
   let lastAssignedLeadRoutingRecipientId: string | undefined;
   let recoveryEvents: VendorRecoveryEvent[] = [];
@@ -243,6 +250,7 @@ export function createInMemoryStore(): ResettableStore {
   let menuImageCounter = 0;
   let vendorCounter = 0;
   let leadCounter = 0;
+  let briefingInterestCounter = 0;
   let leadRoutingRecipientCounter = 0;
   let leadRoutingAssignmentCounter = 0;
   let recoveryEventCounter = 0;
@@ -370,6 +378,7 @@ export function createInMemoryStore(): ResettableStore {
     recoveryEvents = [];
     operatorActions = [];
     leads = [];
+    briefingInterests = [];
     leadRoutingRecipients = [];
     lastAssignedLeadRoutingRecipientId = undefined;
     drivers = seedDrivers.map((driver) => ({ ...driver }));
@@ -390,6 +399,7 @@ export function createInMemoryStore(): ResettableStore {
     recoveryEventCounter = 0;
     driverCounter = 0;
     leadCounter = 0;
+    briefingInterestCounter = 0;
     leadRoutingRecipientCounter = 0;
     leadRoutingAssignmentCounter = 0;
     prospectCounter = 0;
@@ -783,6 +793,25 @@ export function createInMemoryStore(): ResettableStore {
     if (index === -1) return null;
     leads[index] = { ...leads[index], status };
     return cloneLead(leads[index]);
+  }
+
+  async function createBriefingInterest(
+    input: BriefingInterestInput
+  ): Promise<BriefingInterest> {
+    const interest: BriefingInterest = {
+      id: `briefing_interest_${++briefingInterestCounter}_${Date.now()}`,
+      ...input,
+      createdAt: new Date(),
+    };
+    briefingInterests.unshift(interest);
+    return { ...interest, createdAt: new Date(interest.createdAt) };
+  }
+
+  async function listBriefingInterests(): Promise<BriefingInterest[]> {
+    return briefingInterests.map((row) => ({
+      ...row,
+      createdAt: new Date(row.createdAt),
+    }));
   }
 
   async function listLeadRoutingRecipients(): Promise<
@@ -2723,9 +2752,11 @@ export function createInMemoryStore(): ResettableStore {
 
   function reset(): void {
     load();
+    briefing.reset();
   }
 
   return {
+    briefing,
     getVendorBySlug,
     resolvePublicRestaurants,
     isSlugAvailable,
@@ -2751,6 +2782,8 @@ export function createInMemoryStore(): ResettableStore {
     updateLeadRoutingRecipient,
     removeLeadRoutingRecipient,
     assignLeadRoutingRecipient,
+    createBriefingInterest,
+    listBriefingInterests,
     createProspect,
     bulkCreateProspects,
     listProspects,

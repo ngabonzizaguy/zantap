@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { unlockBriefingPreview } from "@/lib/briefing/actions";
+import { unlockBriefing } from "@/lib/briefing/access-actions";
 
 interface BriefingAccessGateProps {
   error?: boolean;
@@ -43,7 +43,7 @@ export function BriefingAccessGate({ error, state }: BriefingAccessGateProps) {
             </a>
           </div>
         ) : (
-          <form action={unlockBriefingPreview} className="mt-10">
+          <form action={unlockBriefing} className="mt-10">
             <label htmlFor="briefing-secret" className="briefing-label">
               Access secret
             </label>

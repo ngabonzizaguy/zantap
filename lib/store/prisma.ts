@@ -57,6 +57,7 @@ import {
   validateMenuImageFile,
 } from "@/lib/menu/media";
 import { prisma as defaultPrisma } from "@/lib/prisma";
+import { createPrismaBriefingStore } from "@/lib/briefing/store/prisma";
 import { canonicalizePhone } from "@/lib/format";
 import { canTransitionProspectStatus } from "@/lib/prospects/status";
 import type {
@@ -92,6 +93,11 @@ import type {
   LeadStatus,
   UpdateLeadRoutingRecipientInput,
 } from "@/lib/leads/types";
+import type {
+  BriefingInterest,
+  BriefingInterestInput,
+  BriefingInterestType,
+} from "@/lib/briefing/interest";
 import { normalizeLeadRoutingRecipient } from "@/lib/leads/routing";
 import type {
   AbandonManualPaymentResult,
@@ -570,6 +576,7 @@ function isTransactionConflict(error: unknown): boolean {
  * so the two cannot drift. ids come from Prisma (cuid) and are never assumed.
  */
 export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
+  const briefing = createPrismaBriefingStore(client);
   async function getVendorBySlug(slug: string): Promise<Vendor | null> {
     const vendor = await client.vendor.findUnique({
       where: { slug: normalizeVendorSlug(slug) },
@@ -1697,6 +1704,36 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       data: { category: to.trim() || "General" },
     });
     return result.count;
+  }
+
+  async function createBriefingInterest(
+    input: BriefingInterestInput
+  ): Promise<BriefingInterest> {
+    const row = await client.briefingInterest.create({
+      data: {
+        grantId: input.grantId ?? null,
+        name: input.name,
+        contact: input.contact,
+        interestType: input.interestType,
+        message: input.message,
+      },
+    });
+    return {
+      ...row,
+      grantId: row.grantId ?? undefined,
+      interestType: row.interestType as BriefingInterestType,
+    };
+  }
+
+  async function listBriefingInterests(): Promise<BriefingInterest[]> {
+    const rows = await client.briefingInterest.findMany({
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    });
+    return rows.map((row) => ({
+      ...row,
+      grantId: row.grantId ?? undefined,
+      interestType: row.interestType as BriefingInterestType,
+    }));
   }
 
   async function resolvePublicRestaurants(
@@ -3561,6 +3598,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   }
 
   return {
+    briefing,
     getVendorBySlug,
     resolvePublicRestaurants,
     isSlugAvailable,
@@ -3586,6 +3624,8 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     updateLeadRoutingRecipient,
     removeLeadRoutingRecipient,
     assignLeadRoutingRecipient,
+    createBriefingInterest,
+    listBriefingInterests,
     createProspect,
     bulkCreateProspects,
     listProspects,

@@ -15,6 +15,7 @@ const NAV = [
   { href: "/ops/insights", label: "Insights", icon: "insights" as const },
   { href: "/ops/prospects", label: "Prospects", icon: "prospects" as const },
   { href: "/ops/recovery", label: "Recovery", icon: "clock" as const },
+  { href: "/ops/briefing", label: "Briefing", icon: "eye" as const },
   { href: "/ops/settings", label: "Settings", icon: "settings" as const },
 ];
 

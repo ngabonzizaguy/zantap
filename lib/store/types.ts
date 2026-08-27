@@ -81,6 +81,11 @@ import type {
   VendorUpdateSettings,
   PublicVendorUpdateFeedItem,
 } from "@/lib/vendor-updates/types";
+import type {
+  BriefingInterest,
+  BriefingInterestInput,
+} from "@/lib/briefing/interest";
+import type { BriefingStore } from "@/lib/briefing/types";
 
 /**
  * The single seam through which all persistent reads and mutations pass.
@@ -89,6 +94,7 @@ import type {
  * reached only from Server Actions and React Server Components.
  */
 export interface Store {
+  briefing: BriefingStore;
   // Vendor reads + provision
   getVendorBySlug(slug: string): Promise<Vendor | null>;
   resolvePublicRestaurants(vendorIds: string[]): Promise<PublicRestaurant[]>;
@@ -159,6 +165,10 @@ export interface Store {
   assignLeadRoutingRecipient(
     leadId: string
   ): Promise<LeadRoutingAssignment | null>;
+
+  // Private stakeholder Briefing interest inbox.
+  createBriefingInterest(input: BriefingInterestInput): Promise<BriefingInterest>;
+  listBriefingInterests(): Promise<BriefingInterest[]>;
 
   // Outbound prospects (ADR-0054)
   createProspect(input: CreateProspectInput): Promise<Prospect>;

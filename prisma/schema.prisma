@@ -130,6 +130,91 @@ model Lead {
   @@index([createdAt])
 }
 
+model BriefingInterest {
+  id           String               @id @default(cuid())
+  grantId      String?
+  grant        BriefingAccessGrant? @relation(fields: [grantId], references: [id], onDelete: SetNull)
+  name         String
+  contact      String
+  interestType String
+  message      String
+  createdAt    DateTime             @default(now())
+
+  @@index([createdAt])
+}
+
+model BriefingDraft {
+  id        String   @id @default("default")
+  content   Json
+  updatedAt DateTime @updatedAt
+}
+
+model BriefingVersion {
+  id          String                @id @default(cuid())
+  number      Int                   @unique
+  content     Json
+  publishedAt DateTime              @default(now())
+  grants      BriefingAccessGrant[]
+
+  @@index([publishedAt])
+}
+
+model BriefingAccessGrant {
+  id                String             @id @default(cuid())
+  recipientLabel    String
+  recipientEmail    String?
+  shortCode         String             @unique
+  secretLookup      String             @unique
+  secretHash        String
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  sessionGeneration Int                @default(0)
+  versionId         String
+  version           BriefingVersion    @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  sessions          BriefingSession[]
+  activities        BriefingActivity[]
+  interests         BriefingInterest[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([expiresAt, revokedAt])
+  @@index([versionId])
+}
+
+model BriefingSession {
+  id                 String              @id @default(cuid())
+  grantId            String
+  grant              BriefingAccessGrant @relation(fields: [grantId], references: [id], onDelete: Cascade)
+  tokenHash          String              @unique
+  generation         Int
+  acknowledgedAt     DateTime?
+  lastSeenAt         DateTime            @default(now())
+  expiresAt          DateTime
+  revokedAt          DateTime?
+  userAgent          String?
+  networkFingerprint String?
+  activities         BriefingActivity[]
+  createdAt          DateTime            @default(now())
+
+  @@index([grantId, revokedAt, lastSeenAt])
+  @@index([expiresAt])
+}
+
+model BriefingActivity {
+  id        String               @id @default(cuid())
+  grantId   String?
+  grant     BriefingAccessGrant? @relation(fields: [grantId], references: [id], onDelete: SetNull)
+  sessionId String?
+  session   BriefingSession?     @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  type      String
+  detail    Json?
+  at        DateTime             @default(now())
+
+  @@index([grantId, at])
+  @@index([sessionId, at])
+  @@index([type, at])
+}
+
 model Prospect {
   id                String                @id @default(cuid())
   businessName      String
@@ -361,16 +446,16 @@ model Order {
 }
 
 model OrderItem {
-  id           String   @id @default(cuid())
-  orderId      String
-  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  menuItemId   String
-  menuItem     MenuItem @relation(fields: [menuItemId], references: [id])
-  quantity     Int
-  unitPriceRwf Int
-  sizeOptionId String?
-  sizeLabel    String?
-  notes        String?
+  id              String   @id @default(cuid())
+  orderId         String
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId      String
+  menuItem        MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity        Int
+  unitPriceRwf    Int
+  sizeOptionId    String?
+  sizeLabel       String?
+  notes           String?
   /// Immutable add-on group/choice labels and prices selected at checkout.
   addOnSelections Json?
 
