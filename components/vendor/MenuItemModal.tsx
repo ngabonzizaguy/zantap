@@ -202,7 +202,14 @@ export function MenuItemModal({
       onClose={onClose}
       title={mode === "create" ? "Add menu item" : "Edit menu item"}
       footer={addOnsOpen ? (
-        <Button size="kds" variant="outline" className="w-full" disabled={saving} onClick={() => setAddOnsOpen(false)}>Back to item</Button>
+        <div className="flex gap-2">
+          <Button size="kds" variant="outline" className="flex-1" disabled={saving} onClick={() => setAddOnsOpen(false)}>
+            Back to item
+          </Button>
+          <Button size="kds" className="flex-1" disabled={saving} onClick={handleSubmit}>
+            {saving ? "Saving…" : mode === "create" ? "Create item" : "Save add-ons"}
+          </Button>
+        </div>
       ) :
         <div className="flex gap-2">
           <Button size="kds" variant="outline" className="flex-1" disabled={saving} onClick={onClose}>
@@ -214,7 +221,15 @@ export function MenuItemModal({
         </div>
       }
     >
-      {addOnsOpen ? <AddOnGroupsEditor groups={values.addOnGroups} disabled={saving} onChange={(addOnGroups) => setValues((previous) => ({ ...previous, addOnGroups }))} /> : <div className="flex flex-col gap-5">
+      {addOnsOpen ? (
+        <div className="space-y-4">
+          <AddOnGroupsEditor groups={values.addOnGroups} disabled={saving} onChange={(addOnGroups) => setValues((previous) => ({ ...previous, addOnGroups }))} />
+          <p className="font-body text-caption text-muted">
+            Save add-ons to update this menu item.
+          </p>
+          {displayError ? <p className="font-body text-caption text-error" role="alert">{displayError}</p> : null}
+        </div>
+      ) : <div className="flex flex-col gap-5">
         {mode === "edit" && item ? (
           <div className="grid grid-cols-[64px_minmax(0,1fr)] items-start gap-x-3.5">
             <div

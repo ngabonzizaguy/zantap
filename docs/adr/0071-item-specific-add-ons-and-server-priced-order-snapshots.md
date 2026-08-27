@@ -21,6 +21,10 @@ groups only for v1.
 - The KDS editor opens Add-ons as a subview of the existing item modal. Back
   restores the unsaved item draft; saving the item replaces the catalog through
   the existing owner-token-guarded menu action and Store seam.
+- The subview exposes its own primary `Save add-ons` action, which submits the
+  complete item draft through that same guarded update path. `Back to item`
+  remains a draft-preserving navigation action, and validation/server errors
+  render inside the add-ons view rather than being hidden on the parent view.
 - The storefront renders enabled choices after size and before notes. Required
   groups block Add to order. Selected choices update the per-unit headline and
   quantity-aware CTA total immediately.

@@ -1,6 +1,6 @@
 # Issue 01 — First-create photos, forgiving size drafts, and add-ons design
 
-Status: FIXES COMMITTED LOCALLY · ADD-ONS UI AWAITING OWNER APPROVAL · NOT DEPLOYED
+Status: FIXES RELEASED · ADD-ONS DONE LOCALLY · BROWSER-SMOKED · NOT RELEASED
 
 ## User outcomes
 
@@ -32,8 +32,19 @@ Status: FIXES COMMITTED LOCALLY · ADD-ONS UI AWAITING OWNER APPROVAL · NOT DEP
 - [x] An add-ons UI/UX proposal shows both Vendor setup and Customer selection,
       including groups, required/optional rules, single/multiple choice,
       per-choice price, availability, and live totals.
-- [x] No add-ons schema, Store, checkout, order, KDS ticket, receipt, migration,
-      deployment, or production-data work occurs before owner approval.
+- [x] Owner approved all five add-ons proposal decisions on 2026-08-26.
+- [x] Item-specific groups persist through both Store adapters with the approved
+      limits/rules and owner-token-guarded Vendor writes.
+- [x] Checkout sends choice IDs only; the Store validates current availability,
+      prices selections, and snapshots labels/prices onto each Order line.
+- [x] Storefront required-choice blocking, live totals, distinct cart identity,
+      KDS tickets, receipts, WhatsApp text, and CSV/XLSX summaries are wired.
+- [x] Focused tests, targeted lint, full tests, and production build pass.
+- [x] After restarting the sole port-3000 dev server, finish the post-save
+      storefront/order browser walkthrough at 390px and desktop.
+- [x] The add-ons subview exposes an explicit save action, reports validation
+      or server errors in place, and persists through the guarded menu-item
+      update without requiring the Vendor to discover the parent form save.
 
 ## Boundaries
 
@@ -43,3 +54,47 @@ Status: FIXES COMMITTED LOCALLY · ADD-ONS UI AWAITING OWNER APPROVAL · NOT DEP
   shared-handoff edits, and every pre-existing dirty/untracked artifact.
 - Keep the Store as the single server-only data seam if add-ons are later
   approved for implementation.
+
+## Add-ons local implementation
+
+- ADR-0071 records the approved catalog, validation, cart identity, pricing and
+  immutable snapshot decisions.
+- Additive migration `20260826100000_menu_item_add_ons` is present but has not
+  been applied to any database.
+- Fresh-server Playwright QA passed the full Vendor → storefront → simulated
+  MoMo → KDS → receipt story. The editor round-tripped Required/Single sauces
+  (`Chilli +300`, `Mayo +0`) and Optional/Multiple extras (`Avocado +1,000`,
+  `Cheese +500`, max 2). The storefront blocked its CTA until a required sauce
+  was selected, showed 7,800 RWF per unit and 15,600 RWF for quantity two, and
+  kept the Mayo-only 6,500 RWF choice as a distinct cart line.
+- Simulated MoMo PIN `12345` created paid local order `#4450` / Store ID
+  `ord_1_1787790754450` for 22,100 RWF. KDS and receipt both rendered the two
+  immutable snapshots (`Chilli, Avocado` and `Mayo`) with authoritative unit
+  prices. The 390×844 storefront and 1280×900 KDS had no horizontal overflow;
+  the 2026-08-27 browser logs contained zero errors or warnings. Screenshots:
+  `output/playwright/menu-add-ons/kds-order-4450.png` and
+  `output/playwright/menu-add-ons/receipt-4450.png`.
+- Verification: focused 152 tests, in-memory contract 116 tests, full suite 420
+  passed / 117 skipped, targeted ESLint clean, and production build clean.
+- Follow-up commit `83f27f0` adds explicit checkout-payload, WhatsApp/delivery
+  text, and CSV/XLSX summary assertions for immutable add-on snapshots (27/27).
+- No push, deployment, migration application, or production business-data write
+  occurred for add-ons.
+- The earlier stale-server blocker cleared on 2026-08-27: port 3000 was free,
+  one fresh `npm run dev` process was started, and the final browser gate passed.
+- A post-approval UX correction replaced the add-ons subview's lone Back action
+  with Back plus a primary `Save add-ons` action. At 390×844, Playwright saved
+  `Sauces QA` / `Garlic mayo` / `250 RWF`, closed the editor, reopened Smash
+  Burger, and restored the exact persisted values with zero browser errors.
+
+## Release
+
+- Commit `22b1315` was pushed to `origin/codex/customer-restaurant-hub`.
+- A clean detached worktree deployed exact commit `22b1315` to Vercel
+  Production as `dpl_5PST7zjP8wFpmxRsYc3NJcNGWnWP` (`READY`), aliased to
+  `zantap.app`, `www.zantap.app`, and `zantap-psi.vercel.app`.
+- Production smoke returned HTTP 200 for `/inka-steakhouse`,
+  `/vendor/inka-steakhouse`, and `/onboard`. Exact-deployment error, fatal,
+  warning, and 5xx scans were empty.
+- No migration ran and no production fixture, menu-item, order, or other
+  business data changed.
