@@ -1,0 +1,10 @@
+# Local build and browser artifacts
+.next
+.playwright-cli
+.scratch
+output
+mobile-comparison.png
+**/__pycache__
+
+# Agent/runtime metadata is never required by the deployed application
+.agents
