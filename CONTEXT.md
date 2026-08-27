@@ -139,6 +139,38 @@ _Avoid_: deleted, archived
 A mutation performed by an Operator through the Control API, bypassing the owner-token guard because operator API auth was validated server-side.
 _Avoid_: owner token write, vendor self-service edit
 
+**Access grant** (ADR-0072):
+A recipient-specific invitation to the private ZanTap presentation, carrying its own secret, expiry, revocation state, and viewing history. One Access grant represents one intended recipient even when that recipient has not been given a ZanTap account.
+_Avoid_: shared password, campaign password, viewer account, public link
+
+**Viewing session** (ADR-0072):
+One authorized browser's temporary access under an Access grant. An Access grant may have at most two active Viewing sessions so its recipient can review on a phone and a computer without making the secret effectively unlimited.
+_Avoid_: viewer account, login, device registration
+
+**Viewer acknowledgement** (ADR-0072):
+The one-time confidentiality notice accepted when a new Viewing session enters the private ZanTap presentation. It names the intended recipient, states the expiry and no-redistribution expectation, then collapses into the persistent recipient/countdown notice.
+_Avoid_: terms of service, login consent, cookie banner
+
+**ZanTap Briefing**:
+The protected, cinematic presentation that explains ZanTap's opportunity, product, evidence, operating model, and ways to participate to any invited stakeholder. Its main journey is persuasive and its detailed documentation opens contextually without becoming a separate edition.
+_Avoid_: pitch deck, investor deck, manual, documentation site, presentation portal
+
+**Briefing evidence** (ADR-0075):
+An Operator-approved, dated claim, metric, milestone, testimonial, or authentic visual used to substantiate the ZanTap Briefing. It is a curated snapshot, never a live operational record or generated stand-in for real traction.
+_Avoid_: live metric, dashboard data, illustrative testimonial, generated proof
+
+**Briefing version** (ADR-0076):
+An immutable published snapshot of the ZanTap Briefing's approved chapters, evidence, media references, and expandable documentation. Each Access grant is pinned to one Briefing version so its recipient's material does not change silently.
+_Avoid_: draft, live page, current content, presentation copy
+
+**Briefing interest**:
+An invited viewer's request for follow-up after the ZanTap Briefing, classified as Vendor, Investor, Sponsor, Partner, or Other and accompanied by contact details and an optional message.
+_Avoid_: Lead, Prospect, signup, Access grant
+
+**Briefing activity** (ADR-0077):
+A privacy-limited record of meaningful interaction with an Access grant, such as unlock, Viewing-session use, chapter progress, evidence opening, or Briefing-interest submission. It is engagement history, not a replay or recording of the viewer.
+_Avoid_: surveillance, session recording, heatmap, analytics profile
+
 **Adapter**:
 A concrete implementation satisfying the Store interface at its seam. Two exist: an in-memory adapter (tests/local dev) and a Prisma/Postgres adapter (production).
 _Avoid_: backend, driver, provider

@@ -19,6 +19,7 @@ describe("normalizeVendorSlug", () => {
 describe("isReservedVendorSlug", () => {
   it("reserves app routes and marketing paths (case/space-insensitive)", () => {
     expect(isReservedVendorSlug("ops")).toBe(true);
+    expect(isReservedVendorSlug(" Briefing ")).toBe(true);
     expect(isReservedVendorSlug("vendor")).toBe(true);
     expect(isReservedVendorSlug("onboard")).toBe(true);
     expect(isReservedVendorSlug("api")).toBe(true);

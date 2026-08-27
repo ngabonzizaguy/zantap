@@ -14,7 +14,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/", "/ops", "/vendor/", "/slip/"],
+        disallow: ["/api/", "/briefing", "/ops", "/vendor/", "/slip/"],
       },
     ],
     ...(base ? { sitemap: `${base}/sitemap.xml` } : {}),

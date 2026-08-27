@@ -11,6 +11,7 @@ export const VENDOR_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const RESERVED_VENDOR_SLUGS: ReadonlySet<string> = new Set([
   // Live app routes
   "api",
+  "briefing",
   "onboard",
   "ops",
   "restaurants",
