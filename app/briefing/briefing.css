@@ -213,9 +213,9 @@
 .briefing-docs details p { padding: 0 36px 22px 0; color: var(--briefing-muted); font-size: 14px; line-height: 1.75; }
 
 .briefing-product__stage { position: relative; min-height: 520px; }
-.briefing-phone { position: absolute; z-index: 2; bottom: 0; left: 0; width: 43%; overflow: hidden; border: 7px solid #191919; border-radius: 34px; background: #141414; box-shadow: 0 30px 90px rgba(0,0,0,.6); }
+.briefing-phone { position: absolute; z-index: 2; bottom: 0; left: 0; width: 45%; overflow: hidden; border: 7px solid #191919; border-radius: 34px; background: #141414; box-shadow: 0 30px 90px rgba(0,0,0,.6); }
 .briefing-phone img { display: block; width: 100%; height: auto; }
-.briefing-screen { position: absolute; top: 7%; right: -10%; width: 82%; overflow: hidden; border: 7px solid #171717; border-radius: 22px; background: #111; box-shadow: 0 40px 110px rgba(0,0,0,.64); }
+.briefing-screen { position: absolute; top: 2%; right: 0; width: 62%; overflow: hidden; border: 7px solid #171717; border-radius: 28px; background: #111; box-shadow: 0 40px 110px rgba(0,0,0,.64); }
 .briefing-screen img { display: block; width: 100%; height: auto; }
 
 .briefing-journey__rail { display: grid; gap: 1px; margin-top: 64px; background: var(--briefing-line); }

@@ -121,28 +121,28 @@ export default async function BriefingPage({ searchParams }: BriefingPageProps) 
             <summary>What the working product includes</summary>
             <p>
               Menu and branding, order customization, MoMo handoff, kitchen
-              stages, delivery assignment, history, receipts, stock and profit
-              tools, guided onboarding and an installable experience.
+              stages, order history, receipts, inventory and profit tools,
+              guided onboarding and an installable experience.
             </p>
           </details>
         </div>
         <div className="briefing-product__stage" data-briefing-reveal>
           <div className="briefing-phone briefing-phone--front">
             <Image
-              src="/marketing/screen-storefront.png"
-              alt="A real ZanTap mobile storefront"
-              width={690}
-              height={1380}
+              src="/brand/UI-screens/new-UI-screens%20%26%20video%20walkthrough/storefront.png"
+              alt="The current ZanTap mobile storefront"
+              width={466}
+              height={761}
               sizes="(max-width: 768px) 55vw, 290px"
             />
           </div>
           <div className="briefing-screen">
             <Image
-              src="/marketing/screen-kitchen.png"
-              alt="The ZanTap kitchen view"
-              width={1400}
-              height={900}
-              sizes="(max-width: 768px) 78vw, 620px"
+              src="/brand/UI-screens/new-UI-screens%20%26%20video%20walkthrough/kds-inventoryStock.png"
+              alt="The current ZanTap Inventory dashboard"
+              width={376}
+              height={805}
+              sizes="(max-width: 768px) 62vw, 410px"
             />
           </div>
         </div>
