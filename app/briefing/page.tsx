@@ -128,17 +128,17 @@ export default async function BriefingPage({ searchParams }: BriefingPageProps) 
             <Image
               src={document.media.storefront}
               alt="The current ZanTap mobile storefront"
-              width={466}
-              height={761}
+              width={325}
+              height={690}
               sizes="(max-width: 768px) 55vw, 290px"
             />
           </div>
           <div className="briefing-screen">
             <Image
               src={document.media.dashboard}
-              alt="The current ZanTap Inventory dashboard"
-              width={376}
-              height={805}
+              alt="The current ZanTap kitchen orders dashboard"
+              width={405}
+              height={844}
               sizes="(max-width: 768px) 62vw, 410px"
             />
           </div>

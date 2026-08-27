@@ -150,6 +150,27 @@ export function BriefingOpsManager({
       {tab === "content" ? (
         <div className="space-y-5">
           <Card className="p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-display text-display-sm font-light">Structured draft</h2><p className="text-sm text-muted">Publishing creates an immutable version. Existing grants stay pinned.</p></div><div className="flex gap-2"><Button variant="outline" disabled={pending} onClick={() => run(() => saveBriefingDraftAction(document), "Draft saved.")}>Save draft</Button><Button disabled={pending} onClick={() => run(async () => { const version = await publishBriefingDraftAction(); setNotice(`Version ${version.number} published.`); }, "Published.")}>Publish version</Button></div></div></Card>
+          <Card className="p-5">
+            <h3 className="font-display text-2xl font-light">Media</h3>
+            <p className="mt-2 text-sm text-muted">Use public asset paths. Publishing preserves these exact screens in the new version.</p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              {Object.entries(document.media).map(([key, value]) => (
+                <label key={key} className={key === "hero" ? "sm:col-span-2" : ""}>
+                  <span className="mb-1 block text-xs capitalize text-muted">{key}</span>
+                  <Input
+                    aria-label={`${key} media path`}
+                    value={value}
+                    onChange={(event) =>
+                      setDocument((current) => ({
+                        ...current,
+                        media: { ...current.media, [key]: event.target.value },
+                      }))
+                    }
+                  />
+                </label>
+              ))}
+            </div>
+          </Card>
           {(["hero", "opportunity", "product", "journey", "proof", "future", "closing"] as const).map((section) => {
             const value = document[section] as unknown as Record<string, unknown>;
             return <Card key={section} className="p-5"><h3 className="mb-4 font-display text-2xl font-light capitalize">{section}</h3><div className="grid gap-4 sm:grid-cols-2">{Object.entries(value).filter(([, field]) => typeof field === "string").map(([key, field]) => <label key={key} className={key === "body" || key === "summary" || key === "includes" ? "sm:col-span-2" : ""}><span className="mb-1 block text-xs capitalize text-muted">{key}</span><textarea rows={key === "body" || key === "summary" || key === "includes" ? 4 : 2} value={String(field)} onChange={(event) => setSection(section, { [key]: event.target.value } as never)} className="w-full rounded-lg border border-hairline-strong bg-white p-3 text-sm text-ink" /></label>)}</div></Card>;

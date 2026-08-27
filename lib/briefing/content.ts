@@ -113,8 +113,8 @@ export const DEFAULT_BRIEFING_DOCUMENT: BriefingDocument = {
   hiddenChapters: [],
   media: {
     hero: "/marketing/kigali-vendor-hero.png",
-    storefront: "/brand/UI-screens/new-UI-screens%20%26%20video%20walkthrough/storefront.png",
-    dashboard: "/brand/UI-screens/new-UI-screens%20%26%20video%20walkthrough/kds-inventoryStock.png",
+    storefront: "/brand/UI-screens/new-UI-screens%20%26%20video%20walkthrough/storefront-3.png",
+    dashboard: "/brand/UI-screens/new-UI-screens%20%26%20video%20walkthrough/kds-dashboard-2.png",
     journey: "/marketing/scroll/kitchen.webp",
     future: "/marketing/scroll/grow.webp",
   },

@@ -145,6 +145,7 @@
   display: flex;
   min-height: 100svh;
   align-items: flex-end;
+  overflow: hidden;
   isolation: isolate;
 }
 
