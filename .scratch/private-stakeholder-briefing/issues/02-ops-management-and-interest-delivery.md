@@ -1,6 +1,6 @@
 # Issue 02 — Briefing Ops management and interest capture
 
-Status: **implemented and verified locally · deployment pending**
+Status: **deployed · authenticated owner Ops walkthrough pending**
 
 Complete the durable management slice already approved in ADR-0072,
 ADR-0076, and ADR-0077. The viewer remains free of Ops references; authenticated
@@ -39,4 +39,9 @@ Operators manage it from a dedicated `/ops/briefing` area.
 - Clean `npm run build`: passing; `/briefing` and `/ops/briefing` included.
 - Mobile browser QA at 405×812: numeric-only countdown, tightened story cue,
   far-right watermark, no browser errors, and interest form success confirmed.
-- Deployment and production smoke remain pending.
+- Production deployment `dpl_7VH4EeKGVJADUzAKgQnR2xgiLvJK` is Ready and
+  aliased to `zantap.app`; gate/unlock/mobile viewer and `/ops/briefing` auth
+  redirect pass, with zero browser or sampled runtime errors.
+- Authenticated owner walkthrough of grant creation and the first real interest
+  appearing in Ops remains pending; production was not polluted with a fake
+  stakeholder message.
