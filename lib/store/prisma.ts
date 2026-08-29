@@ -11,6 +11,12 @@ import type {
   LeadRoutingAssignment as PrismaLeadRoutingAssignment,
   LeadRoutingRecipient as PrismaLeadRoutingRecipient,
   MenuImage as PrismaMenuImage,
+  MenuIntake as PrismaMenuIntake,
+  MenuIntakeAccess as PrismaMenuIntakeAccess,
+  MenuIntakeAttachment as PrismaMenuIntakeAttachment,
+  MenuIntakeContactLog as PrismaMenuIntakeContactLog,
+  MenuIntakeQuestion as PrismaMenuIntakeQuestion,
+  MenuIntakeRevision as PrismaMenuIntakeRevision,
   MenuItem as PrismaMenuItem,
   Order as PrismaOrder,
   OrderItem as PrismaOrderItem,
@@ -23,11 +29,11 @@ import type {
 } from "@prisma/client";
 
 import { MOMO_SIM_VALID_PIN } from "@/lib/momo/constants";
-import { PAYMENT_WINDOW_MS, isWithinPaymentWindow } from "@/lib/momo/payment-window";
 import {
-  buildMomoUssdDial,
-  orderPhoneMatches,
-} from "@/lib/momo/ussd-dial";
+  PAYMENT_WINDOW_MS,
+  isWithinPaymentWindow,
+} from "@/lib/momo/payment-window";
+import { buildMomoUssdDial, orderPhoneMatches } from "@/lib/momo/ussd-dial";
 import {
   isForwardKitchenTransition,
   kitchenStageForOrderStatus,
@@ -83,7 +89,11 @@ import {
   normalizeDriverName,
 } from "@/lib/vendor/driver-display";
 import type { Store } from "@/lib/store/types";
-import type { CreateMarketingFunnelEventInput, MarketingFunnelEvent, MarketingEventName } from "@/lib/analytics/types";
+import type {
+  CreateMarketingFunnelEventInput,
+  MarketingFunnelEvent,
+  MarketingEventName,
+} from "@/lib/analytics/types";
 import type {
   CreateLeadRoutingRecipientInput,
   CreateLeadInput,
@@ -182,6 +192,29 @@ import {
   validateInventoryAdjustmentInput,
   validateUpdateInventoryItemInput,
 } from "@/lib/inventory/validation";
+import type {
+  AddMenuIntakeRevisionInput,
+  AddMenuIntakeRevisionResult,
+  AnswerMenuIntakeQuestionInput,
+  AddMenuIntakeAttachmentInput,
+  CreateMenuIntakeAccessInput,
+  LogMenuIntakeContactInput,
+  CreateMenuIntakeInput,
+  CreateMenuIntakeResult,
+  MenuIntake,
+  MenuIntakeAccess,
+  MenuIntakeAttachment,
+  MenuIntakeDetail,
+  MenuIntakeQuestion,
+  MenuIntakeRevision,
+  MenuIntakeRevisionContent,
+  MenuIntakeStatus,
+  MenuIntakeImportRequest,
+  MenuIntakeImportResult,
+  MenuIntakeContactLog,
+  UpdateMenuIntakeReviewInput,
+} from "@/lib/menu-intake/types";
+import { readPrivateMenuIntakeBlob } from "@/lib/menu-intake/blob-storage";
 
 // Statuses that count toward a vendor's gross takings for the day.
 const COUNTED_STATUSES: OrderStatus[] = ["PAID", "DISPATCHED", "COMPLETED"];
@@ -244,7 +277,7 @@ const kdsOrderInclude = {
 
 function kdsOrdersWhere(
   vendorId: string,
-  ref: Date = new Date()
+  ref: Date = new Date(),
 ): Prisma.OrderWhereInput {
   const startOfToday = startOfDayInTimezone(ref);
   return {
@@ -283,7 +316,7 @@ function mapVendor(vendor: PrismaVendor): Vendor {
 
 function mapRecoveryEvent(
   event: PrismaVendorRecoveryEvent,
-  vendor?: { slug: string; name: string }
+  vendor?: { slug: string; name: string },
 ): VendorRecoveryEvent {
   return {
     id: event.id,
@@ -298,7 +331,7 @@ function mapRecoveryEvent(
 }
 
 function mapLeadRoutingAssignment(
-  assignment: PrismaLeadRoutingAssignment
+  assignment: PrismaLeadRoutingAssignment,
 ): LeadRoutingAssignment {
   return {
     id: assignment.id,
@@ -313,7 +346,7 @@ function mapLeadRoutingAssignment(
 function mapLead(
   lead: PrismaLead & {
     routingAssignment?: PrismaLeadRoutingAssignment | null;
-  }
+  },
 ): Lead {
   return {
     id: lead.id,
@@ -334,7 +367,7 @@ function mapLead(
 }
 
 function mapLeadRoutingRecipient(
-  recipient: PrismaLeadRoutingRecipient
+  recipient: PrismaLeadRoutingRecipient,
 ): LeadRoutingRecipient {
   return {
     id: recipient.id,
@@ -346,16 +379,111 @@ function mapLeadRoutingRecipient(
   };
 }
 
-function mapOperatorAction(
-  row: {
-    id: string;
-    vendorId: string | null;
-    action: string;
-    detail: string | null;
-    operatorId: string;
-    at: Date;
-  }
-): OperatorAction {
+function mapMenuIntake(
+  row: PrismaMenuIntake & { destinationVendor?: { slug: string } | null },
+): MenuIntake {
+  return {
+    id: row.id,
+    reference: row.reference,
+    status: row.status as MenuIntakeStatus,
+    businessName: row.businessName,
+    contactName: row.contactName,
+    phone: row.phone,
+    locale: row.locale as MenuIntake["locale"],
+    alreadyOnZantap: row.alreadyOnZantap,
+    storefrontHint: row.storefrontHint ?? undefined,
+    destinationVendorId: row.destinationVendorId ?? undefined,
+    destinationVendorSlug: row.destinationVendor?.slug,
+    currentRevision: row.currentRevision,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    importedAt: row.importedAt ?? undefined,
+    cancelledAt: row.cancelledAt ?? undefined,
+  };
+}
+
+function mapMenuIntakeRevision(
+  row: PrismaMenuIntakeRevision,
+): MenuIntakeRevision {
+  return {
+    id: row.id,
+    intakeId: row.intakeId,
+    sequence: row.sequence,
+    source: row.source,
+    content: row.content as unknown as MenuIntakeRevisionContent,
+    createdAt: row.createdAt,
+  };
+}
+
+function mapMenuIntakeAccess(row: PrismaMenuIntakeAccess): MenuIntakeAccess {
+  return {
+    id: row.id,
+    intakeId: row.intakeId,
+    tokenHash: row.tokenHash,
+    kind: row.kind,
+    expiresAt: row.expiresAt,
+    lastActiveAt: row.lastActiveAt,
+    consumedAt: row.consumedAt ?? undefined,
+    revokedAt: row.revokedAt ?? undefined,
+  };
+}
+
+function mapMenuIntakeAttachment(
+  row: PrismaMenuIntakeAttachment,
+): MenuIntakeAttachment {
+  return {
+    id: row.id,
+    intakeId: row.intakeId,
+    revisionId: row.revisionId ?? undefined,
+    kind: row.kind as MenuIntakeAttachment["kind"],
+    dishClientId: row.dishClientId ?? undefined,
+    fileName: row.fileName,
+    mime: row.mime,
+    byteLength: row.byteLength,
+    blobPath: row.blobPath,
+    createdAt: row.createdAt,
+  };
+}
+
+function mapMenuIntakeContactLog(
+  row: PrismaMenuIntakeContactLog,
+): MenuIntakeContactLog {
+  return {
+    id: row.id,
+    intakeId: row.intakeId,
+    kind: row.kind as MenuIntakeContactLog["kind"],
+    message: row.message,
+    operatorId: row.operatorId,
+    method: row.method as MenuIntakeContactLog["method"],
+    createdAt: row.createdAt,
+  };
+}
+
+function mapMenuIntakeQuestion(
+  row: PrismaMenuIntakeQuestion,
+): MenuIntakeQuestion {
+  return {
+    id: row.id,
+    intakeId: row.intakeId,
+    revisionId: row.revisionId ?? undefined,
+    question: row.question,
+    status: row.status,
+    answer: row.answer ?? undefined,
+    answeredBy: row.answeredBy ?? undefined,
+    answeredAt: row.answeredAt ?? undefined,
+    deliveryMethod: row.deliveryMethod as MenuIntakeQuestion["deliveryMethod"],
+    createdAt: row.createdAt,
+  };
+}
+
+function mapOperatorAction(row: {
+  id: string;
+  vendorId: string | null;
+  action: string;
+  detail: string | null;
+  operatorId: string;
+  at: Date;
+}): OperatorAction {
   return {
     id: row.id,
     vendorId: row.vendorId ?? undefined,
@@ -404,7 +532,7 @@ function mapMenuItem(item: PrismaMenuItemWithImages): MenuItem {
 }
 
 function mapVendorUpdateBatch(
-  batch: PrismaVendorUpdateBatch & { entries: PrismaVendorUpdateEntry[] }
+  batch: PrismaVendorUpdateBatch & { entries: PrismaVendorUpdateEntry[] },
 ): VendorUpdateBatch {
   return {
     id: batch.id,
@@ -464,7 +592,7 @@ function mapInventoryItem(item: PrismaInventoryItem): InventoryItem {
 }
 
 function mapInventoryAdjustment(
-  entry: PrismaInventoryAdjustment
+  entry: PrismaInventoryAdjustment,
 ): InventoryAdjustment {
   return {
     id: entry.id,
@@ -479,7 +607,7 @@ function mapInventoryAdjustment(
 }
 
 function mapInventoryDetail(
-  row: PrismaInventoryItemWithHistory
+  row: PrismaInventoryItemWithHistory,
 ): InventoryItemDetail {
   return {
     item: mapInventoryItem(row),
@@ -588,7 +716,9 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     const normalized = normalizeVendorSlug(slug);
     if (!normalized) return false;
     if (isReservedVendorSlug(normalized)) return false;
-    const vendor = await client.vendor.findUnique({ where: { slug: normalized } });
+    const vendor = await client.vendor.findUnique({
+      where: { slug: normalized },
+    });
     return vendor === null;
   }
 
@@ -632,7 +762,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function updateVendor(
     vendorSlug: string,
-    input: UpdateVendorInput
+    input: UpdateVendorInput,
   ): Promise<Vendor | null> {
     const slug = normalizeVendorSlug(vendorSlug);
     if (input.slug !== undefined) {
@@ -687,7 +817,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   }
 
   async function getVendorUpdateSettings(
-    vendorSlug: string
+    vendorSlug: string,
   ): Promise<VendorUpdateSettings> {
     const vendor = await client.vendor.findUnique({
       where: { slug: normalizeVendorSlug(vendorSlug) },
@@ -698,7 +828,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function setVendorUpdatesEnabled(
     vendorSlug: string,
-    enabled: boolean
+    enabled: boolean,
   ): Promise<VendorUpdateSettings | null> {
     try {
       const vendor = await client.vendor.update({
@@ -715,7 +845,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function recordVendorUpdate(
     vendorSlug: string,
-    input: RecordVendorUpdateInput
+    input: RecordVendorUpdateInput,
   ): Promise<VendorUpdateBatch | null> {
     if (input.announce === false) return null;
     const at = new Date(input.at ?? Date.now());
@@ -806,7 +936,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function getVendorUpdateOverview(
     vendorSlug: string,
-    at = new Date()
+    at = new Date(),
   ): Promise<VendorUpdateOverview | null> {
     const vendor = await client.vendor.findUnique({
       where: { slug: normalizeVendorSlug(vendorSlug) },
@@ -843,7 +973,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function incrementVendorUpdateCounter(
     batchId: string,
-    counter: VendorUpdateCounter
+    counter: VendorUpdateCounter,
   ): Promise<VendorUpdateBatch | null> {
     try {
       const batch = await client.vendorUpdateBatch.update({
@@ -863,7 +993,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function listPublicVendorUpdates(
     vendorIds: string[],
-    at = new Date()
+    at = new Date(),
   ): Promise<PublicVendorUpdateFeedItem[]> {
     const uniqueIds = [...new Set(vendorIds)].slice(0, 50);
     if (uniqueIds.length === 0) return [];
@@ -893,38 +1023,40 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
         row.menuItems.map((item) => [
           item.id,
           item.isAvailable && item.archivedAt == null,
-        ])
+        ]),
       );
-      return [{
-        vendorId: row.id,
-        slug: row.slug,
-        name: row.name,
-        logoUrl: row.logoUrl ?? undefined,
-        isAvailable: row.isActive,
-        batches: row.isActive
-          ? row.updateBatches.map((batch) => {
-              const mapped = mapVendorUpdateBatch(batch);
-              return {
-                id: mapped.id,
-                vendorId: mapped.vendorId,
-                revision: mapped.revision,
-                publishedAt: mapped.publishedAt,
-                expiresAt: mapped.expiresAt,
-                entries: mapped.entries.map((entry) => ({
-                  ...entry,
-                  isCurrentlyAvailable:
-                    entry.type === "PROFILE_CHANGE" ||
-                    availability.get(entry.subjectId) === true,
-                })),
-              };
-            })
-          : [],
-      }];
+      return [
+        {
+          vendorId: row.id,
+          slug: row.slug,
+          name: row.name,
+          logoUrl: row.logoUrl ?? undefined,
+          isAvailable: row.isActive,
+          batches: row.isActive
+            ? row.updateBatches.map((batch) => {
+                const mapped = mapVendorUpdateBatch(batch);
+                return {
+                  id: mapped.id,
+                  vendorId: mapped.vendorId,
+                  revision: mapped.revision,
+                  publishedAt: mapped.publishedAt,
+                  expiresAt: mapped.expiresAt,
+                  entries: mapped.entries.map((entry) => ({
+                    ...entry,
+                    isCurrentlyAvailable:
+                      entry.type === "PROFILE_CHANGE" ||
+                      availability.get(entry.subjectId) === true,
+                  })),
+                };
+              })
+            : [],
+        },
+      ];
     });
   }
 
   async function getVendorOwnerTokenHash(
-    vendorSlug: string
+    vendorSlug: string,
   ): Promise<string | null> {
     const vendor = await client.vendor.findUnique({
       where: { slug: normalizeVendorSlug(vendorSlug) },
@@ -935,7 +1067,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function setVendorOwnerToken(
     vendorSlug: string,
-    ownerTokenHash: string
+    ownerTokenHash: string,
   ): Promise<Vendor | null> {
     try {
       const vendor = await client.vendor.update({
@@ -950,7 +1082,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   }
 
   async function recordRecoveryEvent(
-    input: RecordRecoveryEventInput
+    input: RecordRecoveryEventInput,
   ): Promise<VendorRecoveryEvent> {
     const event = await client.vendorRecoveryEvent.create({
       data: {
@@ -962,7 +1094,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   }
 
   async function listRecoveryEvents(
-    vendorId: string
+    vendorId: string,
   ): Promise<VendorRecoveryEvent[]> {
     const events = await client.vendorRecoveryEvent.findMany({
       where: { vendorId },
@@ -972,7 +1104,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   }
 
   async function listAllRecoveryEvents(
-    filters?: RecoveryEventFilters
+    filters?: RecoveryEventFilters,
   ): Promise<VendorRecoveryEvent[]> {
     const where: Prisma.VendorRecoveryEventWhereInput = {};
     if (filters?.vendorSlug) {
@@ -991,13 +1123,13 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       mapRecoveryEvent(event, {
         slug: event.vendor.slug,
         name: event.vendor.name,
-      })
+      }),
     );
   }
 
   async function reviewRecoveryEvent(
     eventId: string,
-    reviewNote?: string
+    reviewNote?: string,
   ): Promise<VendorRecoveryEvent | null> {
     try {
       const event = await client.vendorRecoveryEvent.update({
@@ -1043,7 +1175,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function updateLeadStatus(
     leadId: string,
-    status: LeadStatus
+    status: LeadStatus,
   ): Promise<Lead | null> {
     try {
       const lead = await client.lead.update({
@@ -1057,6 +1189,662 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     }
   }
 
+  async function createMenuIntake(
+    input: CreateMenuIntakeInput,
+  ): Promise<CreateMenuIntakeResult> {
+    return client.$transaction(async (tx) => {
+      const intake = await tx.menuIntake.create({
+        data: {
+          reference: input.reference,
+          path: input.content.path,
+          businessName: input.businessName.trim(),
+          contactName: input.contactName.trim(),
+          phone: input.phone,
+          locale: input.locale,
+          alreadyOnZantap: input.alreadyOnZantap,
+          storefrontHint: input.storefrontHint?.trim() || null,
+        },
+        include: { destinationVendor: { select: { slug: true } } },
+      });
+      const revision = await tx.menuIntakeRevision.create({
+        data: {
+          intakeId: intake.id,
+          sequence: 1,
+          source: "VENDOR",
+          content: input.content as unknown as Prisma.InputJsonValue,
+        },
+      });
+      const access = await tx.menuIntakeAccess.create({
+        data: {
+          intakeId: intake.id,
+          tokenHash: input.resumeTokenHash,
+          kind: "BROWSER",
+          expiresAt: input.resumeExpiresAt,
+        },
+      });
+      if (input.content.question) {
+        await tx.menuIntakeQuestion.create({
+          data: {
+            intakeId: intake.id,
+            revisionId: revision.id,
+            question: input.content.question,
+          },
+        });
+      }
+      return {
+        intake: mapMenuIntake(intake),
+        revision: mapMenuIntakeRevision(revision),
+        access: mapMenuIntakeAccess(access),
+      };
+    });
+  }
+
+  async function getMenuIntake(
+    intakeId: string,
+  ): Promise<MenuIntakeDetail | null> {
+    const row = await client.menuIntake.findUnique({
+      where: { id: intakeId },
+      include: {
+        destinationVendor: { select: { slug: true } },
+        revisions: { orderBy: { sequence: "asc" } },
+        questions: { orderBy: { createdAt: "asc" } },
+        attachments: { orderBy: { createdAt: "asc" } },
+        contactLogs: { orderBy: { createdAt: "asc" } },
+      },
+    });
+    if (!row) return null;
+    return {
+      intake: mapMenuIntake(row),
+      revisions: row.revisions.map(mapMenuIntakeRevision),
+      questions: row.questions.map(mapMenuIntakeQuestion),
+      attachments: row.attachments.map(mapMenuIntakeAttachment),
+      contactLogs: row.contactLogs.map(mapMenuIntakeContactLog),
+    };
+  }
+
+  async function addMenuIntakeRevision(
+    input: AddMenuIntakeRevisionInput,
+  ): Promise<AddMenuIntakeRevisionResult | null> {
+    return client.$transaction(async (tx) => {
+      const access = await tx.menuIntakeAccess.findFirst({
+        where: {
+          intakeId: input.intakeId,
+          tokenHash: input.resumeTokenHash,
+          revokedAt: null,
+          consumedAt: null,
+          expiresAt: { gt: input.at },
+        },
+      });
+      if (!access) return null;
+      const intake = await tx.menuIntake.findUnique({
+        where: { id: input.intakeId },
+        include: { destinationVendor: { select: { slug: true } } },
+      });
+      if (
+        !intake ||
+        ["IMPORTING", "CANCELLED"].includes(intake.status)
+      ) {
+        return null;
+      }
+      const sequence = intake.currentRevision + 1;
+      const revision = await tx.menuIntakeRevision.create({
+        data: {
+          intakeId: intake.id,
+          sequence,
+          source: "VENDOR",
+          content: input.content as unknown as Prisma.InputJsonValue,
+          createdAt: input.at,
+        },
+      });
+      await tx.menuIntakeAccess.update({
+        where: { id: access.id },
+        data: { lastActiveAt: input.at },
+      });
+      const updated = await tx.menuIntake.update({
+        where: { id: intake.id },
+        data: {
+          status: intake.status === "IMPORTED" ? "IN_REVIEW" : "SUBMITTED",
+          currentRevision: sequence,
+          updatedAt: input.at,
+        },
+        include: { destinationVendor: { select: { slug: true } } },
+      });
+      if (input.content.question) {
+        await tx.menuIntakeQuestion.create({
+          data: {
+            intakeId: intake.id,
+            revisionId: revision.id,
+            question: input.content.question,
+            createdAt: input.at,
+          },
+        });
+      }
+      return {
+        intake: mapMenuIntake(updated),
+        revision: mapMenuIntakeRevision(revision),
+      };
+    });
+  }
+
+  async function listMenuIntakes(): Promise<MenuIntake[]> {
+    const rows = await client.menuIntake.findMany({
+      include: { destinationVendor: { select: { slug: true } } },
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+    });
+    return rows.map(mapMenuIntake);
+  }
+
+  async function authorizeMenuIntake(
+    intakeId: string,
+    tokenHash: string,
+    at: Date,
+  ): Promise<MenuIntakeDetail | null> {
+    return client.$transaction(async (tx) => {
+      const access = await tx.menuIntakeAccess.findFirst({
+        where: {
+          intakeId,
+          tokenHash,
+          revokedAt: null,
+          consumedAt: null,
+          expiresAt: { gt: at },
+        },
+      });
+      if (!access) return null;
+      await tx.menuIntakeAccess.update({
+        where: { id: access.id },
+        data: {
+          lastActiveAt: at,
+          expiresAt: new Date(at.getTime() + 30 * 24 * 60 * 60_000),
+          consumedAt: access.kind === "ONE_TIME" ? at : null,
+        },
+      });
+      const row = await tx.menuIntake.findUnique({
+        where: { id: intakeId },
+        include: {
+          destinationVendor: { select: { slug: true } },
+          revisions: { orderBy: { sequence: "asc" } },
+          questions: { orderBy: { createdAt: "asc" } },
+          attachments: { orderBy: { createdAt: "asc" } },
+          contactLogs: { orderBy: { createdAt: "asc" } },
+        },
+      });
+      return row
+        ? {
+            intake: mapMenuIntake(row),
+            revisions: row.revisions.map(mapMenuIntakeRevision),
+            questions: row.questions.map(mapMenuIntakeQuestion),
+            attachments: row.attachments.map(mapMenuIntakeAttachment),
+            contactLogs: row.contactLogs.map(mapMenuIntakeContactLog),
+          }
+        : null;
+    });
+  }
+
+  async function addMenuIntakeAttachment(
+    input: AddMenuIntakeAttachmentInput,
+  ): Promise<MenuIntakeAttachment | null> {
+    const access = await client.menuIntakeAccess.findFirst({
+      where: {
+        intakeId: input.intakeId,
+        tokenHash: input.resumeTokenHash,
+        revokedAt: null,
+        consumedAt: null,
+        expiresAt: { gt: input.at },
+      },
+    });
+    if (!access) return null;
+    const intake = await client.menuIntake.findUnique({
+      where: { id: input.intakeId },
+    });
+    if (
+      !intake ||
+      ["IMPORTING", "IMPORTED", "CANCELLED"].includes(intake.status)
+    )
+      return null;
+    const row = await client.menuIntakeAttachment.create({
+      data: {
+        intakeId: input.intakeId,
+        kind: input.kind,
+        dishClientId: input.dishClientId ?? null,
+        fileName: input.fileName,
+        mime: input.mime,
+        byteLength: input.byteLength,
+        blobPath: input.blobPath,
+        createdAt: input.at,
+      },
+    });
+    await client.menuIntakeAccess.update({
+      where: { id: access.id },
+      data: {
+        lastActiveAt: input.at,
+        expiresAt: new Date(input.at.getTime() + 30 * 24 * 60 * 60_000),
+      },
+    });
+    return mapMenuIntakeAttachment(row);
+  }
+
+  async function removeMenuIntakeAttachment(
+    intakeId: string,
+    attachmentId: string,
+    tokenHash: string,
+    at: Date,
+  ): Promise<MenuIntakeAttachment | null> {
+    const access = await client.menuIntakeAccess.findFirst({
+      where: {
+        intakeId,
+        tokenHash,
+        revokedAt: null,
+        consumedAt: null,
+        expiresAt: { gt: at },
+      },
+    });
+    if (!access) return null;
+    const row = await client.menuIntakeAttachment.findFirst({
+      where: { id: attachmentId, intakeId },
+    });
+    if (!row) return null;
+    await client.menuIntakeAttachment.delete({ where: { id: row.id } });
+    return mapMenuIntakeAttachment(row);
+  }
+
+  async function createMenuIntakeAccess(
+    input: CreateMenuIntakeAccessInput,
+  ): Promise<MenuIntakeAccess | null> {
+    const intake = await client.menuIntake.findUnique({
+      where: { id: input.intakeId },
+      select: { id: true },
+    });
+    if (!intake) return null;
+    return mapMenuIntakeAccess(
+      await client.menuIntakeAccess.create({
+        data: {
+          intakeId: input.intakeId,
+          tokenHash: input.tokenHash,
+          kind: input.kind,
+          expiresAt: input.expiresAt,
+          lastActiveAt: input.at,
+        },
+      }),
+    );
+  }
+
+  async function exchangeMenuIntakeAccess(
+    intakeId: string,
+    oneTimeTokenHash: string,
+    browserTokenHash: string,
+    at: Date,
+  ): Promise<MenuIntakeDetail | null> {
+    return client.$transaction(async (tx) => {
+      const oneTime = await tx.menuIntakeAccess.findFirst({
+        where: {
+          intakeId,
+          kind: "ONE_TIME",
+          tokenHash: oneTimeTokenHash,
+          consumedAt: null,
+          revokedAt: null,
+          expiresAt: { gt: at },
+        },
+      });
+      if (!oneTime) return null;
+      await tx.menuIntakeAccess.update({
+        where: { id: oneTime.id },
+        data: { consumedAt: at, lastActiveAt: at },
+      });
+      await tx.menuIntakeAccess.create({
+        data: {
+          intakeId,
+          tokenHash: browserTokenHash,
+          kind: "BROWSER",
+          expiresAt: new Date(at.getTime() + 30 * 24 * 60 * 60_000),
+          lastActiveAt: at,
+        },
+      });
+      const row = await tx.menuIntake.findUnique({
+        where: { id: intakeId },
+        include: {
+          destinationVendor: { select: { slug: true } },
+          revisions: { orderBy: { sequence: "asc" } },
+          questions: { orderBy: { createdAt: "asc" } },
+          attachments: { orderBy: { createdAt: "asc" } },
+          contactLogs: { orderBy: { createdAt: "asc" } },
+        },
+      });
+      return row
+        ? {
+            intake: mapMenuIntake(row),
+            revisions: row.revisions.map(mapMenuIntakeRevision),
+            questions: row.questions.map(mapMenuIntakeQuestion),
+            attachments: row.attachments.map(mapMenuIntakeAttachment),
+            contactLogs: row.contactLogs.map(mapMenuIntakeContactLog),
+          }
+        : null;
+    });
+  }
+
+  async function revokeMenuIntakeAccess(
+    intakeId: string,
+    at: Date,
+  ): Promise<number> {
+    return (
+      await client.menuIntakeAccess.updateMany({
+        where: { intakeId, revokedAt: null },
+        data: { revokedAt: at },
+      })
+    ).count;
+  }
+
+  async function logMenuIntakeContact(
+    input: LogMenuIntakeContactInput,
+  ): Promise<MenuIntakeContactLog> {
+    return mapMenuIntakeContactLog(
+      await client.menuIntakeContactLog.create({
+        data: {
+          intakeId: input.intakeId,
+          kind: input.kind,
+          message: input.message,
+          operatorId: input.operatorId,
+          method: input.method,
+          createdAt: input.at,
+        },
+      }),
+    );
+  }
+
+  async function updateMenuIntakeReview(
+    input: UpdateMenuIntakeReviewInput,
+  ): Promise<MenuIntakeDetail | null> {
+    return client.$transaction(async (tx) => {
+      const current = await tx.menuIntake.findUnique({
+        where: { id: input.intakeId },
+      });
+      if (!current || ["IMPORTING", "IMPORTED"].includes(current.status))
+        return null;
+      let destinationVendorId = current.destinationVendorId;
+      if (input.destinationVendorSlug !== undefined) {
+        const vendor = await tx.vendor.findUnique({
+          where: { slug: input.destinationVendorSlug },
+          select: { id: true },
+        });
+        if (!vendor) return null;
+        destinationVendorId = vendor.id;
+      }
+      let currentRevision = current.currentRevision;
+      if (input.content) {
+        currentRevision += 1;
+        await tx.menuIntakeRevision.create({
+          data: {
+            intakeId: current.id,
+            sequence: currentRevision,
+            source: "OPERATOR",
+            content: input.content as unknown as Prisma.InputJsonValue,
+            createdAt: input.at,
+          },
+        });
+      }
+      await tx.menuIntake.update({
+        where: { id: current.id },
+        data: {
+          status: input.status,
+          destinationVendorId,
+          currentRevision,
+          cancelledAt: input.status === "CANCELLED" ? input.at : null,
+          updatedAt: input.at,
+        },
+      });
+      const detail = await tx.menuIntake.findUnique({
+        where: { id: current.id },
+        include: {
+          destinationVendor: { select: { slug: true } },
+          revisions: { orderBy: { sequence: "asc" } },
+          questions: { orderBy: { createdAt: "asc" } },
+          attachments: { orderBy: { createdAt: "asc" } },
+          contactLogs: { orderBy: { createdAt: "asc" } },
+        },
+      });
+      return detail
+        ? {
+            intake: mapMenuIntake(detail),
+            revisions: detail.revisions.map(mapMenuIntakeRevision),
+            questions: detail.questions.map(mapMenuIntakeQuestion),
+            attachments: detail.attachments.map(mapMenuIntakeAttachment),
+            contactLogs: detail.contactLogs.map(mapMenuIntakeContactLog),
+          }
+        : null;
+    });
+  }
+
+  async function answerMenuIntakeQuestion(
+    input: AnswerMenuIntakeQuestionInput,
+  ): Promise<MenuIntakeQuestion | null> {
+    const question = await client.menuIntakeQuestion.findFirst({
+      where: { id: input.questionId, intakeId: input.intakeId },
+    });
+    if (!question) return null;
+    const updated = await client.menuIntakeQuestion.update({
+      where: { id: question.id },
+      data: {
+        answer: input.answer.trim(),
+        answeredBy: input.operator,
+        answeredAt: input.at,
+        status: input.status,
+        deliveryMethod: input.deliveryMethod,
+      },
+    });
+    await client.menuIntakeContactLog.create({
+      data: {
+        intakeId: input.intakeId,
+        kind: "QUESTION_REPLY",
+        message: input.answer.trim(),
+        operatorId: input.operator,
+        method: input.deliveryMethod,
+        createdAt: input.at,
+      },
+    });
+    return mapMenuIntakeQuestion(updated);
+  }
+
+  async function importMenuIntake(
+    input: MenuIntakeImportRequest,
+  ): Promise<MenuIntakeImportResult> {
+    const prior = await client.menuIntakeImportRun.findUnique({
+      where: { idempotencyKey: input.idempotencyKey },
+    });
+    if (prior?.status === "COMPLETED" && prior.results) {
+      return prior.results as unknown as MenuIntakeImportResult;
+    }
+
+    return client.$transaction(async (tx) => {
+      const intake = await tx.menuIntake.findUnique({
+        where: { id: input.intakeId },
+      });
+      if (!intake) throw new Error("Menu intake not found");
+      if (intake.status !== "READY_TO_IMPORT") {
+        throw new Error("Menu intake is not ready to import");
+      }
+      await tx.menuIntake.update({
+        where: { id: intake.id },
+        data: { status: "IMPORTING" },
+      });
+
+      let vendor: { id: string; slug: string } | null;
+      if (input.destination.kind === "EXISTING") {
+        vendor = await tx.vendor.findUnique({
+          where: { slug: input.destination.vendorSlug },
+          select: { id: true, slug: true },
+        });
+      } else {
+        const value = input.destination.vendor;
+        const slug = normalizeVendorSlug(value.slug);
+        if (!slug) throw new Error("Invalid Vendor slug");
+        vendor = await tx.vendor.create({
+          data: {
+            name: value.name.trim(),
+            slug,
+            phoneNumber: value.phoneNumber,
+            momoCode: value.momoCode,
+            isActive: true,
+            kitchenOpen: true,
+            tagline: value.tagline ?? null,
+            location: value.location ?? null,
+            deliveryTime: value.deliveryTime ?? null,
+            businessCategory: value.businessCategory ?? null,
+            payoutMethod: value.payoutMethod ?? "MERCHANT_CODE",
+            logoUrl: value.logoUrl ?? null,
+            coverImageUrl: value.coverImageUrl ?? null,
+            description: value.description ?? null,
+            ownerTokenHash: value.ownerTokenHash ?? null,
+          },
+          select: { id: true, slug: true },
+        });
+      }
+      if (!vendor) throw new Error("Destination Vendor not found");
+
+      const itemResults: MenuIntakeImportResult["items"] = [];
+      for (const item of input.items) {
+        if (item.decision === "SKIP") {
+          itemResults.push({
+            intakeDishClientId: item.intakeDishClientId,
+            outcome: "SKIPPED",
+          });
+          continue;
+        }
+        const sizeOptions = item.reviewedDish.sizeOptions
+          ? normalizeMenuItemSizeOptions(item.reviewedDish.sizeOptions)
+          : undefined;
+        const addOnGroups = item.reviewedDish.addOnGroups?.length
+          ? normalizeMenuItemAddOnGroups(item.reviewedDish.addOnGroups)
+          : undefined;
+        const priceRwf = sizeOptions
+          ? getSizeOptionsStartingPrice(sizeOptions)
+          : item.reviewedDish.priceRwf;
+        let importedMenuItemId: string;
+        if (item.decision === "UPDATE_EXISTING") {
+          if (!item.existingMenuItemId)
+            throw new Error("Existing menu item is required");
+          const found = await tx.menuItem.findFirst({
+            where: { id: item.existingMenuItemId, vendorId: vendor.id },
+          });
+          if (!found) throw new Error("Existing menu item not found");
+          const updated = await tx.menuItem.update({
+            where: { id: found.id },
+            data: {
+              name: item.reviewedDish.name.trim(),
+              description: item.reviewedDish.description?.trim() || null,
+              category: item.reviewedDish.category.trim() || "General",
+              priceRwf,
+              sizeOptions: sizeOptions
+                ? (sizeOptions as unknown as Prisma.InputJsonValue)
+                : Prisma.DbNull,
+              addOnGroups: addOnGroups
+                ? (addOnGroups as unknown as Prisma.InputJsonValue)
+                : Prisma.DbNull,
+            },
+          });
+          itemResults.push({
+            intakeDishClientId: item.intakeDishClientId,
+            outcome: "UPDATED",
+            menuItemId: updated.id,
+          });
+          importedMenuItemId = updated.id;
+        } else {
+          const gradient = thumbGradientForId(
+            `${input.intakeId}:${item.intakeDishClientId}`,
+          );
+          const created = await tx.menuItem.create({
+            data: {
+              vendorId: vendor.id,
+              name: item.reviewedDish.name.trim(),
+              description: item.reviewedDish.description?.trim() || null,
+              category: item.reviewedDish.category.trim() || "General",
+              priceRwf,
+              sizeOptions: sizeOptions
+                ? (sizeOptions as unknown as Prisma.InputJsonValue)
+                : Prisma.DbNull,
+              addOnGroups: addOnGroups
+                ? (addOnGroups as unknown as Prisma.InputJsonValue)
+                : Prisma.DbNull,
+              isAvailable: true,
+              thumbFrom: gradient.thumbFrom,
+              thumbTo: gradient.thumbTo,
+            },
+          });
+          itemResults.push({
+            intakeDishClientId: item.intakeDishClientId,
+            outcome: "CREATED",
+            menuItemId: created.id,
+          });
+          importedMenuItemId = created.id;
+        }
+        const approvedImages = item.reviewedDish.imageAttachmentIds ?? [];
+        if (approvedImages.length) {
+          const currentImages = await tx.menuImage.count({
+            where: { menuItemId: importedMenuItemId },
+          });
+          if (currentImages + approvedImages.length > 6)
+            throw new Error("Maximum 6 images per menu item");
+          for (const [offset, attachmentId] of approvedImages.entries()) {
+            const attachment = await tx.menuIntakeAttachment.findFirst({
+              where: {
+                id: attachmentId,
+                intakeId: input.intakeId,
+                kind: "DISH_IMAGE",
+                dishClientId: item.intakeDishClientId,
+              },
+            });
+            if (!attachment) throw new Error("Approved intake image not found");
+            const source = await readPrivateMenuIntakeBlob(attachment.blobPath);
+            if (!source) throw new Error("Private intake image is unavailable");
+            const pathname = buildMenuBlobPathname(
+              vendor.slug,
+              importedMenuItemId,
+              source.contentType,
+            );
+            const uploaded = await putMenuImageBlob(
+              pathname,
+              source.body,
+              source.contentType,
+            );
+            await tx.menuImage.create({
+              data: {
+                menuItemId: importedMenuItemId,
+                url: uploaded.url,
+                blobPath: uploaded.pathname,
+                sortOrder: currentImages + offset,
+                isPrimary: currentImages === 0 && offset === 0,
+              },
+            });
+          }
+        }
+      }
+      const result: MenuIntakeImportResult = {
+        intakeId: intake.id,
+        idempotencyKey: input.idempotencyKey,
+        vendorSlug: vendor.slug,
+        status: "COMPLETED",
+        items: itemResults,
+      };
+      await tx.menuIntakeImportRun.create({
+        data: {
+          intakeId: intake.id,
+          idempotencyKey: input.idempotencyKey,
+          status: "COMPLETED",
+          destinationSlug: vendor.slug,
+          results: result as unknown as Prisma.InputJsonValue,
+          completedAt: new Date(),
+        },
+      });
+      await tx.menuIntake.update({
+        where: { id: intake.id },
+        data: {
+          status: "IMPORTED",
+          destinationVendorId: vendor.id,
+          importedAt: new Date(),
+        },
+      });
+      return result;
+    });
+  }
+
   async function listLeadRoutingRecipients(): Promise<LeadRoutingRecipient[]> {
     const recipients = await client.leadRoutingRecipient.findMany({
       where: { archivedAt: null },
@@ -1066,7 +1854,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   }
 
   async function createLeadRoutingRecipient(
-    input: CreateLeadRoutingRecipientInput
+    input: CreateLeadRoutingRecipientInput,
   ): Promise<LeadRoutingRecipient> {
     const normalized = normalizeLeadRoutingRecipient(input);
     const existing = await client.leadRoutingRecipient.findUnique({
@@ -1094,7 +1882,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function updateLeadRoutingRecipient(
     recipientId: string,
-    input: UpdateLeadRoutingRecipientInput
+    input: UpdateLeadRoutingRecipientInput,
   ): Promise<LeadRoutingRecipient | null> {
     const current = await client.leadRoutingRecipient.findFirst({
       where: { id: recipientId, archivedAt: null },
@@ -1121,7 +1909,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   }
 
   async function removeLeadRoutingRecipient(
-    recipientId: string
+    recipientId: string,
   ): Promise<boolean> {
     const result = await client.leadRoutingRecipient.updateMany({
       where: { id: recipientId, archivedAt: null },
@@ -1131,7 +1919,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   }
 
   async function assignLeadRoutingRecipient(
-    leadId: string
+    leadId: string,
   ): Promise<LeadRoutingAssignment | null> {
     return client.$transaction(
       async (tx) => {
@@ -1217,16 +2005,14 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
           SELECT inserted.* FROM "inserted" inserted
           LIMIT 1
         `;
-        return assignments[0]
-          ? mapLeadRoutingAssignment(assignments[0])
-          : null;
+        return assignments[0] ? mapLeadRoutingAssignment(assignments[0]) : null;
       },
-      { maxWait: 15_000, timeout: 30_000 }
+      { maxWait: 15_000, timeout: 30_000 },
     );
   }
 
   async function listVendors(
-    filters?: VendorListFilters
+    filters?: VendorListFilters,
   ): Promise<VendorListEntry[]> {
     const where: Prisma.VendorWhereInput = {};
     if (filters?.search) {
@@ -1265,7 +2051,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   }
 
   async function getOperatorVendorDetail(
-    vendorSlug: string
+    vendorSlug: string,
   ): Promise<OperatorVendorDetail | null> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return null;
@@ -1294,7 +2080,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     const low = tracked.filter(
       (item) =>
         item.stockCount != null &&
-        item.stockCount <= (item.lowStockThreshold ?? 0)
+        item.stockCount <= (item.lowStockThreshold ?? 0),
     );
     const todayGrossRwf = await getTodayGross(vendorSlug);
     const weekdayAverageRwf = await getWeekdayAverageGross(vendorSlug);
@@ -1319,7 +2105,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function setVendorActive(
     vendorSlug: string,
     active: boolean,
-    _reason?: string
+    _reason?: string,
   ): Promise<Vendor | null> {
     try {
       const vendor = await client.vendor.update({
@@ -1338,7 +2124,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function operatorUpdateVendor(
     vendorSlug: string,
-    input: OperatorUpdateVendorInput
+    input: OperatorUpdateVendorInput,
   ): Promise<Vendor | null> {
     const {
       isActive,
@@ -1390,7 +2176,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   }
 
   async function operatorRevokeOwnerToken(
-    vendorSlug: string
+    vendorSlug: string,
   ): Promise<Vendor | null> {
     try {
       const vendor = await client.vendor.update({
@@ -1405,7 +2191,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   }
 
   async function operatorReissueOwnerToken(
-    vendorSlug: string
+    vendorSlug: string,
   ): Promise<OperatorReissueTokenResult | null> {
     const { token, hash } = mintOwnerToken();
     const updated = await setVendorOwnerToken(vendorSlug, hash);
@@ -1415,7 +2201,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function operatorUpdateOrder(
     orderId: string,
-    patch: OperatorOrderPatch
+    patch: OperatorOrderPatch,
   ): Promise<Order | null> {
     const existing = await client.order.findUnique({
       where: { id: orderId },
@@ -1444,7 +2230,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   }
 
   async function recordOperatorAction(
-    input: RecordOperatorActionInput
+    input: RecordOperatorActionInput,
   ): Promise<OperatorAction> {
     const row = await client.operatorAction.create({
       data: {
@@ -1459,7 +2245,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function listOperatorActions(
     vendorSlug?: string,
-    limit = 50
+    limit = 50,
   ): Promise<OperatorAction[]> {
     const vendor = vendorSlug
       ? await client.vendor.findUnique({
@@ -1509,7 +2295,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function getMenuItem(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<MenuItem | null> {
     const item = await client.menuItem.findFirst({
       where: { id: itemId, vendor: { slug: vendorSlug } },
@@ -1536,7 +2322,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function createMenuItem(
     vendorSlug: string,
-    input: CreateMenuItemInput
+    input: CreateMenuItemInput,
   ): Promise<MenuItem> {
     const validationError = validateCreateMenuItemInput(input);
     if (validationError) {
@@ -1582,7 +2368,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function updateMenuItem(
     vendorSlug: string,
     itemId: string,
-    input: UpdateMenuItemInput
+    input: UpdateMenuItemInput,
   ): Promise<MenuItem | null> {
     const validationError = validateUpdateMenuItemInput(input);
     if (validationError) {
@@ -1610,7 +2396,9 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
         : input.priceRwf;
     }
     if (input.addOnGroups && input.addOnGroups !== null) {
-      data.addOnGroups = normalizeMenuItemAddOnGroups(input.addOnGroups) as unknown as Prisma.InputJsonValue;
+      data.addOnGroups = normalizeMenuItemAddOnGroups(
+        input.addOnGroups,
+      ) as unknown as Prisma.InputJsonValue;
     } else if (input.addOnGroups === null) {
       data.addOnGroups = Prisma.DbNull;
     }
@@ -1644,7 +2432,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function archiveMenuItem(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<MenuItem | null> {
     const existing = await client.menuItem.findFirst({
       where: { id: itemId, vendor: { slug: vendorSlug }, ...activeMenuWhere },
@@ -1665,10 +2453,14 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function restoreMenuItem(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<MenuItem | null> {
     const existing = await client.menuItem.findFirst({
-      where: { id: itemId, vendor: { slug: vendorSlug }, archivedAt: { not: null } },
+      where: {
+        id: itemId,
+        vendor: { slug: vendorSlug },
+        archivedAt: { not: null },
+      },
     });
     if (!existing) return null;
 
@@ -1687,7 +2479,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function renameCategory(
     vendorSlug: string,
     from: string,
-    to: string
+    to: string,
   ): Promise<number> {
     const vendor = await client.vendor.findUnique({
       where: { slug: vendorSlug },
@@ -1707,7 +2499,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   }
 
   async function createBriefingInterest(
-    input: BriefingInterestInput
+    input: BriefingInterestInput,
   ): Promise<BriefingInterest> {
     const row = await client.briefingInterest.create({
       data: {
@@ -1737,7 +2529,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   }
 
   async function resolvePublicRestaurants(
-    vendorIds: string[]
+    vendorIds: string[],
   ): Promise<PublicRestaurant[]> {
     const uniqueIds = [...new Set(vendorIds)];
     if (uniqueIds.length === 0) return [];
@@ -1774,7 +2566,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function listInventory(
     vendorSlug: string,
     filters: InventoryListFilters,
-    pagination: Pagination
+    pagination: Pagination,
   ): Promise<PaginatedInventory> {
     const vendor = await client.vendor.findUnique({
       where: { slug: normalizeVendorSlug(vendorSlug) },
@@ -1815,13 +2607,13 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
         result.active += 1;
         const status = inventoryStatus(
           Number(row.quantity),
-          Number(row.lowStockThreshold)
+          Number(row.lowStockThreshold),
         );
         if (status === "OUT") result.out += 1;
         if (status === "LOW") result.low += 1;
         return result;
       },
-      { active: 0, low: 0, out: 0 }
+      { active: 0, low: 0, out: 0 },
     );
     const rank = { OUT: 0, LOW: 1, OK: 2 } as const;
     const rows = filteredRows.sort((a, b) => {
@@ -1845,7 +2637,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function createInventoryItem(
     vendorSlug: string,
-    input: CreateInventoryItemInput
+    input: CreateInventoryItemInput,
   ): Promise<InventoryItem> {
     validateCreateInventoryItemInput(input);
     const vendor = await client.vendor.findUnique({
@@ -1884,7 +2676,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function getInventoryItem(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<InventoryItemDetail | null> {
     const item = await client.inventoryItem.findFirst({
       where: {
@@ -1899,7 +2691,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function updateInventoryItem(
     vendorSlug: string,
     itemId: string,
-    input: UpdateInventoryItemInput
+    input: UpdateInventoryItemInput,
   ): Promise<InventoryItemDetail | null> {
     validateUpdateInventoryItemInput(input);
     const existing = await client.inventoryItem.findFirst({
@@ -1937,7 +2729,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function adjustInventoryItem(
     vendorSlug: string,
     itemId: string,
-    input: RecordInventoryAdjustmentInput
+    input: RecordInventoryAdjustmentInput,
   ): Promise<InventoryItemDetail | null> {
     validateInventoryAdjustmentInput(input);
     for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -1983,11 +2775,14 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
             });
             return true;
           },
-          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
         );
         return found ? getInventoryItem(vendorSlug, itemId) : null;
       } catch (error) {
-        if (attempt < 2 && (isTransactionConflict(error) || isUniqueConstraintError(error))) {
+        if (
+          attempt < 2 &&
+          (isTransactionConflict(error) || isUniqueConstraintError(error))
+        ) {
           continue;
         }
         throw error;
@@ -1998,7 +2793,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function archiveInventoryItem(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<InventoryItemDetail | null> {
     const existing = await client.inventoryItem.findFirst({
       where: {
@@ -2017,7 +2812,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function restoreInventoryItem(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<InventoryItemDetail | null> {
     const existing = await client.inventoryItem.findFirst({
       where: {
@@ -2037,7 +2832,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function addMenuImage(
     vendorSlug: string,
     itemId: string,
-    input: AddMenuImageInput
+    input: AddMenuImageInput,
   ): Promise<MenuImage> {
     const item = await client.menuItem.findFirst({
       where: { id: itemId, vendor: { slug: vendorSlug } },
@@ -2075,7 +2870,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     vendorSlug: string,
     itemId: string,
     file: Buffer,
-    mime: string
+    mime: string,
   ): Promise<MenuImage> {
     const validationError = validateMenuImageFile(file.byteLength, mime);
     if (validationError) {
@@ -2120,7 +2915,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function reorderMenuImages(
     vendorSlug: string,
     itemId: string,
-    imageIds: string[]
+    imageIds: string[],
   ): Promise<MenuImage[]> {
     const item = await client.menuItem.findFirst({
       where: { id: itemId, vendor: { slug: vendorSlug } },
@@ -2142,8 +2937,8 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
         client.menuImage.update({
           where: { id },
           data: { sortOrder },
-        })
-      )
+        }),
+      ),
     );
 
     const refreshed = await client.menuImage.findMany({
@@ -2156,7 +2951,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function setPrimaryMenuImage(
     vendorSlug: string,
     itemId: string,
-    imageId: string
+    imageId: string,
   ): Promise<MenuImage | null> {
     const item = await client.menuItem.findFirst({
       where: { id: itemId, vendor: { slug: vendorSlug } },
@@ -2188,7 +2983,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function removeMenuImage(
     vendorSlug: string,
     itemId: string,
-    imageId: string
+    imageId: string,
   ): Promise<boolean> {
     const item = await client.menuItem.findFirst({
       where: { id: itemId, vendor: { slug: vendorSlug } },
@@ -2227,7 +3022,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function toggleItemAvailability(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<MenuItem | null> {
     const item = await client.menuItem.findFirst({
       where: { id: itemId, vendor: { slug: vendorSlug }, ...activeMenuWhere },
@@ -2300,24 +3095,24 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
     const [orderRows, menuRows, todayGrossResult, yesterdayGrossResult] =
       await Promise.all([
-      client.order.findMany({
-        where: kdsOrdersWhere(vendor.id),
-        select: {
-          id: true,
-          status: true,
-          kitchenStage: true,
-          totalAmount: true,
-        },
-        orderBy: { id: "asc" },
-      }),
-      client.menuItem.findMany({
-        where: { vendorId: vendor.id, archivedAt: null },
-        select: { id: true, isAvailable: true },
-        orderBy: { id: "asc" },
-      }),
-      aggregateGrossForPreset(vendor.id, "today"),
-      aggregateGrossForPreset(vendor.id, "yesterday"),
-    ]);
+        client.order.findMany({
+          where: kdsOrdersWhere(vendor.id),
+          select: {
+            id: true,
+            status: true,
+            kitchenStage: true,
+            totalAmount: true,
+          },
+          orderBy: { id: "asc" },
+        }),
+        client.menuItem.findMany({
+          where: { vendorId: vendor.id, archivedAt: null },
+          select: { id: true, isAvailable: true },
+          orderBy: { id: "asc" },
+        }),
+        aggregateGrossForPreset(vendor.id, "today"),
+        aggregateGrossForPreset(vendor.id, "yesterday"),
+      ]);
 
     return buildKdsSnapshotRevision({
       orders: orderRows.map((row) => ({
@@ -2336,7 +3131,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function listOrdersFiltered(
     vendorSlug: string,
     filters: OrderHistoryFilters,
-    pagination: Pagination
+    pagination: Pagination,
   ) {
     const vendor = await client.vendor.findUnique({
       where: { slug: vendorSlug },
@@ -2429,30 +3224,37 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       }
       const notes = line.notes ? sanitizeItemNotes(line.notes) : undefined;
       const domainItem = mapMenuItem(menuItem);
-      const addOns = resolveAddOnSelection(domainItem.addOnGroups, line.addOnChoiceIds);
+      const addOns = resolveAddOnSelection(
+        domainItem.addOnGroups,
+        line.addOnChoiceIds,
+      );
       return {
         menuItemId: menuItem.id,
         quantity: line.quantity,
-        unitPriceRwf: getMenuItemPrice(domainItem, line.sizeOptionId) + addOns.surchargeRwf,
+        unitPriceRwf:
+          getMenuItemPrice(domainItem, line.sizeOptionId) + addOns.surchargeRwf,
         ...(line.sizeOptionId
           ? {
               sizeOptionId: line.sizeOptionId,
               sizeLabel: getMenuItemSizeOption(
                 mapMenuItem(menuItem),
-                line.sizeOptionId
+                line.sizeOptionId,
               )!.label,
             }
           : {}),
         ...(notes ? { notes } : {}),
         ...(addOns.groups.length
-          ? { addOnSelections: addOns.groups as unknown as Prisma.InputJsonValue }
+          ? {
+              addOnSelections:
+                addOns.groups as unknown as Prisma.InputJsonValue,
+            }
           : {}),
       };
     });
 
     const totalAmount = lines.reduce(
       (sum, line) => sum + line.quantity * line.unitPriceRwf,
-      0
+      0,
     );
 
     const order = await client.order.create({
@@ -2472,7 +3274,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function updateOrderStatus(
     orderId: string,
-    status: OrderStatus
+    status: OrderStatus,
   ): Promise<Order | null> {
     try {
       const current = await client.order.findUnique({
@@ -2503,7 +3305,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function updateKitchenStage(
     orderId: string,
-    stage: KitchenStage
+    stage: KitchenStage,
   ): Promise<Order | null> {
     const current = await client.order.findUnique({
       where: { id: orderId },
@@ -2512,10 +3314,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     if (!current?.kitchenStage) return null;
     if (
       current.kitchenStage !== stage &&
-      !isForwardKitchenTransition(
-        current.kitchenStage as KitchenStage,
-        stage
-      )
+      !isForwardKitchenTransition(current.kitchenStage as KitchenStage, stage)
     ) {
       return null;
     }
@@ -2539,7 +3338,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function bulkUpdateKitchenStage(
     orderIds: string[],
-    stage: KitchenStage
+    stage: KitchenStage,
   ): Promise<Order[]> {
     const updated: Order[] = [];
     for (const orderId of orderIds) {
@@ -2571,7 +3370,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function createDriver(
     vendorSlug: string,
-    input: CreateDriverInput
+    input: CreateDriverInput,
   ): Promise<Driver> {
     const vendorId = await resolveVendorId(vendorSlug);
     if (!vendorId) {
@@ -2604,7 +3403,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function updateDriver(
     vendorSlug: string,
     driverId: string,
-    input: UpdateDriverInput
+    input: UpdateDriverInput,
   ): Promise<Driver | null> {
     const vendorId = await resolveVendorId(vendorSlug);
     if (!vendorId) return null;
@@ -2615,7 +3414,9 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     if (!existing) return null;
 
     const name =
-      input.name !== undefined ? normalizeDriverName(input.name) : existing.name;
+      input.name !== undefined
+        ? normalizeDriverName(input.name)
+        : existing.name;
     if (!name) {
       throw new Error("Driver name is required");
     }
@@ -2641,7 +3442,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function deleteDriver(
     vendorSlug: string,
-    driverId: string
+    driverId: string,
   ): Promise<boolean> {
     const vendorId = await resolveVendorId(vendorSlug);
     if (!vendorId) return false;
@@ -2658,7 +3459,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function assignOrderDriver(
     orderId: string,
-    driverId: string
+    driverId: string,
   ): Promise<Order | null> {
     const order = await client.order.findUnique({
       where: { id: orderId },
@@ -2681,7 +3482,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function bulkAssignOrderDriver(
     orderIds: string[],
-    driverId: string
+    driverId: string,
   ): Promise<Order[]> {
     const updated: Order[] = [];
     for (const orderId of orderIds) {
@@ -2693,7 +3494,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function aggregateGrossForPreset(
     vendorId: string,
-    preset: "today" | "yesterday"
+    preset: "today" | "yesterday",
   ): Promise<number> {
     const range = resolveDateRange({ datePreset: preset });
     if (!range) return 0;
@@ -2738,7 +3539,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function setKitchenOpen(
     vendorSlug: string,
-    open: boolean
+    open: boolean,
   ): Promise<boolean> {
     try {
       const vendor = await client.vendor.update({
@@ -2774,7 +3575,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   }
 
   async function createPayment(
-    input: CreatePaymentInput
+    input: CreatePaymentInput,
   ): Promise<CreatePaymentResult> {
     const order = await client.order.findUnique({
       where: { id: input.orderId },
@@ -2836,7 +3637,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function confirmPayment(
     ref: string,
-    pin: string
+    pin: string,
   ): Promise<ConfirmPaymentResult> {
     const payment = await client.payment.findUnique({
       where: { transactionRef: ref },
@@ -2901,7 +3702,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function confirmManualPayment(
     orderId: string,
-    customerPhone: string
+    customerPhone: string,
   ): Promise<ConfirmManualPaymentResult> {
     const orderRow = await client.order.findUnique({
       where: { id: orderId },
@@ -2981,7 +3782,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function abandonManualPayment(
     orderId: string,
-    customerPhone: string
+    customerPhone: string,
   ): Promise<AbandonManualPaymentResult> {
     const orderRow = await client.order.findUnique({
       where: { id: orderId },
@@ -3037,7 +3838,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function findResumableManualOrder(
     vendorSlug: string,
-    customerPhone: string
+    customerPhone: string,
   ): Promise<ResumableManualOrder | null> {
     const vendor = await client.vendor.findUnique({
       where: { slug: vendorSlug },
@@ -3071,7 +3872,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
           payoutMethod: vendor.payoutMethod as PayoutMethod,
           momoCode: vendor.momoCode,
         },
-        order.totalAmount
+        order.totalAmount,
       );
       if (!dial.ok) continue;
 
@@ -3161,7 +3962,9 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     return mapProspect(row);
   }
 
-  async function bulkCreateProspects(input: BulkCreateProspectsInput): Promise<Prospect[]> {
+  async function bulkCreateProspects(
+    input: BulkCreateProspectsInput,
+  ): Promise<Prospect[]> {
     const results: Prospect[] = [];
     for (const row of input.rows) {
       results.push(await createProspect(row));
@@ -3192,33 +3995,46 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function updateProspect(
     prospectId: string,
-    input: UpdateProspectInput
+    input: UpdateProspectInput,
   ): Promise<Prospect | null> {
-    const existing = await client.prospect.findUnique({ where: { id: prospectId } });
+    const existing = await client.prospect.findUnique({
+      where: { id: prospectId },
+    });
     if (!existing) return null;
 
     if (input.status !== undefined && input.status !== existing.status) {
-      if (!canTransitionProspectStatus(existing.status as ProspectStatus, input.status)) {
+      if (
+        !canTransitionProspectStatus(
+          existing.status as ProspectStatus,
+          input.status,
+        )
+      ) {
         throw new Error(
-          `Invalid status transition: ${existing.status} → ${input.status}`
+          `Invalid status transition: ${existing.status} → ${input.status}`,
         );
       }
     }
 
     const data: Record<string, unknown> = {};
-    if (input.businessName !== undefined) data.businessName = input.businessName.trim();
-    if (input.contactName !== undefined) data.contactName = input.contactName?.trim() || null;
+    if (input.businessName !== undefined)
+      data.businessName = input.businessName.trim();
+    if (input.contactName !== undefined)
+      data.contactName = input.contactName?.trim() || null;
     if (input.phone !== undefined) data.phone = input.phone?.trim() || null;
     if (input.area !== undefined) data.area = input.area?.trim() || null;
     if (input.source !== undefined) data.source = input.source?.trim() || null;
-    if (input.mapsUrl !== undefined) data.mapsUrl = input.mapsUrl?.trim() || null;
+    if (input.mapsUrl !== undefined)
+      data.mapsUrl = input.mapsUrl?.trim() || null;
     if (input.instagramHandle !== undefined)
       data.instagramHandle = input.instagramHandle?.trim() || null;
     if (input.notes !== undefined) data.notes = input.notes?.trim() || null;
     if (input.status !== undefined) data.status = input.status;
-    if (input.nextFollowUpAt !== undefined) data.nextFollowUpAt = input.nextFollowUpAt;
-    if (input.convertedVendorId !== undefined) data.convertedVendorId = input.convertedVendorId;
-    if (input.convertedLeadId !== undefined) data.convertedLeadId = input.convertedLeadId;
+    if (input.nextFollowUpAt !== undefined)
+      data.nextFollowUpAt = input.nextFollowUpAt;
+    if (input.convertedVendorId !== undefined)
+      data.convertedVendorId = input.convertedVendorId;
+    if (input.convertedLeadId !== undefined)
+      data.convertedLeadId = input.convertedLeadId;
 
     const row = await client.prospect.update({
       where: { id: prospectId },
@@ -3230,9 +4046,11 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function addProspectInteraction(
     prospectId: string,
-    input: CreateProspectInteractionInput
+    input: CreateProspectInteractionInput,
   ): Promise<ProspectInteraction | null> {
-    const existing = await client.prospect.findUnique({ where: { id: prospectId } });
+    const existing = await client.prospect.findUnique({
+      where: { id: prospectId },
+    });
     if (!existing) return null;
     const row = await client.prospectInteraction.create({
       data: {
@@ -3248,12 +4066,21 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function convertProspect(
     prospectId: string,
     vendorId: string,
-    leadId?: string
+    leadId?: string,
   ): Promise<Prospect | null> {
-    const existing = await client.prospect.findUnique({ where: { id: prospectId } });
+    const existing = await client.prospect.findUnique({
+      where: { id: prospectId },
+    });
     if (!existing) return null;
-    if (!canTransitionProspectStatus(existing.status as ProspectStatus, "CONVERTED")) {
-      throw new Error(`Invalid status transition: ${existing.status} → CONVERTED`);
+    if (
+      !canTransitionProspectStatus(
+        existing.status as ProspectStatus,
+        "CONVERTED",
+      )
+    ) {
+      throw new Error(
+        `Invalid status transition: ${existing.status} → CONVERTED`,
+      );
     }
     const row = await client.prospect.update({
       where: { id: prospectId },
@@ -3291,7 +4118,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   }
 
   async function updateMarketingSiteSettings(
-    input: UpdateMarketingSiteSettingsInput
+    input: UpdateMarketingSiteSettingsInput,
   ): Promise<MarketingSiteSettings> {
     const data: Record<string, string | null> = {};
     for (const [key, value] of Object.entries(input)) {
@@ -3337,7 +4164,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function upsertSiteTranslation(
     locale: string,
     key: string,
-    value: string
+    value: string,
   ) {
     const row = await client.siteTranslation.upsert({
       where: { locale_key: { locale, key } },
@@ -3359,7 +4186,9 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     return result.count > 0;
   }
 
-  async function recordMarketingFunnelEvent(input: CreateMarketingFunnelEventInput) {
+  async function recordMarketingFunnelEvent(
+    input: CreateMarketingFunnelEventInput,
+  ) {
     const row = await client.marketingFunnelEvent.create({ data: input });
     return toMarketingFunnelEvent(row);
   }
@@ -3373,7 +4202,9 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     return rows.map(toMarketingFunnelEvent);
   }
 
-  function toMarketingFunnelEvent(row: Awaited<ReturnType<typeof client.marketingFunnelEvent.create>>): MarketingFunnelEvent {
+  function toMarketingFunnelEvent(
+    row: Awaited<ReturnType<typeof client.marketingFunnelEvent.create>>,
+  ): MarketingFunnelEvent {
     return {
       ...row,
       event: row.event as MarketingEventName,
@@ -3390,7 +4221,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function listVendorExpenses(
     vendorSlug: string,
     from?: Date,
-    to?: Date
+    to?: Date,
   ): Promise<VendorExpense[]> {
     const vendor = await client.vendor.findUnique({
       where: { slug: normalizeVendorSlug(vendorSlug) },
@@ -3420,7 +4251,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function createVendorExpense(
     vendorSlug: string,
-    input: CreateVendorExpenseInput
+    input: CreateVendorExpenseInput,
   ): Promise<VendorExpense> {
     const vendor = await client.vendor.findUnique({
       where: { slug: normalizeVendorSlug(vendorSlug) },
@@ -3449,7 +4280,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function deleteVendorExpense(
     vendorSlug: string,
-    expenseId: string
+    expenseId: string,
   ): Promise<boolean> {
     const vendor = await client.vendor.findUnique({
       where: { slug: normalizeVendorSlug(vendorSlug) },
@@ -3465,7 +4296,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function getProfitSnapshot(
     vendorSlug: string,
     from: Date,
-    to: Date
+    to: Date,
   ): Promise<ProfitSnapshot | null> {
     const vendor = await client.vendor.findUnique({
       where: { slug: normalizeVendorSlug(vendorSlug) },
@@ -3473,40 +4304,53 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     });
     if (!vendor) return null;
 
-    const [todayGrossRwf, weekdayAverageRwf, periodRevResult, expenses, itemStats] =
-      await Promise.all([
-        getTodayGross(vendorSlug),
-        getWeekdayAverageGross(vendorSlug),
-        client.order.aggregate({
-          where: {
+    const [
+      todayGrossRwf,
+      weekdayAverageRwf,
+      periodRevResult,
+      expenses,
+      itemStats,
+    ] = await Promise.all([
+      getTodayGross(vendorSlug),
+      getWeekdayAverageGross(vendorSlug),
+      client.order.aggregate({
+        where: {
+          vendorId: vendor.id,
+          createdAt: { gte: from, lte: to },
+          status: { in: COUNTED_STATUSES },
+        },
+        _sum: { totalAmount: true },
+      }),
+      client.vendorExpense.aggregate({
+        where: { vendorId: vendor.id, spentAt: { gte: from, lte: to } },
+        _sum: { amountRwf: true },
+      }),
+      client.orderItem.findMany({
+        where: {
+          order: {
             vendorId: vendor.id,
             createdAt: { gte: from, lte: to },
             status: { in: COUNTED_STATUSES },
           },
-          _sum: { totalAmount: true },
-        }),
-        client.vendorExpense.aggregate({
-          where: { vendorId: vendor.id, spentAt: { gte: from, lte: to } },
-          _sum: { amountRwf: true },
-        }),
-        client.orderItem.findMany({
-          where: {
-            order: {
-              vendorId: vendor.id,
-              createdAt: { gte: from, lte: to },
-              status: { in: COUNTED_STATUSES },
-            },
-          },
-          include: { menuItem: { select: { id: true, name: true, costPriceRwf: true } } },
-        }),
-      ]);
+        },
+        include: {
+          menuItem: { select: { id: true, name: true, costPriceRwf: true } },
+        },
+      }),
+    ]);
 
     const periodRevenueRwf = periodRevResult._sum.totalAmount ?? 0;
     const periodExpensesRwf = expenses._sum.amountRwf ?? 0;
 
-    const marginMap = new Map<string, {
-      name: string; soldQty: number; revenueRwf: number; costRwf: number;
-    }>();
+    const marginMap = new Map<
+      string,
+      {
+        name: string;
+        soldQty: number;
+        revenueRwf: number;
+        costRwf: number;
+      }
+    >();
     let periodCostOfGoodsRwf = 0;
     for (const line of itemStats) {
       const existing = marginMap.get(line.menuItemId) ?? {
@@ -3530,9 +4374,10 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       revenueRwf: data.revenueRwf,
       costRwf: data.costRwf,
       marginRwf: data.revenueRwf - data.costRwf,
-      marginPct: data.revenueRwf > 0
-        ? (data.revenueRwf - data.costRwf) / data.revenueRwf
-        : null,
+      marginPct:
+        data.revenueRwf > 0
+          ? (data.revenueRwf - data.costRwf) / data.revenueRwf
+          : null,
     }));
 
     return {
@@ -3542,14 +4387,15 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       periodRevenueRwf,
       periodExpensesRwf,
       periodCostOfGoodsRwf,
-      periodProfitRwf: periodRevenueRwf - periodExpensesRwf - periodCostOfGoodsRwf,
+      periodProfitRwf:
+        periodRevenueRwf - periodExpensesRwf - periodCostOfGoodsRwf,
       itemMargins,
     };
   }
 
   async function getWeekdayAverageGross(
     vendorSlug: string,
-    weeks = 4
+    weeks = 4,
   ): Promise<number> {
     const vendor = await client.vendor.findUnique({
       where: { slug: normalizeVendorSlug(vendorSlug) },
@@ -3564,7 +4410,9 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     let total = 0;
     let count = 0;
     for (let w = 1; w <= weeks; w++) {
-      const dayStart = new Date(todayStart.getTime() - w * 7 * 24 * 60 * 60 * 1000);
+      const dayStart = new Date(
+        todayStart.getTime() - w * 7 * 24 * 60 * 60 * 1000,
+      );
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
       if (dayStart.getDay() !== targetDay) continue;
       const result = await client.order.aggregate({
@@ -3624,6 +4472,20 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     updateLeadRoutingRecipient,
     removeLeadRoutingRecipient,
     assignLeadRoutingRecipient,
+    createMenuIntake,
+    getMenuIntake,
+    addMenuIntakeRevision,
+    listMenuIntakes,
+    updateMenuIntakeReview,
+    answerMenuIntakeQuestion,
+    importMenuIntake,
+    authorizeMenuIntake,
+    addMenuIntakeAttachment,
+    removeMenuIntakeAttachment,
+    createMenuIntakeAccess,
+    exchangeMenuIntakeAccess,
+    revokeMenuIntakeAccess,
+    logMenuIntakeContact,
     createBriefingInterest,
     listBriefingInterests,
     createProspect,

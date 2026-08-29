@@ -174,3 +174,13 @@ _Avoid_: surveillance, session recording, heatmap, analytics profile
 **Adapter**:
 A concrete implementation satisfying the Store interface at its seam. Two exist: an in-memory adapter (tests/local dev) and a Prisma/Postgres adapter (production).
 _Avoid_: backend, driver, provider
+# Vendor Menu Intake (Candidate #29)
+
+A `MenuIntake` is private staged catalog material submitted by a Vendor through
+the openly shareable no-account intake page. It is not a `Vendor`, `MenuItem`,
+Lead, public collaboration page, or proof of storefront ownership. Submitted
+and Operator-edited content forms immutable revisions. Only an explicit Ops
+import may create/update customer-facing `MenuItem` catalog fields; KDS-owned
+availability, Dish count, supply Stock, low-stock rules, and cost remain outside
+the intake and survive updates. Private source media becomes public only by a
+guarded copy into `MenuImage` during import.

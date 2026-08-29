@@ -1,6 +1,6 @@
 # Codex ↔ Cursor shared continuity prompt
 
-Last reconciled: **2026-08-22 (Africa/Kigali)**
+Last reconciled: **2026-08-29 (Africa/Kigali)**
 Scope: the product-restructure, marketing, lead-capture, PWA/KDS-polish,
 Paypack-preparation work, plus the new **Ops outreach + KDS + marketing batch**
 on branch `feat/ops-kds-marketing-batch` (shared Cursor ↔ Codex), and candidate
@@ -33,6 +33,23 @@ Before changing anything, read these files in order:
 Then run `git status --short --branch` and inspect the relevant commit/diff.
 Preserve every pre-existing dirty or untracked path unless the current task
 explicitly owns it.
+
+### 2026-08-29 — Codex — Candidate #29 Priority #1 complete locally
+
+- Owner-approved execution uses explicit Git Bash and clean linked worktree
+  `C:\Users\G\Desktop\2025\Projects\zantap-candidate-29` on
+  `codex/candidate-29` from `origin/main`; the original dirty checkout remains
+  untouched.
+- The shareable `/menu-intake` → `/ops/menu-intakes` → KDS menu workflow is
+  implemented end to end behind the Store seam. See the Candidate #29 issue and
+  ADR-0082 for security, media, matching, revision, and import decisions.
+- Verification: 443 tests passed / 117 expected skips; TypeScript, scoped lint,
+  and production build pass. Headed browser smoke imported `Igisafuria` at
+  4,200 RWF into the in-memory Inka KDS and confirmed it Available. Full lint is
+  blocked only by three pre-existing Candidate #28 Briefing errors on main.
+- Migration `20260829170000_vendor_menu_intake` is authored and Prisma-validated
+  but unapplied. Nothing was deployed and no production data changed. Candidate
+  #29 Questions 1–14 remain unstarted.
 
 ### Reconciled repository and production state
 

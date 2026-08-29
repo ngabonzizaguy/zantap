@@ -1031,3 +1031,18 @@ Production `dpl_DABHFN7qt7KrV7wsfvizvs25mMkR` (`READY`) on `zantap.app`.
 Storefront, KDS, and onboarding returned 200 without application errors; shipped
 bundles contain the approved KDS/storefront size-pricing markers; exact-deploy
 error/fatal/warning/5xx scans were empty. No production fixture data changed.
+
+---
+
+## Candidate #29 — Priority #1 Vendor Menu Intake — ✅ DONE LOCALLY · VERIFIED · NOT DEPLOYED 2026-08-29
+
+The separate shareable Vendor Menu Intake → Ops review → KDS import workflow is
+complete on `codex/candidate-29`. It includes both approved public paths,
+four-locale UI, local autosave, immutable revisions and private resume access,
+private media/questions, Ops structuring and contact logs, destination/match
+review, and transactional idempotent import through the Store/menu-media seams.
+Full tests pass (443/117), Candidate #29 lint and TypeScript pass, production
+build passes, and headed Playwright proved assisted submission through a live
+KDS menu item. Repository-wide lint has only three pre-existing Candidate #28
+Briefing errors. Additive migration is authored but unapplied. Questions 1–14
+remain untouched and must not start before a separate session/review.

@@ -55,7 +55,10 @@ import type {
   UpdateProspectInput,
 } from "@/lib/prospects/types";
 import type { SiteTranslation } from "@/lib/i18n/site-translation-types";
-import type { CreateMarketingFunnelEventInput, MarketingFunnelEvent } from "@/lib/analytics/types";
+import type {
+  CreateMarketingFunnelEventInput,
+  MarketingFunnelEvent,
+} from "@/lib/analytics/types";
 import type {
   CreateVendorExpenseInput,
   MarketingSiteSettings,
@@ -86,6 +89,25 @@ import type {
   BriefingInterestInput,
 } from "@/lib/briefing/interest";
 import type { BriefingStore } from "@/lib/briefing/types";
+import type {
+  CreateMenuIntakeInput,
+  CreateMenuIntakeResult,
+  AddMenuIntakeRevisionInput,
+  AddMenuIntakeRevisionResult,
+  MenuIntakeDetail,
+  MenuIntakeImportRequest,
+  MenuIntakeImportResult,
+  MenuIntake,
+  MenuIntakeQuestion,
+  UpdateMenuIntakeReviewInput,
+  AnswerMenuIntakeQuestionInput,
+  AddMenuIntakeAttachmentInput,
+  CreateMenuIntakeAccessInput,
+  MenuIntakeAttachment,
+  MenuIntakeAccess,
+  MenuIntakeContactLog,
+  LogMenuIntakeContactInput,
+} from "@/lib/menu-intake/types";
 
 /**
  * The single seam through which all persistent reads and mutations pass.
@@ -102,30 +124,30 @@ export interface Store {
   createVendor(input: CreateVendorInput): Promise<Vendor>;
   updateVendor(
     vendorSlug: string,
-    input: UpdateVendorInput
+    input: UpdateVendorInput,
   ): Promise<Vendor | null>;
 
   // Automatic public Vendor updates (Candidate #26).
   getVendorUpdateSettings(vendorSlug: string): Promise<VendorUpdateSettings>;
   setVendorUpdatesEnabled(
     vendorSlug: string,
-    enabled: boolean
+    enabled: boolean,
   ): Promise<VendorUpdateSettings | null>;
   recordVendorUpdate(
     vendorSlug: string,
-    input: RecordVendorUpdateInput
+    input: RecordVendorUpdateInput,
   ): Promise<VendorUpdateBatch | null>;
   getVendorUpdateOverview(
     vendorSlug: string,
-    at?: Date
+    at?: Date,
   ): Promise<VendorUpdateOverview | null>;
   incrementVendorUpdateCounter(
     batchId: string,
-    counter: VendorUpdateCounter
+    counter: VendorUpdateCounter,
   ): Promise<VendorUpdateBatch | null>;
   listPublicVendorUpdates(
     vendorIds: string[],
-    at?: Date
+    at?: Date,
   ): Promise<PublicVendorUpdateFeedItem[]>;
 
   // Owner token (per-vendor capability, ADR-0022). The hash is server-only and
@@ -133,20 +155,20 @@ export interface Store {
   getVendorOwnerTokenHash(vendorSlug: string): Promise<string | null>;
   setVendorOwnerToken(
     vendorSlug: string,
-    ownerTokenHash: string
+    ownerTokenHash: string,
   ): Promise<Vendor | null>;
 
   // Recovery-event log — the seam the future admin panel (candidate #17) consumes.
   recordRecoveryEvent(
-    input: RecordRecoveryEventInput
+    input: RecordRecoveryEventInput,
   ): Promise<VendorRecoveryEvent>;
   listRecoveryEvents(vendorId: string): Promise<VendorRecoveryEvent[]>;
   listAllRecoveryEvents(
-    filters?: RecoveryEventFilters
+    filters?: RecoveryEventFilters,
   ): Promise<VendorRecoveryEvent[]>;
   reviewRecoveryEvent(
     eventId: string,
-    reviewNote?: string
+    reviewNote?: string,
   ): Promise<VendorRecoveryEvent | null>;
 
   // Marketing leads (ADR-0046 §9) — durable capture and Ops follow-up seam.
@@ -155,19 +177,68 @@ export interface Store {
   updateLeadStatus(leadId: string, status: LeadStatus): Promise<Lead | null>;
   listLeadRoutingRecipients(): Promise<LeadRoutingRecipient[]>;
   createLeadRoutingRecipient(
-    input: CreateLeadRoutingRecipientInput
+    input: CreateLeadRoutingRecipientInput,
   ): Promise<LeadRoutingRecipient>;
   updateLeadRoutingRecipient(
     recipientId: string,
-    input: UpdateLeadRoutingRecipientInput
+    input: UpdateLeadRoutingRecipientInput,
   ): Promise<LeadRoutingRecipient | null>;
   removeLeadRoutingRecipient(recipientId: string): Promise<boolean>;
   assignLeadRoutingRecipient(
-    leadId: string
+    leadId: string,
   ): Promise<LeadRoutingAssignment | null>;
 
+  // Public Vendor Menu intake. Submissions are staged revisions; they never
+  // create a Vendor or live MenuItem until an Operator import is committed.
+  createMenuIntake(
+    input: CreateMenuIntakeInput,
+  ): Promise<CreateMenuIntakeResult>;
+  getMenuIntake(intakeId: string): Promise<MenuIntakeDetail | null>;
+  addMenuIntakeRevision(
+    input: AddMenuIntakeRevisionInput,
+  ): Promise<AddMenuIntakeRevisionResult | null>;
+  importMenuIntake(
+    input: MenuIntakeImportRequest,
+  ): Promise<MenuIntakeImportResult>;
+  listMenuIntakes(): Promise<MenuIntake[]>;
+  updateMenuIntakeReview(
+    input: UpdateMenuIntakeReviewInput,
+  ): Promise<MenuIntakeDetail | null>;
+  answerMenuIntakeQuestion(
+    input: AnswerMenuIntakeQuestionInput,
+  ): Promise<MenuIntakeQuestion | null>;
+  authorizeMenuIntake(
+    intakeId: string,
+    tokenHash: string,
+    at: Date,
+  ): Promise<MenuIntakeDetail | null>;
+  addMenuIntakeAttachment(
+    input: AddMenuIntakeAttachmentInput,
+  ): Promise<MenuIntakeAttachment | null>;
+  removeMenuIntakeAttachment(
+    intakeId: string,
+    attachmentId: string,
+    tokenHash: string,
+    at: Date,
+  ): Promise<MenuIntakeAttachment | null>;
+  createMenuIntakeAccess(
+    input: CreateMenuIntakeAccessInput,
+  ): Promise<MenuIntakeAccess | null>;
+  exchangeMenuIntakeAccess(
+    intakeId: string,
+    oneTimeTokenHash: string,
+    browserTokenHash: string,
+    at: Date,
+  ): Promise<MenuIntakeDetail | null>;
+  revokeMenuIntakeAccess(intakeId: string, at: Date): Promise<number>;
+  logMenuIntakeContact(
+    input: LogMenuIntakeContactInput,
+  ): Promise<MenuIntakeContactLog>;
+
   // Private stakeholder Briefing interest inbox.
-  createBriefingInterest(input: BriefingInterestInput): Promise<BriefingInterest>;
+  createBriefingInterest(
+    input: BriefingInterestInput,
+  ): Promise<BriefingInterest>;
   listBriefingInterests(): Promise<BriefingInterest[]>;
 
   // Outbound prospects (ADR-0054)
@@ -177,22 +248,22 @@ export interface Store {
   getProspect(prospectId: string): Promise<Prospect | null>;
   updateProspect(
     prospectId: string,
-    input: UpdateProspectInput
+    input: UpdateProspectInput,
   ): Promise<Prospect | null>;
   addProspectInteraction(
     prospectId: string,
-    input: CreateProspectInteractionInput
+    input: CreateProspectInteractionInput,
   ): Promise<ProspectInteraction | null>;
   convertProspect(
     prospectId: string,
     vendorId: string,
-    leadId?: string
+    leadId?: string,
   ): Promise<Prospect | null>;
 
   // Marketing site settings (footer socials / contacts)
   getMarketingSiteSettings(): Promise<MarketingSiteSettings>;
   updateMarketingSiteSettings(
-    input: UpdateMarketingSiteSettingsInput
+    input: UpdateMarketingSiteSettingsInput,
   ): Promise<MarketingSiteSettings>;
 
   // Site copy translations (Ops word-for-word editor; keys are MARKETING_COPY
@@ -202,12 +273,12 @@ export interface Store {
   upsertSiteTranslation(
     locale: string,
     key: string,
-    value: string
+    value: string,
   ): Promise<SiteTranslation>;
   deleteSiteTranslation(locale: string, key: string): Promise<boolean>;
 
   recordMarketingFunnelEvent(
-    input: CreateMarketingFunnelEventInput
+    input: CreateMarketingFunnelEventInput,
   ): Promise<MarketingFunnelEvent>;
   listMarketingFunnelEvents(from: Date): Promise<MarketingFunnelEvent[]>;
 
@@ -215,52 +286,51 @@ export interface Store {
   listVendorExpenses(
     vendorSlug: string,
     from?: Date,
-    to?: Date
+    to?: Date,
   ): Promise<VendorExpense[]>;
   createVendorExpense(
     vendorSlug: string,
-    input: CreateVendorExpenseInput
+    input: CreateVendorExpenseInput,
   ): Promise<VendorExpense>;
-  deleteVendorExpense(
-    vendorSlug: string,
-    expenseId: string
-  ): Promise<boolean>;
+  deleteVendorExpense(vendorSlug: string, expenseId: string): Promise<boolean>;
   getProfitSnapshot(
     vendorSlug: string,
     from: Date,
-    to: Date
+    to: Date,
   ): Promise<ProfitSnapshot | null>;
   /** Mean paid gross for the same weekday over the last `weeks` weeks (excl. today). */
-  getWeekdayAverageGross(
-    vendorSlug: string,
-    weeks?: number
-  ): Promise<number>;
+  getWeekdayAverageGross(vendorSlug: string, weeks?: number): Promise<number>;
   getAllTimePaidRevenue(vendorSlug: string): Promise<number>;
 
   // Operator console (ADR-0039) — only callable from lib/operator-control/
   listVendors(filters?: VendorListFilters): Promise<VendorListEntry[]>;
-  getOperatorVendorDetail(vendorSlug: string): Promise<OperatorVendorDetail | null>;
+  getOperatorVendorDetail(
+    vendorSlug: string,
+  ): Promise<OperatorVendorDetail | null>;
   setVendorActive(
     vendorSlug: string,
     active: boolean,
-    reason?: string
+    reason?: string,
   ): Promise<Vendor | null>;
   operatorUpdateVendor(
     vendorSlug: string,
-    input: OperatorUpdateVendorInput
+    input: OperatorUpdateVendorInput,
   ): Promise<Vendor | null>;
   operatorRevokeOwnerToken(vendorSlug: string): Promise<Vendor | null>;
   operatorReissueOwnerToken(
-    vendorSlug: string
+    vendorSlug: string,
   ): Promise<OperatorReissueTokenResult | null>;
   operatorUpdateOrder(
     orderId: string,
-    patch: OperatorOrderPatch
+    patch: OperatorOrderPatch,
   ): Promise<Order | null>;
   recordOperatorAction(
-    input: RecordOperatorActionInput
+    input: RecordOperatorActionInput,
   ): Promise<OperatorAction>;
-  listOperatorActions(vendorSlug?: string, limit?: number): Promise<OperatorAction[]>;
+  listOperatorActions(
+    vendorSlug?: string,
+    limit?: number,
+  ): Promise<OperatorAction[]>;
 
   // Menu reads + availability mutation
   getMenu(vendorSlug: string): Promise<MenuItem[]>;
@@ -270,49 +340,45 @@ export interface Store {
   getCategories(vendorSlug: string): Promise<string[]>;
   createMenuItem(
     vendorSlug: string,
-    input: CreateMenuItemInput
+    input: CreateMenuItemInput,
   ): Promise<MenuItem>;
   updateMenuItem(
     vendorSlug: string,
     itemId: string,
-    input: UpdateMenuItemInput
+    input: UpdateMenuItemInput,
   ): Promise<MenuItem | null>;
   archiveMenuItem(vendorSlug: string, itemId: string): Promise<MenuItem | null>;
   restoreMenuItem(vendorSlug: string, itemId: string): Promise<MenuItem | null>;
-  renameCategory(
-    vendorSlug: string,
-    from: string,
-    to: string
-  ): Promise<number>;
+  renameCategory(vendorSlug: string, from: string, to: string): Promise<number>;
   addMenuImage(
     vendorSlug: string,
     itemId: string,
-    input: AddMenuImageInput
+    input: AddMenuImageInput,
   ): Promise<MenuImage>;
   uploadMenuImageBlob(
     vendorSlug: string,
     itemId: string,
     file: Buffer,
-    mime: string
+    mime: string,
   ): Promise<MenuImage>;
   reorderMenuImages(
     vendorSlug: string,
     itemId: string,
-    imageIds: string[]
+    imageIds: string[],
   ): Promise<MenuImage[]>;
   setPrimaryMenuImage(
     vendorSlug: string,
     itemId: string,
-    imageId: string
+    imageId: string,
   ): Promise<MenuImage | null>;
   removeMenuImage(
     vendorSlug: string,
     itemId: string,
-    imageId: string
+    imageId: string,
   ): Promise<boolean>;
   toggleItemAvailability(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<MenuItem | null>;
   setAllItemsAvailable(vendorSlug: string): Promise<MenuItem[]>;
 
@@ -320,33 +386,33 @@ export interface Store {
   listInventory(
     vendorSlug: string,
     filters: InventoryListFilters,
-    pagination: Pagination
+    pagination: Pagination,
   ): Promise<PaginatedInventory>;
   createInventoryItem(
     vendorSlug: string,
-    input: CreateInventoryItemInput
+    input: CreateInventoryItemInput,
   ): Promise<InventoryItem>;
   getInventoryItem(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<InventoryItemDetail | null>;
   adjustInventoryItem(
     vendorSlug: string,
     itemId: string,
-    input: RecordInventoryAdjustmentInput
+    input: RecordInventoryAdjustmentInput,
   ): Promise<InventoryItemDetail | null>;
   updateInventoryItem(
     vendorSlug: string,
     itemId: string,
-    input: UpdateInventoryItemInput
+    input: UpdateInventoryItemInput,
   ): Promise<InventoryItemDetail | null>;
   archiveInventoryItem(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<InventoryItemDetail | null>;
   restoreInventoryItem(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<InventoryItemDetail | null>;
 
   // Order reads + create + status
@@ -359,21 +425,21 @@ export interface Store {
   listOrdersFiltered(
     vendorSlug: string,
     filters: OrderHistoryFilters,
-    pagination: Pagination
+    pagination: Pagination,
   ): Promise<PaginatedOrders>;
   getOrder(orderId: string): Promise<Order | null>;
   createOrder(input: CreateOrderInput): Promise<Order>;
   updateOrderStatus(
     orderId: string,
-    status: OrderStatus
+    status: OrderStatus,
   ): Promise<Order | null>;
   updateKitchenStage(
     orderId: string,
-    stage: KitchenStage
+    stage: KitchenStage,
   ): Promise<Order | null>;
   bulkUpdateKitchenStage(
     orderIds: string[],
-    stage: KitchenStage
+    stage: KitchenStage,
   ): Promise<Order[]>;
 
   // Drivers
@@ -382,14 +448,11 @@ export interface Store {
   updateDriver(
     vendorSlug: string,
     driverId: string,
-    input: UpdateDriverInput
+    input: UpdateDriverInput,
   ): Promise<Driver | null>;
   deleteDriver(vendorSlug: string, driverId: string): Promise<boolean>;
   assignOrderDriver(orderId: string, driverId: string): Promise<Order | null>;
-  bulkAssignOrderDriver(
-    orderIds: string[],
-    driverId: string
-  ): Promise<Order[]>;
+  bulkAssignOrderDriver(orderIds: string[], driverId: string): Promise<Order[]>;
 
   // Today's gross (+ yesterday for dashboard delta)
   getTodayGross(vendorSlug: string): Promise<number>;
@@ -406,15 +469,15 @@ export interface Store {
   confirmPayment(ref: string, pin: string): Promise<ConfirmPaymentResult>;
   confirmManualPayment(
     orderId: string,
-    customerPhone: string
+    customerPhone: string,
   ): Promise<ConfirmManualPaymentResult>;
   abandonManualPayment(
     orderId: string,
-    customerPhone: string
+    customerPhone: string,
   ): Promise<AbandonManualPaymentResult>;
   findResumableManualOrder(
     vendorSlug: string,
-    customerPhone: string
+    customerPhone: string,
   ): Promise<ResumableManualOrder | null>;
 }
 

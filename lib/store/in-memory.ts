@@ -36,7 +36,10 @@ import type {
   VendorRecoveryEvent,
 } from "@/lib/types";
 import type { ResettableStore } from "@/lib/store/types";
-import type { CreateMarketingFunnelEventInput, MarketingFunnelEvent } from "@/lib/analytics/types";
+import type {
+  CreateMarketingFunnelEventInput,
+  MarketingFunnelEvent,
+} from "@/lib/analytics/types";
 import type {
   CreateLeadRoutingRecipientInput,
   CreateLeadInput,
@@ -74,7 +77,10 @@ import {
 } from "@/lib/orders/history-filters";
 import { putMenuImageBlob } from "@/lib/menu/blob-storage";
 import { sanitizeItemNotes } from "@/lib/menu/customization";
-import { normalizeMenuItemAddOnGroups, resolveAddOnSelection } from "@/lib/menu/add-ons";
+import {
+  normalizeMenuItemAddOnGroups,
+  resolveAddOnSelection,
+} from "@/lib/menu/add-ons";
 import { thumbGradientForId } from "@/lib/menu/gradients";
 import {
   getMenuItemPrice,
@@ -97,10 +103,7 @@ import {
 } from "@/lib/menu/validation";
 import { MOMO_SIM_VALID_PIN } from "@/lib/momo/constants";
 import { isWithinPaymentWindow } from "@/lib/momo/payment-window";
-import {
-  buildMomoUssdDial,
-  orderPhoneMatches,
-} from "@/lib/momo/ussd-dial";
+import { buildMomoUssdDial, orderPhoneMatches } from "@/lib/momo/ussd-dial";
 import {
   isForwardKitchenTransition,
   kitchenStageForOrderStatus,
@@ -159,6 +162,27 @@ import type {
   BriefingInterest,
   BriefingInterestInput,
 } from "@/lib/briefing/interest";
+import type {
+  AddMenuIntakeRevisionInput,
+  AddMenuIntakeRevisionResult,
+  AnswerMenuIntakeQuestionInput,
+  AddMenuIntakeAttachmentInput,
+  CreateMenuIntakeAccessInput,
+  LogMenuIntakeContactInput,
+  CreateMenuIntakeInput,
+  CreateMenuIntakeResult,
+  MenuIntake,
+  MenuIntakeAccess,
+  MenuIntakeAttachment,
+  MenuIntakeDetail,
+  MenuIntakeQuestion,
+  MenuIntakeRevision,
+  MenuIntakeImportRequest,
+  MenuIntakeImportResult,
+  UpdateMenuIntakeReviewInput,
+  MenuIntakeContactLog,
+} from "@/lib/menu-intake/types";
+import { readPrivateMenuIntakeBlob } from "@/lib/menu-intake/blob-storage";
 
 const COUNTED_STATUSES: OrderStatus[] = ["PAID", "DISPATCHED", "COMPLETED"];
 
@@ -177,7 +201,9 @@ function cloneOrder(order: Order): Order {
       ? new Date(order.updatedAt)
       : new Date(order.paidAt ?? createdAt),
     paidAt: order.paidAt ? new Date(order.paidAt) : undefined,
-    assignedDriver: order.assignedDriver ? { ...order.assignedDriver } : undefined,
+    assignedDriver: order.assignedDriver
+      ? { ...order.assignedDriver }
+      : undefined,
     orderItems: order.orderItems.map((item) => ({
       ...item,
       addOnSelections: item.addOnSelections?.map((group) => ({
@@ -220,6 +246,13 @@ export function createInMemoryStore(): ResettableStore {
   let payments: Payment[] = [];
   let vendors: StoredVendor[] = [];
   let leads: Lead[] = [];
+  let menuIntakes: MenuIntake[] = [];
+  let menuIntakeRevisions: MenuIntakeRevision[] = [];
+  let menuIntakeAccess: MenuIntakeAccess[] = [];
+  let menuIntakeQuestions: MenuIntakeQuestion[] = [];
+  let menuIntakeAttachments: MenuIntakeAttachment[] = [];
+  let menuIntakeContactLogs: MenuIntakeContactLog[] = [];
+  let menuIntakeImportResults = new Map<string, MenuIntakeImportResult>();
   let briefingInterests: BriefingInterest[] = [];
   let leadRoutingRecipients: LeadRoutingRecipient[] = [];
   let lastAssignedLeadRoutingRecipientId: string | undefined;
@@ -250,6 +283,10 @@ export function createInMemoryStore(): ResettableStore {
   let menuImageCounter = 0;
   let vendorCounter = 0;
   let leadCounter = 0;
+  let menuIntakeCounter = 0;
+  let menuIntakeRevisionCounter = 0;
+  let menuIntakeAccessCounter = 0;
+  let menuIntakeQuestionCounter = 0;
   let briefingInterestCounter = 0;
   let leadRoutingRecipientCounter = 0;
   let leadRoutingAssignmentCounter = 0;
@@ -296,12 +333,44 @@ export function createInMemoryStore(): ResettableStore {
   }
 
   function cloneLeadRoutingRecipient(
-    recipient: LeadRoutingRecipient
+    recipient: LeadRoutingRecipient,
   ): LeadRoutingRecipient {
     return {
       ...recipient,
       createdAt: new Date(recipient.createdAt),
       updatedAt: new Date(recipient.updatedAt),
+    };
+  }
+
+  function cloneMenuIntake(intake: MenuIntake): MenuIntake {
+    return {
+      ...intake,
+      createdAt: new Date(intake.createdAt),
+      updatedAt: new Date(intake.updatedAt),
+      importedAt: intake.importedAt ? new Date(intake.importedAt) : undefined,
+      cancelledAt: intake.cancelledAt
+        ? new Date(intake.cancelledAt)
+        : undefined,
+    };
+  }
+
+  function cloneMenuIntakeRevision(
+    revision: MenuIntakeRevision,
+  ): MenuIntakeRevision {
+    return {
+      ...revision,
+      content: structuredClone(revision.content),
+      createdAt: new Date(revision.createdAt),
+    };
+  }
+
+  function cloneMenuIntakeAccess(access: MenuIntakeAccess): MenuIntakeAccess {
+    return {
+      ...access,
+      expiresAt: new Date(access.expiresAt),
+      lastActiveAt: new Date(access.lastActiveAt),
+      consumedAt: access.consumedAt ? new Date(access.consumedAt) : undefined,
+      revokedAt: access.revokedAt ? new Date(access.revokedAt) : undefined,
     };
   }
 
@@ -315,7 +384,7 @@ export function createInMemoryStore(): ResettableStore {
 
   function imagesForItem(itemId: string): MenuImage[] {
     return sortMenuImages(
-      menuImages.filter((image) => image.menuItemId === itemId)
+      menuImages.filter((image) => image.menuItemId === itemId),
     ).map(cloneMenuImage);
   }
 
@@ -324,7 +393,7 @@ export function createInMemoryStore(): ResettableStore {
     if (index === -1) return;
 
     const primary = menuImages.find(
-      (image) => image.menuItemId === itemId && image.isPrimary
+      (image) => image.menuItemId === itemId && image.isPrimary,
     );
     menuItems[index] = {
       ...menuItems[index],
@@ -372,12 +441,17 @@ export function createInMemoryStore(): ResettableStore {
     menuImages = [];
     orders = seedOrders.map(cloneOrder);
     payments = [];
-    vendors = [
-      { ...seedVendor, ownerTokenHash: DEMO_OWNER_TOKEN_HASH },
-    ];
+    vendors = [{ ...seedVendor, ownerTokenHash: DEMO_OWNER_TOKEN_HASH }];
     recoveryEvents = [];
     operatorActions = [];
     leads = [];
+    menuIntakes = [];
+    menuIntakeRevisions = [];
+    menuIntakeAccess = [];
+    menuIntakeQuestions = [];
+    menuIntakeAttachments = [];
+    menuIntakeContactLogs = [];
+    menuIntakeImportResults = new Map();
     briefingInterests = [];
     leadRoutingRecipients = [];
     lastAssignedLeadRoutingRecipientId = undefined;
@@ -461,7 +535,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function updateVendor(
     vendorSlug: string,
-    input: UpdateVendorInput
+    input: UpdateVendorInput,
   ): Promise<Vendor | null> {
     const normalized = normalizeVendorSlug(vendorSlug);
     const index = vendors.findIndex((row) => row.slug === normalized);
@@ -511,15 +585,17 @@ export function createInMemoryStore(): ResettableStore {
   }
 
   async function getVendorUpdateSettings(
-    vendorSlug: string
+    vendorSlug: string,
   ): Promise<VendorUpdateSettings> {
     const vendor = await getVendorBySlug(vendorSlug);
-    return { enabled: vendor ? vendorUpdateSettings.get(vendor.id) ?? true : true };
+    return {
+      enabled: vendor ? (vendorUpdateSettings.get(vendor.id) ?? true) : true,
+    };
   }
 
   async function setVendorUpdatesEnabled(
     vendorSlug: string,
-    enabled: boolean
+    enabled: boolean,
   ): Promise<VendorUpdateSettings | null> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return null;
@@ -529,7 +605,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function recordVendorUpdate(
     vendorSlug: string,
-    input: RecordVendorUpdateInput
+    input: RecordVendorUpdateInput,
   ): Promise<VendorUpdateBatch | null> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (
@@ -567,7 +643,7 @@ export function createInMemoryStore(): ResettableStore {
     const existingIndex = batch.entries.findIndex(
       (entry) =>
         entry.type === input.entry.type &&
-        entry.subjectId === input.entry.subjectId
+        entry.subjectId === input.entry.subjectId,
     );
     if (existingIndex === -1) {
       const entry: VendorUpdateEntry = {
@@ -596,12 +672,12 @@ export function createInMemoryStore(): ResettableStore {
 
   async function getVendorUpdateOverview(
     vendorSlug: string,
-    at = new Date()
+    at = new Date(),
   ): Promise<VendorUpdateOverview | null> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return null;
     const batches = vendorUpdateBatches.filter(
-      (batch) => batch.vendorId === vendor.id
+      (batch) => batch.vendorId === vendor.id,
     );
     const activeBatch = [...batches]
       .filter((batch) => batch.expiresAt.getTime() > at.getTime())
@@ -616,16 +692,18 @@ export function createInMemoryStore(): ResettableStore {
           opens: totals.opens + batch.openCount,
           menuVisits: totals.menuVisits + batch.menuVisitCount,
         }),
-        { batches: 0, revisions: 0, opens: 0, menuVisits: 0 }
+        { batches: 0, revisions: 0, opens: 0, menuVisits: 0 },
       ),
     };
   }
 
   async function incrementVendorUpdateCounter(
     batchId: string,
-    counter: VendorUpdateCounter
+    counter: VendorUpdateCounter,
   ): Promise<VendorUpdateBatch | null> {
-    const batch = vendorUpdateBatches.find((candidate) => candidate.id === batchId);
+    const batch = vendorUpdateBatches.find(
+      (candidate) => candidate.id === batchId,
+    );
     if (!batch) return null;
     if (counter === "open") batch.openCount += 1;
     else batch.menuVisitCount += 1;
@@ -634,7 +712,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function listPublicVendorUpdates(
     vendorIds: string[],
-    at = new Date()
+    at = new Date(),
   ): Promise<PublicVendorUpdateFeedItem[]> {
     const uniqueIds = [...new Set(vendorIds)].slice(0, 50);
     return uniqueIds.flatMap((vendorId) => {
@@ -645,9 +723,12 @@ export function createInMemoryStore(): ResettableStore {
             .filter(
               (batch) =>
                 batch.vendorId === vendor.id &&
-                batch.expiresAt.getTime() > at.getTime()
+                batch.expiresAt.getTime() > at.getTime(),
             )
-            .sort((left, right) => right.publishedAt.getTime() - left.publishedAt.getTime())
+            .sort(
+              (left, right) =>
+                right.publishedAt.getTime() - left.publishedAt.getTime(),
+            )
             .map((batch) => ({
               id: batch.id,
               vendorId: batch.vendorId,
@@ -655,31 +736,37 @@ export function createInMemoryStore(): ResettableStore {
               publishedAt: new Date(batch.publishedAt),
               expiresAt: new Date(batch.expiresAt),
               entries: batch.entries.map((entry) => {
-                const subject = menuItems.find((item) => item.id === entry.subjectId);
+                const subject = menuItems.find(
+                  (item) => item.id === entry.subjectId,
+                );
                 return {
                   ...entry,
                   createdAt: new Date(entry.createdAt),
                   updatedAt: new Date(entry.updatedAt),
                   isCurrentlyAvailable:
                     entry.type === "PROFILE_CHANGE" ||
-                    Boolean(subject && isActiveItem(subject) && subject.isAvailable),
+                    Boolean(
+                      subject && isActiveItem(subject) && subject.isAvailable,
+                    ),
                 };
               }),
             }))
         : [];
-      return [{
-        vendorId: vendor.id,
-        slug: vendor.slug,
-        name: vendor.name,
-        logoUrl: vendor.logoUrl,
-        isAvailable: vendor.isActive,
-        batches,
-      }];
+      return [
+        {
+          vendorId: vendor.id,
+          slug: vendor.slug,
+          name: vendor.name,
+          logoUrl: vendor.logoUrl,
+          isAvailable: vendor.isActive,
+          batches,
+        },
+      ];
     });
   }
 
   async function getVendorOwnerTokenHash(
-    vendorSlug: string
+    vendorSlug: string,
   ): Promise<string | null> {
     const normalized = normalizeVendorSlug(vendorSlug);
     const vendor = vendors.find((row) => row.slug === normalized);
@@ -688,7 +775,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function setVendorOwnerToken(
     vendorSlug: string,
-    ownerTokenHash: string
+    ownerTokenHash: string,
   ): Promise<Vendor | null> {
     const normalized = normalizeVendorSlug(vendorSlug);
     const index = vendors.findIndex((row) => row.slug === normalized);
@@ -699,7 +786,7 @@ export function createInMemoryStore(): ResettableStore {
   }
 
   async function recordRecoveryEvent(
-    input: RecordRecoveryEventInput
+    input: RecordRecoveryEventInput,
   ): Promise<VendorRecoveryEvent> {
     const event: VendorRecoveryEvent = {
       id: `rec_${++recoveryEventCounter}_${Date.now()}`,
@@ -712,7 +799,7 @@ export function createInMemoryStore(): ResettableStore {
   }
 
   async function listRecoveryEvents(
-    vendorId: string
+    vendorId: string,
   ): Promise<VendorRecoveryEvent[]> {
     return recoveryEvents
       .filter((event) => event.vendorId === vendorId)
@@ -721,12 +808,12 @@ export function createInMemoryStore(): ResettableStore {
   }
 
   async function listAllRecoveryEvents(
-    filters?: RecoveryEventFilters
+    filters?: RecoveryEventFilters,
   ): Promise<VendorRecoveryEvent[]> {
     let rows = recoveryEvents.map(cloneRecoveryEvent);
     if (filters?.vendorSlug) {
       const vendor = vendors.find(
-        (v) => v.slug === normalizeVendorSlug(filters.vendorSlug!)
+        (v) => v.slug === normalizeVendorSlug(filters.vendorSlug!),
       );
       if (!vendor) return [];
       rows = rows.filter((e) => e.vendorId === vendor.id);
@@ -748,7 +835,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function reviewRecoveryEvent(
     eventId: string,
-    reviewNote?: string
+    reviewNote?: string,
   ): Promise<VendorRecoveryEvent | null> {
     const index = recoveryEvents.findIndex((e) => e.id === eventId);
     if (index === -1) return null;
@@ -787,7 +874,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function updateLeadStatus(
     leadId: string,
-    status: LeadStatus
+    status: LeadStatus,
   ): Promise<Lead | null> {
     const index = leads.findIndex((lead) => lead.id === leadId);
     if (index === -1) return null;
@@ -795,8 +882,497 @@ export function createInMemoryStore(): ResettableStore {
     return cloneLead(leads[index]);
   }
 
+  async function createMenuIntake(
+    input: CreateMenuIntakeInput,
+  ): Promise<CreateMenuIntakeResult> {
+    if (menuIntakes.some((intake) => intake.reference === input.reference)) {
+      throw new Error("Menu intake reference already exists");
+    }
+    const now = new Date();
+    const intakeId = `menu_intake_${++menuIntakeCounter}_${Date.now()}`;
+    const intake: MenuIntake = {
+      id: intakeId,
+      reference: input.reference,
+      status: "SUBMITTED",
+      businessName: input.businessName.trim(),
+      contactName: input.contactName.trim(),
+      phone: input.phone,
+      locale: input.locale,
+      alreadyOnZantap: input.alreadyOnZantap,
+      storefrontHint: input.storefrontHint?.trim() || undefined,
+      currentRevision: 1,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const revision: MenuIntakeRevision = {
+      id: `menu_intake_revision_${++menuIntakeRevisionCounter}_${Date.now()}`,
+      intakeId,
+      sequence: 1,
+      source: "VENDOR",
+      content: structuredClone(input.content),
+      createdAt: now,
+    };
+    const access: MenuIntakeAccess = {
+      id: `menu_intake_access_${++menuIntakeAccessCounter}_${Date.now()}`,
+      intakeId,
+      tokenHash: input.resumeTokenHash,
+      kind: "BROWSER",
+      expiresAt: new Date(input.resumeExpiresAt),
+      lastActiveAt: now,
+    };
+    menuIntakes.unshift(intake);
+    menuIntakeRevisions.push(revision);
+    menuIntakeAccess.push(access);
+    if (input.content.question) {
+      menuIntakeQuestions.push({
+        id: `menu_intake_question_${++menuIntakeQuestionCounter}_${Date.now()}`,
+        intakeId,
+        revisionId: revision.id,
+        question: input.content.question,
+        status: "UNANSWERED",
+        createdAt: now,
+      });
+    }
+    return {
+      intake: cloneMenuIntake(intake),
+      revision: cloneMenuIntakeRevision(revision),
+      access: cloneMenuIntakeAccess(access),
+    };
+  }
+
+  async function getMenuIntake(
+    intakeId: string,
+  ): Promise<MenuIntakeDetail | null> {
+    const intake = menuIntakes.find((row) => row.id === intakeId);
+    if (!intake) return null;
+    return {
+      intake: cloneMenuIntake(intake),
+      revisions: menuIntakeRevisions
+        .filter((row) => row.intakeId === intakeId)
+        .sort((a, b) => a.sequence - b.sequence)
+        .map(cloneMenuIntakeRevision),
+      questions: menuIntakeQuestions
+        .filter((row) => row.intakeId === intakeId)
+        .map((row) => ({
+          ...row,
+          createdAt: new Date(row.createdAt),
+          answeredAt: row.answeredAt ? new Date(row.answeredAt) : undefined,
+        })),
+      attachments: menuIntakeAttachments
+        .filter((row) => row.intakeId === intakeId)
+        .map((row) => ({ ...row, createdAt: new Date(row.createdAt) })),
+      contactLogs: menuIntakeContactLogs
+        .filter((row) => row.intakeId === intakeId)
+        .map((row) => ({ ...row, createdAt: new Date(row.createdAt) })),
+    };
+  }
+
+  async function addMenuIntakeRevision(
+    input: AddMenuIntakeRevisionInput,
+  ): Promise<AddMenuIntakeRevisionResult | null> {
+    const intakeIndex = menuIntakes.findIndex(
+      (row) => row.id === input.intakeId,
+    );
+    if (intakeIndex === -1) return null;
+    const intake = menuIntakes[intakeIndex];
+    if (["IMPORTING", "CANCELLED"].includes(intake.status))
+      return null;
+
+    const accessIndex = menuIntakeAccess.findIndex(
+      (row) =>
+        row.intakeId === input.intakeId &&
+        row.tokenHash === input.resumeTokenHash &&
+        !row.revokedAt &&
+        !row.consumedAt &&
+        row.expiresAt.getTime() > input.at.getTime(),
+    );
+    if (accessIndex === -1) return null;
+
+    const sequence = intake.currentRevision + 1;
+    const revision: MenuIntakeRevision = {
+      id: `menu_intake_revision_${++menuIntakeRevisionCounter}_${Date.now()}`,
+      intakeId: intake.id,
+      sequence,
+      source: "VENDOR",
+      content: structuredClone(input.content),
+      createdAt: new Date(input.at),
+    };
+    menuIntakeRevisions.push(revision);
+    menuIntakeAccess[accessIndex] = {
+      ...menuIntakeAccess[accessIndex],
+      lastActiveAt: new Date(input.at),
+    };
+    menuIntakes[intakeIndex] = {
+      ...intake,
+      status: intake.status === "IMPORTED" ? "IN_REVIEW" : "SUBMITTED",
+      currentRevision: sequence,
+      updatedAt: new Date(input.at),
+    };
+    if (input.content.question) {
+      menuIntakeQuestions.push({
+        id: `menu_intake_question_${++menuIntakeQuestionCounter}_${Date.now()}`,
+        intakeId: intake.id,
+        revisionId: revision.id,
+        question: input.content.question,
+        status: "UNANSWERED",
+        createdAt: new Date(input.at),
+      });
+    }
+    return {
+      intake: cloneMenuIntake(menuIntakes[intakeIndex]),
+      revision: cloneMenuIntakeRevision(revision),
+    };
+  }
+
+  async function listMenuIntakes(): Promise<MenuIntake[]> {
+    return menuIntakes
+      .slice()
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+      .map(cloneMenuIntake);
+  }
+
+  async function authorizeMenuIntake(
+    intakeId: string,
+    tokenHash: string,
+    at: Date,
+  ): Promise<MenuIntakeDetail | null> {
+    const accessIndex = menuIntakeAccess.findIndex(
+      (row) =>
+        row.intakeId === intakeId &&
+        row.tokenHash === tokenHash &&
+        !row.revokedAt &&
+        !row.consumedAt &&
+        row.expiresAt.getTime() > at.getTime(),
+    );
+    if (accessIndex === -1) return null;
+    menuIntakeAccess[accessIndex] = {
+      ...menuIntakeAccess[accessIndex],
+      lastActiveAt: new Date(at),
+      expiresAt: new Date(at.getTime() + 30 * 24 * 60 * 60_000),
+      ...(menuIntakeAccess[accessIndex].kind === "ONE_TIME"
+        ? { consumedAt: new Date(at) }
+        : {}),
+    };
+    return getMenuIntake(intakeId);
+  }
+
+  async function addMenuIntakeAttachment(
+    input: AddMenuIntakeAttachmentInput,
+  ): Promise<MenuIntakeAttachment | null> {
+    const detail = await authorizeMenuIntake(
+      input.intakeId,
+      input.resumeTokenHash,
+      input.at,
+    );
+    if (
+      !detail ||
+      ["IMPORTING", "IMPORTED", "CANCELLED"].includes(detail.intake.status)
+    )
+      return null;
+    const attachment: MenuIntakeAttachment = {
+      id: `menu_intake_attachment_${Date.now()}_${menuIntakeAttachments.length + 1}`,
+      intakeId: input.intakeId,
+      kind: input.kind,
+      dishClientId: input.dishClientId,
+      fileName: input.fileName,
+      mime: input.mime,
+      byteLength: input.byteLength,
+      blobPath: input.blobPath,
+      createdAt: new Date(input.at),
+    };
+    menuIntakeAttachments.push(attachment);
+    return { ...attachment, createdAt: new Date(attachment.createdAt) };
+  }
+
+  async function removeMenuIntakeAttachment(
+    intakeId: string,
+    attachmentId: string,
+    tokenHash: string,
+    at: Date,
+  ): Promise<MenuIntakeAttachment | null> {
+    const detail = await authorizeMenuIntake(intakeId, tokenHash, at);
+    if (
+      !detail ||
+      ["IMPORTING", "IMPORTED", "CANCELLED"].includes(detail.intake.status)
+    )
+      return null;
+    const index = menuIntakeAttachments.findIndex(
+      (row) => row.id === attachmentId && row.intakeId === intakeId,
+    );
+    if (index === -1) return null;
+    const [removed] = menuIntakeAttachments.splice(index, 1);
+    return { ...removed, createdAt: new Date(removed.createdAt) };
+  }
+
+  async function createMenuIntakeAccess(
+    input: CreateMenuIntakeAccessInput,
+  ): Promise<MenuIntakeAccess | null> {
+    if (!menuIntakes.some((row) => row.id === input.intakeId)) return null;
+    const access: MenuIntakeAccess = {
+      id: `menu_intake_access_${++menuIntakeAccessCounter}_${Date.now()}`,
+      intakeId: input.intakeId,
+      tokenHash: input.tokenHash,
+      kind: input.kind,
+      expiresAt: new Date(input.expiresAt),
+      lastActiveAt: new Date(input.at),
+    };
+    menuIntakeAccess.push(access);
+    return cloneMenuIntakeAccess(access);
+  }
+
+  async function exchangeMenuIntakeAccess(
+    intakeId: string,
+    oneTimeTokenHash: string,
+    browserTokenHash: string,
+    at: Date,
+  ): Promise<MenuIntakeDetail | null> {
+    const index = menuIntakeAccess.findIndex(
+      (row) =>
+        row.intakeId === intakeId &&
+        row.kind === "ONE_TIME" &&
+        row.tokenHash === oneTimeTokenHash &&
+        !row.consumedAt &&
+        !row.revokedAt &&
+        row.expiresAt > at,
+    );
+    if (index === -1) return null;
+    menuIntakeAccess[index] = {
+      ...menuIntakeAccess[index],
+      consumedAt: new Date(at),
+      lastActiveAt: new Date(at),
+    };
+    await createMenuIntakeAccess({
+      intakeId,
+      tokenHash: browserTokenHash,
+      kind: "BROWSER",
+      expiresAt: new Date(at.getTime() + 30 * 24 * 60 * 60_000),
+      at,
+    });
+    return getMenuIntake(intakeId);
+  }
+
+  async function revokeMenuIntakeAccess(
+    intakeId: string,
+    at: Date,
+  ): Promise<number> {
+    let count = 0;
+    menuIntakeAccess = menuIntakeAccess.map((row) => {
+      if (row.intakeId !== intakeId || row.revokedAt) return row;
+      count += 1;
+      return { ...row, revokedAt: new Date(at) };
+    });
+    return count;
+  }
+
+  async function logMenuIntakeContact(
+    input: LogMenuIntakeContactInput,
+  ): Promise<MenuIntakeContactLog> {
+    const row: MenuIntakeContactLog = {
+      ...input,
+      id: `menu_intake_contact_${Date.now()}_${menuIntakeContactLogs.length + 1}`,
+      createdAt: new Date(input.at),
+    };
+    menuIntakeContactLogs.push(row);
+    return { ...row, createdAt: new Date(row.createdAt) };
+  }
+
+  async function updateMenuIntakeReview(
+    input: UpdateMenuIntakeReviewInput,
+  ): Promise<MenuIntakeDetail | null> {
+    const index = menuIntakes.findIndex((row) => row.id === input.intakeId);
+    if (
+      index === -1 ||
+      ["IMPORTING", "IMPORTED"].includes(menuIntakes[index].status)
+    ) {
+      return null;
+    }
+    let destinationVendorId = menuIntakes[index].destinationVendorId;
+    let destinationVendorSlug = menuIntakes[index].destinationVendorSlug;
+    if (input.destinationVendorSlug !== undefined) {
+      const vendor = vendors.find(
+        (row) => row.slug === input.destinationVendorSlug,
+      );
+      if (!vendor) return null;
+      destinationVendorId = vendor.id;
+      destinationVendorSlug = vendor.slug;
+    }
+    if (input.content) {
+      const sequence = menuIntakes[index].currentRevision + 1;
+      menuIntakeRevisions.push({
+        id: `menu_intake_revision_${++menuIntakeRevisionCounter}_${Date.now()}`,
+        intakeId: input.intakeId,
+        sequence,
+        source: "OPERATOR",
+        content: structuredClone(input.content),
+        createdAt: new Date(input.at),
+      });
+      menuIntakes[index] = { ...menuIntakes[index], currentRevision: sequence };
+    }
+    menuIntakes[index] = {
+      ...menuIntakes[index],
+      status: input.status,
+      destinationVendorId,
+      destinationVendorSlug,
+      cancelledAt:
+        input.status === "CANCELLED" ? new Date(input.at) : undefined,
+      updatedAt: new Date(input.at),
+    };
+    return getMenuIntake(input.intakeId);
+  }
+
+  async function answerMenuIntakeQuestion(
+    input: AnswerMenuIntakeQuestionInput,
+  ): Promise<MenuIntakeQuestion | null> {
+    const index = menuIntakeQuestions.findIndex(
+      (row) => row.id === input.questionId && row.intakeId === input.intakeId,
+    );
+    if (index === -1) return null;
+    menuIntakeQuestions[index] = {
+      ...menuIntakeQuestions[index],
+      answer: input.answer.trim(),
+      answeredBy: input.operator,
+      answeredAt: new Date(input.at),
+      status: input.status,
+      deliveryMethod: input.deliveryMethod,
+    };
+    menuIntakeContactLogs.push({
+      id: `menu_intake_contact_${Date.now()}_${menuIntakeContactLogs.length + 1}`,
+      intakeId: input.intakeId,
+      kind: "QUESTION_REPLY",
+      message: input.answer.trim(),
+      operatorId: input.operator,
+      method: input.deliveryMethod,
+      createdAt: new Date(input.at),
+    });
+    return {
+      ...menuIntakeQuestions[index],
+      createdAt: new Date(menuIntakeQuestions[index].createdAt),
+      answeredAt: new Date(input.at),
+    };
+  }
+
+  async function importMenuIntake(
+    input: MenuIntakeImportRequest,
+  ): Promise<MenuIntakeImportResult> {
+    const previous = menuIntakeImportResults.get(input.idempotencyKey);
+    if (previous) return structuredClone(previous);
+    const index = menuIntakes.findIndex((row) => row.id === input.intakeId);
+    if (index === -1) throw new Error("Menu intake not found");
+    if (menuIntakes[index].status === "IMPORTED") {
+      throw new Error("Menu intake already imported");
+    }
+    if (menuIntakes[index].status !== "READY_TO_IMPORT") {
+      throw new Error("Menu intake is not ready to import");
+    }
+
+    menuIntakes[index] = {
+      ...menuIntakes[index],
+      status: "IMPORTING",
+      updatedAt: new Date(),
+    };
+    let vendorSlug: string;
+    try {
+      if (input.destination.kind === "EXISTING") {
+        const vendor = await getVendorBySlug(input.destination.vendorSlug);
+        if (!vendor) throw new Error("Destination Vendor not found");
+        vendorSlug = vendor.slug;
+      } else {
+        const vendor = await createVendor(input.destination.vendor);
+        vendorSlug = vendor.slug;
+      }
+      const results: MenuIntakeImportResult["items"] = [];
+      for (const item of input.items) {
+        if (item.decision === "SKIP") {
+          results.push({
+            intakeDishClientId: item.intakeDishClientId,
+            outcome: "SKIPPED",
+          });
+          continue;
+        }
+        const catalog = {
+          name: item.reviewedDish.name,
+          description: item.reviewedDish.description,
+          category: item.reviewedDish.category,
+          priceRwf: item.reviewedDish.priceRwf,
+          sizeOptions: item.reviewedDish.sizeOptions,
+          addOnGroups: item.reviewedDish.addOnGroups,
+        };
+        let importedMenuItemId: string;
+        if (item.decision === "UPDATE_EXISTING") {
+          if (!item.existingMenuItemId)
+            throw new Error("Existing menu item is required");
+          const updated = await updateMenuItem(
+            vendorSlug,
+            item.existingMenuItemId,
+            catalog,
+          );
+          if (!updated) throw new Error("Existing menu item not found");
+          results.push({
+            intakeDishClientId: item.intakeDishClientId,
+            outcome: "UPDATED",
+            menuItemId: updated.id,
+          });
+          importedMenuItemId = updated.id;
+        } else {
+          const created = await createMenuItem(vendorSlug, catalog);
+          results.push({
+            intakeDishClientId: item.intakeDishClientId,
+            outcome: "CREATED",
+            menuItemId: created.id,
+          });
+          importedMenuItemId = created.id;
+        }
+        for (const attachmentId of item.reviewedDish.imageAttachmentIds ?? []) {
+          const attachment = menuIntakeAttachments.find(
+            (row) =>
+              row.id === attachmentId &&
+              row.intakeId === input.intakeId &&
+              row.kind === "DISH_IMAGE" &&
+              row.dishClientId === item.intakeDishClientId,
+          );
+          if (!attachment) throw new Error("Approved intake image not found");
+          const source = await readPrivateMenuIntakeBlob(attachment.blobPath);
+          if (!source) throw new Error("Private intake image is unavailable");
+          await uploadMenuImageBlob(
+            vendorSlug,
+            importedMenuItemId,
+            source.body,
+            source.contentType,
+          );
+        }
+      }
+      const result: MenuIntakeImportResult = {
+        intakeId: input.intakeId,
+        idempotencyKey: input.idempotencyKey,
+        vendorSlug,
+        status: "COMPLETED",
+        items: results,
+      };
+      menuIntakes[index] = {
+        ...menuIntakes[index],
+        status: "IMPORTED",
+        destinationVendorId: vendors.find((row) => row.slug === vendorSlug)?.id,
+        destinationVendorSlug: vendorSlug,
+        importedAt: new Date(),
+        updatedAt: new Date(),
+      };
+      menuIntakeImportResults.set(
+        input.idempotencyKey,
+        structuredClone(result),
+      );
+      return result;
+    } catch (error) {
+      menuIntakes[index] = {
+        ...menuIntakes[index],
+        status: "READY_TO_IMPORT",
+        updatedAt: new Date(),
+      };
+      throw error;
+    }
+  }
+
   async function createBriefingInterest(
-    input: BriefingInterestInput
+    input: BriefingInterestInput,
   ): Promise<BriefingInterest> {
     const interest: BriefingInterest = {
       id: `briefing_interest_${++briefingInterestCounter}_${Date.now()}`,
@@ -814,19 +1390,17 @@ export function createInMemoryStore(): ResettableStore {
     }));
   }
 
-  async function listLeadRoutingRecipients(): Promise<
-    LeadRoutingRecipient[]
-  > {
+  async function listLeadRoutingRecipients(): Promise<LeadRoutingRecipient[]> {
     return leadRoutingRecipients.map(cloneLeadRoutingRecipient);
   }
 
   async function createLeadRoutingRecipient(
-    input: CreateLeadRoutingRecipientInput
+    input: CreateLeadRoutingRecipientInput,
   ): Promise<LeadRoutingRecipient> {
     const normalized = normalizeLeadRoutingRecipient(input);
     if (
       leadRoutingRecipients.some(
-        (recipient) => recipient.phone === normalized.phone
+        (recipient) => recipient.phone === normalized.phone,
       )
     ) {
       throw new Error("A recipient with this WhatsApp number already exists");
@@ -844,10 +1418,10 @@ export function createInMemoryStore(): ResettableStore {
 
   async function updateLeadRoutingRecipient(
     recipientId: string,
-    input: UpdateLeadRoutingRecipientInput
+    input: UpdateLeadRoutingRecipientInput,
   ): Promise<LeadRoutingRecipient | null> {
     const index = leadRoutingRecipients.findIndex(
-      (recipient) => recipient.id === recipientId
+      (recipient) => recipient.id === recipientId,
     );
     if (index === -1) return null;
 
@@ -860,7 +1434,7 @@ export function createInMemoryStore(): ResettableStore {
     if (
       leadRoutingRecipients.some(
         (recipient) =>
-          recipient.id !== recipientId && recipient.phone === normalized.phone
+          recipient.id !== recipientId && recipient.phone === normalized.phone,
       )
     ) {
       throw new Error("A recipient with this WhatsApp number already exists");
@@ -874,10 +1448,10 @@ export function createInMemoryStore(): ResettableStore {
   }
 
   async function removeLeadRoutingRecipient(
-    recipientId: string
+    recipientId: string,
   ): Promise<boolean> {
     const index = leadRoutingRecipients.findIndex(
-      (recipient) => recipient.id === recipientId
+      (recipient) => recipient.id === recipientId,
     );
     if (index === -1) return false;
     leadRoutingRecipients.splice(index, 1);
@@ -885,7 +1459,7 @@ export function createInMemoryStore(): ResettableStore {
   }
 
   async function assignLeadRoutingRecipient(
-    leadId: string
+    leadId: string,
   ): Promise<LeadRoutingAssignment | null> {
     const leadIndex = leads.findIndex((lead) => lead.id === leadId);
     if (leadIndex === -1) return null;
@@ -894,12 +1468,12 @@ export function createInMemoryStore(): ResettableStore {
     }
 
     const enabledRecipients = leadRoutingRecipients.filter(
-      (recipient) => recipient.enabled
+      (recipient) => recipient.enabled,
     );
     if (enabledRecipients.length === 0) return null;
 
     const previousIndex = enabledRecipients.findIndex(
-      (recipient) => recipient.id === lastAssignedLeadRoutingRecipientId
+      (recipient) => recipient.id === lastAssignedLeadRoutingRecipientId,
     );
     const recipient =
       enabledRecipients[(previousIndex + 1) % enabledRecipients.length];
@@ -917,14 +1491,14 @@ export function createInMemoryStore(): ResettableStore {
   }
 
   async function listVendors(
-    filters?: VendorListFilters
+    filters?: VendorListFilters,
   ): Promise<VendorListEntry[]> {
     let rows = vendors.map((vendor) => {
       const vendorEvents = recoveryEvents.filter(
-        (e) => e.vendorId === vendor.id
+        (e) => e.vendorId === vendor.id,
       );
       const lastRecovery = vendorEvents.sort(
-        (a, b) => b.at.getTime() - a.at.getTime()
+        (a, b) => b.at.getTime() - a.at.getTime(),
       )[0];
       return {
         id: vendor.id,
@@ -945,7 +1519,7 @@ export function createInMemoryStore(): ResettableStore {
         (v) =>
           v.name.toLowerCase().includes(q) ||
           v.slug.toLowerCase().includes(q) ||
-          v.phoneNumber.includes(q)
+          v.phoneNumber.includes(q),
       );
     }
     if (filters?.isActive !== undefined) {
@@ -955,17 +1529,17 @@ export function createInMemoryStore(): ResettableStore {
   }
 
   async function getOperatorVendorDetail(
-    vendorSlug: string
+    vendorSlug: string,
   ): Promise<OperatorVendorDetail | null> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return null;
     const menu = await getMenu(vendorSlug);
     const vendorOrders = orders.filter((o) => o.vendorId === vendor.id);
     const activeOrderCount = vendorOrders.filter((o) =>
-      ["PAID", "DISPATCHED", "PENDING"].includes(o.status)
+      ["PAID", "DISPATCHED", "PENDING"].includes(o.status),
     ).length;
     const vendorRecovery = recoveryEvents.filter(
-      (e) => e.vendorId === vendor.id
+      (e) => e.vendorId === vendor.id,
     );
     const recentOrders = vendorOrders
       .map(cloneOrder)
@@ -976,7 +1550,7 @@ export function createInMemoryStore(): ResettableStore {
     const low = tracked.filter(
       (item) =>
         item.stockCount != null &&
-        item.stockCount <= (item.lowStockThreshold ?? 0)
+        item.stockCount <= (item.lowStockThreshold ?? 0),
     );
     const todayGrossRwf = await getTodayGross(vendorSlug);
     const weekdayAverageRwf = await getWeekdayAverageGross(vendorSlug);
@@ -1001,7 +1575,7 @@ export function createInMemoryStore(): ResettableStore {
   async function setVendorActive(
     vendorSlug: string,
     active: boolean,
-    _reason?: string
+    _reason?: string,
   ): Promise<Vendor | null> {
     const normalized = normalizeVendorSlug(vendorSlug);
     const index = vendors.findIndex((row) => row.slug === normalized);
@@ -1015,7 +1589,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function operatorUpdateVendor(
     vendorSlug: string,
-    input: OperatorUpdateVendorInput
+    input: OperatorUpdateVendorInput,
   ): Promise<Vendor | null> {
     const {
       isActive: nextActive,
@@ -1049,13 +1623,13 @@ export function createInMemoryStore(): ResettableStore {
   }
 
   async function operatorRevokeOwnerToken(
-    vendorSlug: string
+    vendorSlug: string,
   ): Promise<Vendor | null> {
     return setVendorOwnerToken(vendorSlug, "");
   }
 
   async function operatorReissueOwnerToken(
-    vendorSlug: string
+    vendorSlug: string,
   ): Promise<OperatorReissueTokenResult | null> {
     const { token, hash } = mintOwnerToken();
     const updated = await setVendorOwnerToken(vendorSlug, hash);
@@ -1065,7 +1639,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function operatorUpdateOrder(
     orderId: string,
-    patch: OperatorOrderPatch
+    patch: OperatorOrderPatch,
   ): Promise<Order | null> {
     const index = orders.findIndex((o) => o.id === orderId);
     if (index === -1) return null;
@@ -1092,7 +1666,7 @@ export function createInMemoryStore(): ResettableStore {
   }
 
   async function recordOperatorAction(
-    input: RecordOperatorActionInput
+    input: RecordOperatorActionInput,
   ): Promise<OperatorAction> {
     const action: OperatorAction = {
       id: `op_${++operatorActionCounter}_${Date.now()}`,
@@ -1108,7 +1682,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function listOperatorActions(
     vendorSlug?: string,
-    limit = 50
+    limit = 50,
   ): Promise<OperatorAction[]> {
     const vendor = vendorSlug ? await getVendorBySlug(vendorSlug) : undefined;
     if (vendorSlug && !vendor) return [];
@@ -1142,12 +1716,12 @@ export function createInMemoryStore(): ResettableStore {
 
   async function getMenuItem(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<MenuItem | null> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return null;
     const item = menuItems.find(
-      (row) => row.id === itemId && row.vendorId === vendor.id
+      (row) => row.id === itemId && row.vendorId === vendor.id,
     );
     return item ? hydrateMenuItem(item) : null;
   }
@@ -1160,7 +1734,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function createMenuItem(
     vendorSlug: string,
-    input: CreateMenuItemInput
+    input: CreateMenuItemInput,
   ): Promise<MenuItem> {
     const validationError = validateCreateMenuItemInput(input);
     if (validationError) {
@@ -1199,7 +1773,7 @@ export function createInMemoryStore(): ResettableStore {
   async function updateMenuItem(
     vendorSlug: string,
     itemId: string,
-    input: UpdateMenuItemInput
+    input: UpdateMenuItemInput,
   ): Promise<MenuItem | null> {
     const validationError = validateUpdateMenuItemInput(input);
     if (validationError) {
@@ -1210,7 +1784,7 @@ export function createInMemoryStore(): ResettableStore {
     if (!vendor) return null;
 
     const index = menuItems.findIndex(
-      (item) => item.id === itemId && item.vendorId === vendor.id
+      (item) => item.id === itemId && item.vendorId === vendor.id,
     );
     if (index === -1) return null;
 
@@ -1228,10 +1802,9 @@ export function createInMemoryStore(): ResettableStore {
     menuItems[index] = {
       ...current,
       name: input.name !== undefined ? input.name.trim() : current.name,
-      priceRwf:
-        nextSizeOptions
-          ? getSizeOptionsStartingPrice(nextSizeOptions)
-          : input.priceRwf ?? current.priceRwf,
+      priceRwf: nextSizeOptions
+        ? getSizeOptionsStartingPrice(nextSizeOptions)
+        : (input.priceRwf ?? current.priceRwf),
       ...(input.sizeOptions !== undefined
         ? { sizeOptions: nextSizeOptions }
         : {}),
@@ -1261,13 +1834,13 @@ export function createInMemoryStore(): ResettableStore {
 
   async function archiveMenuItem(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<MenuItem | null> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return null;
 
     const index = menuItems.findIndex(
-      (item) => item.id === itemId && item.vendorId === vendor.id
+      (item) => item.id === itemId && item.vendorId === vendor.id,
     );
     if (index === -1) return null;
 
@@ -1280,13 +1853,13 @@ export function createInMemoryStore(): ResettableStore {
 
   async function restoreMenuItem(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<MenuItem | null> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return null;
 
     const index = menuItems.findIndex(
-      (item) => item.id === itemId && item.vendorId === vendor.id
+      (item) => item.id === itemId && item.vendorId === vendor.id,
     );
     if (index === -1) return null;
 
@@ -1298,7 +1871,7 @@ export function createInMemoryStore(): ResettableStore {
   async function renameCategory(
     vendorSlug: string,
     from: string,
-    to: string
+    to: string,
   ): Promise<number> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return 0;
@@ -1320,7 +1893,7 @@ export function createInMemoryStore(): ResettableStore {
   }
 
   async function resolvePublicRestaurants(
-    vendorIds: string[]
+    vendorIds: string[],
   ): Promise<PublicRestaurant[]> {
     const uniqueIds = [...new Set(vendorIds)];
     return uniqueIds.flatMap((vendorId) => {
@@ -1343,7 +1916,7 @@ export function createInMemoryStore(): ResettableStore {
   async function listInventory(
     vendorSlug: string,
     filters: InventoryListFilters,
-    pagination: Pagination
+    pagination: Pagination,
   ): Promise<PaginatedInventory> {
     const vendor = await getVendorBySlug(vendorSlug);
     const pageSize = pagination.pageSize > 0 ? pagination.pageSize : 10;
@@ -1359,7 +1932,7 @@ export function createInMemoryStore(): ResettableStore {
     }
 
     const activeItems = inventoryItems.filter(
-      (item) => item.vendorId === vendor.id && !item.archivedAt
+      (item) => item.vendorId === vendor.id && !item.archivedAt,
     );
     const counts = activeItems.reduce(
       (result, item) => {
@@ -1369,18 +1942,22 @@ export function createInMemoryStore(): ResettableStore {
         if (status === "LOW") result.low += 1;
         return result;
       },
-      { active: 0, low: 0, out: 0 }
+      { active: 0, low: 0, out: 0 },
     );
     const search = filters.search?.trim().toLocaleLowerCase() ?? "";
     const rows = inventoryItems
       .filter((item) => item.vendorId === vendor.id)
-      .filter((item) => (filters.archived ? !!item.archivedAt : !item.archivedAt))
-      .filter((item) => !search || item.name.toLocaleLowerCase().includes(search))
+      .filter((item) =>
+        filters.archived ? !!item.archivedAt : !item.archivedAt,
+      )
+      .filter(
+        (item) => !search || item.name.toLocaleLowerCase().includes(search),
+      )
       .filter(
         (item) =>
           !filters.category ||
           filters.category === "ALL" ||
-          item.category === filters.category
+          item.category === filters.category,
       )
       .sort((a, b) => {
         const rank = { OUT: 0, LOW: 1, OK: 2 } as const;
@@ -1409,7 +1986,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function createInventoryItem(
     vendorSlug: string,
-    input: CreateInventoryItemInput
+    input: CreateInventoryItemInput,
   ): Promise<InventoryItem> {
     validateCreateInventoryItemInput(input);
     const vendor = await getVendorBySlug(vendorSlug);
@@ -1444,12 +2021,12 @@ export function createInMemoryStore(): ResettableStore {
 
   async function getInventoryItem(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<InventoryItemDetail | null> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return null;
     const item = inventoryItems.find(
-      (row) => row.id === itemId && row.vendorId === vendor.id
+      (row) => row.id === itemId && row.vendorId === vendor.id,
     );
     if (!item) return null;
     return {
@@ -1469,17 +2046,18 @@ export function createInMemoryStore(): ResettableStore {
   async function adjustInventoryItem(
     vendorSlug: string,
     itemId: string,
-    input: RecordInventoryAdjustmentInput
+    input: RecordInventoryAdjustmentInput,
   ): Promise<InventoryItemDetail | null> {
     validateInventoryAdjustmentInput(input);
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return null;
     const index = inventoryItems.findIndex(
-      (row) => row.id === itemId && row.vendorId === vendor.id
+      (row) => row.id === itemId && row.vendorId === vendor.id,
     );
     if (index === -1) return null;
     const current = inventoryItems[index];
-    if (current.archivedAt) throw new Error("Restore this item before adjusting it");
+    if (current.archivedAt)
+      throw new Error("Restore this item before adjusting it");
     const oldQuantity = current.quantity;
     const newQuantity =
       input.type === "RECEIVED"
@@ -1489,7 +2067,11 @@ export function createInMemoryStore(): ResettableStore {
           : oldQuantity - input.quantity;
     if (newQuantity < 0) throw new Error("Stock cannot go below zero");
     const now = new Date();
-    inventoryItems[index] = { ...current, quantity: newQuantity, updatedAt: now };
+    inventoryItems[index] = {
+      ...current,
+      quantity: newQuantity,
+      updatedAt: now,
+    };
     inventoryAdjustments.push({
       id: `inv_adj_${++inventoryAdjustmentCounter}_${Date.now()}`,
       inventoryItemId: current.id,
@@ -1506,13 +2088,13 @@ export function createInMemoryStore(): ResettableStore {
   async function updateInventoryItem(
     vendorSlug: string,
     itemId: string,
-    input: UpdateInventoryItemInput
+    input: UpdateInventoryItemInput,
   ): Promise<InventoryItemDetail | null> {
     validateUpdateInventoryItemInput(input);
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return null;
     const index = inventoryItems.findIndex(
-      (row) => row.id === itemId && row.vendorId === vendor.id
+      (row) => row.id === itemId && row.vendorId === vendor.id,
     );
     if (index === -1) return null;
     const current = inventoryItems[index];
@@ -1527,7 +2109,7 @@ export function createInMemoryStore(): ResettableStore {
       category: input.category ?? current.category,
       unitCostRwf:
         input.unitCostRwf !== undefined
-          ? input.unitCostRwf ?? undefined
+          ? (input.unitCostRwf ?? undefined)
           : current.unitCostRwf,
       note:
         input.note !== undefined
@@ -1540,12 +2122,12 @@ export function createInMemoryStore(): ResettableStore {
 
   async function archiveInventoryItem(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<InventoryItemDetail | null> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return null;
     const index = inventoryItems.findIndex(
-      (row) => row.id === itemId && row.vendorId === vendor.id
+      (row) => row.id === itemId && row.vendorId === vendor.id,
     );
     if (index === -1) return null;
     inventoryItems[index] = {
@@ -1558,12 +2140,12 @@ export function createInMemoryStore(): ResettableStore {
 
   async function restoreInventoryItem(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<InventoryItemDetail | null> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return null;
     const index = inventoryItems.findIndex(
-      (row) => row.id === itemId && row.vendorId === vendor.id
+      (row) => row.id === itemId && row.vendorId === vendor.id,
     );
     if (index === -1) return null;
     const { archivedAt: _archivedAt, ...rest } = inventoryItems[index];
@@ -1574,7 +2156,7 @@ export function createInMemoryStore(): ResettableStore {
   async function addMenuImage(
     vendorSlug: string,
     itemId: string,
-    input: AddMenuImageInput
+    input: AddMenuImageInput,
   ): Promise<MenuImage> {
     const item = await getMenuItem(vendorSlug, itemId);
     if (!item) {
@@ -1602,7 +2184,7 @@ export function createInMemoryStore(): ResettableStore {
     vendorSlug: string,
     itemId: string,
     file: Buffer,
-    mime: string
+    mime: string,
   ): Promise<MenuImage> {
     const validationError = validateMenuImageFile(file.byteLength, mime);
     if (validationError) {
@@ -1625,14 +2207,16 @@ export function createInMemoryStore(): ResettableStore {
   async function reorderMenuImages(
     vendorSlug: string,
     itemId: string,
-    imageIds: string[]
+    imageIds: string[],
   ): Promise<MenuImage[]> {
     const item = await getMenuItem(vendorSlug, itemId);
     if (!item?.images?.length) {
       throw new MenuImageError("Menu item not found", "NOT_FOUND");
     }
 
-    const itemImages = menuImages.filter((image) => image.menuItemId === itemId);
+    const itemImages = menuImages.filter(
+      (image) => image.menuItemId === itemId,
+    );
     if (
       imageIds.length !== itemImages.length ||
       !imageIds.every((id) => itemImages.some((image) => image.id === id))
@@ -1653,20 +2237,20 @@ export function createInMemoryStore(): ResettableStore {
   async function setPrimaryMenuImage(
     vendorSlug: string,
     itemId: string,
-    imageId: string
+    imageId: string,
   ): Promise<MenuImage | null> {
     const item = await getMenuItem(vendorSlug, itemId);
     if (!item) return null;
 
     const target = menuImages.find(
-      (image) => image.menuItemId === itemId && image.id === imageId
+      (image) => image.menuItemId === itemId && image.id === imageId,
     );
     if (!target) return null;
 
     menuImages = menuImages.map((image) =>
       image.menuItemId === itemId
         ? { ...image, isPrimary: image.id === imageId }
-        : image
+        : image,
     );
     syncPrimaryToMenuItem(itemId);
     return cloneMenuImage({ ...target, isPrimary: true });
@@ -1675,13 +2259,13 @@ export function createInMemoryStore(): ResettableStore {
   async function removeMenuImage(
     vendorSlug: string,
     itemId: string,
-    imageId: string
+    imageId: string,
   ): Promise<boolean> {
     const item = await getMenuItem(vendorSlug, itemId);
     if (!item) return false;
 
     const index = menuImages.findIndex(
-      (image) => image.menuItemId === itemId && image.id === imageId
+      (image) => image.menuItemId === itemId && image.id === imageId,
     );
     if (index === -1) return false;
 
@@ -1690,12 +2274,12 @@ export function createInMemoryStore(): ResettableStore {
 
     if (removed.isPrimary) {
       const next = pickNextPrimaryImage(
-        menuImages.filter((image) => image.menuItemId === itemId)
+        menuImages.filter((image) => image.menuItemId === itemId),
       );
       menuImages = menuImages.map((image) =>
         image.menuItemId === itemId
           ? { ...image, isPrimary: next ? image.id === next.id : false }
-          : image
+          : image,
       );
     }
 
@@ -1721,7 +2305,7 @@ export function createInMemoryStore(): ResettableStore {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return [];
     return filterKdsQueueOrders(
-      orders.filter((o) => o.vendorId === vendor.id).map(cloneOrder)
+      orders.filter((o) => o.vendorId === vendor.id).map(cloneOrder),
     ).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
@@ -1730,10 +2314,10 @@ export function createInMemoryStore(): ResettableStore {
     if (!vendor) return "missing";
 
     const queueOrders = filterKdsQueueOrders(
-      orders.filter((o) => o.vendorId === vendor.id)
+      orders.filter((o) => o.vendorId === vendor.id),
     );
     const activeMenu = menuItems.filter(
-      (item) => item.vendorId === vendor.id && isActiveItem(item)
+      (item) => item.vendorId === vendor.id && isActiveItem(item),
     );
     const todayGross = grossForDatePreset(vendor.id, "today");
     const yesterdayGross = grossForDatePreset(vendor.id, "yesterday");
@@ -1762,7 +2346,7 @@ export function createInMemoryStore(): ResettableStore {
   async function listOrdersFiltered(
     vendorSlug: string,
     filters: OrderHistoryFilters,
-    pagination: Pagination
+    pagination: Pagination,
   ) {
     const vendor = await getVendorBySlug(vendorSlug);
     const { page, pageSize, skip } = normalizePagination(pagination);
@@ -1784,7 +2368,7 @@ export function createInMemoryStore(): ResettableStore {
 
     if (range) {
       matched = matched.filter(
-        (o) => o.createdAt >= range.from && o.createdAt <= range.to
+        (o) => o.createdAt >= range.from && o.createdAt <= range.to,
       );
     }
 
@@ -1794,7 +2378,7 @@ export function createInMemoryStore(): ResettableStore {
 
     if (paymentFilter) {
       matched = matched.filter((o) =>
-        paymentMatchesFilter(paymentForOrder(o.id)?.status, paymentFilter)
+        paymentMatchesFilter(paymentForOrder(o.id)?.status, paymentFilter),
       );
     }
 
@@ -1839,18 +2423,23 @@ export function createInMemoryStore(): ResettableStore {
         throw new Error(`Item unavailable: ${line.menuItemId}`);
       }
       const notes = line.notes ? sanitizeItemNotes(line.notes) : undefined;
-      const addOns = resolveAddOnSelection(menuItem.addOnGroups, line.addOnChoiceIds);
+      const addOns = resolveAddOnSelection(
+        menuItem.addOnGroups,
+        line.addOnChoiceIds,
+      );
       return {
         id: `oi_${++orderItemCounter}_${Date.now()}`,
         orderId: id,
         menuItemId: menuItem.id,
         menuItem: hydrateMenuItem(menuItem),
         quantity: line.quantity,
-        unitPriceRwf: getMenuItemPrice(menuItem, line.sizeOptionId) + addOns.surchargeRwf,
+        unitPriceRwf:
+          getMenuItemPrice(menuItem, line.sizeOptionId) + addOns.surchargeRwf,
         ...(line.sizeOptionId
           ? {
               sizeOptionId: line.sizeOptionId,
-              sizeLabel: getMenuItemSizeOption(menuItem, line.sizeOptionId)!.label,
+              sizeLabel: getMenuItemSizeOption(menuItem, line.sizeOptionId)!
+                .label,
             }
           : {}),
         ...(notes ? { notes } : {}),
@@ -1860,7 +2449,7 @@ export function createInMemoryStore(): ResettableStore {
 
     const totalAmount = orderItems.reduce(
       (sum, item) => sum + item.quantity * item.unitPriceRwf,
-      0
+      0,
     );
 
     const order: Order = {
@@ -1882,7 +2471,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function updateOrderStatus(
     orderId: string,
-    status: OrderStatus
+    status: OrderStatus,
   ): Promise<Order | null> {
     const index = orders.findIndex((o) => o.id === orderId);
     if (index === -1) return null;
@@ -1904,7 +2493,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function updateKitchenStage(
     orderId: string,
-    stage: KitchenStage
+    stage: KitchenStage,
   ): Promise<Order | null> {
     const index = orders.findIndex((o) => o.id === orderId);
     if (index === -1) return null;
@@ -1930,7 +2519,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function bulkUpdateKitchenStage(
     orderIds: string[],
-    stage: KitchenStage
+    stage: KitchenStage,
   ): Promise<Order[]> {
     const updated: Order[] = [];
     for (const orderId of orderIds) {
@@ -1942,14 +2531,14 @@ export function createInMemoryStore(): ResettableStore {
 
   async function toggleItemAvailability(
     vendorSlug: string,
-    itemId: string
+    itemId: string,
   ): Promise<MenuItem | null> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return null;
 
     const index = menuItems.findIndex(
       (item) =>
-        item.id === itemId && item.vendorId === vendor.id && isActiveItem(item)
+        item.id === itemId && item.vendorId === vendor.id && isActiveItem(item),
     );
     if (index === -1) return null;
 
@@ -1967,7 +2556,7 @@ export function createInMemoryStore(): ResettableStore {
     menuItems = menuItems.map((item) =>
       item.vendorId === vendor.id && isActiveItem(item)
         ? { ...item, isAvailable: true }
-        : item
+        : item,
     );
     return getMenu(vendorSlug);
   }
@@ -1986,7 +2575,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function createDriver(
     vendorSlug: string,
-    input: CreateDriverInput
+    input: CreateDriverInput,
   ): Promise<Driver> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) {
@@ -2003,7 +2592,9 @@ export function createInMemoryStore(): ResettableStore {
       throw new Error("Valid driver phone is required");
     }
 
-    const existingCount = drivers.filter((d) => d.vendorId === vendor.id).length;
+    const existingCount = drivers.filter(
+      (d) => d.vendorId === vendor.id,
+    ).length;
     const driver: Driver = {
       id: `drv_${++driverCounter}_${Date.now()}`,
       vendorId: vendor.id,
@@ -2019,19 +2610,21 @@ export function createInMemoryStore(): ResettableStore {
   async function updateDriver(
     vendorSlug: string,
     driverId: string,
-    input: UpdateDriverInput
+    input: UpdateDriverInput,
   ): Promise<Driver | null> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return null;
 
     const index = drivers.findIndex(
-      (driver) => driver.id === driverId && driver.vendorId === vendor.id
+      (driver) => driver.id === driverId && driver.vendorId === vendor.id,
     );
     if (index < 0) return null;
 
     const existing = drivers[index];
     const name =
-      input.name !== undefined ? normalizeDriverName(input.name) : existing.name;
+      input.name !== undefined
+        ? normalizeDriverName(input.name)
+        : existing.name;
     if (!name) {
       throw new Error("Driver name is required");
     }
@@ -2054,42 +2647,42 @@ export function createInMemoryStore(): ResettableStore {
     orders = orders.map((order) =>
       order.driverId === driverId
         ? { ...order, assignedDriver: { ...updated } }
-        : order
+        : order,
     );
     return { ...updated };
   }
 
   async function deleteDriver(
     vendorSlug: string,
-    driverId: string
+    driverId: string,
   ): Promise<boolean> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return false;
 
     const before = drivers.length;
     drivers = drivers.filter(
-      (driver) => !(driver.id === driverId && driver.vendorId === vendor.id)
+      (driver) => !(driver.id === driverId && driver.vendorId === vendor.id),
     );
     if (drivers.length === before) return false;
 
     orders = orders.map((order) =>
       order.driverId === driverId
         ? { ...order, driverId: undefined, assignedDriver: undefined }
-        : order
+        : order,
     );
     return true;
   }
 
   async function assignOrderDriver(
     orderId: string,
-    driverId: string
+    driverId: string,
   ): Promise<Order | null> {
     const index = orders.findIndex((order) => order.id === orderId);
     if (index < 0) return null;
 
     const order = orders[index];
     const driver = drivers.find(
-      (row) => row.id === driverId && row.vendorId === order.vendorId
+      (row) => row.id === driverId && row.vendorId === order.vendorId,
     );
     if (!driver) return null;
 
@@ -2104,7 +2697,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function bulkAssignOrderDriver(
     orderIds: string[],
-    driverId: string
+    driverId: string,
   ): Promise<Order[]> {
     const updated: Order[] = [];
     for (const orderId of orderIds) {
@@ -2116,7 +2709,7 @@ export function createInMemoryStore(): ResettableStore {
 
   function grossForDatePreset(
     vendorId: string,
-    preset: "today" | "yesterday"
+    preset: "today" | "yesterday",
   ): number {
     const range = resolveDateRange({ datePreset: preset });
     if (!range) return 0;
@@ -2127,7 +2720,7 @@ export function createInMemoryStore(): ResettableStore {
           o.vendorId === vendorId &&
           o.createdAt >= range.from &&
           o.createdAt <= range.to &&
-          COUNTED_STATUSES.includes(o.status)
+          COUNTED_STATUSES.includes(o.status),
       )
       .reduce((sum, o) => sum + o.totalAmount, 0);
   }
@@ -2152,7 +2745,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function setKitchenOpen(
     vendorSlug: string,
-    open: boolean
+    open: boolean,
   ): Promise<boolean> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return false;
@@ -2161,7 +2754,7 @@ export function createInMemoryStore(): ResettableStore {
   }
 
   async function createPayment(
-    input: CreatePaymentInput
+    input: CreatePaymentInput,
   ): Promise<CreatePaymentResult> {
     const order = orders.find((o) => o.id === input.orderId);
     if (!order) {
@@ -2218,7 +2811,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function confirmPayment(
     ref: string,
-    pin: string
+    pin: string,
   ): Promise<ConfirmPaymentResult> {
     const index = payments.findIndex((p) => p.transactionRef === ref);
     if (index === -1) {
@@ -2256,7 +2849,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function confirmManualPayment(
     orderId: string,
-    customerPhone: string
+    customerPhone: string,
   ): Promise<ConfirmManualPaymentResult> {
     const orderIndex = orders.findIndex((o) => o.id === orderId);
     if (orderIndex === -1) {
@@ -2318,7 +2911,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function abandonManualPayment(
     orderId: string,
-    customerPhone: string
+    customerPhone: string,
   ): Promise<AbandonManualPaymentResult> {
     const orderIndex = orders.findIndex((o) => o.id === orderId);
     if (orderIndex === -1) {
@@ -2362,7 +2955,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function findResumableManualOrder(
     vendorSlug: string,
-    customerPhone: string
+    customerPhone: string,
   ): Promise<ResumableManualOrder | null> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return null;
@@ -2372,7 +2965,7 @@ export function createInMemoryStore(): ResettableStore {
         (order) =>
           order.vendorId === vendor.id &&
           order.status === "PENDING" &&
-          isWithinPaymentWindow(order.createdAt)
+          isWithinPaymentWindow(order.createdAt),
       )
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
@@ -2413,7 +3006,9 @@ export function createInMemoryStore(): ResettableStore {
     return { ...prospect, createdAt: new Date(now), updatedAt: new Date(now) };
   }
 
-  async function bulkCreateProspects(input: BulkCreateProspectsInput): Promise<Prospect[]> {
+  async function bulkCreateProspects(
+    input: BulkCreateProspectsInput,
+  ): Promise<Prospect[]> {
     const results: Prospect[] = [];
     for (const row of input.rows) {
       results.push(await createProspect(row));
@@ -2459,7 +3054,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function updateProspect(
     prospectId: string,
-    input: UpdateProspectInput
+    input: UpdateProspectInput,
   ): Promise<Prospect | null> {
     const idx = prospects.findIndex((p) => p.id === prospectId);
     if (idx === -1) return null;
@@ -2468,24 +3063,35 @@ export function createInMemoryStore(): ResettableStore {
     if (input.status !== undefined && input.status !== existing.status) {
       if (!canTransitionProspectStatus(existing.status, input.status)) {
         throw new Error(
-          `Invalid status transition: ${existing.status} → ${input.status}`
+          `Invalid status transition: ${existing.status} → ${input.status}`,
         );
       }
     }
 
     const updated: Prospect = { ...existing, updatedAt: new Date() };
-    if (input.businessName !== undefined) updated.businessName = input.businessName.trim();
-    if (input.contactName !== undefined) updated.contactName = input.contactName?.trim() || undefined;
-    if (input.phone !== undefined) updated.phone = input.phone?.trim() || undefined;
-    if (input.area !== undefined) updated.area = input.area?.trim() || undefined;
-    if (input.source !== undefined) updated.source = input.source?.trim() || undefined;
-    if (input.mapsUrl !== undefined) updated.mapsUrl = input.mapsUrl?.trim() || undefined;
-    if (input.instagramHandle !== undefined) updated.instagramHandle = input.instagramHandle?.trim() || undefined;
-    if (input.notes !== undefined) updated.notes = input.notes?.trim() || undefined;
+    if (input.businessName !== undefined)
+      updated.businessName = input.businessName.trim();
+    if (input.contactName !== undefined)
+      updated.contactName = input.contactName?.trim() || undefined;
+    if (input.phone !== undefined)
+      updated.phone = input.phone?.trim() || undefined;
+    if (input.area !== undefined)
+      updated.area = input.area?.trim() || undefined;
+    if (input.source !== undefined)
+      updated.source = input.source?.trim() || undefined;
+    if (input.mapsUrl !== undefined)
+      updated.mapsUrl = input.mapsUrl?.trim() || undefined;
+    if (input.instagramHandle !== undefined)
+      updated.instagramHandle = input.instagramHandle?.trim() || undefined;
+    if (input.notes !== undefined)
+      updated.notes = input.notes?.trim() || undefined;
     if (input.status !== undefined) updated.status = input.status;
-    if (input.nextFollowUpAt !== undefined) updated.nextFollowUpAt = input.nextFollowUpAt ?? undefined;
-    if (input.convertedVendorId !== undefined) updated.convertedVendorId = input.convertedVendorId ?? undefined;
-    if (input.convertedLeadId !== undefined) updated.convertedLeadId = input.convertedLeadId ?? undefined;
+    if (input.nextFollowUpAt !== undefined)
+      updated.nextFollowUpAt = input.nextFollowUpAt ?? undefined;
+    if (input.convertedVendorId !== undefined)
+      updated.convertedVendorId = input.convertedVendorId ?? undefined;
+    if (input.convertedLeadId !== undefined)
+      updated.convertedLeadId = input.convertedLeadId ?? undefined;
 
     prospects[idx] = updated;
     return getProspect(prospectId);
@@ -2493,7 +3099,7 @@ export function createInMemoryStore(): ResettableStore {
 
   async function addProspectInteraction(
     prospectId: string,
-    input: CreateProspectInteractionInput
+    input: CreateProspectInteractionInput,
   ): Promise<ProspectInteraction | null> {
     if (!prospects.find((p) => p.id === prospectId)) return null;
     const interaction: ProspectInteraction = {
@@ -2510,13 +3116,15 @@ export function createInMemoryStore(): ResettableStore {
   async function convertProspect(
     prospectId: string,
     vendorId: string,
-    leadId?: string
+    leadId?: string,
   ): Promise<Prospect | null> {
     const idx = prospects.findIndex((p) => p.id === prospectId);
     if (idx === -1) return null;
     const existing = prospects[idx];
     if (!canTransitionProspectStatus(existing.status, "CONVERTED")) {
-      throw new Error(`Invalid status transition: ${existing.status} → CONVERTED`);
+      throw new Error(
+        `Invalid status transition: ${existing.status} → CONVERTED`,
+      );
     }
     prospects[idx] = {
       ...existing,
@@ -2531,11 +3139,14 @@ export function createInMemoryStore(): ResettableStore {
   // ─── Marketing site settings ──────────────────────────────────────────────────
 
   async function getMarketingSiteSettings(): Promise<MarketingSiteSettings> {
-    return { ...marketingSettings, updatedAt: new Date(marketingSettings.updatedAt) };
+    return {
+      ...marketingSettings,
+      updatedAt: new Date(marketingSettings.updatedAt),
+    };
   }
 
   async function updateMarketingSiteSettings(
-    input: UpdateMarketingSiteSettingsInput
+    input: UpdateMarketingSiteSettingsInput,
   ): Promise<MarketingSiteSettings> {
     const updated = { ...marketingSettings, updatedAt: new Date() };
     for (const [key, value] of Object.entries(input)) {
@@ -2545,7 +3156,10 @@ export function createInMemoryStore(): ResettableStore {
       }
     }
     marketingSettings = updated;
-    return { ...marketingSettings, updatedAt: new Date(marketingSettings.updatedAt) };
+    return {
+      ...marketingSettings,
+      updatedAt: new Date(marketingSettings.updatedAt),
+    };
   }
 
   // ─── Site copy translations ──────────────────────────────────────────────────
@@ -2559,7 +3173,7 @@ export function createInMemoryStore(): ResettableStore {
   async function upsertSiteTranslation(
     locale: string,
     key: string,
-    value: string
+    value: string,
   ) {
     const entry = { locale, key, value, updatedAt: new Date() };
     siteTranslations.set(`${locale}\u0000${key}`, entry);
@@ -2570,7 +3184,9 @@ export function createInMemoryStore(): ResettableStore {
     return siteTranslations.delete(`${locale}\u0000${key}`);
   }
 
-  async function recordMarketingFunnelEvent(input: CreateMarketingFunnelEventInput) {
+  async function recordMarketingFunnelEvent(
+    input: CreateMarketingFunnelEventInput,
+  ) {
     const row: MarketingFunnelEvent = {
       ...input,
       id: `marketing-event-${++marketingFunnelEventCounter}`,
@@ -2592,7 +3208,7 @@ export function createInMemoryStore(): ResettableStore {
   async function listVendorExpenses(
     vendorSlug: string,
     from?: Date,
-    to?: Date
+    to?: Date,
   ): Promise<VendorExpense[]> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return [];
@@ -2601,12 +3217,16 @@ export function createInMemoryStore(): ResettableStore {
     if (to) rows = rows.filter((e) => e.spentAt <= to);
     return rows
       .sort((a, b) => b.spentAt.getTime() - a.spentAt.getTime())
-      .map((e) => ({ ...e, spentAt: new Date(e.spentAt), createdAt: new Date(e.createdAt) }));
+      .map((e) => ({
+        ...e,
+        spentAt: new Date(e.spentAt),
+        createdAt: new Date(e.createdAt),
+      }));
   }
 
   async function createVendorExpense(
     vendorSlug: string,
-    input: CreateVendorExpenseInput
+    input: CreateVendorExpenseInput,
   ): Promise<VendorExpense> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) throw new Error("Vendor not found");
@@ -2621,18 +3241,22 @@ export function createInMemoryStore(): ResettableStore {
       createdAt: now,
     };
     expenses.push(expense);
-    return { ...expense, spentAt: new Date(expense.spentAt), createdAt: new Date(now) };
+    return {
+      ...expense,
+      spentAt: new Date(expense.spentAt),
+      createdAt: new Date(now),
+    };
   }
 
   async function deleteVendorExpense(
     vendorSlug: string,
-    expenseId: string
+    expenseId: string,
   ): Promise<boolean> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return false;
     const before = expenses.length;
     expenses = expenses.filter(
-      (e) => !(e.id === expenseId && e.vendorId === vendor.id)
+      (e) => !(e.id === expenseId && e.vendorId === vendor.id),
     );
     return expenses.length < before;
   }
@@ -2640,7 +3264,7 @@ export function createInMemoryStore(): ResettableStore {
   async function getProfitSnapshot(
     vendorSlug: string,
     from: Date,
-    to: Date
+    to: Date,
   ): Promise<ProfitSnapshot | null> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return null;
@@ -2653,18 +3277,30 @@ export function createInMemoryStore(): ResettableStore {
         o.vendorId === vendor.id &&
         o.createdAt >= from &&
         o.createdAt <= to &&
-        COUNTED_STATUSES.includes(o.status)
+        COUNTED_STATUSES.includes(o.status),
     );
-    const periodRevenueRwf = periodOrders.reduce((s, o) => s + o.totalAmount, 0);
+    const periodRevenueRwf = periodOrders.reduce(
+      (s, o) => s + o.totalAmount,
+      0,
+    );
 
     const periodExpenses = expenses.filter(
-      (e) => e.vendorId === vendor.id && e.spentAt >= from && e.spentAt <= to
+      (e) => e.vendorId === vendor.id && e.spentAt >= from && e.spentAt <= to,
     );
-    const periodExpensesRwf = periodExpenses.reduce((s, e) => s + e.amountRwf, 0);
+    const periodExpensesRwf = periodExpenses.reduce(
+      (s, e) => s + e.amountRwf,
+      0,
+    );
 
-    const marginMap = new Map<string, {
-      name: string; soldQty: number; revenueRwf: number; costRwf: number;
-    }>();
+    const marginMap = new Map<
+      string,
+      {
+        name: string;
+        soldQty: number;
+        revenueRwf: number;
+        costRwf: number;
+      }
+    >();
     let periodCostOfGoodsRwf = 0;
     for (const order of periodOrders) {
       for (const line of order.orderItems) {
@@ -2691,9 +3327,10 @@ export function createInMemoryStore(): ResettableStore {
       revenueRwf: data.revenueRwf,
       costRwf: data.costRwf,
       marginRwf: data.revenueRwf - data.costRwf,
-      marginPct: data.revenueRwf > 0
-        ? (data.revenueRwf - data.costRwf) / data.revenueRwf
-        : null,
+      marginPct:
+        data.revenueRwf > 0
+          ? (data.revenueRwf - data.costRwf) / data.revenueRwf
+          : null,
     }));
 
     return {
@@ -2703,14 +3340,15 @@ export function createInMemoryStore(): ResettableStore {
       periodRevenueRwf,
       periodExpensesRwf,
       periodCostOfGoodsRwf,
-      periodProfitRwf: periodRevenueRwf - periodExpensesRwf - periodCostOfGoodsRwf,
+      periodProfitRwf:
+        periodRevenueRwf - periodExpensesRwf - periodCostOfGoodsRwf,
       itemMargins,
     };
   }
 
   async function getWeekdayAverageGross(
     vendorSlug: string,
-    weeks = 4
+    weeks = 4,
   ): Promise<number> {
     const vendor = await getVendorBySlug(vendorSlug);
     if (!vendor) return 0;
@@ -2722,7 +3360,9 @@ export function createInMemoryStore(): ResettableStore {
     let total = 0;
     let count = 0;
     for (let w = 1; w <= weeks; w++) {
-      const dayStart = new Date(todayStart.getTime() - w * 7 * 24 * 60 * 60 * 1000);
+      const dayStart = new Date(
+        todayStart.getTime() - w * 7 * 24 * 60 * 60 * 1000,
+      );
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000 - 1);
       if (dayStart.getDay() !== targetDay) continue;
       const gross = orders
@@ -2731,7 +3371,7 @@ export function createInMemoryStore(): ResettableStore {
             o.vendorId === vendor.id &&
             o.createdAt >= dayStart &&
             o.createdAt <= dayEnd &&
-            COUNTED_STATUSES.includes(o.status)
+            COUNTED_STATUSES.includes(o.status),
         )
         .reduce((s, o) => s + o.totalAmount, 0);
       total += gross;
@@ -2745,7 +3385,7 @@ export function createInMemoryStore(): ResettableStore {
     if (!vendor) return 0;
     return orders
       .filter(
-        (o) => o.vendorId === vendor.id && COUNTED_STATUSES.includes(o.status)
+        (o) => o.vendorId === vendor.id && COUNTED_STATUSES.includes(o.status),
       )
       .reduce((s, o) => s + o.totalAmount, 0);
   }
@@ -2782,6 +3422,20 @@ export function createInMemoryStore(): ResettableStore {
     updateLeadRoutingRecipient,
     removeLeadRoutingRecipient,
     assignLeadRoutingRecipient,
+    createMenuIntake,
+    getMenuIntake,
+    addMenuIntakeRevision,
+    listMenuIntakes,
+    updateMenuIntakeReview,
+    answerMenuIntakeQuestion,
+    importMenuIntake,
+    authorizeMenuIntake,
+    addMenuIntakeAttachment,
+    removeMenuIntakeAttachment,
+    createMenuIntakeAccess,
+    exchangeMenuIntakeAccess,
+    revokeMenuIntakeAccess,
+    logMenuIntakeContact,
     createBriefingInterest,
     listBriefingInterests,
     createProspect,
