@@ -92,3 +92,18 @@ remains the sole persistence seam in both adapters. Public sources stay private;
 an approved dish image is read privately and copied into the existing guarded
 public `MenuImage` seam during the import transaction. No migration or deploy
 has been applied outside the local worktree.
+
+## Amendment — compact, replaceable intake editing — 2026-08-29
+
+The owner approved a generated UI/UX refinement as the exact public-intake
+target. Pending self-build images must be visible as small thumbnails and
+assisted sources as image previews or PDF file cards; every selected file has an
+individual remove action, and later selections append within the existing limits
+so one mistaken file can be replaced without resetting the intake.
+
+Self-build dish editors use a one-open-at-a-time accordion. Collapsed rows retain
+the dish identity, category and price, and the list paginates at five dishes per
+page. Adding a dish navigates to and opens its page. These are presentation-only
+decisions behind the existing staged-intake seam: upload policy, immutable
+revision behavior and import semantics do not change. The public header also
+provides an explicit `Visit zantap.app` route back to ZanTap's main site.

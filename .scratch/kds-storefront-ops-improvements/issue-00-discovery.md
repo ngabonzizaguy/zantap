@@ -1,6 +1,6 @@
 # Candidate #29 — KDS, customer hub, lead capture and Ops improvements
 
-Status: PRIORITY #1 COMPLETE LOCALLY · VERIFIED · NOT DEPLOYED · QUESTIONS 1–14 NOT STARTED
+Status: PRIORITY #1 COMPLETE LOCALLY · INTAKE UX REFINEMENT VERIFIED · OWNER VISUAL REVIEW PENDING · NOT DEPLOYED · QUESTIONS 1–14 NOT STARTED
 Date: 2026-08-29
 
 ## Owner request
@@ -1008,3 +1008,24 @@ changes while preserving them untouched.
 
 Priority #1 is complete locally. No deploy, migration application, production
 write, or Questions 1–14 implementation was authorized or performed.
+
+## Priority #1 owner-review refinement — IMPLEMENTED LOCALLY 2026-08-29
+
+- [x] Owner approved the generated three-screen UI/UX as the exact target.
+- [x] Self-build uploads render immediately as compact image thumbnails; each
+  thumbnail has its own remove action and selecting more files appends up to the
+  existing six-image limit instead of replacing the whole selection.
+- [x] Assisted uploads render image previews and compact removable PDF cards;
+  removed files can be replaced without restarting the intake.
+- [x] Self-build dishes use a one-open-at-a-time compact accordion with name,
+  category and price summaries. At most five dishes render per page, with
+  Previous/Next pagination and the newly added dish opened on its correct page.
+- [x] The persistent header includes the approved `Visit zantap.app` CTA.
+- [x] Verification: new presentation seam 2/2; Candidate #29 focused 12/12;
+  full suite 445 passed / 117 expected skips; TypeScript and scoped ESLint clean;
+  production build clean.
+- [ ] Owner mobile/desktop visual and interaction review.
+
+This refinement changes no persistence contract or migration. Migration
+`20260829170000_vendor_menu_intake` remains authored but unapplied. No push,
+deploy, production write, or Questions 1–14 implementation occurred.

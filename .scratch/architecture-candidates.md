@@ -1041,8 +1041,16 @@ complete on `codex/candidate-29`. It includes both approved public paths,
 four-locale UI, local autosave, immutable revisions and private resume access,
 private media/questions, Ops structuring and contact logs, destination/match
 review, and transactional idempotent import through the Store/menu-media seams.
-Full tests pass (443/117), Candidate #29 lint and TypeScript pass, production
+Full tests pass (445/117), Candidate #29 lint and TypeScript pass, production
 build passes, and headed Playwright proved assisted submission through a live
 KDS menu item. Repository-wide lint has only three pre-existing Candidate #28
 Briefing errors. Additive migration is authored but unapplied. Questions 1–14
 remain untouched and must not start before a separate session/review.
+
+Owner-review refinement is implemented locally against an approved generated
+visual: selected self-build images and assisted images/PDFs are visible and
+individually removable/replaceable; dish editors are one-open accordions,
+paginated five per page; and the header links to `zantap.app`. Focused 12/12,
+full 445/117, TypeScript, scoped lint and production build pass. Owner visual
+review remains open. The refinement adds no migration; nothing was pushed,
+deployed or written to production.

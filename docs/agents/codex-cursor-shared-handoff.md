@@ -50,6 +50,11 @@ explicitly owns it.
 - Migration `20260829170000_vendor_menu_intake` is authored and Prisma-validated
   but unapplied. Nothing was deployed and no production data changed. Candidate
   #29 Questions 1–14 remain unstarted.
+- Owner-approved intake UX refinement is implemented locally: removable image
+  thumbnails and PDF cards, one-open dish accordions, five dishes per page, and
+  `Visit zantap.app`. Verification is 12/12 focused, 445/117 full, TypeScript,
+  scoped lint and production build clean. Owner visual review remains pending;
+  the refinement adds no migration and remains unreleased.
 
 ### Reconciled repository and production state
 
