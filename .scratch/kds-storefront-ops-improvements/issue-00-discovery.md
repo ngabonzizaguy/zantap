@@ -1185,3 +1185,27 @@ Production attachment persistence remains open until a newly labelled image/PDF
 is visible in authenticated Ops after this release. Ops → KDS import remains a
 separate action-time gate. The Marketing Lead Form and Questions 1–14 remain
 untouched; no production business row was created during local verification.
+
+## Retry-recovery release — COMMITTED · EXTERNAL NETWORK BLOCKED 2026-08-30
+
+- [x] Exact verified repair committed locally as `9c4365a`
+  (`fix(menu-intake): make upload recovery durable`). `.playwright-cli/` and
+  `output/` remain preserved and untracked.
+- [ ] Push is blocked by host connectivity: `git push origin codex/candidate-29`
+  timed out connecting to `github.com:443`. After this release-state handoff is
+  committed, the branch is three commits ahead of its remote (implementation
+  `6d87106`, repair `9c4365a`, then the documentation-only blocker record).
+- [ ] Production deploy is blocked by the same outbound-network condition. The
+  first CLI attempt used the wrong default scope and created no deployment. A
+  resolved exact-target attempt against project
+  `prj_6urcncBFXmv4EhDHlBlURppKSjvP` / team
+  `team_7FxXW1LwyLckGLBvZdahce8E` then failed loading Vercel's OpenID
+  configuration. No Production alias or deployment changed.
+- [ ] When connectivity returns, run `git push origin codex/candidate-29`, then
+  from this clean tracked tree run
+  `npx vercel deploy --prod --yes --project prj_6urcncBFXmv4EhDHlBlURppKSjvP --scope team_7FxXW1LwyLckGLBvZdahce8E --logs`.
+  Record the READY deployment and perform read-only route/log smoke before the
+  owner submits the newly labelled attachment.
+
+Do not claim the production attachment smoke is ready until the deployment is
+READY. Do not perform Ops → KDS import without its separate action-time approval.

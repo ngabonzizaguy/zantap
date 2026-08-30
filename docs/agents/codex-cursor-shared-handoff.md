@@ -34,6 +34,26 @@ Then run `git status --short --branch` and inspect the relevant commit/diff.
 Preserve every pre-existing dirty or untracked path unless the current task
 explicitly owns it.
 
+### 2026-08-30 — Codex — Candidate #29 release committed; external network blocked
+
+- Retry recovery is verified and committed locally as exact commit `9c4365a`.
+  After this documentation-only blocker record is committed, the branch is three
+  commits ahead of `origin/codex/candidate-29` (implementation `6d87106`, repair
+  `9c4365a`, then this handoff). `.playwright-cli/` and `output/` remain
+  preserved and untracked.
+- Push failed on a `github.com:443` connection timeout. Production deploy did
+  not start: after resolving the exact saved ZanTap target (project
+  `prj_6urcncBFXmv4EhDHlBlURppKSjvP`, team
+  `team_7FxXW1LwyLckGLBvZdahce8E`), Vercel CLI could not load the OpenID
+  configuration endpoint. No deployment or alias changed.
+- When connectivity returns, run `git push origin codex/candidate-29`, then
+  `npx vercel deploy --prod --yes --project prj_6urcncBFXmv4EhDHlBlURppKSjvP --scope team_7FxXW1LwyLckGLBvZdahce8E --logs` from the Candidate #29 worktree. Record the
+  READY deployment, run read-only route/log smoke, and only then ask the owner
+  for a newly labelled image/PDF submission.
+- Production attachment persistence and Ops → KDS import remain open. Import
+  still requires separate action-time approval. Marketing Lead Form and
+  Questions 1–14 remain untouched.
+
 ### 2026-08-30 — Codex — Candidate #29 retry recovery repaired and release authorized
 
 - Reviewed exact local commit `6d87106`. Focused Menu Intake tests pass 7/7;

@@ -1034,7 +1034,7 @@ error/fatal/warning/5xx scans were empty. No production fixture data changed.
 
 ---
 
-## Candidate #29 — Priority #1 Vendor Menu Intake — 🟠 HOTFIX LIVE · OWNER REFINEMENT LOCAL · PROD ATTACHMENT SMOKE OPEN 2026-08-30
+## Candidate #29 — Priority #1 Vendor Menu Intake — 🟠 REPAIR COMMITTED · PUSH/DEPLOY NETWORK BLOCKED · PROD ATTACHMENT SMOKE OPEN 2026-08-30
 
 The separate shareable Vendor Menu Intake → Ops review → KDS import workflow is
 complete and deployed from `codex/candidate-29`. It includes both approved public paths,
@@ -1128,3 +1128,12 @@ Focused 10/10, full 455/117, scoped ESLint, TypeScript, diff hygiene, production
 build and real-browser recovery QA pass. Owner authorized push/deploy. No schema
 change or migration is required. Production attachment smoke and the separate
 Ops → KDS action gate remain open.
+
+The verified repair is committed locally as `9c4365a`. Push timed out against
+`github.com:443`; an exact-project Vercel deploy then failed before creating a
+deployment because the host could not load Vercel's OpenID configuration. After
+the documentation-only blocker record is committed, the branch is three commits
+ahead of remote and Production remains on the prior hotfix.
+Resume with the exact push/deploy commands recorded in the Candidate #29 issue
+when outbound connectivity returns; then perform read-only release smoke before
+asking the owner for the labelled attachment submission.
