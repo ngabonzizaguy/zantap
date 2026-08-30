@@ -55,6 +55,14 @@ explicitly owns it.
   `Visit zantap.app`. Verification is 12/12 focused, 445/117 full, TypeScript,
   scoped lint and production build clean. Owner visual review remains pending;
   the refinement adds no migration and remains unreleased.
+- A second owner-approved refinement is implemented locally: simpler English,
+  reduced-motion-safe step transitions, default-hidden language choices with an
+  Ops global switch, full pre-send dish CRUD, and a green `Tell ZanTap` handoff
+  to `0784928786` that still requires the Vendor to tap Send. Mobile browser QA
+  passed the six-dish review/submission flow with zero errors. Final verification
+  is 446/117 with scoped lint, TypeScript, Prisma validation and production build
+  clean. The switch extends the unapplied Candidate #29 migration; release review
+  remains pending.
 
 ### Reconciled repository and production state
 

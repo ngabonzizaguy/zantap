@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { MenuIntakeWizard } from "@/components/menu-intake/MenuIntakeWizard";
+import { getStore } from "@/lib/store";
 
 export const metadata: Metadata = {
   title: "Create your menu | ZanTap",
@@ -11,9 +12,13 @@ export default async function MenuIntakePage({
 }: {
   searchParams: Promise<{ intake?: string; token?: string }>;
 }) {
-  const access = await searchParams;
+  const [access, settings] = await Promise.all([
+    searchParams,
+    getStore().getMarketingSiteSettings(),
+  ]);
   return (
     <MenuIntakeWizard
+      showLanguageChoices={settings.showMenuIntakeLanguageChoices}
       oneTimeAccess={
         access.intake && access.token
           ? { intakeId: access.intake, token: access.token }

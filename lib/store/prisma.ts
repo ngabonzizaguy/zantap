@@ -4113,6 +4113,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       socialLinkedin: row.socialLinkedin ?? undefined,
       socialYoutube: row.socialYoutube ?? undefined,
       socialWhatsapp: row.socialWhatsapp ?? undefined,
+      showMenuIntakeLanguageChoices: row.showMenuIntakeLanguageChoices,
       updatedAt: row.updatedAt,
     };
   }
@@ -4120,10 +4121,15 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
   async function updateMarketingSiteSettings(
     input: UpdateMarketingSiteSettingsInput,
   ): Promise<MarketingSiteSettings> {
-    const data: Record<string, string | null> = {};
+    const data: Record<string, string | boolean | null> = {};
     for (const [key, value] of Object.entries(input)) {
       if (value !== undefined) {
-        data[key] = value === null ? null : (value as string).trim() || null;
+        data[key] =
+          typeof value === "boolean"
+            ? value
+            : value === null
+              ? null
+              : (value as string).trim() || null;
       }
     }
     const row = await client.marketingSiteSettings.upsert({
@@ -4142,6 +4148,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       socialLinkedin: row.socialLinkedin ?? undefined,
       socialYoutube: row.socialYoutube ?? undefined,
       socialWhatsapp: row.socialWhatsapp ?? undefined,
+      showMenuIntakeLanguageChoices: row.showMenuIntakeLanguageChoices,
       updatedAt: row.updatedAt,
     };
   }

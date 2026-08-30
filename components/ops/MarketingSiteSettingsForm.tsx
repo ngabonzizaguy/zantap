@@ -18,6 +18,9 @@ export function MarketingSiteSettingsForm({
   const [pending, startTransition] = useTransition();
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showMenuIntakeLanguages, setShowMenuIntakeLanguages] = useState(
+    initial.showMenuIntakeLanguageChoices,
+  );
 
   const [form, setForm] = useState({
     publicPhone: initial.publicPhone ?? "",
@@ -52,6 +55,7 @@ export function MarketingSiteSettingsForm({
           const trimmed = value.trim();
           (input as Record<string, string | null>)[key] = trimmed || null;
         }
+        input.showMenuIntakeLanguageChoices = showMenuIntakeLanguages;
         await patchMarketingSiteSettingsAction(input);
         setSuccess(true);
       } catch (caught) {
@@ -72,6 +76,29 @@ export function MarketingSiteSettingsForm({
       <div className="grid gap-4 sm:grid-cols-2">
         {field("publicPhone", "Public phone", "+250 7XX XXX XXX")}
         {field("publicEmail", "Public email", "hello@zantap.app")}
+      </div>
+
+      <div className="flex items-center justify-between gap-4 rounded-2xl border border-hairline p-4">
+        <div>
+          <p className="text-sm font-medium text-ink">Show language choices</p>
+          <p className="mt-1 text-xs text-muted">
+            Off keeps Menu Intake in English while translations are reviewed.
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={showMenuIntakeLanguages}
+          onClick={() => setShowMenuIntakeLanguages((value) => !value)}
+          className={`relative h-7 w-12 flex-none rounded-full transition ${showMenuIntakeLanguages ? "bg-ink" : "bg-hairline-strong"}`}
+        >
+          <span
+            className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${showMenuIntakeLanguages ? "translate-x-6" : "translate-x-1"}`}
+          />
+          <span className="sr-only">
+            {showMenuIntakeLanguages ? "On" : "Off"}
+          </span>
+        </button>
       </div>
 
       <p className="text-xs font-medium text-muted">Social links</p>

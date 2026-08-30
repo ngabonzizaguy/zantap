@@ -124,3 +124,5 @@ ALTER TABLE "MenuIntakeQuestion" ADD CONSTRAINT "MenuIntakeQuestion_intakeId_fke
 ALTER TABLE "MenuIntakeQuestion" ADD CONSTRAINT "MenuIntakeQuestion_revisionId_fkey" FOREIGN KEY ("revisionId") REFERENCES "MenuIntakeRevision"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE "MenuIntakeContactLog" ADD CONSTRAINT "MenuIntakeContactLog_intakeId_fkey" FOREIGN KEY ("intakeId") REFERENCES "MenuIntake"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "MenuIntakeImportRun" ADD CONSTRAINT "MenuIntakeImportRun_intakeId_fkey" FOREIGN KEY ("intakeId") REFERENCES "MenuIntake"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "MarketingSiteSettings"
+ADD COLUMN "showMenuIntakeLanguageChoices" BOOLEAN NOT NULL DEFAULT false;

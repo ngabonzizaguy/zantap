@@ -417,6 +417,7 @@ model MarketingSiteSettings {
   socialLinkedin  String?
   socialYoutube   String?
   socialWhatsapp  String?
+  showMenuIntakeLanguageChoices Boolean @default(false)
   updatedAt       DateTime @updatedAt
 }
 

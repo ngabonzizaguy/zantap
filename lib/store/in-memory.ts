@@ -267,6 +267,7 @@ export function createInMemoryStore(): ResettableStore {
   let vendorUpdateBatches: VendorUpdateBatch[] = [];
   let marketingSettings: MarketingSiteSettings = {
     id: "default",
+    showMenuIntakeLanguageChoices: false,
     updatedAt: new Date(),
   };
   const siteTranslations = new Map<
@@ -462,7 +463,11 @@ export function createInMemoryStore(): ResettableStore {
     marketingFunnelEvents = [];
     vendorUpdateSettings = new Map();
     vendorUpdateBatches = [];
-    marketingSettings = { id: "default", updatedAt: new Date() };
+    marketingSettings = {
+      id: "default",
+      showMenuIntakeLanguageChoices: false,
+      updatedAt: new Date(),
+    };
     kitchenOpen = true;
     orderCounter = 0;
     orderItemCounter = 0;
@@ -3152,7 +3157,11 @@ export function createInMemoryStore(): ResettableStore {
     for (const [key, value] of Object.entries(input)) {
       if (value !== undefined) {
         (updated as Record<string, unknown>)[key] =
-          value === null ? undefined : (value as string).trim() || undefined;
+          typeof value === "boolean"
+            ? value
+            : value === null
+              ? undefined
+              : (value as string).trim() || undefined;
       }
     }
     marketingSettings = updated;

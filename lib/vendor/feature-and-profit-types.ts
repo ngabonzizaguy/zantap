@@ -14,6 +14,7 @@ export interface MarketingSiteSettings {
   socialLinkedin?: string;
   socialYoutube?: string;
   socialWhatsapp?: string;
+  showMenuIntakeLanguageChoices: boolean;
   updatedAt: Date;
 }
 
@@ -27,6 +28,7 @@ export interface UpdateMarketingSiteSettingsInput {
   socialLinkedin?: string | null;
   socialYoutube?: string | null;
   socialWhatsapp?: string | null;
+  showMenuIntakeLanguageChoices?: boolean;
 }
 
 export interface VendorExpense {

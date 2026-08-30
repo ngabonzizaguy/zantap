@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   appendSelectedFiles,
+  buildMenuIntakeWhatsAppUrl,
   paginateMenuIntakeDishes,
   removeSelectedFile,
 } from "@/lib/menu-intake/presentation";
@@ -33,5 +34,11 @@ describe("menu intake presentation", () => {
       "one",
       "three",
     ]);
+  });
+
+  it("opens ZanTap's approved WhatsApp number with the intake reference", () => {
+    expect(buildMenuIntakeWhatsAppUrl("MI-260830-ABC123", "Inka")).toBe(
+      "https://wa.me/250784928786?text=Hello%20ZanTap.%20I%20sent%20my%20menu%20for%20Inka.%20Reference%3A%20MI-260830-ABC123",
+    );
   });
 });

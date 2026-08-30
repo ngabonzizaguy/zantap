@@ -107,3 +107,19 @@ page. Adding a dish navigates to and opens its page. These are presentation-only
 decisions behind the existing staged-intake seam: upload policy, immutable
 revision behavior and import semantics do not change. The public header also
 provides an explicit `Visit zantap.app` route back to ZanTap's main site.
+
+## Amendment — plain language, review control and optional WhatsApp handoff — 2026-08-30
+
+The public intake uses short, direct English and restrained rise motion that is
+disabled under reduced-motion preferences. The existing EN/RW/FR/SW selector is
+hidden by default until the owner has reviewed the translations. A global
+default-false `Show language choices` setting in Ops controls its visibility;
+the setting stays behind the existing MarketingSiteSettings Store seam.
+
+Before submission, self-build Vendors can read, create, edit and remove every
+dish from Review, including the last dish, with five dishes per page. Assisted
+Vendors can review/remove sources and return to change files. Submission still
+persists directly to the Ops intake inbox. The success screen additionally
+offers a green WhatsApp-icon `Tell ZanTap` link with a prefilled reference to
+`0784928786`; WhatsApp notifies the number only after the Vendor taps Send. This
+candidate does not claim or add automatic WhatsApp delivery.

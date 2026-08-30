@@ -19,6 +19,7 @@ import type {
 } from "@/lib/menu-intake/types";
 import {
   appendSelectedFiles,
+  buildMenuIntakeWhatsAppUrl,
   MENU_INTAKE_DISHES_PER_PAGE,
   paginateMenuIntakeDishes,
   removeSelectedFile,
@@ -29,15 +30,14 @@ const RESUME_KEY = "zantap:menu-intake:resume:v1";
 
 const COPY = {
   en: {
-    title: "Turn what you know into a menu customers can order from.",
-    intro:
-      "Build it dish by dish, or send us your menu pages and photos. Nothing goes live until ZanTap reviews it with you.",
-    build: "Build my menu",
-    assist: "Help me create it",
-    continue: "Continue",
-    submit: "Send to ZanTap",
-    question: "Ask ZanTap a question",
-    sent: "Your menu is safely with us.",
+    title: "Let’s make your menu.",
+    intro: "Add your dishes, or send photos of your menu. We’ll help with the rest.",
+    build: "Add my dishes",
+    assist: "Send my menu photos",
+    continue: "Next",
+    submit: "Send menu",
+    question: "Any question?",
+    sent: "Your menu was sent.",
   },
   rw: {
     title: "Hindura ibyo uzi ube menu abakiriya bashobora gukoresha.",
@@ -130,8 +130,10 @@ function vendorStatus(status: MenuIntakeStatus): string {
 
 export function MenuIntakeWizard({
   oneTimeAccess,
+  showLanguageChoices,
 }: {
   oneTimeAccess?: { intakeId: string; token: string };
+  showLanguageChoices: boolean;
 }) {
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [ready, setReady] = useState(false);
@@ -146,7 +148,10 @@ export function MenuIntakeWizard({
   const [reference, setReference] = useState("");
   const [status, setStatus] = useState<MenuIntakeStatus>("SUBMITTED");
   const [error, setError] = useState("");
-  const t = COPY[draft.locale];
+  const activeLocale: MenuIntakeLocale = showLanguageChoices
+    ? draft.locale
+    : "en";
+  const t = COPY[activeLocale];
 
   useEffect(() => {
     try {
@@ -249,13 +254,32 @@ export function MenuIntakeWizard({
     );
   }
 
+  function editDish(clientId: string) {
+    const index = draft.dishes.findIndex((dish) => dish.clientId === clientId);
+    if (index < 0) return;
+    setDishPage(Math.floor(index / MENU_INTAKE_DISHES_PER_PAGE));
+    setOpenDishIds([clientId]);
+    setStep("MENU");
+  }
+
+  function addDish() {
+    const dish = newDish();
+    const dishes = [...draft.dishes, dish];
+    setDraft({ ...draft, dishes });
+    setDishPage(
+      Math.floor((dishes.length - 1) / MENU_INTAKE_DISHES_PER_PAGE),
+    );
+    setOpenDishIds([dish.clientId]);
+    setStep("MENU");
+  }
+
   async function finish() {
     setError("");
     const result = await submitMenuIntake({
       businessName: draft.businessName,
       contactName: draft.contactName,
       phone: draft.phone,
-      locale: draft.locale,
+      locale: activeLocale,
       alreadyOnZantap: draft.alreadyOnZantap,
       storefrontHint: draft.storefrontHint,
       content: {
@@ -351,10 +375,12 @@ export function MenuIntakeWizard({
               alt=""
               width={38}
               height={38}
+              loading="eager"
             />
             <span className="font-display text-xl">ZanTap</span>
           </Link>
           <div className="flex items-center gap-2">
+            {showLanguageChoices ? (
             <label className="text-xs uppercase tracking-[.18em] text-white/55">
               <span className="sr-only">Language</span>
               <select
@@ -373,6 +399,7 @@ export function MenuIntakeWizard({
                 <option value="sw">SW</option>
               </select>
             </label>
+            ) : null}
             <a
               href="https://zantap.app"
               className="inline-flex min-h-10 items-center rounded-xl border border-[#f4a623] px-3 text-[11px] font-medium text-[#f4a623] transition hover:bg-[#f4a623] hover:text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f4a623] sm:px-4 sm:text-xs"
@@ -383,9 +410,9 @@ export function MenuIntakeWizard({
         </header>
 
         {step === "START" ? (
-          <section className="flex min-h-[78vh] flex-col justify-center py-12">
+          <section className="zt-list-in flex min-h-[78vh] flex-col justify-center py-12">
             <p className="mb-5 text-xs uppercase tracking-[.3em] text-[#f4a623]">
-              Vendor menu intake
+              Create your menu
             </p>
             <h1 className="max-w-2xl font-display text-4xl font-light leading-[1.05] sm:text-6xl">
               {t.title}
@@ -422,8 +449,8 @@ export function MenuIntakeWizard({
                   </span>
                   <span className="mt-2 block text-sm text-white/50">
                     {path === "SELF_BUILD"
-                      ? "Add dishes, prices, photos and extras."
-                      : "Send menu pages, photos, prices and notes."}
+                      ? "Add dishes, prices and photos."
+                      : "Send photos, pages or a PDF."}
                   </span>
                 </button>
               ))}
@@ -439,12 +466,12 @@ export function MenuIntakeWizard({
         ) : null}
 
         {step === "DETAILS" ? (
-          <section className="py-14">
+          <section className="zt-list-in py-14">
             <p className="text-xs uppercase tracking-[.3em] text-[#f4a623]">
               01 · Your business
             </p>
             <h1 className="mt-4 font-display text-4xl font-light">
-              Who should we build this with?
+              Tell us about your business.
             </h1>
             <div className="mt-10 grid gap-5 sm:grid-cols-2">
               <Field label="Business name">
@@ -515,16 +542,15 @@ export function MenuIntakeWizard({
         ) : null}
 
         {step === "MENU" && draft.path === "SELF_BUILD" ? (
-          <section className="py-14">
+          <section className="zt-list-in py-14">
             <p className="text-xs uppercase tracking-[.3em] text-[#f4a623]">
               02 · Build your menu
             </p>
             <h1 className="mt-4 font-display text-4xl font-light">
-              Add the dishes customers should see.
+              Add your dishes.
             </h1>
             <p className="mt-3 text-sm text-white/55">
-              Availability, dish count, stock rules and cost stay in your
-              KDS—not here.
+              You can change anything before you send.
             </p>
             <div className="mt-8 space-y-3">
               {paginatedDishes.items.map((dish, pageIndex) => {
@@ -565,21 +591,19 @@ export function MenuIntakeWizard({
                         className={`flex-none text-[#f4a623] transition-transform ${isOpen ? "rotate-180" : ""}`}
                       />
                     </button>
-                    {draft.dishes.length > 1 ? (
-                      <button
-                        type="button"
-                        aria-label={`Remove ${dish.name.trim() || `dish ${dishNumber}`}`}
-                        onClick={() => removeDish(dish.clientId)}
-                        className="inline-flex h-11 w-11 flex-none items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f4a623]"
-                      >
-                        <X size={18} aria-hidden />
-                      </button>
-                    ) : null}
+                    <button
+                      type="button"
+                      aria-label={`Remove ${dish.name.trim() || `dish ${dishNumber}`}`}
+                      onClick={() => removeDish(dish.clientId)}
+                      className="inline-flex h-11 w-11 flex-none items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f4a623]"
+                    >
+                      <X size={18} aria-hidden />
+                    </button>
                   </div>
                   {isOpen ? (
                     <div
                       id={`dish-${dish.clientId}`}
-                      className="border-t border-white/10 px-5 pb-6 pt-1 sm:px-7"
+                      className="zt-list-in border-t border-white/10 px-5 pb-6 pt-1 sm:px-7"
                     >
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
                     <Field label="Dish name">
@@ -959,17 +983,7 @@ export function MenuIntakeWizard({
             </div>
             <button
               type="button"
-              onClick={() => {
-                const dish = newDish();
-                const nextDishes = [...draft.dishes, dish];
-                setDraft({ ...draft, dishes: nextDishes });
-                setDishPage(
-                  Math.floor(
-                    (nextDishes.length - 1) / MENU_INTAKE_DISHES_PER_PAGE,
-                  ),
-                );
-                setOpenDishIds([dish.clientId]);
-              }}
+              onClick={addDish}
               className="mt-5 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-[#f4a623] px-5 text-sm text-[#f4a623] transition hover:bg-[#f4a623] hover:text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f4a623]"
             >
               <Plus size={18} aria-hidden /> Add another dish
@@ -1032,12 +1046,12 @@ export function MenuIntakeWizard({
         ) : null}
 
         {step === "MENU" && draft.path === "ASSISTED" ? (
-          <section className="py-14">
+          <section className="zt-list-in py-14">
             <p className="text-xs uppercase tracking-[.3em] text-[#f4a623]">
               02 · Send what you have
             </p>
             <h1 className="mt-4 font-display text-4xl font-light">
-              Photos, pages, prices—even handwritten notes.
+              Send photos, pages or a PDF.
             </h1>
             <div className="mt-8 rounded-[28px] border border-dashed border-[#f4a623]/50 bg-[#f4a623]/[0.06] p-6">
               <div>
@@ -1130,47 +1144,116 @@ export function MenuIntakeWizard({
         ) : null}
 
         {step === "REVIEW" ? (
-          <section className="py-14">
+          <section className="zt-list-in py-14">
             <p className="text-xs uppercase tracking-[.3em] text-[#f4a623]">
               03 · Review & send
             </p>
             <h1 className="mt-4 font-display text-4xl font-light">
-              Nothing publishes yet.
+              Check everything.
             </h1>
-            <p className="mt-4 max-w-xl text-white/60">
-              ZanTap Ops will review this private intake, answer your question,
-              resolve the right business and show every possible menu match
-              before importing.
+            <p className="mt-3 text-sm text-white/55">
+              Edit or remove anything before you send it.
             </p>
-            <div className="mt-8 rounded-[28px] border border-white/15 bg-white/[0.04] p-6">
-              <p className="font-display text-2xl">
-                {draft.businessName || "Your business"}
-              </p>
-              <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
-                <div>
-                  <dt className="text-white/40">Path</dt>
-                  <dd>{draft.path === "SELF_BUILD" ? t.build : t.assist}</dd>
-                </div>
-                <div>
-                  <dt className="text-white/40">Menu material</dt>
-                  <dd>
-                    {draft.path === "SELF_BUILD"
-                      ? `${draft.dishes.length} dishes · ${totalFiles} photos`
-                      : `${sourceFiles.length} private files`}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-white/40">Contact</dt>
-                  <dd>
-                    {draft.contactName} · {draft.phone}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-white/40">Language</dt>
-                  <dd>{draft.locale.toUpperCase()}</dd>
-                </div>
-              </dl>
-            </div>
+            {draft.path === "SELF_BUILD" ? (
+              <div className="mt-8 space-y-3">
+                {paginatedDishes.items.map((dish, pageIndex) => {
+                  const dishNumber = paginatedDishes.startIndex + pageIndex + 1;
+                  return (
+                    <article
+                      key={dish.clientId}
+                      className="rounded-[24px] border border-white/15 bg-white/[0.04] p-5"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[11px] uppercase tracking-[.18em] text-[#f4a623]">
+                            Dish {dishNumber}
+                          </p>
+                          <h2 className="mt-1 truncate font-display text-2xl">
+                            {dish.name || `Dish ${dishNumber}`}
+                          </h2>
+                          <p className="mt-1 text-xs text-white/45">
+                            {[dish.category, dish.priceRwf ? `${dish.priceRwf.toLocaleString("en-RW")} RWF` : "No price"]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        </div>
+                        <div className="flex flex-none gap-1">
+                          <button
+                            type="button"
+                            onClick={() => editDish(dish.clientId)}
+                            className="min-h-11 rounded-xl border border-white/15 px-3 text-xs text-[#f4a623]"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm("Remove this dish?"))
+                                removeDish(dish.clientId);
+                            }}
+                            className="min-h-11 rounded-xl px-3 text-xs text-white/50"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                      <FilePreviewGrid
+                        files={dishFiles[dish.clientId] || []}
+                        onRemove={(fileIndex) =>
+                          setDishFiles((value) => ({
+                            ...value,
+                            [dish.clientId]: removeSelectedFile(
+                              value[dish.clientId] || [],
+                              fileIndex,
+                            ),
+                          }))
+                        }
+                        variant="dish"
+                      />
+                    </article>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={addDish}
+                  className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-[#f4a623] text-sm text-[#f4a623]"
+                >
+                  <Plus size={18} aria-hidden /> Add another dish
+                </button>
+                {paginatedDishes.pageCount > 1 ? (
+                  <ReviewPagination
+                    page={paginatedDishes.page}
+                    pageCount={paginatedDishes.pageCount}
+                    onPage={setDishPage}
+                  />
+                ) : null}
+              </div>
+            ) : (
+              <div className="mt-8 rounded-[24px] border border-white/15 bg-white/[0.04] p-5">
+                <p className="font-display text-2xl">
+                  {sourceFiles.length} {sourceFiles.length === 1 ? "file" : "files"} ready
+                </p>
+                <FilePreviewGrid
+                  files={sourceFiles}
+                  onRemove={(fileIndex) =>
+                    setSourceFiles((files) =>
+                      removeSelectedFile(files, fileIndex),
+                    )
+                  }
+                  variant="source"
+                />
+                <button
+                  type="button"
+                  onClick={() => setStep("MENU")}
+                  className="mt-4 min-h-11 text-sm text-[#f4a623]"
+                >
+                  Change files
+                </button>
+              </div>
+            )}
+            <p className="mt-6 text-sm text-white/55">
+              We’ll contact {draft.contactName || "you"} at {draft.phone || "your number"}.
+            </p>
             {progress ? (
               <div className="mt-5">
                 <div className="h-2 overflow-hidden rounded-full bg-white/10">
@@ -1201,7 +1284,7 @@ export function MenuIntakeWizard({
         ) : null}
 
         {step === "SENT" ? (
-          <section className="flex min-h-[78vh] flex-col justify-center py-12">
+          <section className="zt-list-in flex min-h-[78vh] flex-col justify-center py-12">
             <div className="h-14 w-14 rounded-full bg-[#f4a623] text-center text-3xl leading-[56px] text-black">
               ✓
             </div>
@@ -1214,9 +1297,7 @@ export function MenuIntakeWizard({
             {reference ? (
               <>
                 <p className="mt-5 text-white/60">
-                  Reference <strong className="text-white">{reference}</strong>.
-                  This browser holds the private resume access—your reference
-                  alone cannot open the intake.
+                  Save this number: <strong className="text-white">{reference}</strong>.
                 </p>
                 <div className="mt-8 rounded-[24px] border border-white/15 bg-white/[0.04] p-5">
                   <p className="text-sm text-white/45">Current status</p>
@@ -1224,6 +1305,17 @@ export function MenuIntakeWizard({
                     {vendorStatus(status)}
                   </p>
                 </div>
+                <a
+                  href={buildMenuIntakeWhatsAppUrl(reference, draft.businessName)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#25D366] px-5 font-medium text-[#071b0e] transition hover:bg-[#20bd5a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366]"
+                >
+                  <WhatsAppIcon /> Tell ZanTap
+                </a>
+                <p className="mt-2 text-center text-xs text-white/45">
+                  Open the message, then tap Send.
+                </p>
               </>
             ) : (
               <button
@@ -1237,6 +1329,61 @@ export function MenuIntakeWizard({
         ) : null}
       </div>
     </main>
+  );
+}
+
+function ReviewPagination({
+  page,
+  pageCount,
+  onPage,
+}: {
+  page: number;
+  pageCount: number;
+  onPage: (page: number) => void;
+}) {
+  return (
+    <nav
+      aria-label="Review dish pages"
+      className="grid min-h-14 grid-cols-[1fr_auto_1fr] items-center rounded-2xl border border-white/15 px-3 text-sm"
+    >
+      <button
+        type="button"
+        disabled={page === 0}
+        onClick={() => onPage(page - 1)}
+        className="min-h-11 justify-self-start px-2 text-[#f4a623] disabled:text-white/25"
+      >
+        Previous
+      </button>
+      <span className="px-2 text-white/55">
+        Page {page + 1} of {pageCount}
+      </span>
+      <button
+        type="button"
+        disabled={page === pageCount - 1}
+        onClick={() => onPage(page + 1)}
+        className="min-h-11 justify-self-end px-2 text-[#f4a623] disabled:text-white/25"
+      >
+        Next
+      </button>
+    </nav>
+  );
+}
+
+function WhatsAppIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M20.4 11.8a8.4 8.4 0 0 1-12.5 7.3L3.6 20.4l1.3-4.2a8.4 8.4 0 1 1 15.5-4.4Z" />
+      <path d="M8.2 7.8c.3-.3.7-.2.9.1l1.1 2c.1.3.1.6-.1.8l-.7.8c.7 1.5 1.8 2.6 3.3 3.3l.8-.7c.2-.2.6-.3.8-.1l2 1.1c.3.2.4.6.1.9-.7.9-1.8 1.3-2.9 1-3.3-.8-5.9-3.4-6.7-6.7-.3-1.1.1-2.2 1.4-2.5Z" />
+    </svg>
   );
 }
 

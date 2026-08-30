@@ -1,6 +1,6 @@
 # Candidate #29 — KDS, customer hub, lead capture and Ops improvements
 
-Status: PRIORITY #1 COMPLETE LOCALLY · INTAKE UX REFINEMENT VERIFIED · OWNER VISUAL REVIEW PENDING · NOT DEPLOYED · QUESTIONS 1–14 NOT STARTED
+Status: PRIORITY #1 COMPLETE LOCALLY · INTAKE UX REFINEMENTS VERIFIED · OWNER RELEASE REVIEW PENDING · NOT DEPLOYED · QUESTIONS 1–14 NOT STARTED
 Date: 2026-08-29
 
 ## Owner request
@@ -1029,3 +1029,29 @@ write, or Questions 1–14 implementation was authorized or performed.
 This refinement changes no persistence contract or migration. Migration
 `20260829170000_vendor_menu_intake` remains authored but unapplied. No push,
 deploy, production write, or Questions 1–14 implementation occurred.
+
+## Priority #1 plain-language/review refinement — IMPLEMENTED LOCALLY 2026-08-30
+
+- [x] Public English copy is short, direct and friendly; existing restrained
+  rise motion is applied to steps and accordion content with reduced-motion
+  protection.
+- [x] The public language selector is hidden by default. Ops Settings owns one
+  global `Show language choices` switch; enabling it restores the existing
+  EN/RW/FR/SW selector without another deployment.
+- [x] Self-build Review renders the real dish catalog five per page with Edit,
+  Remove (including the last dish), Add another dish and Send menu. Assisted
+  Review shows removable sources and a direct Change files action.
+- [x] Successful submission remains durable in Ops and additionally offers a
+  green WhatsApp-icon `Tell ZanTap` CTA. It opens a prefilled message to
+  `0784928786`; the Vendor must tap Send, because no automatic WhatsApp API is
+  introduced.
+- [x] Automated mobile browser pass at 390×844: English-only start, six-dish
+  pagination, Review/Edit, successful submission and exact `wa.me/250784928786`
+  handoff passed with zero browser errors. The sole logo LCP warning was fixed.
+- [x] Final verification: 446 passed / 117 expected skips; scoped ESLint,
+  TypeScript, Prisma validation and production build clean.
+- [ ] Owner release review.
+
+The approved Ops switch adds one default-false column to the still-unapplied
+`20260829170000_vendor_menu_intake` migration. No production migration, deploy,
+production write or Questions 1–14 implementation occurred in this refinement.

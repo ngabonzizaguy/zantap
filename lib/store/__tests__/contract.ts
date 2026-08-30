@@ -2083,16 +2083,20 @@ export function runStoreContract(
       it("round-trips settings upsert", async () => {
         const initial = await store.getMarketingSiteSettings();
         expect(initial.id).toBe("default");
+        expect(initial.showMenuIntakeLanguageChoices).toBe(false);
 
         const updated = await store.updateMarketingSiteSettings({
           publicPhone: "0784928786",
           socialInstagram: "@zantap",
+          showMenuIntakeLanguageChoices: true,
         });
         expect(updated.publicPhone).toBe("0784928786");
         expect(updated.socialInstagram).toBe("@zantap");
+        expect(updated.showMenuIntakeLanguageChoices).toBe(true);
 
         const fetched = await store.getMarketingSiteSettings();
         expect(fetched.publicPhone).toBe("0784928786");
+        expect(fetched.showMenuIntakeLanguageChoices).toBe(true);
 
         const cleared = await store.updateMarketingSiteSettings({
           publicPhone: null,

@@ -1054,3 +1054,14 @@ paginated five per page; and the header links to `zantap.app`. Focused 12/12,
 full 445/117, TypeScript, scoped lint and production build pass. Owner visual
 review remains open. The refinement adds no migration; nothing was pushed,
 deployed or written to production.
+
+The follow-up plain-language/review pass is also complete locally. Menu Intake
+now uses short English with restrained reduced-motion-safe transitions; Ops has
+a default-off global switch for the public language selector; Review provides
+full dish CRUD five per page; and success offers a green icon-only-brand
+`Tell ZanTap` handoff to `0784928786` (manual Send, not an automatic API).
+Automated 390×844 browser verification passed the six-dish and submission flow
+with zero errors. Final verification is 446 passed / 117 expected skips with
+scoped lint, TypeScript, Prisma validation and production build clean. The Ops
+switch extends the still-unapplied Candidate #29 migration; production and owner
+release review remain pending.

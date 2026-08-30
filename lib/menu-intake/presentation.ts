@@ -1,4 +1,17 @@
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
+
 export const MENU_INTAKE_DISHES_PER_PAGE = 5;
+const ZANTAP_MENU_INTAKE_PHONE = "0784928786";
+
+export function buildMenuIntakeWhatsAppUrl(
+  reference: string,
+  businessName: string,
+): string {
+  return buildWhatsAppUrl(
+    `Hello ZanTap. I sent my menu for ${businessName.trim() || "my business"}. Reference: ${reference}`,
+    ZANTAP_MENU_INTAKE_PHONE,
+  );
+}
 
 export function paginateMenuIntakeDishes<T>(
   dishes: readonly T[],
