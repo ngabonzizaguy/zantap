@@ -193,3 +193,23 @@ local self-build submission with one image reached Sent only after attachment
 read-back. Production attachment persistence remains open because the six owner
 submissions reviewed before this amendment all showed zero private files. No
 push, deployment, migration or production write is part of this amendment yet.
+
+## Amendment — durable retry identity and truthful resume state — 2026-08-30
+
+The browser persists a safe expected-upload manifest with the staged intake
+credential before files are sent. The manifest contains deterministic local file
+keys and confirmed attachment IDs only; it never contains file bytes, Blob paths
+or private read URLs. An authorized staged intake is shown as Sent only when each
+expected key maps to an attachment ID that the private status seam still returns.
+After a reload with missing confirmation, the Vendor returns to Review with an
+explicit recovery message and must reselect the expected files before Send can
+continue.
+
+Removing a file or dish after partial upload is a durable operation, not only a
+presentation change. A confirmed private attachment is removed through the
+existing authorized Server Action before its local selection disappears, and its
+retry entry is removed at the same time. Multi-photo dish cleanup records each
+successful deletion even if a later deletion fails, leaving the visible dish in
+place and the remaining cleanup retryable. These decisions are implemented
+behind `lib/menu-intake/pending-uploads.ts`; they do not change the Store seam,
+private Blob credential policy, schema, migration or import contract.

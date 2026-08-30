@@ -15,6 +15,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   getMenuIntakeStatus,
   exchangeMenuIntakeResume,
+  removeMenuIntakeAttachment,
   submitMenuIntake,
   submitMenuIntakeRevision,
   uploadMenuIntakeAttachment,
@@ -33,8 +34,16 @@ import {
   getMenuIntakeDishIssues,
   MENU_INTAKE_DISHES_PER_PAGE,
   paginateMenuIntakeDishes,
-  removeSelectedFile,
 } from "@/lib/menu-intake/presentation";
+import {
+  createMenuIntakeResumeState,
+  menuIntakeResumeIsComplete,
+  menuIntakeUploadKey,
+  removeMenuIntakeUpload,
+  removeMenuIntakeUploads,
+  type MenuIntakeConfirmedUploads,
+  type MenuIntakeResumeState,
+} from "@/lib/menu-intake/pending-uploads";
 import {
   COUNTRY_OPTIONS,
   DEFAULT_COUNTRY,
@@ -118,14 +127,20 @@ type IntakeUpload = {
   dishClientId?: string;
 };
 
-function intakeUploadKey(upload: IntakeUpload): string {
+function selectedIntakeUploads(
+  sourceFiles: readonly File[],
+  dishFiles: Readonly<Record<string, File[]>>,
+): IntakeUpload[] {
   return [
-    upload.kind,
-    upload.dishClientId || "",
-    upload.file.name,
-    upload.file.size,
-    upload.file.lastModified,
-  ].join(":");
+    ...sourceFiles.map((file) => ({ file, kind: "SOURCE" as const })),
+    ...Object.entries(dishFiles).flatMap(([dishClientId, files]) =>
+      files.map((file) => ({
+        file,
+        kind: "DISH_IMAGE" as const,
+        dishClientId,
+      })),
+    ),
+  ];
 }
 
 const EMPTY: Draft = {
@@ -190,9 +205,11 @@ export function MenuIntakeWizard({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingSubmission, setPendingSubmission] =
     useState<PendingSubmission | null>(null);
-  const [uploadedAttachments, setUploadedAttachments] = useState<
-    Record<string, { attachmentId: string; dishClientId?: string }>
-  >({});
+  const [uploadedAttachments, setUploadedAttachments] =
+    useState<MenuIntakeConfirmedUploads>({});
+  const [recoveredPendingUploadKeys, setRecoveredPendingUploadKeys] = useState<
+    string[] | null
+  >(null);
   const submittingRef = useRef(false);
   const [reference, setReference] = useState("");
   const [status, setStatus] = useState<MenuIntakeStatus>("SUBMITTED");
@@ -246,14 +263,32 @@ export function MenuIntakeWizard({
       }
       const resume = JSON.parse(
         localStorage.getItem(RESUME_KEY) || "null",
-      ) as null | { intakeId: string; resumeToken: string; reference: string };
+      ) as MenuIntakeResumeState | null;
       if (resume?.intakeId && resume.resumeToken) {
         getMenuIntakeStatus(resume.intakeId, resume.resumeToken).then(
           (result) => {
             if (result.ok) {
               setReference(resume.reference);
               setStatus(result.intake.status);
-              setStep("SENT");
+              const persistedIds = new Set(
+                result.attachments.map((attachment) => attachment.id),
+              );
+              if (menuIntakeResumeIsComplete(resume, persistedIds)) {
+                setStep("SENT");
+              } else {
+                setPendingSubmission({
+                  intakeId: resume.intakeId,
+                  resumeToken: resume.resumeToken,
+                  reference: resume.reference,
+                  status: "SUBMITTED",
+                });
+                setUploadedAttachments(resume.confirmedUploads || {});
+                setRecoveredPendingUploadKeys(resume.pendingUploadKeys || []);
+                setError(
+                  "Your menu was saved, but your files still need attention. Select the same files again, then tap Send menu.",
+                );
+                setStep("REVIEW");
+              }
             }
           },
         );
@@ -307,13 +342,113 @@ export function MenuIntakeWizard({
     }));
   }
 
-  function removeDish(clientId: string) {
+  async function removeConfirmedAttachment(attachmentId: string) {
+    if (!pendingSubmission) throw new Error("Missing staged intake access");
+    const removed = await removeMenuIntakeAttachment(
+      pendingSubmission.intakeId,
+      attachmentId,
+      pendingSubmission.resumeToken,
+    );
+    if (!removed.ok) throw new Error("Private attachment removal failed");
+  }
+
+  function persistResumeSelection(
+    confirmedUploads: MenuIntakeConfirmedUploads,
+    uploads: readonly IntakeUpload[],
+  ) {
+    if (!pendingSubmission) return;
+    const resume = createMenuIntakeResumeState(
+      pendingSubmission,
+      uploads,
+      confirmedUploads,
+    );
+    localStorage.setItem(RESUME_KEY, JSON.stringify(resume));
+    if (recoveredPendingUploadKeys) {
+      setRecoveredPendingUploadKeys(resume.pendingUploadKeys || []);
+    }
+  }
+
+  async function removeSourceFile(fileIndex: number) {
+    const file = sourceFiles[fileIndex];
+    if (!file) return;
+    try {
+      const result = await removeMenuIntakeUpload({
+        files: sourceFiles,
+        fileIndex,
+        upload: { file, kind: "SOURCE" },
+        confirmedUploads: uploadedAttachments,
+        removeConfirmed: removeConfirmedAttachment,
+      });
+      setSourceFiles(result.files);
+      setUploadedAttachments(result.confirmedUploads);
+      persistResumeSelection(
+        result.confirmedUploads,
+        selectedIntakeUploads(result.files, dishFiles),
+      );
+      setError("");
+    } catch {
+      setError("We could not remove this file. Please try again.");
+    }
+  }
+
+  async function removeDishFile(clientId: string, fileIndex: number) {
+    const files = dishFiles[clientId] || [];
+    const file = files[fileIndex];
+    if (!file) return;
+    try {
+      const result = await removeMenuIntakeUpload({
+        files,
+        fileIndex,
+        upload: { file, kind: "DISH_IMAGE", dishClientId: clientId },
+        confirmedUploads: uploadedAttachments,
+        removeConfirmed: removeConfirmedAttachment,
+      });
+      const nextDishFiles = { ...dishFiles, [clientId]: result.files };
+      setDishFiles(nextDishFiles);
+      setUploadedAttachments(result.confirmedUploads);
+      persistResumeSelection(
+        result.confirmedUploads,
+        selectedIntakeUploads(sourceFiles, nextDishFiles),
+      );
+      setError("");
+    } catch {
+      setError("We could not remove this photo. Please try again.");
+    }
+  }
+
+  async function removeDish(clientId: string) {
+    const removed = await removeMenuIntakeUploads({
+      uploads: (dishFiles[clientId] || []).map((file) => ({
+        file,
+        kind: "DISH_IMAGE" as const,
+        dishClientId: clientId,
+      })),
+      confirmedUploads: uploadedAttachments,
+      removeConfirmed: removeConfirmedAttachment,
+    });
+    const nextConfirmed = removed.confirmedUploads;
+    setUploadedAttachments(nextConfirmed);
+    persistResumeSelection(
+      nextConfirmed,
+      selectedIntakeUploads(sourceFiles, dishFiles),
+    );
+    if (!removed.ok) {
+      setError("We could not remove this dish’s photos. Please try again.");
+      return;
+    }
+
     const dishes = draft.dishes.filter((dish) => dish.clientId !== clientId);
     const nextPage = Math.min(
       paginatedDishes.page,
       Math.max(0, Math.ceil(dishes.length / MENU_INTAKE_DISHES_PER_PAGE) - 1),
     );
     setDraft({ ...draft, dishes });
+    const nextDishFiles = { ...dishFiles };
+    delete nextDishFiles[clientId];
+    persistResumeSelection(
+      nextConfirmed,
+      selectedIntakeUploads(sourceFiles, nextDishFiles),
+    );
     setDishPage(nextPage);
     setDishFiles((value) => {
       const next = { ...value };
@@ -360,10 +495,25 @@ export function MenuIntakeWizard({
     setIsSubmitting(true);
     setError("");
     setProgress(0);
-    let submission = pendingSubmission;
+    const uploads = selectedIntakeUploads(sourceFiles, dishFiles);
+    if (recoveredPendingUploadKeys) {
+      const selectedKeys = new Set(uploads.map(menuIntakeUploadKey));
+      const hasEveryRecoveredFile = recoveredPendingUploadKeys.every((key) =>
+        selectedKeys.has(key),
+      );
+      if (!hasEveryRecoveredFile) {
+        setError(
+          "Select the same files again so we can finish confirming your menu.",
+        );
+        submittingRef.current = false;
+        setIsSubmitting(false);
+        return;
+      }
+    }
     try {
-      if (!submission) {
-        const result = await submitMenuIntake({
+      const created = pendingSubmission
+        ? null
+        : await submitMenuIntake({
           businessName: draft.businessName,
           contactName: draft.contactName,
           phone: canonicalPhone,
@@ -378,40 +528,44 @@ export function MenuIntakeWizard({
             question: draft.question,
           },
         });
-        if (!result.ok) {
-          setError(result.message || "We could not send your menu. Please try again.");
-          return;
-        }
-        submission = result;
-        setPendingSubmission(result);
+      if (created && !created.ok) {
+        setError(created.message || "We could not send your menu. Please try again.");
+        return;
+      }
+      const submission = pendingSubmission || (created?.ok ? created : null);
+      if (!submission) {
+        setError("We could not send your menu. Please try again.");
+        return;
+      }
+      if (created?.ok) {
+        setPendingSubmission(created);
         localStorage.setItem(
           RESUME_KEY,
-          JSON.stringify({
-            intakeId: result.intakeId,
-            resumeToken: result.resumeToken,
-            reference: result.reference,
-          }),
+          JSON.stringify(
+            createMenuIntakeResumeState(created, uploads, {}),
+          ),
         );
       }
-
-      const uploads: IntakeUpload[] = [
-        ...sourceFiles.map((file) => ({ file, kind: "SOURCE" as const })),
-        ...Object.entries(dishFiles).flatMap(([dishClientId, files]) =>
-          files.map((file) => ({
-            file,
-            kind: "DISH_IMAGE" as const,
-            dishClientId,
-          })),
+      const completedUploads = new Map(
+        Object.entries(uploadedAttachments),
+      );
+      localStorage.setItem(
+        RESUME_KEY,
+        JSON.stringify(
+          createMenuIntakeResumeState(
+            submission,
+            uploads,
+            Object.fromEntries(completedUploads),
+          ),
         ),
-      ];
-      const completedUploads = { ...uploadedAttachments };
+      );
       let completed = uploads.filter(
-        (upload) => completedUploads[intakeUploadKey(upload)],
+        (upload) => completedUploads.has(menuIntakeUploadKey(upload)),
       ).length;
 
       for (const upload of uploads) {
-        const key = intakeUploadKey(upload);
-        if (completedUploads[key]) continue;
+        const key = menuIntakeUploadKey(upload);
+        if (completedUploads.has(key)) continue;
         const data = new FormData();
         data.set("intakeId", submission.intakeId);
         data.set("resumeToken", submission.resumeToken);
@@ -427,11 +581,22 @@ export function MenuIntakeWizard({
           );
           return;
         }
-        completedUploads[key] = {
+        completedUploads.set(key, {
           attachmentId: uploaded.attachmentId,
           dishClientId: upload.dishClientId,
-        };
-        setUploadedAttachments({ ...completedUploads });
+        });
+        const nextCompletedUploads = Object.fromEntries(completedUploads);
+        setUploadedAttachments(nextCompletedUploads);
+        localStorage.setItem(
+          RESUME_KEY,
+          JSON.stringify(
+            createMenuIntakeResumeState(
+              submission,
+              uploads,
+              nextCompletedUploads,
+            ),
+          ),
+        );
         completed += 1;
         setProgress(
           Math.round((completed / Math.max(uploads.length, 1)) * 100),
@@ -441,7 +606,7 @@ export function MenuIntakeWizard({
       const uploadedDishImages: Record<string, string[]> = {};
       for (const upload of uploads) {
         if (!upload.dishClientId) continue;
-        const attachment = completedUploads[intakeUploadKey(upload)];
+        const attachment = completedUploads.get(menuIntakeUploadKey(upload));
         if (!attachment) continue;
         uploadedDishImages[upload.dishClientId] = [
           ...(uploadedDishImages[upload.dishClientId] || []),
@@ -479,7 +644,7 @@ export function MenuIntakeWizard({
             ? persisted.attachments.map((attachment) => attachment.id)
             : [],
         );
-        const everyUploadPersisted = Object.values(completedUploads).every(
+        const everyUploadPersisted = Array.from(completedUploads.values()).every(
           (attachment) => persistedIds.has(attachment.attachmentId),
         );
         if (!persisted.ok || !everyUploadPersisted) {
@@ -492,13 +657,10 @@ export function MenuIntakeWizard({
       localStorage.removeItem(DRAFT_KEY);
       setReference(submission.reference);
       setStatus(submission.status);
+      setRecoveredPendingUploadKeys(null);
       setStep("SENT");
     } catch {
-      setError(
-        submission
-          ? "Your menu was saved, but the upload stopped. Please tap Send menu again."
-          : "We could not send your menu. Please try again.",
-      );
+      setError("We could not finish sending your menu. Please try again.");
     } finally {
       submittingRef.current = false;
       setIsSubmitting(false);
@@ -778,7 +940,7 @@ export function MenuIntakeWizard({
                     <button
                       type="button"
                       aria-label={`Remove ${dish.name.trim() || `dish ${dishNumber}`}`}
-                      onClick={() => removeDish(dish.clientId)}
+                      onClick={() => void removeDish(dish.clientId)}
                       className="inline-flex h-11 w-11 flex-none items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f4a623]"
                     >
                       <X size={18} aria-hidden />
@@ -842,13 +1004,7 @@ export function MenuIntakeWizard({
                     <FilePreviewGrid
                       files={dishFiles[dish.clientId] || []}
                       onRemove={(fileIndex) =>
-                        setDishFiles((value) => ({
-                          ...value,
-                          [dish.clientId]: removeSelectedFile(
-                            value[dish.clientId] || [],
-                            fileIndex,
-                          ),
-                        }))
+                        void removeDishFile(dish.clientId, fileIndex)
                       }
                       variant="dish"
                     />
@@ -1269,11 +1425,7 @@ export function MenuIntakeWizard({
                 </p>
                 <FilePreviewGrid
                   files={sourceFiles}
-                  onRemove={(fileIndex) =>
-                    setSourceFiles((files) =>
-                      removeSelectedFile(files, fileIndex),
-                    )
-                  }
+                  onRemove={(fileIndex) => void removeSourceFile(fileIndex)}
                   variant="source"
                 />
                 <label className="mt-4 flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-[#f4a623] text-sm text-[#f4a623] transition hover:bg-[#f4a623] hover:text-black focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#f4a623]">
@@ -1416,7 +1568,7 @@ export function MenuIntakeWizard({
                             type="button"
                             onClick={() => {
                               if (window.confirm("Remove this dish?"))
-                                removeDish(dish.clientId);
+                                void removeDish(dish.clientId);
                             }}
                             className="min-h-11 rounded-xl px-3 text-xs text-white/50"
                           >
@@ -1437,7 +1589,7 @@ export function MenuIntakeWizard({
                           type="button"
                           onClick={() => {
                             if (window.confirm("Remove this dish?"))
-                              removeDish(dish.clientId);
+                              void removeDish(dish.clientId);
                           }}
                           className="min-h-10 text-sm text-red-400"
                         >
@@ -1448,13 +1600,7 @@ export function MenuIntakeWizard({
                       <FilePreviewGrid
                         files={dishFiles[dish.clientId] || []}
                         onRemove={(fileIndex) =>
-                          setDishFiles((value) => ({
-                            ...value,
-                            [dish.clientId]: removeSelectedFile(
-                              value[dish.clientId] || [],
-                              fileIndex,
-                            ),
-                          }))
+                          void removeDishFile(dish.clientId, fileIndex)
                         }
                         variant="review"
                       />
@@ -1483,11 +1629,7 @@ export function MenuIntakeWizard({
                 </p>
                 <FilePreviewGrid
                   files={sourceFiles}
-                  onRemove={(fileIndex) =>
-                    setSourceFiles((files) =>
-                      removeSelectedFile(files, fileIndex),
-                    )
-                  }
+                  onRemove={(fileIndex) => void removeSourceFile(fileIndex)}
                   variant="source"
                 />
                 <button

@@ -1147,3 +1147,41 @@ deployment. Questions 1–14 remain untouched.
 
 No push, deployment, migration or production write was authorized or performed
 for this refinement. Questions 1–14 remain untouched.
+
+## Release review — REPAIRED · VERIFIED · RELEASE AUTHORIZED 2026-08-30
+
+- [x] Exact commit `6d87106` reviewed with focused Menu Intake tests (7/7),
+  scoped ESLint, TypeScript and diff hygiene clean. Repository-wide lint still
+  stops only on the three documented Candidate #28 Briefing findings.
+- [x] Repair partial-upload removal before release. If one file uploads and a
+  later file fails, removing the already-uploaded selection updates only local
+  `File[]` state. The staged private attachment and `uploadedAttachments` entry
+  remain, even though the public removal Server Action already exists. Removing
+  a dish has the same stale-attachment edge. Retry can therefore reach Sent
+  while retaining a file the Vendor removed from the visible draft.
+- [x] Add focused regression coverage for upload-success → later failure → remove
+  uploaded file/dish → retry, proving both the private attachment and retry map
+  reflect the visible selection.
+- [x] Keep failed/incomplete submissions out of Sent after reload. The resume
+  credential is persisted before uploads (correctly), but startup currently
+  treats any authorized staged `SUBMITTED` intake as Sent without retaining or
+  rechecking the pending attachment expectation. A Vendor can therefore refresh
+  after an upload error and see Sent even though the missing file was never
+  confirmed. Persist a safe pending-upload manifest/status (no Blob path or file
+  contents) or otherwise render an explicit recovery state until confirmation.
+- [x] Confirm partial whole-dish cleanup remains retryable when deletion succeeds
+  for one confirmed photo and fails for a later photo. Completed deletion state
+  is retained while the visible dish remains for another attempt.
+- [x] Verification on the final repair: focused 10/10; full 455 passed / 117
+  expected skips; scoped ESLint, TypeScript, diff hygiene and production build
+  clean. Real-browser recovery QA restored an incomplete staged intake to Review
+  with explicit file-attention copy, and blocked Send until the expected file is
+  reselected. The only browser console failures were blocked Vercel analytics and
+  Speed Insights debug scripts in local development, not application errors.
+- [x] Owner authorized the repair → verify → push → deploy sequence. Release is
+  proceeding without a schema change or migration.
+
+Production attachment persistence remains open until a newly labelled image/PDF
+is visible in authenticated Ops after this release. Ops → KDS import remains a
+separate action-time gate. The Marketing Lead Form and Questions 1–14 remain
+untouched; no production business row was created during local verification.

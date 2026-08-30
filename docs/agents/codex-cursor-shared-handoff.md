@@ -34,6 +34,27 @@ Then run `git status --short --branch` and inspect the relevant commit/diff.
 Preserve every pre-existing dirty or untracked path unless the current task
 explicitly owns it.
 
+### 2026-08-30 — Codex — Candidate #29 retry recovery repaired and release authorized
+
+- Reviewed exact local commit `6d87106`. Focused Menu Intake tests pass 7/7;
+  scoped ESLint, TypeScript and diff hygiene are clean. Full lint reaches only
+  the three already-documented Candidate #28 Briefing errors.
+- The retry-removal and refresh findings are repaired. Confirmed private
+  attachments are deleted before their visible file/dish disappears; partial
+  multi-photo cleanup retains completed progress for the next attempt. A safe
+  local expected-file manifest (keys/attachment IDs only, no Blob paths or file
+  contents) restores incomplete submissions to Review rather than Sent.
+- TDD verification: focused 10/10 and full 455 passed / 117 expected skips;
+  scoped ESLint, TypeScript, diff hygiene and production build pass. Real-browser
+  recovery QA showed the explicit attention state after reload and blocked Send
+  until the same pending file is selected. Only local Vercel telemetry scripts
+  timed out; the application produced no browser error.
+- Owner authorized the complete repair → verify → push → deploy sequence. No
+  schema change or migration is needed. Production attachment persistence stays
+  open until a newly labelled image/PDF is visible in authenticated Ops. Ops →
+  KDS import remains separately action-gated. Preserve `.playwright-cli/` and
+  `output/`; do not touch the Marketing Lead Form or Questions 1–14.
+
 ### 2026-08-30 — Codex — Candidate #29 approved form refinement implemented locally
 
 - Owner approved the generated three-screen form target. `MenuIntakeWizard`

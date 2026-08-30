@@ -1113,3 +1113,18 @@ TypeScript and production build pass. This is local only: no push/deploy,
 migration or production write occurred. Production attachment persistence stays
 open because all six previously reviewed live records still report zero files;
 Questions 1–14 and the Marketing Lead Form remain untouched.
+
+Release review of exact commit `6d87106` found one pre-deploy retry edge: after
+a partial upload, removing a successfully uploaded file or its dish removes only
+the visible local selection. The staged private attachment and retry entry remain,
+so retry can retain material the Vendor believes was removed. Separately, a
+reload after an upload failure restores any authorized staged intake directly as
+Sent because the pre-upload resume credential has no persisted pending-file
+expectation. Both findings are now repaired behind the deep
+`lib/menu-intake/pending-uploads.ts` module: confirmed private deletion precedes
+visible removal, partial multi-photo cleanup stays retryable, and a safe local
+expected-file manifest keeps incomplete resumes in Review instead of Sent.
+Focused 10/10, full 455/117, scoped ESLint, TypeScript, diff hygiene, production
+build and real-browser recovery QA pass. Owner authorized push/deploy. No schema
+change or migration is required. Production attachment smoke and the separate
+Ops → KDS action gate remain open.
