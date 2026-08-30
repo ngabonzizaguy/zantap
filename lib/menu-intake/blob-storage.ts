@@ -10,7 +10,7 @@ import {
 } from "@/lib/menu/local-blob-store";
 
 function getPrivateBlobToken(): string | undefined {
-  return process.env.MENU_INTAKE_BLOB_READ_WRITE_TOKEN;
+  return process.env.MENU_INTAKE_READ_WRITE_TOKEN;
 }
 
 function assertPrivateBlobConfigured(): void {

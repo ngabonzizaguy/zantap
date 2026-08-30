@@ -139,7 +139,7 @@ rows; it will not send a WhatsApp message.
 
 The public storefront/menu-media Blob store and private Menu Intake source store
 must use different credentials. Intake attachment reads, writes and deletes use
-only `MENU_INTAKE_BLOB_READ_WRITE_TOKEN`; a Vercel runtime without that private
+only `MENU_INTAKE_READ_WRITE_TOKEN`; a Vercel runtime without that private
 store fails closed instead of silently placing source material in the public
 store. Local development may still use the existing in-memory blob fallback.
 

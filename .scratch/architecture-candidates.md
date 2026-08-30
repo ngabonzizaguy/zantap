@@ -1078,7 +1078,7 @@ Production Vendor attempts then exposed one release defect: the private intake
 uploader was using the existing public menu-media Blob token, so Vercel rejected
 every `access: "private"` upload after the intake itself had been created. A
 local hotfix now requires a dedicated private
-`MENU_INTAKE_BLOB_READ_WRITE_TOKEN`, catches upload failures, keeps the staged
+`MENU_INTAKE_READ_WRITE_TOKEN`, catches upload failures, keeps the staged
 intake credential before uploads, resumes the same intake without repeating
 completed files, and disables double taps. Focused 5/5, full 449/117,
 TypeScript, scoped lint and production build pass. Browser testing is paused for

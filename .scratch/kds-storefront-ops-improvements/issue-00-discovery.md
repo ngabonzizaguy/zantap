@@ -1081,7 +1081,7 @@ The approved Ops switch adds one default-false column to
   attachment upload throws because private access was requested against the
   existing public Vercel Blob store.
 - [x] Private intake sources now require the separate
-  `MENU_INTAKE_BLOB_READ_WRITE_TOKEN`; production refuses to fall back to the
+  `MENU_INTAKE_READ_WRITE_TOKEN`; production refuses to fall back to the
   public media store.
 - [x] Upload failures return short Vendor-facing recovery copy instead of an
   uncaught Server Action rejection.

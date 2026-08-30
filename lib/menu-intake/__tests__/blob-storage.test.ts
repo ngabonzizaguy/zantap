@@ -14,7 +14,7 @@ describe("private menu-intake blob storage", () => {
   const originalVercel = process.env.VERCEL;
   const originalPublicToken = process.env.BLOB_READ_WRITE_TOKEN;
   const originalPrivateToken =
-    process.env.MENU_INTAKE_BLOB_READ_WRITE_TOKEN;
+    process.env.MENU_INTAKE_READ_WRITE_TOKEN;
 
   beforeEach(() => {
     blobMocks.put.mockReset().mockResolvedValue({
@@ -22,7 +22,7 @@ describe("private menu-intake blob storage", () => {
     });
     process.env.VERCEL = "1";
     process.env.BLOB_READ_WRITE_TOKEN = "public-store-token";
-    process.env.MENU_INTAKE_BLOB_READ_WRITE_TOKEN = "private-store-token";
+    process.env.MENU_INTAKE_READ_WRITE_TOKEN = "private-store-token";
   });
 
   afterEach(() => {
@@ -32,9 +32,9 @@ describe("private menu-intake blob storage", () => {
       delete process.env.BLOB_READ_WRITE_TOKEN;
     else process.env.BLOB_READ_WRITE_TOKEN = originalPublicToken;
     if (originalPrivateToken === undefined)
-      delete process.env.MENU_INTAKE_BLOB_READ_WRITE_TOKEN;
+      delete process.env.MENU_INTAKE_READ_WRITE_TOKEN;
     else
-      process.env.MENU_INTAKE_BLOB_READ_WRITE_TOKEN = originalPrivateToken;
+      process.env.MENU_INTAKE_READ_WRITE_TOKEN = originalPrivateToken;
   });
 
   it("uses the dedicated private token instead of the public menu-media token", async () => {
@@ -55,7 +55,7 @@ describe("private menu-intake blob storage", () => {
   });
 
   it("refuses to put private files in production without private storage", async () => {
-    delete process.env.MENU_INTAKE_BLOB_READ_WRITE_TOKEN;
+    delete process.env.MENU_INTAKE_READ_WRITE_TOKEN;
 
     await expect(
       putPrivateMenuIntakeBlob(

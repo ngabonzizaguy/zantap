@@ -42,7 +42,7 @@ explicitly owns it.
   `BLOB_READ_WRITE_TOKEN` belongs to the public storefront/menu-media store and
   must not receive private intake sources.
 - The uncommitted hotfix in the clean Candidate #29 worktree separates private
-  sources behind `MENU_INTAKE_BLOB_READ_WRITE_TOKEN`, refuses unsafe production
+  sources behind `MENU_INTAKE_READ_WRITE_TOKEN`, refuses unsafe production
   fallback, returns a simple recoverable upload error, stores the new intake
   credential before uploading, reuses that intake on retry, skips files already
   uploaded during the same attempt, and prevents double-submit taps.
