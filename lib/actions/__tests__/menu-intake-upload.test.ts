@@ -16,6 +16,7 @@ vi.mock("@/lib/menu-intake/blob-storage", () => ({
 }));
 
 import {
+  getMenuIntakeStatus,
   submitMenuIntake,
   uploadMenuIntakeAttachment,
 } from "@/lib/actions/menu-intake-public";
@@ -74,5 +75,60 @@ describe("uploadMenuIntakeAttachment", () => {
       message:
         "Your menu was saved, but this photo did not upload. Please tap Send menu again.",
     });
+  });
+
+  it("makes a successful private upload visible through the browser status seam", async () => {
+    storageMocks.put.mockResolvedValueOnce(undefined);
+    const submitted = await submitMenuIntake({
+      businessName: "Kigali Kitchen",
+      contactName: "Aline",
+      phone: "254712345678",
+      locale: "en",
+      alreadyOnZantap: false,
+      content: {
+        path: "SELF_BUILD",
+        dishes: [
+          {
+            clientId: "dish-1",
+            name: "Pilau",
+            category: "Main dishes",
+            priceRwf: 4500,
+          },
+        ],
+      },
+    });
+    if (!submitted.ok) throw new Error("Expected initial submission");
+
+    const formData = new FormData();
+    formData.set("intakeId", submitted.intakeId);
+    formData.set("resumeToken", submitted.resumeToken);
+    formData.set("kind", "DISH_IMAGE");
+    formData.set("dishClientId", "dish-1");
+    formData.set(
+      "file",
+      new File(["image"], "pilau.jpg", { type: "image/jpeg" }),
+    );
+
+    const uploaded = await uploadMenuIntakeAttachment(formData);
+    expect(uploaded).toMatchObject({ ok: true });
+
+    const status = await getMenuIntakeStatus(
+      submitted.intakeId,
+      submitted.resumeToken,
+    );
+    expect(status).toMatchObject({
+      ok: true,
+      attachments: [
+        {
+          id: uploaded.ok ? uploaded.attachmentId : "",
+          kind: "DISH_IMAGE",
+          dishClientId: "dish-1",
+          fileName: "pilau.jpg",
+        },
+      ],
+    });
+    if (status.ok) {
+      expect(status.attachments[0]).not.toHaveProperty("blobPath");
+    }
   });
 });

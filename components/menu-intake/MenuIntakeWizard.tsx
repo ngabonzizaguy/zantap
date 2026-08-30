@@ -2,7 +2,15 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronDown, FileText, Plus, X } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowUpRight,
+  ChevronDown,
+  FileText,
+  ImageIcon,
+  Plus,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   getMenuIntakeStatus,
@@ -19,11 +27,19 @@ import type {
 } from "@/lib/menu-intake/types";
 import {
   appendSelectedFiles,
+  buildMenuIntakePhone,
   buildMenuIntakeWhatsAppUrl,
+  formatMenuIntakePhone,
+  getMenuIntakeDishIssues,
   MENU_INTAKE_DISHES_PER_PAGE,
   paginateMenuIntakeDishes,
   removeSelectedFile,
 } from "@/lib/menu-intake/presentation";
+import {
+  COUNTRY_OPTIONS,
+  DEFAULT_COUNTRY,
+} from "@/lib/vendor/onboard-options";
+import { splitPhoneForDisplay } from "@/lib/format";
 
 const DRAFT_KEY = "zantap:menu-intake:draft:v1";
 const RESUME_KEY = "zantap:menu-intake:resume:v1";
@@ -78,6 +94,7 @@ type Draft = {
   locale: MenuIntakeLocale;
   businessName: string;
   contactName: string;
+  phoneDialCode: string;
   phone: string;
   alreadyOnZantap: boolean;
   storefrontHint: string;
@@ -115,6 +132,7 @@ const EMPTY: Draft = {
   locale: "en",
   businessName: "",
   contactName: "",
+  phoneDialCode: DEFAULT_COUNTRY.dialCode,
   phone: "",
   alreadyOnZantap: false,
   storefrontHint: "",
@@ -125,7 +143,7 @@ const EMPTY: Draft = {
 };
 
 const inputClass =
-  "mt-2 min-h-12 w-full rounded-2xl border border-white/15 bg-white/[0.06] px-4 text-white outline-none transition focus:border-[#f4a623]";
+  "mt-2 min-h-12 w-full rounded-xl border border-white/15 bg-white/[0.045] px-4 text-white outline-none transition placeholder:text-white/25 focus:border-[#f4a623] focus:bg-white/[0.07]";
 
 function newDish(): MenuIntakeDishDraft {
   return {
@@ -167,6 +185,7 @@ export function MenuIntakeWizard({
   const [dishFiles, setDishFiles] = useState<Record<string, File[]>>({});
   const [dishPage, setDishPage] = useState(0);
   const [openDishIds, setOpenDishIds] = useState<string[]>([]);
+  const [advancedDishIds, setAdvancedDishIds] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingSubmission, setPendingSubmission] =
@@ -182,11 +201,25 @@ export function MenuIntakeWizard({
     ? draft.locale
     : "en";
   const t = COPY[activeLocale];
+  const stepNumber =
+    step === "DETAILS" ? 1 : step === "MENU" ? 2 : step === "REVIEW" ? 3 : 0;
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem(DRAFT_KEY);
-      if (stored) setDraft({ ...EMPTY, ...JSON.parse(stored) });
+      if (stored) {
+        const storedDraft = JSON.parse(stored) as Partial<Draft>;
+        const saved = { ...EMPTY, ...storedDraft } as Draft;
+        const displayed = splitPhoneForDisplay(
+          saved.phone,
+          storedDraft.phoneDialCode || DEFAULT_COUNTRY.dialCode,
+        );
+        setDraft({
+          ...saved,
+          phoneDialCode: storedDraft.phoneDialCode || displayed.dialCode,
+          phone: displayed.local,
+        });
+      }
       if (oneTimeAccess) {
         exchangeMenuIntakeResume(
           oneTimeAccess.intakeId,
@@ -235,6 +268,11 @@ export function MenuIntakeWizard({
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
   }, [draft, ready, step]);
 
+  useEffect(() => {
+    if (!ready) return;
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [ready, step]);
+
   const totalFiles =
     sourceFiles.length +
     Object.values(dishFiles).reduce((sum, files) => sum + files.length, 0);
@@ -245,6 +283,19 @@ export function MenuIntakeWizard({
   const paginatedDishes = useMemo(
     () => paginateMenuIntakeDishes(draft.dishes, dishPage),
     [dishPage, draft.dishes],
+  );
+  const reviewIssues = useMemo(
+    () => getMenuIntakeDishIssues(draft.dishes),
+    [draft.dishes],
+  );
+  const canonicalPhone = buildMenuIntakePhone(
+    draft.phoneDialCode,
+    draft.phone,
+  );
+  const detailsComplete = Boolean(
+    draft.businessName.trim() &&
+      draft.contactName.trim() &&
+      /^\d{8,15}$/.test(canonicalPhone),
   );
 
   function patchDish(clientId: string, patch: Partial<MenuIntakeDishDraft>) {
@@ -315,7 +366,7 @@ export function MenuIntakeWizard({
         const result = await submitMenuIntake({
           businessName: draft.businessName,
           contactName: draft.contactName,
-          phone: draft.phone,
+          phone: canonicalPhone,
           locale: activeLocale,
           alreadyOnZantap: draft.alreadyOnZantap,
           storefrontHint: draft.storefrontHint,
@@ -418,6 +469,26 @@ export function MenuIntakeWizard({
           return;
         }
       }
+      if (uploads.length) {
+        const persisted = await getMenuIntakeStatus(
+          submission.intakeId,
+          submission.resumeToken,
+        );
+        const persistedIds = new Set(
+          persisted.ok
+            ? persisted.attachments.map((attachment) => attachment.id)
+            : [],
+        );
+        const everyUploadPersisted = Object.values(completedUploads).every(
+          (attachment) => persistedIds.has(attachment.attachmentId),
+        );
+        if (!persisted.ok || !everyUploadPersisted) {
+          setError(
+            "Your menu was saved, but we could not confirm every file. Please tap Send menu again.",
+          );
+          return;
+        }
+      }
       localStorage.removeItem(DRAFT_KEY);
       setReference(submission.reference);
       setStatus(submission.status);
@@ -437,10 +508,10 @@ export function MenuIntakeWizard({
   if (!ready) return <main className="min-h-screen bg-[#0b0908]" />;
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#0b0908] text-[#f8f2e8]">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(160,77,25,.3),transparent_38%),radial-gradient(circle_at_90%_70%,rgba(244,166,35,.12),transparent_32%)]" />
-      <div className="relative mx-auto min-h-screen w-full max-w-3xl px-5 pb-16 pt-6 sm:px-8">
-        <header className="flex items-center justify-between gap-2">
+    <main className="min-h-screen overflow-hidden bg-[#0b0b0c] text-[#f8f2e8]">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(244,166,35,.085),transparent_36%),linear-gradient(115deg,rgba(255,255,255,.018),transparent_40%)]" />
+      <div className="relative mx-auto min-h-screen w-full max-w-2xl px-5 pb-16 pt-6 sm:px-8 lg:pt-8">
+        <header className="flex items-center justify-between gap-3 border-b border-white/[0.06] pb-5">
           <Link
             href="/"
             className="flex items-center gap-3"
@@ -453,7 +524,7 @@ export function MenuIntakeWizard({
               height={38}
               loading="eager"
             />
-            <span className="font-display text-xl">ZanTap</span>
+            <span className="font-display text-2xl font-light">ZanTap</span>
           </Link>
           <div className="flex items-center gap-2">
             {showLanguageChoices ? (
@@ -478,12 +549,26 @@ export function MenuIntakeWizard({
             ) : null}
             <a
               href="https://zantap.app"
-              className="inline-flex min-h-10 items-center rounded-xl border border-[#f4a623] px-3 text-[11px] font-medium text-[#f4a623] transition hover:bg-[#f4a623] hover:text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f4a623] sm:px-4 sm:text-xs"
+              className="inline-flex min-h-10 items-center gap-1.5 px-1 text-[11px] font-medium text-[#f4a623] transition hover:text-[#ffc35a] focus-visible:rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f4a623] sm:text-sm"
             >
-              Visit zantap.app
+              Visit zantap.app <ArrowUpRight size={15} aria-hidden />
             </a>
           </div>
         </header>
+
+        {stepNumber ? (
+          <div className="mt-8 flex items-center gap-5" aria-label={`Step ${stepNumber} of 3`}>
+            <span className="shrink-0 text-sm font-medium text-[#f4a623]">
+              {stepNumber} of 3
+            </span>
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/15">
+              <div
+                className="h-full rounded-full bg-[#f4a623] transition-[width] duration-500 motion-reduce:transition-none"
+                style={{ width: `${(stepNumber / 3) * 100}%` }}
+              />
+            </div>
+          </div>
+        ) : null}
 
         {step === "START" ? (
           <section className="zt-list-in flex min-h-[78vh] flex-col justify-center py-12">
@@ -542,14 +627,14 @@ export function MenuIntakeWizard({
         ) : null}
 
         {step === "DETAILS" ? (
-          <section className="zt-list-in py-14">
-            <p className="text-xs uppercase tracking-[.3em] text-[#f4a623]">
-              01 · Your business
-            </p>
-            <h1 className="mt-4 font-display text-4xl font-light">
-              Tell us about your business.
+          <section className="zt-list-in py-10 sm:py-12">
+            <h1 className="font-display text-4xl font-light leading-tight sm:text-5xl">
+              Tell us about your business
             </h1>
-            <div className="mt-10 grid gap-5 sm:grid-cols-2">
+            <p className="mt-3 text-base text-white/60">
+              We’ll use this to contact you about your menu.
+            </p>
+            <div className="mt-8 space-y-5">
               <Field label="Business name">
                 <input
                   required
@@ -570,32 +655,57 @@ export function MenuIntakeWizard({
                   className={inputClass}
                 />
               </Field>
-              <Field label="WhatsApp or phone">
-                <input
-                  required
-                  inputMode="tel"
-                  value={draft.phone}
-                  onChange={(e) =>
-                    setDraft({ ...draft, phone: e.target.value })
-                  }
-                  className={inputClass}
-                  placeholder="+250 78…"
-                />
+              <Field label="Phone number">
+                <div className="mt-2 grid grid-cols-[8.5rem_minmax(0,1fr)] gap-2">
+                  <select
+                    aria-label="Country code"
+                    value={draft.phoneDialCode}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        phoneDialCode: event.target.value,
+                      })
+                    }
+                    className="min-h-12 min-w-0 rounded-xl border border-white/15 bg-[#141415] px-3 text-white outline-none transition focus:border-[#f4a623]"
+                  >
+                    {COUNTRY_OPTIONS.map((country) => (
+                      <option key={country.code} value={country.dialCode}>
+                        {country.flag} {country.dialCode}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    required
+                    inputMode="tel"
+                    autoComplete="tel-national"
+                    value={draft.phone}
+                    onChange={(event) =>
+                      setDraft({ ...draft, phone: event.target.value })
+                    }
+                    className="min-h-12 min-w-0 rounded-xl border border-white/15 bg-white/[0.045] px-4 text-white outline-none transition placeholder:text-white/25 focus:border-[#f4a623] focus:bg-white/[0.07]"
+                    placeholder="788 123 456"
+                  />
+                </div>
               </Field>
               <Field label="Already on ZanTap?">
-                <select
-                  value={draft.alreadyOnZantap ? "yes" : "no"}
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      alreadyOnZantap: e.target.value === "yes",
-                    })
-                  }
-                  className={inputClass}
-                >
-                  <option value="no">No / Not yet</option>
-                  <option value="yes">Yes</option>
-                </select>
+                <div className="mt-2 grid grid-cols-2 rounded-xl border border-white/15 bg-white/[0.03] p-1">
+                  {([
+                    [false, "Not yet"],
+                    [true, "Yes"],
+                  ] as const).map(([value, label]) => (
+                    <button
+                      key={label}
+                      type="button"
+                      aria-pressed={draft.alreadyOnZantap === value}
+                      onClick={() =>
+                        setDraft({ ...draft, alreadyOnZantap: value })
+                      }
+                      className={`min-h-11 rounded-lg text-sm transition ${draft.alreadyOnZantap === value ? "border border-[#f4a623]/60 bg-[#f4a623]/[0.07] text-[#f4a623]" : "text-white/70 hover:text-white"}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </Field>
             </div>
             {draft.alreadyOnZantap ? (
@@ -613,17 +723,15 @@ export function MenuIntakeWizard({
               back={() => setStep("START")}
               next={() => setStep("MENU")}
               nextLabel={t.continue}
+              nextDisabled={!detailsComplete}
             />
           </section>
         ) : null}
 
         {step === "MENU" && draft.path === "SELF_BUILD" ? (
-          <section className="zt-list-in py-14">
-            <p className="text-xs uppercase tracking-[.3em] text-[#f4a623]">
-              02 · Build your menu
-            </p>
-            <h1 className="mt-4 font-display text-4xl font-light">
-              Add your dishes.
+          <section className="zt-list-in py-10 sm:py-12">
+            <h1 className="font-display text-4xl font-light leading-tight sm:text-5xl">
+              Add your dishes
             </h1>
             <p className="mt-3 text-sm text-white/55">
               You can change anything before you send.
@@ -681,7 +789,7 @@ export function MenuIntakeWizard({
                       id={`dish-${dish.clientId}`}
                       className="zt-list-in border-t border-white/10 px-5 pb-6 pt-1 sm:px-7"
                     >
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div className="mt-4 space-y-4">
                     <Field label="Dish name">
                       <input
                         value={dish.name}
@@ -700,7 +808,8 @@ export function MenuIntakeWizard({
                         className={inputClass}
                       />
                     </Field>
-                    <Field label="Price (RWF)">
+                    <div className="grid grid-cols-[minmax(0,.75fr)_minmax(0,1.25fr)] gap-3">
+                    <Field label="Price">
                       <input
                         type="number"
                         min="0"
@@ -724,8 +833,71 @@ export function MenuIntakeWizard({
                         className={inputClass}
                       />
                     </Field>
+                    </div>
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-5">
+                    <p className="text-sm text-white/65">
+                      Photos · {(dishFiles[dish.clientId] || []).length}/6
+                    </p>
+                    <FilePreviewGrid
+                      files={dishFiles[dish.clientId] || []}
+                      onRemove={(fileIndex) =>
+                        setDishFiles((value) => ({
+                          ...value,
+                          [dish.clientId]: removeSelectedFile(
+                            value[dish.clientId] || [],
+                            fileIndex,
+                          ),
+                        }))
+                      }
+                      variant="dish"
+                    />
+                    <label className="mt-3 flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#f4a623]/70 text-sm text-[#f4a623] transition hover:bg-[#f4a623] hover:text-black focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#f4a623]">
+                      <ImageIcon size={18} aria-hidden /> Add photos
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        multiple
+                        onChange={(event) => {
+                          const incoming = Array.from(
+                            event.target.files || [],
+                          );
+                          setDishFiles((value) => ({
+                            ...value,
+                            [dish.clientId]: appendSelectedFiles(
+                              value[dish.clientId] || [],
+                              incoming,
+                              6,
+                            ),
+                          }));
+                          event.currentTarget.value = "";
+                        }}
+                        className="sr-only"
+                      />
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    aria-expanded={advancedDishIds.includes(dish.clientId)}
+                    onClick={() =>
+                      setAdvancedDishIds((value) =>
+                        value.includes(dish.clientId)
+                          ? value.filter((id) => id !== dish.clientId)
+                          : [dish.clientId],
+                      )
+                    }
+                    className="mt-5 flex min-h-12 w-full items-center justify-between rounded-xl border border-white/15 px-4 text-left text-sm text-white/75 transition hover:border-white/30 hover:text-white"
+                  >
+                    <span>Sizes &amp; extras</span>
+                    <ChevronDown
+                      size={17}
+                      aria-hidden
+                      className={`transition-transform ${advancedDishIds.includes(dish.clientId) ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                  {advancedDishIds.includes(dish.clientId) ? (
+                  <div className="zt-list-in mt-3 rounded-xl border border-white/10 bg-black/20 p-4">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       className="rounded-full border border-white/15 px-3 py-2 text-xs"
@@ -1010,47 +1182,8 @@ export function MenuIntakeWizard({
                       </button>
                     </div>
                   ))}
-                  <div className="mt-5">
-                    <p className="text-sm text-white/65">
-                      Photos · {(dishFiles[dish.clientId] || []).length}/6
-                    </p>
-                    <FilePreviewGrid
-                      files={dishFiles[dish.clientId] || []}
-                      onRemove={(fileIndex) =>
-                        setDishFiles((value) => ({
-                          ...value,
-                          [dish.clientId]: removeSelectedFile(
-                            value[dish.clientId] || [],
-                            fileIndex,
-                          ),
-                        }))
-                      }
-                      variant="dish"
-                    />
-                    <label className="mt-3 flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-[#f4a623] text-sm text-[#f4a623] transition hover:bg-[#f4a623] hover:text-black focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#f4a623]">
-                      <Plus size={18} aria-hidden /> Add photos
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        multiple
-                        onChange={(event) => {
-                          const incoming = Array.from(
-                            event.target.files || [],
-                          );
-                          setDishFiles((value) => ({
-                            ...value,
-                            [dish.clientId]: appendSelectedFiles(
-                              value[dish.clientId] || [],
-                              incoming,
-                              6,
-                            ),
-                          }));
-                          event.currentTarget.value = "";
-                        }}
-                        className="sr-only"
-                      />
-                    </label>
                   </div>
+                  ) : null}
                     </div>
                   ) : null}
                 </article>
@@ -1220,16 +1353,33 @@ export function MenuIntakeWizard({
         ) : null}
 
         {step === "REVIEW" ? (
-          <section className="zt-list-in py-14">
-            <p className="text-xs uppercase tracking-[.3em] text-[#f4a623]">
-              03 · Review & send
-            </p>
-            <h1 className="mt-4 font-display text-4xl font-light">
-              Check everything.
+          <section className="zt-list-in py-10 sm:py-12">
+            <h1 className="font-display text-4xl font-light leading-tight sm:text-5xl">
+              Review your menu
             </h1>
             <p className="mt-3 text-sm text-white/55">
-              Edit or remove anything before you send it.
+              Check your dishes before you send.
             </p>
+            {draft.path === "SELF_BUILD" && reviewIssues.length ? (
+              <div className="mt-7 flex items-center gap-4 rounded-2xl border border-[#f4a623]/35 bg-[#f4a623]/[0.055] p-4" role="alert">
+                <AlertCircle className="shrink-0 text-white/75" size={22} aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-white">
+                    {reviewIssues.length} {reviewIssues.length === 1 ? "thing" : "things"} to fix
+                  </p>
+                  <p className="mt-1 truncate text-sm text-white/55">
+                    {reviewIssues[0]?.message}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => editDish(reviewIssues[0]!.clientId)}
+                  className="min-h-11 shrink-0 text-sm font-medium text-[#f4a623]"
+                >
+                  Fix dish →
+                </button>
+              </div>
+            ) : null}
             {draft.path === "SELF_BUILD" ? (
               <div className="mt-8 space-y-3">
                 {paginatedDishes.items.map((dish, pageIndex) => {
@@ -1237,8 +1387,9 @@ export function MenuIntakeWizard({
                   return (
                     <article
                       key={dish.clientId}
-                      className="rounded-[24px] border border-white/15 bg-white/[0.04] p-5"
+                      className="flex items-center gap-4 rounded-[24px] border border-white/15 bg-white/[0.04] p-4"
                     >
+                      <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-[11px] uppercase tracking-[.18em] text-[#f4a623]">
@@ -1253,7 +1404,7 @@ export function MenuIntakeWizard({
                               .join(" · ")}
                           </p>
                         </div>
-                        <div className="flex flex-none gap-1">
+                        <div className="flex flex-none gap-1 max-sm:hidden">
                           <button
                             type="button"
                             onClick={() => editDish(dish.clientId)}
@@ -1273,6 +1424,27 @@ export function MenuIntakeWizard({
                           </button>
                         </div>
                       </div>
+                      <div className="mt-3 flex items-center gap-4 sm:hidden">
+                        <button
+                          type="button"
+                          onClick={() => editDish(dish.clientId)}
+                          className="min-h-10 text-sm text-[#f4a623]"
+                        >
+                          Edit
+                        </button>
+                        <span className="h-4 w-px bg-white/15" aria-hidden />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm("Remove this dish?"))
+                              removeDish(dish.clientId);
+                          }}
+                          className="min-h-10 text-sm text-red-400"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      </div>
                       <FilePreviewGrid
                         files={dishFiles[dish.clientId] || []}
                         onRemove={(fileIndex) =>
@@ -1284,7 +1456,7 @@ export function MenuIntakeWizard({
                             ),
                           }))
                         }
-                        variant="dish"
+                        variant="review"
                       />
                     </article>
                   );
@@ -1328,7 +1500,7 @@ export function MenuIntakeWizard({
               </div>
             )}
             <p className="mt-6 text-sm text-white/55">
-              We’ll contact {draft.contactName || "you"} at {draft.phone || "your number"}.
+              We’ll contact {draft.contactName || "you"} at {canonicalPhone ? formatMenuIntakePhone(canonicalPhone) : "your number"}.
             </p>
             {progress ? (
               <div className="mt-5">
@@ -1355,7 +1527,10 @@ export function MenuIntakeWizard({
               back={() => setStep("MENU")}
               next={finish}
               nextLabel={isSubmitting ? "Sending…" : t.submit}
-              nextDisabled={isSubmitting}
+              nextDisabled={
+                isSubmitting ||
+                (draft.path === "SELF_BUILD" && reviewIssues.length > 0)
+              }
             />
           </section>
         ) : null}
@@ -1471,37 +1646,46 @@ function FilePreviewGrid({
 }: {
   files: File[];
   onRemove: (index: number) => void;
-  variant: "dish" | "source";
+  variant: "dish" | "source" | "review";
 }) {
-  const previews = useMemo(
-    () =>
-      files.map((file) => ({
-        file,
-        url: file.type === "application/pdf" ? undefined : URL.createObjectURL(file),
-      })),
-    [files],
-  );
+  const [previews, setPreviews] = useState<
+    { file: File; url?: string }[]
+  >([]);
 
-  useEffect(
-    () => () => {
-      previews.forEach((preview) => {
+  useEffect(() => {
+    const next = files.map((file) => ({
+      file,
+      url:
+        file.type === "application/pdf"
+          ? undefined
+          : URL.createObjectURL(file),
+    }));
+    const publish = window.setTimeout(() => setPreviews(next), 0);
+    return () => {
+      window.clearTimeout(publish);
+      next.forEach((preview) => {
         if (preview.url) URL.revokeObjectURL(preview.url);
       });
-    },
-    [previews],
-  );
+    };
+  }, [files]);
 
   if (!previews.length) return null;
 
+  const visiblePreviews = variant === "review" ? previews.slice(0, 1) : previews;
+
   return (
     <div
-      className={`mt-3 grid gap-3 ${variant === "dish" ? "grid-cols-3" : "grid-cols-2"}`}
+      className={
+        variant === "review"
+          ? "order-first w-28 shrink-0"
+          : `mt-3 grid gap-3 ${variant === "dish" ? "grid-cols-3" : "grid-cols-2"}`
+      }
     >
-      {previews.map(({ file, url }, index) =>
+      {visiblePreviews.map(({ file, url }, index) =>
         url ? (
           <div
             key={`${file.name}-${file.lastModified}-${index}`}
-            className="group relative aspect-square overflow-hidden rounded-2xl border border-white/15 bg-black/30"
+            className="group relative aspect-square overflow-hidden rounded-xl border border-white/15 bg-black/30"
           >
             <Image
               src={url}
@@ -1511,17 +1695,17 @@ function FilePreviewGrid({
               sizes={variant === "dish" ? "120px" : "180px"}
               className="object-cover"
             />
-            <button
+            {variant !== "review" ? <button
               type="button"
               aria-label={`Remove ${file.name}`}
               onClick={() => onRemove(index)}
               className="absolute right-2 top-2 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/40 bg-black/75 text-white shadow-lg transition hover:border-[#f4a623] hover:text-[#f4a623] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f4a623]"
             >
               <X size={17} aria-hidden />
-            </button>
-            <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/90 to-transparent px-3 pb-2 pt-6 text-[11px] text-white/80">
+            </button> : null}
+            {variant !== "review" ? <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/90 to-transparent px-3 pb-2 pt-6 text-[11px] text-white/80">
               {file.name}
-            </span>
+            </span> : null}
           </div>
         ) : (
           <div
@@ -1584,21 +1768,21 @@ function Actions({
   nextDisabled?: boolean;
 }) {
   return (
-    <div className="mt-10 flex items-center justify-between gap-4">
+    <div className="mt-10 grid grid-cols-[minmax(7rem,.75fr)_minmax(0,1.25fr)] gap-4 border-t border-white/[0.06] pt-7">
       <button
         type="button"
         onClick={back}
-        className="min-h-12 px-2 text-sm text-white/50"
+        className="min-h-14 rounded-xl border border-white/15 px-4 text-sm text-white transition hover:border-white/30 hover:bg-white/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
       >
-        ← Back
+        Back
       </button>
       <button
         type="button"
         onClick={() => void next()}
         disabled={nextDisabled}
-        className="min-h-12 rounded-full bg-[#f4a623] px-7 font-medium text-black disabled:cursor-wait disabled:opacity-60"
+        className="min-h-14 rounded-xl bg-[#f4a623] px-5 font-medium text-black transition hover:bg-[#ffb52f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f4a623] disabled:cursor-not-allowed disabled:bg-[#694915] disabled:text-white/45"
       >
-        {nextLabel} →
+        {nextLabel}
       </button>
     </div>
   );

@@ -1,6 +1,6 @@
 # Codex ↔ Cursor shared continuity prompt
 
-Last reconciled: **2026-08-29 (Africa/Kigali)**
+Last reconciled: **2026-08-30 (Africa/Kigali)**
 Scope: the product-restructure, marketing, lead-capture, PWA/KDS-polish,
 Paypack-preparation work, plus the new **Ops outreach + KDS + marketing batch**
 on branch `feat/ops-kds-marketing-batch` (shared Cursor ↔ Codex), and candidate
@@ -33,6 +33,43 @@ Before changing anything, read these files in order:
 Then run `git status --short --branch` and inspect the relevant commit/diff.
 Preserve every pre-existing dirty or untracked path unless the current task
 explicitly owns it.
+
+### 2026-08-30 — Codex — Candidate #29 approved form refinement implemented locally
+
+- Owner approved the generated three-screen form target. `MenuIntakeWizard`
+  now presents business → dishes → review as an explicit `1 of 3` sequence with
+  the approved compact dark hierarchy, collapsed Sizes & extras, visible photos,
+  review cards, exact fix guidance and gated Send.
+- Menu Intake—not the Marketing Lead Form—gains the existing Rwanda-first
+  international country selector. The browser composes one canonical digit-only
+  phone for the unchanged Store schema and formats it readably on Review.
+- Local image previews use cleanup-safe effect ownership. Send now reads the
+  private status seam back and cannot show success unless every selected
+  attachment ID is durable. Headed QA proved preview survival across collapse,
+  Review and hot refresh; local submission `MI-260830-6E8057` reached Sent with
+  one confirmed attachment.
+- QA: 390×844 + 1440×1000, zero browser errors/warnings; focused 8/8; full
+  452 passed / 117 expected skips; scoped ESLint, TypeScript and production
+  build clean. Exact target image is
+  `C:\Users\G\.codex\generated_images\01a04f16-a73c-7380-bf9a-0c14723d1c3c\exec-03ecb2ec-1f6a-4bd3-8c09-0ac0930ca444.png`.
+- This work is local only pending release approval. Production attachment
+  persistence remains open because the six previously reviewed live submissions
+  still show `0 private files`; Ops → KDS import remains separately action-gated.
+  Questions 1–14 remain untouched. Preserve `.playwright-cli/` and `output/`.
+
+### 2026-08-30 — Codex — Candidate #29 owner production submission reviewed
+
+- Authenticated production Ops shows six durable owner-labelled `Test`
+  submissions after the Send-menu work. The newest, `MI-260830-B1DA8E`, is
+  `SUBMITTED` with revision 1, one structured dish and one private question.
+  The hotfix deployment has no 500/error/fatal logs.
+- This is only a partial pass: all six visible records report `0 private files`,
+  so the review does not yet prove image/PDF persistence. Keep the upload smoke
+  open until a labelled attachment is visible in Ops after Send.
+- No Ops state was changed, no KDS import or WhatsApp handoff occurred, and no
+  product code was edited. International phone entry, intermittent local image
+  previews and the generated three-screen form redesign remain behind explicit
+  owner approval. Questions 1–14 remain untouched.
 
 ### 2026-08-30 — Codex — Candidate #29 Send-menu production hotfix deployed
 

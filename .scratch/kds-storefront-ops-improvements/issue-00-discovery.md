@@ -1,6 +1,6 @@
 # Candidate #29 — KDS, customer hub, lead capture and Ops improvements
 
-Status: PRIORITY #1 DEPLOYED · READ-ONLY PROD SMOKE PASS · WRITE/IMPORT PROD SMOKE AWAITING OWNER CONFIRMATION · QUESTIONS 1–14 NOT STARTED
+Status: PRIORITY #1 DEPLOYED · OWNER REFINEMENT IMPLEMENTED LOCALLY · PROD ATTACHMENT PERSISTENCE NOT YET PROVED · WRITE/IMPORT PROD SMOKE OPEN · QUESTIONS 1–14 NOT STARTED
 Date: 2026-08-29
 
 ## Owner request
@@ -1095,11 +1095,55 @@ The approved Ops switch adds one default-false column to
   prefix; commits `d77822d` + `648f187` pushed and exact commit `648f187`
   deployed READY as `dpl_Enq332qdNsoH6ZTcC6zSe2AYrcJ2` on `zantap.app`.
 - [x] Read-only smoke: `/menu-intake` 200 and release-window error log empty.
-- [ ] A Vendor write/browser smoke remains for the owner; it was deliberately
-  skipped to conserve usage.
+- [x] Owner production submission attempts create durable `SUBMITTED` intakes
+  that are readable in authenticated Ops. Six owner-labelled `Test` records are
+  present; the newest is `MI-260830-B1DA8E` with revision 1, one structured dish
+  and one private question. The hotfix deployment has no 500/error/fatal logs.
+- [ ] Attachment persistence is not yet proved: all six visible production test
+  records report `0 private files`, including the newest attempt. Do not mark the
+  upload smoke complete until a labelled image/PDF appears in Ops after Send.
+- [ ] Authenticated Ops review → KDS import smoke remains open and must not be
+  performed without action-time owner confirmation because it writes live menu
+  data. No WhatsApp message has been sent.
 
 The owner separately requested international phone entry, correction of
 intermittent local image previews, and a more professional form presentation.
-A refined three-screen image was generated but has not yet been approved; those
-changes are not part of this priority deployment. Questions 1–14 remain
-untouched.
+A refined three-screen image was generated but was not part of this priority
+deployment. Questions 1–14 remain untouched.
+
+## Priority #1 owner-approved contact/preview/form refinement — IMPLEMENTED LOCALLY 2026-08-30
+
+- [x] Owner explicitly approved the refined three-screen image as the exact
+  implementation target:
+  `C:\Users\G\.codex\generated_images\01a04f16-a73c-7380-bf9a-0c14723d1c3c\exec-03ecb2ec-1f6a-4bd3-8c09-0ac0930ca444.png`.
+- [x] Menu Intake contact entry now uses the existing Rwanda-first international
+  country list, keeps country code and national input separate on screen, sends
+  one canonical digit-only phone to the unchanged Store schema, and displays it
+  back with a leading `+` and readable spacing. The Marketing Lead Form was not
+  touched.
+- [x] Local image previews now publish Blob URLs from a cleanup-safe effect
+  instead of creating/revoking them during render ownership. The selected image
+  survived accordion collapse, Review navigation and hot refresh in the headed
+  browser pass.
+- [x] Send now reads the private browser status seam back and refuses success if
+  any selected attachment ID is absent. A local self-build submission with one
+  image completed as `MI-260830-6E8057` only after the attachment read-back
+  passed. The production `0 private files` finding remains open and unchanged.
+- [x] The approved professional form hierarchy is implemented as business →
+  dishes → review (`1 of 3`, `2 of 3`, `3 of 3`), with compact fields, segmented
+  ZanTap status, collapsed Sizes & extras, photo-first dish editing, review cards,
+  exact fix guidance and disabled Send while a dish is invalid. Assisted intake,
+  success/resume behavior and private upload policy remain intact.
+- [x] Browser QA passed at 390×844 and 1440×1000 with zero errors/warnings;
+  international selection, preview survival, fix navigation, Send gating and
+  local durable attachment read-back passed. Evidence remains under the preserved
+  `output/playwright/` directory.
+- [x] Verification: focused 8/8; full 452 passed / 117 expected skips; scoped
+  ESLint, TypeScript, diff check and production build clean.
+- [ ] Production attachment persistence is still not proved. Do not close it
+  until a new owner-labelled image/PDF is visible in authenticated Ops.
+- [ ] Authenticated Ops → KDS import remains separately action-gated because it
+  writes live menu data.
+
+No push, deployment, migration or production write was authorized or performed
+for this refinement. Questions 1–14 remain untouched.

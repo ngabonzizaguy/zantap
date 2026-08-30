@@ -155,3 +155,41 @@ The hotfix is deployed from exact commit `648f187` as Production deployment
 `dpl_Enq332qdNsoH6ZTcC6zSe2AYrcJ2`. Private store
 `zantap-menu-intake-private` is connected only to Production under the
 `MENU_INTAKE_` prefix; the existing public Blob store remains unchanged.
+
+## Amendment — international contact, durable preview confirmation and three-stage form — 2026-08-30
+
+The owner approved the refined generated image as the exact public form target.
+After the existing path choice, Menu Intake is an explicit three-stage sequence:
+business contact, menu/source editing and review. The dark editorial identity is
+retained, but the form is narrower and operationally clearer: one progress rail,
+compact fields, a segmented existing-ZanTap choice, photo-first dish cards,
+collapsed Sizes & extras, review-time fix guidance and a Send action that remains
+disabled while a structured dish is invalid. Assisted intake continues through
+the same stages without changing its source limits or review contract.
+
+Menu Intake contact entry reuses the existing Rwanda-first international country
+options. Country code and national number are separate presentation state; the
+server still receives and persists exactly one canonical E.164 digit string
+without `+`. No country column or migration is added. The Marketing Lead Form is
+outside this amendment and remains untouched.
+
+Selected local images retain preview identity across accordion and step changes.
+Blob preview URLs are created and revoked under effect cleanup rather than render
+memoization, avoiding development remounts revoking a URL that the UI still uses.
+Submission also reads the authorized intake status back after uploads and does
+not show Sent unless every selected attachment ID appears in that private result.
+The check reveals no Blob path and does not weaken the dedicated private-store
+policy. It makes partial persistence recoverable; it does not convert the public
+browser into an importer or prove production storage without a live attached
+record visible in authenticated Ops.
+
+The approved reference image is a decision aid outside the repository:
+`C:\Users\G\.codex\generated_images\01a04f16-a73c-7380-bf9a-0c14723d1c3c\exec-03ecb2ec-1f6a-4bd3-8c09-0ac0930ca444.png`.
+
+## Local refinement status — 2026-08-30
+
+Implemented on `codex/candidate-29`. Headed mobile and desktop QA passed and a
+local self-build submission with one image reached Sent only after attachment
+read-back. Production attachment persistence remains open because the six owner
+submissions reviewed before this amendment all showed zero private files. No
+push, deployment, migration or production write is part of this amendment yet.

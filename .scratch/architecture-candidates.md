@@ -1034,7 +1034,7 @@ error/fatal/warning/5xx scans were empty. No production fixture data changed.
 
 ---
 
-## Candidate #29 — Priority #1 Vendor Menu Intake — 🚀 SEND HOTFIX DEPLOYED 2026-08-30
+## Candidate #29 — Priority #1 Vendor Menu Intake — 🟠 HOTFIX LIVE · OWNER REFINEMENT LOCAL · PROD ATTACHMENT SMOKE OPEN 2026-08-30
 
 The separate shareable Vendor Menu Intake → Ops review → KDS import workflow is
 complete and deployed from `codex/candidate-29`. It includes both approved public paths,
@@ -1090,3 +1090,26 @@ error logs are clean; visual/write browser smoke was skipped to conserve usage.
 Never change these sources to public.
 International phone input and the generated form redesign remain separate
 pending owner approval; Questions 1–14 remain untouched.
+
+Owner production review after the hotfix is a partial pass. Authenticated Ops
+shows six durable owner-labelled `Test` submissions; newest reference
+`MI-260830-B1DA8E` contains revision 1, one structured dish and one private
+question, and the exact deployment has no 500/error/fatal logs. However every
+visible test record reports `0 private files`, so attachment persistence is not
+yet proved and the upload smoke stays open. No Ops mutation, KDS import,
+WhatsApp handoff, product-code change or Questions 1–14 work occurred during
+this review. International phone, intermittent local previews and the generated
+form redesign remain behind explicit owner approval.
+
+The owner then explicitly approved the refined three-screen target. The local
+Candidate #29 branch now has a Rwanda-first international phone selector with
+canonical digit-only storage, cleanup-safe previews, attachment-ID read-back
+before success, and the approved compact business → dishes → review hierarchy.
+Review identifies the exact invalid dish and disables Send until fixed. Headed
+390×844 and 1440×1000 QA passed with zero errors/warnings; a local image
+submission reached Sent only after the private status seam returned the durable
+attachment (`MI-260830-6E8057`). Focused 8/8, full 452/117, scoped lint,
+TypeScript and production build pass. This is local only: no push/deploy,
+migration or production write occurred. Production attachment persistence stays
+open because all six previously reviewed live records still report zero files;
+Questions 1–14 and the Marketing Lead Form remain untouched.
