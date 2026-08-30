@@ -213,3 +213,16 @@ successful deletion even if a later deletion fails, leaving the visible dish in
 place and the remaining cleanup retryable. These decisions are implemented
 behind `lib/menu-intake/pending-uploads.ts`; they do not change the Store seam,
 private Blob credential policy, schema, migration or import contract.
+
+## Retry-recovery release status — 2026-08-30
+
+The durable retry amendment is shipped. Exact branch HEAD `d63edf5`, containing
+product repair `9c4365a`, is pushed and deployed READY as Vercel Production
+`dpl_DTJE7Qjzr2ekxtqEc1rWTQZTP6gX` on `zantap.app`. Menu Intake, storefront and
+KDS returned HTTP 200; the authenticated Ops boundary redirected to login; and
+exact-deployment error, fatal, warning and HTTP 500 queries were empty.
+
+Production attachment persistence remains unproved until a newly labelled
+image/PDF submitted by the owner is visible in authenticated Ops. That
+verification does not authorize Ops → KDS import, which remains a separate
+action-time approval gate.

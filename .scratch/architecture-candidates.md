@@ -1034,7 +1034,7 @@ error/fatal/warning/5xx scans were empty. No production fixture data changed.
 
 ---
 
-## Candidate #29 — Priority #1 Vendor Menu Intake — 🟠 REPAIR COMMITTED · PUSH/DEPLOY NETWORK BLOCKED · PROD ATTACHMENT SMOKE OPEN 2026-08-30
+## Candidate #29 — Priority #1 Vendor Menu Intake — 🟠 RETRY RECOVERY DEPLOYED · READ-ONLY PROD-SMOKED · PROD ATTACHMENT SMOKE OPEN 2026-08-30
 
 The separate shareable Vendor Menu Intake → Ops review → KDS import workflow is
 complete and deployed from `codex/candidate-29`. It includes both approved public paths,
@@ -1129,11 +1129,11 @@ build and real-browser recovery QA pass. Owner authorized push/deploy. No schema
 change or migration is required. Production attachment smoke and the separate
 Ops → KDS action gate remain open.
 
-The verified repair is committed locally as `9c4365a`. Push timed out against
-`github.com:443`; an exact-project Vercel deploy then failed before creating a
-deployment because the host could not load Vercel's OpenID configuration. After
-the documentation-only blocker record is committed, the branch is three commits
-ahead of remote and Production remains on the prior hotfix.
-Resume with the exact push/deploy commands recorded in the Candidate #29 issue
-when outbound connectivity returns; then perform read-only release smoke before
-asking the owner for the labelled attachment submission.
+The verified repair is committed as `9c4365a`; connectivity returned and exact
+branch HEAD `d63edf5` is pushed. That HEAD is READY as Vercel Production
+`dpl_DTJE7Qjzr2ekxtqEc1rWTQZTP6gX` on `zantap.app`. Read-only release smoke
+passed: Menu Intake, storefront and KDS returned 200; the Ops intake route
+redirected to login; exact-deployment error, fatal, warning and HTTP 500 queries
+were empty. The remaining gate is an owner-submitted, newly labelled production
+image/PDF visible in authenticated Ops. Ops → KDS import still requires separate
+action-time approval; Questions 1–14 and the Marketing Lead Form remain untouched.

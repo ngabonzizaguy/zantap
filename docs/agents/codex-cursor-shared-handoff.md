@@ -34,6 +34,22 @@ Then run `git status --short --branch` and inspect the relevant commit/diff.
 Preserve every pre-existing dirty or untracked path unless the current task
 explicitly owns it.
 
+### 2026-08-30 — Codex — Candidate #29 retry recovery deployed and read-only smoked
+
+- Connectivity returned and `codex/candidate-29` was pushed through exact HEAD
+  `d63edf5` (product repair `9c4365a`). `.playwright-cli/` and `output/` remain
+  preserved and untracked.
+- Exact HEAD `d63edf5` deployed READY as Vercel Production
+  `dpl_DTJE7Qjzr2ekxtqEc1rWTQZTP6gX`, aliased to `zantap.app`,
+  `www.zantap.app` and `zantap-psi.vercel.app`.
+- Read-only smoke passed: `/menu-intake`, storefront and KDS returned 200; Ops
+  intake returned the expected 307 to `/ops/login`; exact-deployment error,
+  fatal, warning and HTTP 500 queries were empty.
+- Next gate: the owner submits a newly labelled production image/PDF, then its
+  presence is verified in authenticated Ops. Do not perform Ops → KDS import
+  without separate action-time approval. Marketing Lead Form and Questions
+  1–14 remain untouched.
+
 ### 2026-08-30 — Codex — Candidate #29 release committed; external network blocked
 
 - Retry recovery is verified and committed locally as exact commit `9c4365a`.
