@@ -34,7 +34,7 @@ Then run `git status --short --branch` and inspect the relevant commit/diff.
 Preserve every pre-existing dirty or untracked path unless the current task
 explicitly owns it.
 
-### 2026-08-29 — Codex — Candidate #29 Priority #1 complete locally
+### 2026-08-30 — Codex — Candidate #29 Priority #1 deployed; write smoke pending
 
 - Owner-approved execution uses explicit Git Bash and clean linked worktree
   `C:\Users\G\Desktop\2025\Projects\zantap-candidate-29` on
@@ -47,14 +47,13 @@ explicitly owns it.
   and production build pass. Headed browser smoke imported `Igisafuria` at
   4,200 RWF into the in-memory Inka KDS and confirmed it Available. Full lint is
   blocked only by three pre-existing Candidate #28 Briefing errors on main.
-- Migration `20260829170000_vendor_menu_intake` is authored and Prisma-validated
-  but unapplied. Nothing was deployed and no production data changed. Candidate
-  #29 Questions 1–14 remain unstarted.
+- Migration `20260829170000_vendor_menu_intake` is applied; follow-up Prisma
+  status reports all 21 repository migrations up to date. Exact commits
+  `aaf19c7` and `680e4df` are pushed to `origin/codex/candidate-29`.
 - Owner-approved intake UX refinement is implemented locally: removable image
   thumbnails and PDF cards, one-open dish accordions, five dishes per page, and
   `Visit zantap.app`. Verification is 12/12 focused, 445/117 full, TypeScript,
-  scoped lint and production build clean. Owner visual review remains pending;
-  the refinement adds no migration and remains unreleased.
+  scoped lint and production build clean. Owner visual review passed.
 - A second owner-approved refinement is implemented locally: simpler English,
   reduced-motion-safe step transitions, default-hidden language choices with an
   Ops global switch, full pre-send dish CRUD, and an outlined `Tell ZanTap`
@@ -63,8 +62,16 @@ explicitly owns it.
   passed the six-dish review/submission flow with zero errors. A targeted fresh
   reload additionally confirmed the neutral CTA/green-icon split with zero new
   warnings or errors. Final verification is 446/117 with scoped lint,
-  TypeScript, Prisma validation and production build clean. The switch extends
-  the unapplied Candidate #29 migration; release review remains pending.
+  TypeScript, Prisma validation and production build clean. Owner release review
+  passed. A detached clean worktree deployed exact commit `680e4df` as Vercel
+  Production `dpl_8SLHNCwgYpC2E6EhZF8qgs8LNLK4` (`READY`) on `zantap.app`.
+- Read-only production smoke passes: Menu Intake, storefront and KDS return 200;
+  Ops intake redirects to auth; the live start screen shows the new simple copy
+  with language choices hidden; browser console and exact-deployment Vercel
+  error/warning scans are clean. One labelled production submission → Ops → KDS
+  import smoke awaits action-time owner confirmation because it creates real
+  production rows. No WhatsApp message will be sent. Questions 1–14 remain
+  unstarted.
 
 ### Reconciled repository and production state
 

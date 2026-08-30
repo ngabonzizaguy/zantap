@@ -124,3 +124,13 @@ offers an outlined `Tell ZanTap` link with only its WhatsApp icon in brand
 green and a prefilled reference to
 `0784928786`; WhatsApp notifies the number only after the Vendor taps Send. This
 candidate does not claim or add automatic WhatsApp delivery.
+
+## Release status
+
+Owner release review passed on 2026-08-30. Migration
+`20260829170000_vendor_menu_intake` is applied and exact commit `680e4df` is
+deployed READY as Vercel Production `dpl_8SLHNCwgYpC2E6EhZF8qgs8LNLK4` on
+`zantap.app`. Read-only production route, render, browser-console and
+error/warning-log checks pass. A labelled live intake → Ops → KDS import smoke
+remains gated on action-time owner confirmation because it creates production
+rows; it will not send a WhatsApp message.

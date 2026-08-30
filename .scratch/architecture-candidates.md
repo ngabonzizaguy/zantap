@@ -1034,26 +1034,26 @@ error/fatal/warning/5xx scans were empty. No production fixture data changed.
 
 ---
 
-## Candidate #29 — Priority #1 Vendor Menu Intake — ✅ DONE LOCALLY · VERIFIED · NOT DEPLOYED 2026-08-29
+## Candidate #29 — Priority #1 Vendor Menu Intake — 🚀 DEPLOYED · WRITE SMOKE PENDING 2026-08-30
 
 The separate shareable Vendor Menu Intake → Ops review → KDS import workflow is
-complete on `codex/candidate-29`. It includes both approved public paths,
+complete and deployed from `codex/candidate-29`. It includes both approved public paths,
 four-locale UI, local autosave, immutable revisions and private resume access,
 private media/questions, Ops structuring and contact logs, destination/match
 review, and transactional idempotent import through the Store/menu-media seams.
 Full tests pass (445/117), Candidate #29 lint and TypeScript pass, production
 build passes, and headed Playwright proved assisted submission through a live
-KDS menu item. Repository-wide lint has only three pre-existing Candidate #28
-Briefing errors. Additive migration is authored but unapplied. Questions 1–14
-remain untouched and must not start before a separate session/review.
+KDS menu item locally. Repository-wide lint has only three pre-existing
+Candidate #28 Briefing errors. Questions 1–14 remain untouched and must not
+start before a separate session/review.
 
 Owner-review refinement is implemented locally against an approved generated
 visual: selected self-build images and assisted images/PDFs are visible and
 individually removable/replaceable; dish editors are one-open accordions,
 paginated five per page; and the header links to `zantap.app`. Focused 12/12,
-full 445/117, TypeScript, scoped lint and production build pass. Owner visual
-review remains open. The refinement adds no migration; nothing was pushed,
-deployed or written to production.
+full 445/117, TypeScript, scoped lint and production build pass. The owner later
+approved this visual review and the release is recorded below. The refinement
+itself added no migration beyond Priority #1's existing release migration.
 
 The follow-up plain-language/review pass is also complete locally. Menu Intake
 now uses short English with restrained reduced-motion-safe transitions; Ops has
@@ -1066,5 +1066,10 @@ with zero errors. A targeted fresh-reload inspection also confirmed the neutral
 CTA/green-icon split with zero new warnings or errors. Final verification is
 446 passed / 117 expected skips with
 scoped lint, TypeScript, Prisma validation and production build clean. The Ops
-switch extends the still-unapplied Candidate #29 migration; production and owner
-release review remain pending.
+switch is included in the now-applied Candidate #29 migration. Owner release
+review passed. Migration `20260829170000_vendor_menu_intake` is applied; exact
+commit `680e4df` is pushed and deployed READY as
+`dpl_8SLHNCwgYpC2E6EhZF8qgs8LNLK4` on `zantap.app`. Read-only production route,
+render, browser-console and Vercel error/warning checks pass. A labelled live
+submission → Ops → KDS import smoke is awaiting action-time owner confirmation
+because it creates production rows.

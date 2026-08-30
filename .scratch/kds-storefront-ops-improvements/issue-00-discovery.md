@@ -1,6 +1,6 @@
 # Candidate #29 — KDS, customer hub, lead capture and Ops improvements
 
-Status: PRIORITY #1 COMPLETE LOCALLY · INTAKE UX REFINEMENTS VERIFIED · OWNER RELEASE REVIEW PENDING · NOT DEPLOYED · QUESTIONS 1–14 NOT STARTED
+Status: PRIORITY #1 DEPLOYED · READ-ONLY PROD SMOKE PASS · WRITE/IMPORT PROD SMOKE AWAITING OWNER CONFIRMATION · QUESTIONS 1–14 NOT STARTED
 Date: 2026-08-29
 
 ## Owner request
@@ -1024,11 +1024,10 @@ write, or Questions 1–14 implementation was authorized or performed.
 - [x] Verification: new presentation seam 2/2; Candidate #29 focused 12/12;
   full suite 445 passed / 117 expected skips; TypeScript and scoped ESLint clean;
   production build clean.
-- [ ] Owner mobile/desktop visual and interaction review.
+- [x] Owner mobile/desktop visual and interaction review.
 
-This refinement changes no persistence contract or migration. Migration
-`20260829170000_vendor_menu_intake` remains authored but unapplied. No push,
-deploy, production write, or Questions 1–14 implementation occurred.
+This refinement changes no persistence contract or migration beyond the
+Priority #1 release recorded below. Questions 1–14 remain untouched.
 
 ## Priority #1 plain-language/review refinement — IMPLEMENTED LOCALLY 2026-08-30
 
@@ -1054,8 +1053,24 @@ deploy, production write, or Questions 1–14 implementation occurred.
   reload produced zero new warnings or errors.
 - [x] Final verification: 446 passed / 117 expected skips; scoped ESLint,
   TypeScript, Prisma validation and production build clean.
-- [ ] Owner release review.
+- [x] Owner release review.
 
-The approved Ops switch adds one default-false column to the still-unapplied
-`20260829170000_vendor_menu_intake` migration. No production migration, deploy,
-production write or Questions 1–14 implementation occurred in this refinement.
+The approved Ops switch adds one default-false column to
+`20260829170000_vendor_menu_intake`. Questions 1–14 remain untouched.
+
+## Priority #1 release — DEPLOYED · WRITE SMOKE PENDING 2026-08-30
+
+- [x] Owner approved the final local UI and release gate.
+- [x] Production migration `20260829170000_vendor_menu_intake` applied cleanly;
+  follow-up Prisma status reports all 21 repository migrations up to date.
+- [x] Pushed exact commits `aaf19c7` and `680e4df` to
+  `origin/codex/candidate-29`.
+- [x] A detached clean worktree deployed exact commit `680e4df` as Vercel
+  Production `dpl_8SLHNCwgYpC2E6EhZF8qgs8LNLK4` (`READY`) on `zantap.app`.
+- [x] Read-only production smoke: `/menu-intake`, storefront and KDS return 200;
+  Ops intake route redirects to auth as expected; live Menu Intake renders the
+  short English start with language choices hidden; browser console and
+  release-window Vercel error/warning scans are clean.
+- [ ] One labelled production Menu Intake submission → authenticated Ops review
+  → KDS import smoke requires action-time owner confirmation because it creates
+  real production rows. No WhatsApp message will be sent.
