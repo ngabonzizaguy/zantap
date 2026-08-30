@@ -1041,13 +1041,17 @@ deploy, production write, or Questions 1–14 implementation occurred.
 - [x] Self-build Review renders the real dish catalog five per page with Edit,
   Remove (including the last dish), Add another dish and Send menu. Assisted
   Review shows removable sources and a direct Change files action.
-- [x] Successful submission remains durable in Ops and additionally offers a
-  green WhatsApp-icon `Tell ZanTap` CTA. It opens a prefilled message to
+- [x] Successful submission remains durable in Ops and additionally offers an
+  outlined `Tell ZanTap` CTA with only its WhatsApp icon in brand green. It
+  opens a prefilled message to
   `0784928786`; the Vendor must tap Send, because no automatic WhatsApp API is
   introduced.
 - [x] Automated mobile browser pass at 390×844: English-only start, six-dish
   pagination, Review/Edit, successful submission and exact `wa.me/250784928786`
   handoff passed with zero browser errors. The sole logo LCP warning was fixed.
+- [x] Post-correction browser inspection confirms the CTA is neutral and
+  outlined while only the icon stroke is WhatsApp green (`#25D366`); a fresh
+  reload produced zero new warnings or errors.
 - [x] Final verification: 446 passed / 117 expected skips; scoped ESLint,
   TypeScript, Prisma validation and production build clean.
 - [ ] Owner release review.

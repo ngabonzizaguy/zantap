@@ -1309,7 +1309,7 @@ export function MenuIntakeWizard({
                   href={buildMenuIntakeWhatsAppUrl(reference, draft.businessName)}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#25D366] px-5 font-medium text-[#071b0e] transition hover:bg-[#20bd5a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366]"
+                  className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl border border-white/15 bg-white/[0.04] px-5 font-medium text-white transition hover:border-white/25 hover:bg-white/[0.08] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366]"
                 >
                   <WhatsAppIcon /> Tell ZanTap
                 </a>
@@ -1374,7 +1374,7 @@ function WhatsAppIcon() {
     <svg
       aria-hidden
       viewBox="0 0 24 24"
-      className="h-6 w-6"
+      className="h-6 w-6 text-[#25D366]"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.9"

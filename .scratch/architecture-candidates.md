@@ -1058,10 +1058,13 @@ deployed or written to production.
 The follow-up plain-language/review pass is also complete locally. Menu Intake
 now uses short English with restrained reduced-motion-safe transitions; Ops has
 a default-off global switch for the public language selector; Review provides
-full dish CRUD five per page; and success offers a green icon-only-brand
-`Tell ZanTap` handoff to `0784928786` (manual Send, not an automatic API).
+full dish CRUD five per page; and success offers an outlined `Tell ZanTap`
+handoff with only its WhatsApp icon in brand green, targeting `0784928786`
+(manual Send, not an automatic API).
 Automated 390×844 browser verification passed the six-dish and submission flow
-with zero errors. Final verification is 446 passed / 117 expected skips with
+with zero errors. A targeted fresh-reload inspection also confirmed the neutral
+CTA/green-icon split with zero new warnings or errors. Final verification is
+446 passed / 117 expected skips with
 scoped lint, TypeScript, Prisma validation and production build clean. The Ops
 switch extends the still-unapplied Candidate #29 migration; production and owner
 release review remain pending.

@@ -120,6 +120,7 @@ Before submission, self-build Vendors can read, create, edit and remove every
 dish from Review, including the last dish, with five dishes per page. Assisted
 Vendors can review/remove sources and return to change files. Submission still
 persists directly to the Ops intake inbox. The success screen additionally
-offers a green WhatsApp-icon `Tell ZanTap` link with a prefilled reference to
+offers an outlined `Tell ZanTap` link with only its WhatsApp icon in brand
+green and a prefilled reference to
 `0784928786`; WhatsApp notifies the number only after the Vendor taps Send. This
 candidate does not claim or add automatic WhatsApp delivery.
