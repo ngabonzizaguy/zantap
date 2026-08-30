@@ -150,3 +150,8 @@ in the same browser reuse the staged intake, omit files already uploaded in that
 attempt and are guarded against concurrent double submission. This preserves
 the private-source decision while making partial upload failure visible and
 retryable.
+
+The hotfix is deployed from exact commit `648f187` as Production deployment
+`dpl_Enq332qdNsoH6ZTcC6zSe2AYrcJ2`. Private store
+`zantap-menu-intake-private` is connected only to Production under the
+`MENU_INTAKE_` prefix; the existing public Blob store remains unchanged.

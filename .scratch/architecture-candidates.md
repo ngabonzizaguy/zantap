@@ -1034,7 +1034,7 @@ error/fatal/warning/5xx scans were empty. No production fixture data changed.
 
 ---
 
-## Candidate #29 — Priority #1 Vendor Menu Intake — 🚧 SEND HOTFIX READY LOCALLY 2026-08-30
+## Candidate #29 — Priority #1 Vendor Menu Intake — 🚀 SEND HOTFIX DEPLOYED 2026-08-30
 
 The separate shareable Vendor Menu Intake → Ops review → KDS import workflow is
 complete and deployed from `codex/candidate-29`. It includes both approved public paths,
@@ -1081,8 +1081,12 @@ local hotfix now requires a dedicated private
 `MENU_INTAKE_READ_WRITE_TOKEN`, catches upload failures, keeps the staged
 intake credential before uploads, resumes the same intake without repeating
 completed files, and disables double taps. Focused 5/5, full 449/117,
-TypeScript, scoped lint and production build pass. Browser testing is paused for
-the owner's explicit approval; the hotfix is not pushed or deployed and no
-private Blob store has yet been created. Never change these sources to public.
+TypeScript, scoped lint and production build pass. Private store
+`zantap-menu-intake-private` is connected to Production under the
+`MENU_INTAKE_` prefix without changing the public Blob variables. Commits
+`d77822d` + `648f187` are pushed; exact commit `648f187` is READY as deployment
+`dpl_Enq332qdNsoH6ZTcC6zSe2AYrcJ2` on `zantap.app`. Route 200 and release-window
+error logs are clean; visual/write browser smoke was skipped to conserve usage.
+Never change these sources to public.
 International phone input and the generated form redesign remain separate
 pending owner approval; Questions 1–14 remain untouched.

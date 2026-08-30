@@ -34,25 +34,27 @@ Then run `git status --short --branch` and inspect the relevant commit/diff.
 Preserve every pre-existing dirty or untracked path unless the current task
 explicitly owns it.
 
-### 2026-08-30 — Codex — Candidate #29 Send-menu production hotfix ready locally
+### 2026-08-30 — Codex — Candidate #29 Send-menu production hotfix deployed
 
 - Production write attempts proved that valid forms were creating the staged
   intake and then failing every attachment Server Action with `Vercel Blob:
   Cannot use private access on a public store`. The existing
   `BLOB_READ_WRITE_TOKEN` belongs to the public storefront/menu-media store and
   must not receive private intake sources.
-- The uncommitted hotfix in the clean Candidate #29 worktree separates private
+- Commits `d77822d` + `648f187` in the clean Candidate #29 worktree separate private
   sources behind `MENU_INTAKE_READ_WRITE_TOKEN`, refuses unsafe production
   fallback, returns a simple recoverable upload error, stores the new intake
   credential before uploading, reuses that intake on retry, skips files already
   uploaded during the same attempt, and prevents double-submit taps.
 - Verification is focused 5/5, full 449/117, TypeScript, scoped lint and
-  production build clean. No browser testing, push, deployment or Blob-store
-  creation has occurred for this hotfix. The owner requires an explicit ask
-  before browser testing; after approval, connect a dedicated private Vercel
-  Blob store under `MENU_INTAKE_`, browser-test, push and deploy. Do not replace
-  the existing public Blob credential. International phone input and the
-  generated professional form redesign remain separate pending work/approval.
+  production build clean. Private store `zantap-menu-intake-private`
+  (`store_x3m6SdnEz9CeALA6`) is connected only to Production under the
+  `MENU_INTAKE_` prefix; existing public Blob variables remain untouched. Exact
+  commit `648f187` deployed READY as `dpl_Enq332qdNsoH6ZTcC6zSe2AYrcJ2` on
+  `zantap.app`; `/menu-intake` returns 200 and the release-window error log is
+  empty. Visual/write browser smoke was skipped to conserve owner usage.
+  International phone input and the generated professional form redesign remain
+  separate pending work/approval.
 
 ### 2026-08-30 — Codex — Candidate #29 Priority #1 deployed; write smoke pending
 

@@ -1075,7 +1075,7 @@ The approved Ops switch adds one default-false column to
   → KDS import smoke requires action-time owner confirmation because it creates
   real production rows. No WhatsApp message will be sent.
 
-## Priority #1 production upload defect — HOTFIX READY LOCALLY 2026-08-30
+## Priority #1 production upload defect — HOTFIX DEPLOYED 2026-08-30
 
 - [x] Production evidence captured: valid submissions create the intake, then
   attachment upload throws because private access was requested against the
@@ -1090,9 +1090,13 @@ The approved Ops switch adds one default-false column to
   already uploaded.
 - [x] Focused 5/5, full 449 passed / 117 expected skips, TypeScript, scoped lint
   and production build clean.
-- [ ] Ask the owner before visual browser testing, as explicitly requested.
-- [ ] Connect a dedicated private Vercel Blob store under the `MENU_INTAKE_`
-  prefix, then push/deploy and run a labelled production submission smoke.
+- [x] Owner authorized release without spending usage on visual browser testing.
+- [x] Dedicated private Vercel Blob store connected under the `MENU_INTAKE_`
+  prefix; commits `d77822d` + `648f187` pushed and exact commit `648f187`
+  deployed READY as `dpl_Enq332qdNsoH6ZTcC6zSe2AYrcJ2` on `zantap.app`.
+- [x] Read-only smoke: `/menu-intake` 200 and release-window error log empty.
+- [ ] A Vendor write/browser smoke remains for the owner; it was deliberately
+  skipped to conserve usage.
 
 The owner separately requested international phone entry, correction of
 intermittent local image previews, and a more professional form presentation.
