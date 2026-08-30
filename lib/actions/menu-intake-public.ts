@@ -218,27 +218,51 @@ export async function uploadMenuIntakeAttachment(formData: FormData) {
   if (error)
     return { ok: false as const, error: "INVALID_UPLOAD", message: error };
 
-  let body = Buffer.from(await file.arrayBuffer());
-  if (file.type.startsWith("image/"))
-    body = Buffer.from(await sanitizeMenuIntakeImage(body, file.type));
   const blobPath = buildMenuIntakeBlobPath(intakeId, file.name);
-  await putPrivateMenuIntakeBlob(blobPath, body, file.type);
-  const attachment = await getStore().addMenuIntakeAttachment({
-    intakeId,
-    resumeTokenHash: tokenHash,
-    kind,
-    dishClientId,
-    fileName: file.name.slice(0, 200),
-    mime: file.type,
-    byteLength: body.byteLength,
-    blobPath,
-    at: new Date(),
-  });
-  if (!attachment) {
-    await deletePrivateMenuIntakeBlob(blobPath);
-    return { ok: false as const, error: "INVALID_ACCESS" };
+  let blobWritten = false;
+  try {
+    let body = Buffer.from(await file.arrayBuffer());
+    if (file.type.startsWith("image/"))
+      body = Buffer.from(await sanitizeMenuIntakeImage(body, file.type));
+    await putPrivateMenuIntakeBlob(blobPath, body, file.type);
+    blobWritten = true;
+    const attachment = await getStore().addMenuIntakeAttachment({
+      intakeId,
+      resumeTokenHash: tokenHash,
+      kind,
+      dishClientId,
+      fileName: file.name.slice(0, 200),
+      mime: file.type,
+      byteLength: body.byteLength,
+      blobPath,
+      at: new Date(),
+    });
+    if (!attachment) {
+      await deletePrivateMenuIntakeBlob(blobPath);
+      return { ok: false as const, error: "INVALID_ACCESS" };
+    }
+    return { ok: true as const, attachmentId: attachment.id };
+  } catch (error) {
+    if (blobWritten) {
+      try {
+        await deletePrivateMenuIntakeBlob(blobPath);
+      } catch {
+        // The original upload failure is the useful signal for Ops.
+      }
+    }
+    console.error("Menu intake attachment upload failed", {
+      intakeId,
+      kind,
+      fileName: file.name.slice(0, 200),
+      error: error instanceof Error ? error.message : String(error),
+    });
+    const label = kind === "DISH_IMAGE" ? "photo" : "file";
+    return {
+      ok: false as const,
+      error: "UPLOAD_FAILED" as const,
+      message: `Your menu was saved, but this ${label} did not upload. Please tap Send menu again.`,
+    };
   }
-  return { ok: true as const, attachmentId: attachment.id };
 }
 
 export async function removeMenuIntakeAttachment(

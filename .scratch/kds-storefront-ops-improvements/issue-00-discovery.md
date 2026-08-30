@@ -1074,3 +1074,28 @@ The approved Ops switch adds one default-false column to
 - [ ] One labelled production Menu Intake submission → authenticated Ops review
   → KDS import smoke requires action-time owner confirmation because it creates
   real production rows. No WhatsApp message will be sent.
+
+## Priority #1 production upload defect — HOTFIX READY LOCALLY 2026-08-30
+
+- [x] Production evidence captured: valid submissions create the intake, then
+  attachment upload throws because private access was requested against the
+  existing public Vercel Blob store.
+- [x] Private intake sources now require the separate
+  `MENU_INTAKE_BLOB_READ_WRITE_TOKEN`; production refuses to fall back to the
+  public media store.
+- [x] Upload failures return short Vendor-facing recovery copy instead of an
+  uncaught Server Action rejection.
+- [x] The browser saves the staged intake credential before uploads, locks
+  double taps, retries the same intake, and skips same-session files that have
+  already uploaded.
+- [x] Focused 5/5, full 449 passed / 117 expected skips, TypeScript, scoped lint
+  and production build clean.
+- [ ] Ask the owner before visual browser testing, as explicitly requested.
+- [ ] Connect a dedicated private Vercel Blob store under the `MENU_INTAKE_`
+  prefix, then push/deploy and run a labelled production submission smoke.
+
+The owner separately requested international phone entry, correction of
+intermittent local image previews, and a more professional form presentation.
+A refined three-screen image was generated but has not yet been approved; those
+changes are not part of this priority deployment. Questions 1–14 remain
+untouched.

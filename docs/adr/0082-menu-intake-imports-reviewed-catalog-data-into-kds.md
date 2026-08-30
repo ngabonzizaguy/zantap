@@ -134,3 +134,19 @@ deployed READY as Vercel Production `dpl_8SLHNCwgYpC2E6EhZF8qgs8LNLK4` on
 error/warning-log checks pass. A labelled live intake → Ops → KDS import smoke
 remains gated on action-time owner confirmation because it creates production
 rows; it will not send a WhatsApp message.
+
+## Amendment — dedicated private source store and recoverable uploads — 2026-08-30
+
+The public storefront/menu-media Blob store and private Menu Intake source store
+must use different credentials. Intake attachment reads, writes and deletes use
+only `MENU_INTAKE_BLOB_READ_WRITE_TOKEN`; a Vercel runtime without that private
+store fails closed instead of silently placing source material in the public
+store. Local development may still use the existing in-memory blob fallback.
+
+Submission persists the private browser credential immediately after the
+staged intake is created. Attachment failures are returned as recoverable,
+plain-language results rather than uncaught Server Action errors. Repeated taps
+in the same browser reuse the staged intake, omit files already uploaded in that
+attempt and are guarded against concurrent double submission. This preserves
+the private-source decision while making partial upload failure visible and
+retryable.

@@ -1034,7 +1034,7 @@ error/fatal/warning/5xx scans were empty. No production fixture data changed.
 
 ---
 
-## Candidate #29 — Priority #1 Vendor Menu Intake — 🚀 DEPLOYED · WRITE SMOKE PENDING 2026-08-30
+## Candidate #29 — Priority #1 Vendor Menu Intake — 🚧 SEND HOTFIX READY LOCALLY 2026-08-30
 
 The separate shareable Vendor Menu Intake → Ops review → KDS import workflow is
 complete and deployed from `codex/candidate-29`. It includes both approved public paths,
@@ -1073,3 +1073,16 @@ commit `680e4df` is pushed and deployed READY as
 render, browser-console and Vercel error/warning checks pass. A labelled live
 submission → Ops → KDS import smoke is awaiting action-time owner confirmation
 because it creates production rows.
+
+Production Vendor attempts then exposed one release defect: the private intake
+uploader was using the existing public menu-media Blob token, so Vercel rejected
+every `access: "private"` upload after the intake itself had been created. A
+local hotfix now requires a dedicated private
+`MENU_INTAKE_BLOB_READ_WRITE_TOKEN`, catches upload failures, keeps the staged
+intake credential before uploads, resumes the same intake without repeating
+completed files, and disables double taps. Focused 5/5, full 449/117,
+TypeScript, scoped lint and production build pass. Browser testing is paused for
+the owner's explicit approval; the hotfix is not pushed or deployed and no
+private Blob store has yet been created. Never change these sources to public.
+International phone input and the generated form redesign remain separate
+pending owner approval; Questions 1–14 remain untouched.

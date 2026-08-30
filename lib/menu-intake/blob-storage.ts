@@ -9,6 +9,16 @@ import {
   putLocalBlob,
 } from "@/lib/menu/local-blob-store";
 
+function getPrivateBlobToken(): string | undefined {
+  return process.env.MENU_INTAKE_BLOB_READ_WRITE_TOKEN;
+}
+
+function assertPrivateBlobConfigured(): void {
+  if (process.env.VERCEL) {
+    throw new Error("Private menu intake storage is not configured");
+  }
+}
+
 export async function sanitizeMenuIntakeImage(
   body: Buffer,
   mime: string,
@@ -37,8 +47,9 @@ export async function putPrivateMenuIntakeBlob(
   body: Buffer,
   contentType: string,
 ): Promise<void> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  const token = getPrivateBlobToken();
   if (!token) {
+    assertPrivateBlobConfigured();
     putLocalBlob(pathname, body, contentType);
     return;
   }
@@ -48,8 +59,11 @@ export async function putPrivateMenuIntakeBlob(
 export async function readPrivateMenuIntakeBlob(
   pathname: string,
 ): Promise<{ body: Buffer; contentType: string } | null> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) return getLocalBlob(pathname);
+  const token = getPrivateBlobToken();
+  if (!token) {
+    assertPrivateBlobConfigured();
+    return getLocalBlob(pathname);
+  }
   const result = await get(pathname, {
     access: "private",
     token,
@@ -65,8 +79,9 @@ export async function readPrivateMenuIntakeBlob(
 export async function deletePrivateMenuIntakeBlob(
   pathname: string,
 ): Promise<void> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  const token = getPrivateBlobToken();
   if (!token) {
+    assertPrivateBlobConfigured();
     deleteLocalBlob(pathname);
     return;
   }

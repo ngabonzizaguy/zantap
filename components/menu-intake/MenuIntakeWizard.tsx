@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronDown, FileText, Plus, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   getMenuIntakeStatus,
   exchangeMenuIntakeResume,
@@ -88,6 +88,29 @@ type Draft = {
   question: string;
 };
 
+type PendingSubmission = {
+  intakeId: string;
+  resumeToken: string;
+  reference: string;
+  status: "SUBMITTED";
+};
+
+type IntakeUpload = {
+  file: File;
+  kind: "SOURCE" | "DISH_IMAGE";
+  dishClientId?: string;
+};
+
+function intakeUploadKey(upload: IntakeUpload): string {
+  return [
+    upload.kind,
+    upload.dishClientId || "",
+    upload.file.name,
+    upload.file.size,
+    upload.file.lastModified,
+  ].join(":");
+}
+
 const EMPTY: Draft = {
   locale: "en",
   businessName: "",
@@ -145,6 +168,13 @@ export function MenuIntakeWizard({
   const [dishPage, setDishPage] = useState(0);
   const [openDishIds, setOpenDishIds] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingSubmission, setPendingSubmission] =
+    useState<PendingSubmission | null>(null);
+  const [uploadedAttachments, setUploadedAttachments] = useState<
+    Record<string, { attachmentId: string; dishClientId?: string }>
+  >({});
+  const submittingRef = useRef(false);
   const [reference, setReference] = useState("");
   const [status, setStatus] = useState<MenuIntakeStatus>("SUBMITTED");
   const [error, setError] = useState("");
@@ -274,88 +304,134 @@ export function MenuIntakeWizard({
   }
 
   async function finish() {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setIsSubmitting(true);
     setError("");
-    const result = await submitMenuIntake({
-      businessName: draft.businessName,
-      contactName: draft.contactName,
-      phone: draft.phone,
-      locale: activeLocale,
-      alreadyOnZantap: draft.alreadyOnZantap,
-      storefrontHint: draft.storefrontHint,
-      content: {
-        path: draft.path || "ASSISTED",
-        dishes: draft.dishes,
-        assistedNotes: draft.assistedNotes,
-        helpNeeded: draft.helpNeeded,
-        question: draft.question,
-      },
-    });
-    if (!result.ok) {
-      setError(result.message || "Please check the details and try again.");
-      return;
-    }
-    const uploads = [
-      ...sourceFiles.map((file) => ({ file, kind: "SOURCE" as const })),
-      ...Object.entries(dishFiles).flatMap(([dishClientId, files]) =>
-        files.map((file) => ({
-          file,
-          kind: "DISH_IMAGE" as const,
-          dishClientId,
-        })),
-      ),
-    ];
-    let completed = 0;
-    const uploadedDishImages: Record<string, string[]> = {};
-    for (const upload of uploads) {
-      const data = new FormData();
-      data.set("intakeId", result.intakeId);
-      data.set("resumeToken", result.resumeToken);
-      data.set("kind", upload.kind);
-      if ("dishClientId" in upload && upload.dishClientId)
-        data.set("dishClientId", upload.dishClientId);
-      data.set("file", upload.file);
-      const uploaded = await uploadMenuIntakeAttachment(data);
-      if (!uploaded.ok) {
-        setError(
-          uploaded.message ||
-            `Could not upload ${upload.file.name}. Your intake was saved; retry from this browser.`,
+    setProgress(0);
+    let submission = pendingSubmission;
+    try {
+      if (!submission) {
+        const result = await submitMenuIntake({
+          businessName: draft.businessName,
+          contactName: draft.contactName,
+          phone: draft.phone,
+          locale: activeLocale,
+          alreadyOnZantap: draft.alreadyOnZantap,
+          storefrontHint: draft.storefrontHint,
+          content: {
+            path: draft.path || "ASSISTED",
+            dishes: draft.dishes,
+            assistedNotes: draft.assistedNotes,
+            helpNeeded: draft.helpNeeded,
+            question: draft.question,
+          },
+        });
+        if (!result.ok) {
+          setError(result.message || "We could not send your menu. Please try again.");
+          return;
+        }
+        submission = result;
+        setPendingSubmission(result);
+        localStorage.setItem(
+          RESUME_KEY,
+          JSON.stringify({
+            intakeId: result.intakeId,
+            resumeToken: result.resumeToken,
+            reference: result.reference,
+          }),
         );
-        break;
       }
-      if ("dishClientId" in upload && upload.dishClientId) {
+
+      const uploads: IntakeUpload[] = [
+        ...sourceFiles.map((file) => ({ file, kind: "SOURCE" as const })),
+        ...Object.entries(dishFiles).flatMap(([dishClientId, files]) =>
+          files.map((file) => ({
+            file,
+            kind: "DISH_IMAGE" as const,
+            dishClientId,
+          })),
+        ),
+      ];
+      const completedUploads = { ...uploadedAttachments };
+      let completed = uploads.filter(
+        (upload) => completedUploads[intakeUploadKey(upload)],
+      ).length;
+
+      for (const upload of uploads) {
+        const key = intakeUploadKey(upload);
+        if (completedUploads[key]) continue;
+        const data = new FormData();
+        data.set("intakeId", submission.intakeId);
+        data.set("resumeToken", submission.resumeToken);
+        data.set("kind", upload.kind);
+        if (upload.dishClientId)
+          data.set("dishClientId", upload.dishClientId);
+        data.set("file", upload.file);
+        const uploaded = await uploadMenuIntakeAttachment(data);
+        if (!uploaded.ok) {
+          setError(
+            uploaded.message ||
+              `Your menu was saved, but ${upload.file.name} did not upload. Please tap Send menu again.`,
+          );
+          return;
+        }
+        completedUploads[key] = {
+          attachmentId: uploaded.attachmentId,
+          dishClientId: upload.dishClientId,
+        };
+        setUploadedAttachments({ ...completedUploads });
+        completed += 1;
+        setProgress(
+          Math.round((completed / Math.max(uploads.length, 1)) * 100),
+        );
+      }
+
+      const uploadedDishImages: Record<string, string[]> = {};
+      for (const upload of uploads) {
+        if (!upload.dishClientId) continue;
+        const attachment = completedUploads[intakeUploadKey(upload)];
+        if (!attachment) continue;
         uploadedDishImages[upload.dishClientId] = [
           ...(uploadedDishImages[upload.dishClientId] || []),
-          uploaded.attachmentId,
+          attachment.attachmentId,
         ];
       }
-      completed += 1;
-      setProgress(Math.round((completed / Math.max(uploads.length, 1)) * 100));
+      if (Object.keys(uploadedDishImages).length) {
+        const revision = await submitMenuIntakeRevision(
+          submission.intakeId,
+          submission.resumeToken,
+          {
+            path: draft.path || "SELF_BUILD",
+            dishes: draft.dishes.map((dish) => ({
+              ...dish,
+              imageAttachmentIds:
+                uploadedDishImages[dish.clientId] || dish.imageAttachmentIds,
+            })),
+            assistedNotes: draft.assistedNotes,
+            helpNeeded: draft.helpNeeded,
+            question: undefined,
+          },
+        );
+        if (!revision.ok) {
+          setError("Your photos uploaded, but we could not finish. Please tap Send menu again.");
+          return;
+        }
+      }
+      localStorage.removeItem(DRAFT_KEY);
+      setReference(submission.reference);
+      setStatus(submission.status);
+      setStep("SENT");
+    } catch {
+      setError(
+        submission
+          ? "Your menu was saved, but the upload stopped. Please tap Send menu again."
+          : "We could not send your menu. Please try again.",
+      );
+    } finally {
+      submittingRef.current = false;
+      setIsSubmitting(false);
     }
-    if (Object.keys(uploadedDishImages).length) {
-      await submitMenuIntakeRevision(result.intakeId, result.resumeToken, {
-        path: draft.path || "SELF_BUILD",
-        dishes: draft.dishes.map((dish) => ({
-          ...dish,
-          imageAttachmentIds:
-            uploadedDishImages[dish.clientId] || dish.imageAttachmentIds,
-        })),
-        assistedNotes: draft.assistedNotes,
-        helpNeeded: draft.helpNeeded,
-        question: undefined,
-      });
-    }
-    localStorage.setItem(
-      RESUME_KEY,
-      JSON.stringify({
-        intakeId: result.intakeId,
-        resumeToken: result.resumeToken,
-        reference: result.reference,
-      }),
-    );
-    localStorage.removeItem(DRAFT_KEY);
-    setReference(result.reference);
-    setStatus(result.status);
-    setStep("SENT");
   }
 
   if (!ready) return <main className="min-h-screen bg-[#0b0908]" />;
@@ -1278,7 +1354,8 @@ export function MenuIntakeWizard({
             <Actions
               back={() => setStep("MENU")}
               next={finish}
-              nextLabel={t.submit}
+              nextLabel={isSubmitting ? "Sending…" : t.submit}
+              nextDisabled={isSubmitting}
             />
           </section>
         ) : null}
@@ -1499,10 +1576,12 @@ function Actions({
   back,
   next,
   nextLabel,
+  nextDisabled = false,
 }: {
   back: () => void;
   next: () => void | Promise<void>;
   nextLabel: string;
+  nextDisabled?: boolean;
 }) {
   return (
     <div className="mt-10 flex items-center justify-between gap-4">
@@ -1516,7 +1595,8 @@ function Actions({
       <button
         type="button"
         onClick={() => void next()}
-        className="min-h-12 rounded-full bg-[#f4a623] px-7 font-medium text-black"
+        disabled={nextDisabled}
+        className="min-h-12 rounded-full bg-[#f4a623] px-7 font-medium text-black disabled:cursor-wait disabled:opacity-60"
       >
         {nextLabel} →
       </button>
