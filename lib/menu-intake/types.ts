@@ -107,6 +107,7 @@ export interface MenuIntake {
   updatedAt: Date;
   importedAt?: Date;
   cancelledAt?: Date;
+  deletedAt?: Date;
 }
 
 export interface MenuIntakeQuestion {

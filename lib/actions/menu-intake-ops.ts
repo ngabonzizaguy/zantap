@@ -12,6 +12,8 @@ import type {
 import { validateMenuIntakeContent } from "@/lib/menu-intake/workflow";
 import { mintOwnerToken } from "@/lib/vendor/owner-token";
 import { getBaseUrl } from "@/lib/base-url";
+import { deletePrivateMenuIntakeBlob } from "@/lib/menu-intake/blob-storage";
+import { canPurgeMenuIntake } from "@/lib/menu-intake/retention";
 
 async function assertOps(): Promise<void> {
   if (!(await isOpsSessionValid())) throw new Error("Unauthorized");
@@ -161,6 +163,46 @@ export async function revokeMenuIntakeAccessAction(intakeId: string) {
   await assertOps();
   const count = await getStore().revokeMenuIntakeAccess(intakeId, new Date());
   return { ok: true as const, count };
+}
+
+export async function deleteMenuIntakeAction(intakeId: string) {
+  await assertOps();
+  const deleted = await getStore().deleteMenuIntake(intakeId, new Date());
+  if (!deleted) {
+    return {
+      ok: false as const,
+      error: "Only an active, not-yet-imported submission can be deleted",
+    };
+  }
+  revalidatePath("/ops/menu-intakes");
+  return { ok: true as const };
+}
+
+export async function restoreMenuIntakeAction(intakeId: string) {
+  await assertOps();
+  const restored = await getStore().restoreMenuIntake(intakeId, new Date());
+  if (!restored) {
+    return { ok: false as const, error: "Submission can no longer be restored" };
+  }
+  revalidatePath("/ops/menu-intakes");
+  return { ok: true as const };
+}
+
+export async function purgeMenuIntakeAction(intakeId: string) {
+  await assertOps();
+  const store = getStore();
+  const detail = await store.getMenuIntake(intakeId);
+  const now = new Date();
+  if (!detail?.intake.deletedAt || !canPurgeMenuIntake(detail.intake.deletedAt, now)) {
+    return { ok: false as const, error: "The 30-day recovery window is still open" };
+  }
+  for (const attachment of detail.attachments) {
+    await deletePrivateMenuIntakeBlob(attachment.blobPath);
+  }
+  const purged = await store.purgeMenuIntake(intakeId, now);
+  if (!purged) return { ok: false as const, error: "Submission could not be purged" };
+  revalidatePath("/ops/menu-intakes");
+  return { ok: true as const };
 }
 
 export async function logMenuIntakeNotificationAction(formData: FormData) {

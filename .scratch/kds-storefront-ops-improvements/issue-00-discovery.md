@@ -1205,3 +1205,24 @@ untouched; no production business row was created during local verification.
   proof and is not an authorization to import anything into KDS.
 
 Do not perform Ops → KDS import without its separate action-time approval.
+
+## Ops review visibility and 30-day trash — IMPLEMENTED LOCALLY 2026-09-01
+
+- [x] Ops review renders every submitted size price and add-on group/choice,
+  including required/optional selection rules, included prices and availability.
+- [x] A non-imported submission can be moved immediately to Deleted. Deletion
+  revokes public resume access and hides the record from the active inbox.
+- [x] Ops can restore the submission for 30 days. Permanent purge is unavailable
+  before that boundary and, after it, removes the intake row plus its private
+  source files through the existing private-Blob seam.
+- [x] Imported submissions remain audit-protected and cannot be deleted.
+- [x] Focused Menu Intake Store/options coverage passes 4/4. Headed browser QA
+  submitted Small/Large sizes and Sauce extras, verified them in authenticated
+  Ops, then passed delete → Deleted/recover-until date → restore. No KDS import
+  was performed.
+- [ ] Migration `20260901190000_menu_intake_ops_trash` and this local product
+  commit require explicit release approval before production deployment.
+
+Production attachment persistence remains open until a newly labelled owner
+image/PDF is visible in authenticated Ops. Marketing Lead Form and Questions
+1–14 remain untouched.

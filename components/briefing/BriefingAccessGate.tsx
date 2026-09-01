@@ -2,7 +2,7 @@ import Image from "next/image";
 import { unlockBriefing } from "@/lib/briefing/access-actions";
 
 interface BriefingAccessGateProps {
-  error?: boolean;
+  error?: string;
   state?: "expired" | "unavailable";
 }
 
@@ -26,8 +26,8 @@ export function BriefingAccessGate({ error, state }: BriefingAccessGateProps) {
           A clearer way to see what ZanTap can become.
         </h1>
         <p className="mt-6 max-w-lg text-[15px] leading-7 text-white/58">
-          This experience is prepared for invited viewers. Enter the secret
-          shared with you to continue.
+          This experience is prepared for invited viewers. Enter the four-digit
+          PIN shared with you to continue.
         </p>
 
         {unavailable || expired ? (
@@ -42,32 +42,38 @@ export function BriefingAccessGate({ error, state }: BriefingAccessGateProps) {
               Request access
             </a>
           </div>
-        ) : (
-          <form action={unlockBriefing} className="mt-10">
-            <label htmlFor="briefing-secret" className="briefing-label">
-              Access secret
-            </label>
-            <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-              <input
-                id="briefing-secret"
-                name="secret"
-                type="password"
-                required
-                autoComplete="current-password"
-                className="briefing-secret-input"
-                placeholder="Enter the shared secret"
-              />
-              <button className="briefing-button shrink-0" type="submit">
-                Enter briefing
-              </button>
-            </div>
-            {error ? (
-              <p className="mt-3 text-sm text-[#ffb1a7]" role="alert">
-                That secret does not match this briefing.
-              </p>
-            ) : null}
-          </form>
-        )}
+        ) : null}
+
+        <form action={unlockBriefing} className="mt-10">
+          <label htmlFor="briefing-secret" className="briefing-label">
+            Access PIN
+          </label>
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+            <input
+              id="briefing-secret"
+              name="secret"
+              type="password"
+              required
+              inputMode="numeric"
+              pattern="[0-9]{4}"
+              minLength={4}
+              maxLength={4}
+              autoComplete="one-time-code"
+              className="briefing-secret-input"
+              placeholder="4-digit PIN"
+            />
+            <button className="briefing-button shrink-0" type="submit">
+              Enter briefing
+            </button>
+          </div>
+          {error ? (
+            <p className="mt-3 text-sm text-[#ffb1a7]" role="alert">
+              {error === "rate_limited"
+                ? "Too many attempts. Wait 15 minutes, then try again."
+                : "That PIN does not match this briefing."}
+            </p>
+          ) : null}
+        </form>
 
         <p className="mt-12 text-[11px] uppercase tracking-[0.18em] text-white/30">
           Confidential · Do not record or redistribute

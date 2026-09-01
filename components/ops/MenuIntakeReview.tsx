@@ -6,8 +6,11 @@ import { useRouter } from "next/navigation";
 import {
   answerMenuIntakeQuestionAction,
   createMenuIntakeResumeLinkAction,
+  deleteMenuIntakeAction,
   importMenuIntakeAction,
+  purgeMenuIntakeAction,
   reviewMenuIntakeAction,
+  restoreMenuIntakeAction,
   revokeMenuIntakeAccessAction,
   logMenuIntakeNotificationAction,
 } from "@/lib/actions/menu-intake-ops";
@@ -20,17 +23,25 @@ import type {
 } from "@/lib/menu-intake/types";
 import type { VendorListEntry } from "@/lib/types";
 import { canonicalizePhone } from "@/lib/format";
+import { MenuIntakeDishOptions } from "@/components/ops/MenuIntakeDishOptions";
+import { canPurgeMenuIntake, menuIntakePurgeAt } from "@/lib/menu-intake/retention";
 
 const field =
   "min-h-10 w-full rounded-xl border border-hairline bg-surface-card px-3 text-sm outline-none focus:border-ink";
+const intakeDate = new Intl.DateTimeFormat("en-GB", {
+  dateStyle: "medium",
+  timeZone: "Africa/Kigali",
+});
 
 export function MenuIntakeReview({
   intakes,
+  deletedIntakes,
   detail,
   vendors,
   suggestions,
 }: {
   intakes: MenuIntake[];
+  deletedIntakes: MenuIntake[];
   detail: MenuIntakeDetail | null;
   vendors: VendorListEntry[];
   suggestions: MenuIntakeMatchSuggestion[];
@@ -125,6 +136,22 @@ export function MenuIntakeReview({
               Vendor.
             </p>
           )}
+          <div className="border-b border-t border-hairline px-4 py-3 text-xs uppercase tracking-widest text-muted">
+            Deleted · {deletedIntakes.length}
+          </div>
+          {deletedIntakes.map((intake) => (
+            <Link
+              key={intake.id}
+              href={`/ops/menu-intakes?intake=${intake.id}`}
+              className={`block border-b border-hairline p-4 transition hover:bg-surface-strong ${detail?.intake.id === intake.id ? "bg-surface-strong" : ""}`}
+            >
+              <strong className="block truncate text-sm">{intake.businessName}</strong>
+              <p className="mt-1 text-xs text-muted">
+                {intake.reference} · recover until{" "}
+                {intakeDate.format(menuIntakePurgeAt(new Date(intake.deletedAt!)))}
+              </p>
+            </Link>
+          ))}
         </aside>
 
         {detail && latest ? (
@@ -146,7 +173,9 @@ export function MenuIntakeReview({
                   </p>
                 </div>
                 <span className="rounded-full bg-ink px-3 py-1.5 text-xs text-on-primary">
-                  {detail.intake.status.replaceAll("_", " ")}
+                  {detail.intake.deletedAt
+                    ? "DELETED"
+                    : detail.intake.status.replaceAll("_", " ")}
                 </span>
               </div>
               <div className="mt-5 flex flex-wrap gap-2 text-xs">
@@ -169,6 +198,42 @@ export function MenuIntakeReview({
                 </span>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
+                {detail.intake.deletedAt ? (
+                  <>
+                    <button
+                      className="rounded-full border border-hairline px-3 py-2 text-xs"
+                      onClick={() =>
+                        run(async () => {
+                          const result = await restoreMenuIntakeAction(detail.intake.id);
+                          if (result.ok) router.push("/ops/menu-intakes");
+                          return result;
+                        })
+                      }
+                    >
+                      Restore submission
+                    </button>
+                    {canPurgeMenuIntake(new Date(detail.intake.deletedAt), new Date()) ? (
+                      <button
+                        className="rounded-full border border-red-300 px-3 py-2 text-xs text-red-700"
+                        onClick={() => {
+                          if (!window.confirm("Permanently delete this submission and its private files? This cannot be undone.")) return;
+                          run(async () => {
+                            const result = await purgeMenuIntakeAction(detail.intake.id);
+                            if (result.ok) router.push("/ops/menu-intakes");
+                            return result;
+                          });
+                        }}
+                      >
+                        Delete permanently
+                      </button>
+                    ) : (
+                      <span className="rounded-full bg-surface-strong px-3 py-2 text-xs text-muted">
+                        Permanent deletion available {intakeDate.format(menuIntakePurgeAt(new Date(detail.intake.deletedAt)))}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
                 <button
                   className="rounded-full border border-hairline px-3 py-2 text-xs"
                   onClick={() =>
@@ -228,9 +293,28 @@ export function MenuIntakeReview({
                     Send verified link on WhatsApp ↗
                   </a>
                 ) : null}
+                {detail.intake.status !== "IMPORTED" ? (
+                  <button
+                    className="rounded-full border border-red-300 px-3 py-2 text-xs text-red-700"
+                    onClick={() => {
+                      if (!window.confirm("Move this submission to Deleted? It can be restored for 30 days.")) return;
+                      run(async () => {
+                        const result = await deleteMenuIntakeAction(detail.intake.id);
+                        if (result.ok) router.push("/ops/menu-intakes");
+                        return result;
+                      });
+                    }}
+                  >
+                    Delete submission
+                  </button>
+                ) : null}
+                  </>
+                )}
               </div>
             </article>
 
+            {!detail.intake.deletedAt ? (
+              <>
             {detail.attachments.length ? (
               <article className="rounded-2xl border border-hairline bg-surface-card p-5">
                 <h3 className="font-display text-xl">
@@ -340,6 +424,10 @@ export function MenuIntakeReview({
                           }
                         />
                       </div>
+                      <MenuIntakeDishOptions
+                        sizeOptions={dish.sizeOptions}
+                        addOnGroups={dish.addOnGroups}
+                      />
                     </div>
                   ))}
                 </div>
@@ -730,6 +818,8 @@ export function MenuIntakeReview({
               >
                 {message}
               </p>
+            ) : null}
+              </>
             ) : null}
           </section>
         ) : (

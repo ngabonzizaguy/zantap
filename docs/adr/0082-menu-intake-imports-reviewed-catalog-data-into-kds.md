@@ -226,3 +226,18 @@ Production attachment persistence remains unproved until a newly labelled
 image/PDF submitted by the owner is visible in authenticated Ops. That
 verification does not authorize Ops → KDS import, which remains a separate
 action-time approval gate.
+
+## Amendment — visible options and recoverable Ops deletion — 2026-09-01
+
+Ops review must show the full catalog material already present in each submitted
+dish: size labels/prices and add-on groups, choices, selection rules, price and
+availability. This is a read-only review projection; it does not change import
+semantics or publish anything to a Storefront.
+
+An Operator may move a non-imported intake to Deleted immediately. The soft
+delete revokes resume access and removes the intake from the active inbox, while
+Ops may restore it for 30 days. Permanent purge becomes available only after
+that boundary and removes both the durable intake graph and its private source
+objects. Imported intakes remain immutable audit records and cannot enter this
+deletion lifecycle. The Store remains the sole database seam and private source
+cleanup remains behind the Menu Intake Blob seam.

@@ -1,6 +1,6 @@
 # Codex ↔ Cursor shared continuity prompt
 
-Last reconciled: **2026-08-30 (Africa/Kigali)**
+Last reconciled: **2026-09-01 (Africa/Kigali)**
 Scope: the product-restructure, marketing, lead-capture, PWA/KDS-polish,
 Paypack-preparation work, plus the new **Ops outreach + KDS + marketing batch**
 on branch `feat/ops-kds-marketing-batch` (shared Cursor ↔ Codex), and candidate
@@ -33,6 +33,24 @@ Before changing anything, read these files in order:
 Then run `git status --short --branch` and inspect the relevant commit/diff.
 Preserve every pre-existing dirty or untracked path unless the current task
 explicitly owns it.
+
+### 2026-09-01 — Codex — Menu Intake trash/options + Briefing PIN repair local
+
+- On `codex/candidate-29`, Ops Menu Intake now renders submitted sizes/extras
+  and supports delete → 30-day restore window → permanent purge of the database
+  graph/private sources. Imported intakes are deliberately audit-protected.
+- Briefing new/reset credentials are collision-checked four-digit PINs. The PIN
+  field remains visible on expired/unavailable preview states, active PINs are
+  no longer capped at two sessions, unlock attempts are rate-limited, and legacy
+  secrets keep working until reset.
+- Focused tests pass 10/10; full tests pass 460/117; scoped ESLint, TypeScript,
+  Prisma validation and production build pass. Headed browser QA passed
+  separate-browser PIN unlock and an authenticated size/extras submission → Ops
+  delete → restore cycle with zero application console errors. No Ops → KDS
+  import occurred.
+- Migration `20260901190000_menu_intake_ops_trash`, push and deploy remain
+  pending release approval. Preserve `.playwright-cli/`
+  and `output/`; do not touch Marketing Lead Form or Questions 1–14.
 
 ### 2026-08-30 — Codex — Candidate #29 retry recovery deployed and read-only smoked
 

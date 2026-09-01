@@ -8,24 +8,16 @@ import {
 import { promisify } from "node:util";
 
 const scrypt = promisify(scryptCallback);
-const WORD_PREFIXES = [
-  "amber", "atlas", "cedar", "coral", "dawn", "ember", "fern", "golden",
-  "harbor", "indigo", "juniper", "linen", "maple", "olive", "river", "velvet",
-] as const;
-const WORD_SUFFIXES = [
-  "bird", "brook", "cloud", "field", "garden", "grove", "hill", "lantern",
-  "meadow", "mint", "pebble", "ridge", "stone", "trail", "willow", "wood",
-] as const;
 
 export function normalizeBriefingSecret(value: string): string {
-  return value.trim().toLowerCase().replace(/[\s_-]+/g, "-");
+  const normalized = value.trim().toLowerCase();
+  return /^[\d\s_-]+$/.test(normalized)
+    ? normalized.replace(/\D/g, "")
+    : normalized.replace(/[\s_-]+/g, "-");
 }
 
 export function generateBriefingSecret(): string {
-  const words = Array.from({ length: 4 }, () =>
-    `${WORD_PREFIXES[randomInt(WORD_PREFIXES.length)]}${WORD_SUFFIXES[randomInt(WORD_SUFFIXES.length)]}`
-  );
-  return `${words.join("-")}-${randomInt(10_000).toString().padStart(4, "0")}`;
+  return randomInt(10_000).toString().padStart(4, "0");
 }
 
 export function lookupBriefingSecret(value: string): string {

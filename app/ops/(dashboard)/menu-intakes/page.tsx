@@ -8,7 +8,10 @@ export default async function OpsMenuIntakesPage({
   searchParams: Promise<{ intake?: string }>;
 }) {
   const store = getStore();
-  const intakes = await store.listMenuIntakes();
+  const [intakes, deletedIntakes] = await Promise.all([
+    store.listMenuIntakes(),
+    store.listDeletedMenuIntakes(),
+  ]);
   const requested = (await searchParams).intake;
   const selected = requested || intakes[0]?.id;
   const detail = selected ? await store.getMenuIntake(selected) : null;
@@ -21,6 +24,7 @@ export default async function OpsMenuIntakesPage({
   return (
     <MenuIntakeReview
       intakes={intakes}
+      deletedIntakes={deletedIntakes}
       detail={detail}
       vendors={vendors}
       suggestions={suggestions}

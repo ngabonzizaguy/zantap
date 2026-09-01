@@ -15,6 +15,10 @@ import {
 } from "@/lib/briefing/preview-access";
 import { BRIEFING_SESSION_COOKIE } from "@/lib/briefing/viewer-session";
 import { getStore } from "@/lib/store";
+import { enforceRateLimit, RateLimitError } from "@/lib/vendor/rate-limit";
+
+const BRIEFING_UNLOCK_LIMIT = 8;
+const BRIEFING_UNLOCK_WINDOW_MS = 15 * 60_000;
 
 export async function unlockBriefing(formData: FormData): Promise<void> {
   const secret = String(formData.get("secret") ?? "");
@@ -30,6 +34,16 @@ export async function unlockBriefing(formData: FormData): Promise<void> {
         .digest("base64url")
         .slice(0, 20)
     : undefined;
+  try {
+    enforceRateLimit(
+      `briefing:unlock:${networkFingerprint ?? "unknown"}`,
+      BRIEFING_UNLOCK_LIMIT,
+      BRIEFING_UNLOCK_WINDOW_MS,
+    );
+  } catch (error) {
+    if (error instanceof RateLimitError) redirect("/briefing?error=rate_limited");
+    throw error;
+  }
   const result = await unlockBriefingAccess(store.briefing, secret, {
     userAgent: requestHeaders.get("user-agent") ?? undefined,
     networkFingerprint,

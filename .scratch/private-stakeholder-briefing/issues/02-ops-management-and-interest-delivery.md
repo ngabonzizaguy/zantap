@@ -1,6 +1,6 @@
 # Issue 02 — Briefing Ops management and interest capture
 
-Status: **deployed · authenticated owner Ops walkthrough pending**
+Status: **deployed baseline · 4-digit PIN repair implemented locally · release pending**
 
 Complete the durable management slice already approved in ADR-0072,
 ADR-0076, and ADR-0077. The viewer remains free of Ops references; authenticated
@@ -8,7 +8,12 @@ Operators manage it from a dedicated `/ops/briefing` area.
 
 - [x] Persist immutable published Briefing versions and one editable draft.
 - [x] Create recipient-specific Access grants with one-time readable secrets,
-  expiry, revocation/reset, version pinning, share kit, and two-session limit.
+  expiry, revocation/reset, version pinning, and share kit.
+- [x] Replace new/reset secrets with collision-checked four-digit PINs, keep the
+  PIN input visible even when legacy preview access is expired or unavailable,
+  and allow every holder of an active PIN to create a viewing session.
+- [x] Preserve legacy long-secret verification until each existing grant is
+  reset, and rate-limit PIN unlock attempts without storing plaintext PINs.
 - [x] Replace the environment-only viewer gate with grant/session enforcement,
   acknowledgement, countdown expiry, and attributable watermark data.
 - [x] Persist privacy-limited activity and expose it in Ops.
@@ -45,3 +50,13 @@ Operators manage it from a dedicated `/ops/briefing` area.
 - Authenticated owner walkthrough of grant creation and the first real interest
   appearing in Ops remains pending; production was not polluted with a fake
   stakeholder message.
+
+## Four-digit PIN repair verification — 2026-09-01
+
+- Focused Briefing secret/service/gate tests pass 6/6.
+- A headed Ops browser generated a four-digit PIN; a separate browser entered
+  it through the always-visible expired-access gate and reached the Viewer
+  acknowledgement. No application console errors were recorded.
+- Ops date labels now use a fixed Kigali locale/time zone so server and browser
+  hydration are deterministic.
+- This repair is local only. It needs release approval before push/deploy.

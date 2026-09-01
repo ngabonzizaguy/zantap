@@ -1034,7 +1034,7 @@ error/fatal/warning/5xx scans were empty. No production fixture data changed.
 
 ---
 
-## Candidate #29 — Priority #1 Vendor Menu Intake — 🟠 RETRY RECOVERY DEPLOYED · READ-ONLY PROD-SMOKED · PROD ATTACHMENT SMOKE OPEN 2026-08-30
+## Candidate #29 — Priority #1 Vendor Menu Intake — 🟠 DEPLOYED BASELINE · OPS TRASH/OPTIONS FOLLOW-UP LOCAL · RELEASE PENDING 2026-09-01
 
 The separate shareable Vendor Menu Intake → Ops review → KDS import workflow is
 complete and deployed from `codex/candidate-29`. It includes both approved public paths,
@@ -1137,3 +1137,16 @@ redirected to login; exact-deployment error, fatal, warning and HTTP 500 queries
 were empty. The remaining gate is an owner-submitted, newly labelled production
 image/PDF visible in authenticated Ops. Ops → KDS import still requires separate
 action-time approval; Questions 1–14 and the Marketing Lead Form remain untouched.
+
+Follow-up Ops/Briefing repair is implemented locally on 2026-09-01. Ops Menu
+Intake displays all submitted size and add-on data and gives non-imported
+submissions a recoverable Deleted lifecycle: immediate soft delete, 30-day
+restore window, then permanent database/private-source purge. Imported records
+stay audit-protected. Briefing new/reset access uses collision-checked four-digit
+PINs, keeps the input present on expired/unavailable states, permits every active
+PIN holder to open a session, rate-limits failures, and retains legacy-secret
+compatibility until reset. Focused tests 10/10, full tests 460/117, scoped
+ESLint, TypeScript, Prisma validation and production build pass; headed browser
+PIN unlock plus Menu Intake options/delete/restore QA also passes. Migration
+`20260901190000_menu_intake_ops_trash` and release remain
+pending owner approval; no KDS import occurred.

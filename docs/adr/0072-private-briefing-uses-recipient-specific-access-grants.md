@@ -38,3 +38,18 @@ An Access-grant secret is shown in plaintext exactly once at creation/reset and
 included in the Operator's Share kit. ZanTap stores only a slow password hash;
 Ops cannot reveal an existing secret. Reset generates a replacement and
 immediately invalidates the old secret and every active Viewing session.
+
+## Amendment — shared four-digit PIN entry — 2026-09-01
+
+The owner has deliberately changed the access trade-off: new and reset grants
+use a four-digit numeric PIN generated in Ops, and every person who knows an
+active PIN may open a Viewing session. The earlier two-active-session ceiling is
+removed. Grant expiry, revocation, version pinning, acknowledgement, watermark
+and per-session activity remain authoritative.
+
+The PIN input is always present, including on expired or unavailable legacy
+preview states. Those states provide context but cannot replace the credential
+form. PIN allocation checks for lookup collisions, unlock attempts are
+rate-limited by a privacy-limited request fingerprint, and only the existing
+slow hash is stored. Legacy long secrets continue to verify until their grant is
+reset so this change does not strand an already-issued recipient.

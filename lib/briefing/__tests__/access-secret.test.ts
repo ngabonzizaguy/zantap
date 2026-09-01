@@ -8,10 +8,8 @@ import {
 } from "@/lib/briefing/access-secret";
 
 describe("Briefing Access secret", () => {
-  it("generates a readable four-word and four-digit secret", () => {
-    expect(generateBriefingSecret()).toMatch(
-      /^[a-z]+-[a-z]+-[a-z]+-[a-z]+-\d{4}$/
-    );
+  it("generates a four-digit PIN", () => {
+    expect(generateBriefingSecret()).toMatch(/^\d{4}$/);
   });
 
   it("accepts pasted spaces and letter case without storing plaintext", async () => {
@@ -22,5 +20,9 @@ describe("Briefing Access secret", () => {
     expect(await verifyBriefingSecret("Velvet LANTERN river mango 4827", hash)).toBe(true);
     expect(await verifyBriefingSecret("wrong-secret-0000", hash)).toBe(false);
     expect(hash).not.toContain(secret);
+  });
+
+  it("normalizes a spaced four-digit PIN", () => {
+    expect(normalizeBriefingSecret(" 48 27 ")).toBe("4827");
   });
 });

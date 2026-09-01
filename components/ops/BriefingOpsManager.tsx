@@ -27,6 +27,15 @@ const TABS: Array<{ id: Tab; label: string }> = [
 ];
 
 const dateInput = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+const briefingDate = new Intl.DateTimeFormat("en-GB", {
+  dateStyle: "medium",
+  timeZone: "Africa/Kigali",
+});
+const briefingDateTime = new Intl.DateTimeFormat("en-GB", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Africa/Kigali",
+});
 
 export function BriefingOpsManager({
   workspace,
@@ -39,6 +48,9 @@ export function BriefingOpsManager({
   const [document, setDocument] = useState<BriefingDocument>(() => briefingDocumentFromJson(workspace.draft));
   const [secretResult, setSecretResult] = useState<BriefingSecretResult | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [defaultExpiry] = useState(() =>
+    dateInput(new Date(Date.now() + 72 * 60 * 60 * 1000)),
+  );
   const [pending, startTransition] = useTransition();
   const latestVersion = workspace.publishedVersions[0];
   const grantsById = useMemo(() => new Map(workspace.grants.map((grant) => [grant.id, grant])), [workspace.grants]);
@@ -84,7 +96,7 @@ export function BriefingOpsManager({
         <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
           <Card className="p-5">
             <h2 className="font-display text-display-sm font-light">Create recipient Access</h2>
-            <p className="mt-2 text-sm text-muted">A unique secret is shown once. Copy the Share kit before closing it.</p>
+            <p className="mt-2 text-sm text-muted">A unique four-digit PIN is shown once. Copy the Share kit before closing it.</p>
             <form className="mt-5 space-y-4" onSubmit={(event) => {
               event.preventDefault();
               const data = new FormData(event.currentTarget);
@@ -103,17 +115,17 @@ export function BriefingOpsManager({
             }}>
               <Input name="recipientLabel" required aria-label="Recipient label" placeholder="Recipient or organization" />
               <Input name="recipientEmail" type="email" aria-label="Recipient email" placeholder="Email (optional)" />
-              <Input name="expiresAt" type="datetime-local" required aria-label="Access expiry" defaultValue={dateInput(new Date(Date.now() + 72 * 60 * 60 * 1000))} />
+              <Input name="expiresAt" type="datetime-local" required aria-label="Access expiry" defaultValue={defaultExpiry} />
               <label className="block text-xs text-muted">Published version
                 <select name="versionId" defaultValue={latestVersion?.id} className="mt-2 min-h-11 w-full rounded-lg border border-hairline-strong bg-white px-3 text-sm text-ink">
-                  {workspace.publishedVersions.map((version) => <option key={version.id} value={version.id}>Version {version.number} · {new Date(version.publishedAt).toLocaleDateString()}</option>)}
+                  {workspace.publishedVersions.map((version) => <option key={version.id} value={version.id}>Version {version.number} · {briefingDate.format(new Date(version.publishedAt))}</option>)}
                 </select>
               </label>
-              <Button disabled={pending || !latestVersion} type="submit" className="w-full">Generate secret</Button>
+              <Button disabled={pending || !latestVersion} type="submit" className="w-full">Generate PIN</Button>
             </form>
             {secretResult ? (
               <div className="mt-5 rounded-xl bg-canvas-soft p-4">
-                <p className="text-xs uppercase tracking-wider text-muted">One-time secret</p>
+                <p className="text-xs uppercase tracking-wider text-muted">One-time PIN</p>
                 <code className="mt-2 block break-all text-sm text-ink">{secretResult.secret}</code>
                 <textarea readOnly value={secretResult.shareText} className="mt-3 min-h-32 w-full rounded-lg border border-hairline bg-white p-3 text-xs text-body" />
                 <Button type="button" variant="outline" className="mt-3 w-full" onClick={() => navigator.clipboard.writeText(secretResult.shareText)}>Copy Share kit</Button>
@@ -131,15 +143,15 @@ export function BriefingOpsManager({
                     <div><h3 className="font-medium text-ink">{grant.recipientLabel}</h3><p className="mt-1 text-xs text-muted">{grant.recipientEmail || "No recipient email"} · Code {grant.shortCode}</p></div>
                     <Badge variant={grant.revokedAt || expired ? "muted" : "success"}>{grant.revokedAt ? "Revoked" : expired ? "Expired" : "Active"}</Badge>
                   </div>
-                  <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4"><div><dt className="text-xs text-muted">Version</dt><dd>v{grant.versionNumber}</dd></div><div><dt className="text-xs text-muted">Expires</dt><dd>{new Date(grant.expiresAt).toLocaleString()}</dd></div><div><dt className="text-xs text-muted">Sessions</dt><dd>{activeSessions.length} / 2</dd></div><div><dt className="text-xs text-muted">Created</dt><dd>{new Date(grant.createdAt).toLocaleDateString()}</dd></div></dl>
+                  <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4"><div><dt className="text-xs text-muted">Version</dt><dd>v{grant.versionNumber}</dd></div><div><dt className="text-xs text-muted">Expires</dt><dd>{briefingDateTime.format(new Date(grant.expiresAt))}</dd></div><div><dt className="text-xs text-muted">Active sessions</dt><dd>{activeSessions.length}</dd></div><div><dt className="text-xs text-muted">Created</dt><dd>{briefingDate.format(new Date(grant.createdAt))}</dd></div></dl>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <Button type="button" variant="outline" disabled={pending} onClick={() => startTransition(async () => { const result = await resetBriefingGrantSecretAction(grant.id); setSecretResult(result); setNotice("Secret reset. Existing sessions were revoked."); })}>Reset secret</Button>
+                    <Button type="button" variant="outline" disabled={pending} onClick={() => startTransition(async () => { const result = await resetBriefingGrantSecretAction(grant.id); setSecretResult(result); setNotice("PIN reset. Existing sessions were revoked."); })}>Reset PIN</Button>
                     <Button type="button" variant="outline" disabled={pending} onClick={() => run(() => updateBriefingGrantAction({ grantId: grant.id, action: grant.revokedAt ? "restore" : "revoke" }), grant.revokedAt ? "Access restored." : "Access revoked.")}>{grant.revokedAt ? "Restore" : "Revoke"}</Button>
                     <select aria-label={`Version for ${grant.recipientLabel}`} defaultValue={grant.versionId} onChange={(event) => run(() => updateBriefingGrantAction({ grantId: grant.id, action: "version", versionId: event.target.value }), "Pinned version updated.")} className="min-h-10 rounded-pill border border-hairline-strong bg-white px-3 text-sm">
                       {workspace.publishedVersions.map((version) => <option key={version.id} value={version.id}>v{version.number}</option>)}
                     </select>
                   </div>
-                  {activeSessions.length ? <div className="mt-4 border-t border-hairline pt-3">{activeSessions.map((session) => <div key={session.id} className="flex items-center justify-between gap-3 py-2 text-xs"><span className="text-muted">{session.userAgent?.slice(0, 55) || "Unknown browser"} · seen {new Date(session.lastSeenAt).toLocaleString()}</span><button type="button" className="font-medium text-ink underline" onClick={() => run(() => revokeBriefingSessionAction(session.id), "Viewing session revoked.")}>Revoke session</button></div>)}</div> : null}
+                  {activeSessions.length ? <div className="mt-4 border-t border-hairline pt-3">{activeSessions.map((session) => <div key={session.id} className="flex items-center justify-between gap-3 py-2 text-xs"><span className="text-muted">{session.userAgent?.slice(0, 55) || "Unknown browser"} · seen {briefingDateTime.format(new Date(session.lastSeenAt))}</span><button type="button" className="font-medium text-ink underline" onClick={() => run(() => revokeBriefingSessionAction(session.id), "Viewing session revoked.")}>Revoke session</button></div>)}</div> : null}
                 </Card>
               );
             })}
@@ -179,9 +191,9 @@ export function BriefingOpsManager({
         </div>
       ) : null}
 
-      {tab === "activity" ? <div className="space-y-2">{workspace.activities.length === 0 ? <Card className="p-8 text-center text-sm text-muted">No Briefing activity yet.</Card> : workspace.activities.map((activity) => <Card key={activity.id} className="flex items-center justify-between gap-4 p-4"><div><p className="text-sm font-medium text-ink">{activity.type.replaceAll("_", " ")}</p><p className="text-xs text-muted">{activity.grantId ? grantsById.get(activity.grantId)?.recipientLabel || activity.grantId : "Unattributed"}</p></div><time className="text-xs text-muted">{new Date(activity.at).toLocaleString()}</time></Card>)}</div> : null}
+      {tab === "activity" ? <div className="space-y-2">{workspace.activities.length === 0 ? <Card className="p-8 text-center text-sm text-muted">No Briefing activity yet.</Card> : workspace.activities.map((activity) => <Card key={activity.id} className="flex items-center justify-between gap-4 p-4"><div><p className="text-sm font-medium text-ink">{activity.type.replaceAll("_", " ")}</p><p className="text-xs text-muted">{activity.grantId ? grantsById.get(activity.grantId)?.recipientLabel || activity.grantId : "Unattributed"}</p></div><time className="text-xs text-muted">{briefingDateTime.format(new Date(activity.at))}</time></Card>)}</div> : null}
 
-      {tab === "interests" ? <div className="space-y-3">{interests.length === 0 ? <Card className="p-8 text-center text-sm text-muted">No Briefing interests submitted yet.</Card> : interests.map((interest) => <Card key={interest.id} className="p-5"><div className="flex flex-wrap justify-between gap-3"><div><h3 className="font-medium text-ink">{interest.name}</h3><p className="text-sm text-muted">{interest.contact} · {interest.interestType}</p></div><Badge variant="success">Recorded in Ops</Badge></div><p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-body">{interest.message}</p><p className="mt-3 text-xs text-muted">{new Date(interest.createdAt).toLocaleString()}</p></Card>)}</div> : null}
+      {tab === "interests" ? <div className="space-y-3">{interests.length === 0 ? <Card className="p-8 text-center text-sm text-muted">No Briefing interests submitted yet.</Card> : interests.map((interest) => <Card key={interest.id} className="p-5"><div className="flex flex-wrap justify-between gap-3"><div><h3 className="font-medium text-ink">{interest.name}</h3><p className="text-sm text-muted">{interest.contact} · {interest.interestType}</p></div><Badge variant="success">Recorded in Ops</Badge></div><p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-body">{interest.message}</p><p className="mt-3 text-xs text-muted">{briefingDateTime.format(new Date(interest.createdAt))}</p></Card>)}</div> : null}
     </div>
   );
 }

@@ -23,7 +23,7 @@ export default async function BriefingPage({ searchParams }: BriefingPageProps) 
     if (preview && isBriefingPreviewExpired(preview)) {
       return <BriefingAccessGate state="expired" />;
     }
-    return <BriefingAccessGate error={Boolean(query.error)} />;
+    return <BriefingAccessGate error={query.error} />;
   }
   if (context.session && !context.session.acknowledgedAt) {
     return <BriefingAcknowledgement recipient={context.recipient} expiresAt={context.expiresAt} />;

@@ -13,8 +13,6 @@ import type {
   BriefingVersion,
 } from "@/lib/briefing/types";
 
-export const BRIEFING_MAX_ACTIVE_SESSIONS = 2;
-
 export interface CreateBriefingAccessGrantInput {
   recipientLabel: string;
   recipientEmail?: string;
@@ -32,11 +30,19 @@ export type BriefingUnlockResult =
     }
   | {
       ok: false;
-      code: "INVALID" | "EXPIRED" | "REVOKED" | "SESSION_LIMIT" | "VERSION_MISSING";
+      code: "INVALID" | "EXPIRED" | "REVOKED" | "VERSION_MISSING";
     };
 
 function tokenHash(token: string): string {
   return createHash("sha256").update(token).digest("base64url");
+}
+
+async function generateAvailableBriefingPin(store: BriefingStore): Promise<string> {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const pin = generateBriefingSecret();
+    if (!(await store.getGrantBySecretLookup(lookupBriefingSecret(pin)))) return pin;
+  }
+  throw new Error("Could not allocate a unique Briefing PIN");
 }
 
 export async function createBriefingAccessGrant(
@@ -52,7 +58,7 @@ export async function createBriefingAccessGrant(
     throw new Error("Briefing version not found");
   }
 
-  const secret = generateBriefingSecret();
+  const secret = await generateAvailableBriefingPin(store);
   const grant = await store.createGrant({
     recipientLabel,
     recipientEmail: input.recipientEmail?.trim() || undefined,
@@ -87,10 +93,6 @@ export async function unlockBriefingAccess(
   }
   if (stored.revokedAt) return { ok: false, code: "REVOKED" };
   if (stored.expiresAt <= now) return { ok: false, code: "EXPIRED" };
-  if ((await store.listActiveSessions(stored.id, now)).length >= BRIEFING_MAX_ACTIVE_SESSIONS) {
-    await store.recordActivity({ grantId: stored.id, type: "SESSION_LIMIT_DENIED" });
-    return { ok: false, code: "SESSION_LIMIT" };
-  }
   const version = await store.getVersion(stored.versionId);
   if (!version) return { ok: false, code: "VERSION_MISSING" };
 
@@ -138,7 +140,7 @@ export async function resetBriefingAccessSecret(
   store: BriefingStore,
   grantId: string
 ): Promise<{ grant: BriefingAccessGrant; secret: string }> {
-  const secret = generateBriefingSecret();
+  const secret = await generateAvailableBriefingPin(store);
   const grant = await store.updateGrant(grantId, {
     secretLookup: lookupBriefingSecret(secret),
     secretHash: await hashBriefingSecret(secret),

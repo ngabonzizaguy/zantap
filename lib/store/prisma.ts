@@ -214,6 +214,7 @@ import type {
   MenuIntakeContactLog,
   UpdateMenuIntakeReviewInput,
 } from "@/lib/menu-intake/types";
+import { canPurgeMenuIntake } from "@/lib/menu-intake/retention";
 import { readPrivateMenuIntakeBlob } from "@/lib/menu-intake/blob-storage";
 
 // Statuses that count toward a vendor's gross takings for the day.
@@ -399,6 +400,7 @@ function mapMenuIntake(
     updatedAt: row.updatedAt,
     importedAt: row.importedAt ?? undefined,
     cancelledAt: row.cancelledAt ?? undefined,
+    deletedAt: row.deletedAt ?? undefined,
   };
 }
 
@@ -1328,10 +1330,77 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
 
   async function listMenuIntakes(): Promise<MenuIntake[]> {
     const rows = await client.menuIntake.findMany({
+      where: { deletedAt: null },
       include: { destinationVendor: { select: { slug: true } } },
       orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
     });
     return rows.map(mapMenuIntake);
+  }
+
+  async function listDeletedMenuIntakes(): Promise<MenuIntake[]> {
+    const rows = await client.menuIntake.findMany({
+      where: { deletedAt: { not: null } },
+      include: { destinationVendor: { select: { slug: true } } },
+      orderBy: [{ deletedAt: "desc" }, { id: "desc" }],
+    });
+    return rows.map(mapMenuIntake);
+  }
+
+  async function deleteMenuIntake(
+    intakeId: string,
+    at: Date,
+  ): Promise<MenuIntake | null> {
+    return client.$transaction(async (tx) => {
+      const current = await tx.menuIntake.findUnique({ where: { id: intakeId } });
+      if (!current || current.status === "IMPORTED" || current.deletedAt) return null;
+      const row = await tx.menuIntake.update({
+        where: { id: intakeId },
+        data: { deletedAt: at, updatedAt: at },
+        include: { destinationVendor: { select: { slug: true } } },
+      });
+      await tx.menuIntakeAccess.updateMany({
+        where: { intakeId, revokedAt: null },
+        data: { revokedAt: at },
+      });
+      return mapMenuIntake(row);
+    });
+  }
+
+  async function restoreMenuIntake(
+    intakeId: string,
+    at: Date,
+  ): Promise<MenuIntake | null> {
+    const current = await client.menuIntake.findFirst({
+      where: { id: intakeId, deletedAt: { not: null } },
+    });
+    if (!current || canPurgeMenuIntake(current.deletedAt!, at)) return null;
+    return mapMenuIntake(
+      await client.menuIntake.update({
+        where: { id: intakeId },
+        data: { deletedAt: null, updatedAt: at },
+        include: { destinationVendor: { select: { slug: true } } },
+      }),
+    );
+  }
+
+  async function purgeMenuIntake(
+    intakeId: string,
+    at: Date,
+  ): Promise<MenuIntakeAttachment[] | null> {
+    return client.$transaction(async (tx) => {
+      const current = await tx.menuIntake.findUnique({
+        where: { id: intakeId },
+        include: { attachments: { orderBy: { createdAt: "asc" } } },
+      });
+      if (
+        !current?.deletedAt ||
+        !canPurgeMenuIntake(current.deletedAt, at)
+      ) {
+        return null;
+      }
+      await tx.menuIntake.delete({ where: { id: intakeId } });
+      return current.attachments.map(mapMenuIntakeAttachment);
+    });
   }
 
   async function authorizeMenuIntake(
@@ -1343,6 +1412,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       const access = await tx.menuIntakeAccess.findFirst({
         where: {
           intakeId,
+          intake: { deletedAt: null },
           tokenHash,
           revokedAt: null,
           consumedAt: null,
@@ -1394,7 +1464,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     });
     if (!access) return null;
     const intake = await client.menuIntake.findUnique({
-      where: { id: input.intakeId },
+      where: { id: input.intakeId, deletedAt: null },
     });
     if (
       !intake ||
@@ -1557,7 +1627,11 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       const current = await tx.menuIntake.findUnique({
         where: { id: input.intakeId },
       });
-      if (!current || ["IMPORTING", "IMPORTED"].includes(current.status))
+      if (
+        !current ||
+        current.deletedAt ||
+        ["IMPORTING", "IMPORTED"].includes(current.status)
+      )
         return null;
       let destinationVendorId = current.destinationVendorId;
       if (input.destinationVendorSlug !== undefined) {
@@ -1657,7 +1731,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       const intake = await tx.menuIntake.findUnique({
         where: { id: input.intakeId },
       });
-      if (!intake) throw new Error("Menu intake not found");
+      if (!intake || intake.deletedAt) throw new Error("Menu intake not found");
       if (intake.status !== "READY_TO_IMPORT") {
         throw new Error("Menu intake is not ready to import");
       }
@@ -4483,6 +4557,10 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     getMenuIntake,
     addMenuIntakeRevision,
     listMenuIntakes,
+    listDeletedMenuIntakes,
+    deleteMenuIntake,
+    restoreMenuIntake,
+    purgeMenuIntake,
     updateMenuIntakeReview,
     answerMenuIntakeQuestion,
     importMenuIntake,

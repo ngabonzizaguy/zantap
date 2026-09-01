@@ -182,6 +182,7 @@ import type {
   UpdateMenuIntakeReviewInput,
   MenuIntakeContactLog,
 } from "@/lib/menu-intake/types";
+import { canPurgeMenuIntake } from "@/lib/menu-intake/retention";
 import { readPrivateMenuIntakeBlob } from "@/lib/menu-intake/blob-storage";
 
 const COUNTED_STATUSES: OrderStatus[] = ["PAID", "DISPATCHED", "COMPLETED"];
@@ -352,6 +353,7 @@ export function createInMemoryStore(): ResettableStore {
       cancelledAt: intake.cancelledAt
         ? new Date(intake.cancelledAt)
         : undefined,
+      deletedAt: intake.deletedAt ? new Date(intake.deletedAt) : undefined,
     };
   }
 
@@ -1031,9 +1033,84 @@ export function createInMemoryStore(): ResettableStore {
 
   async function listMenuIntakes(): Promise<MenuIntake[]> {
     return menuIntakes
+      .filter((row) => !row.deletedAt)
       .slice()
       .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
       .map(cloneMenuIntake);
+  }
+
+  async function listDeletedMenuIntakes(): Promise<MenuIntake[]> {
+    return menuIntakes
+      .filter((row) => Boolean(row.deletedAt))
+      .slice()
+      .sort((a, b) => (b.deletedAt?.getTime() ?? 0) - (a.deletedAt?.getTime() ?? 0))
+      .map(cloneMenuIntake);
+  }
+
+  async function deleteMenuIntake(
+    intakeId: string,
+    at: Date,
+  ): Promise<MenuIntake | null> {
+    const index = menuIntakes.findIndex((row) => row.id === intakeId);
+    if (
+      index === -1 ||
+      menuIntakes[index].status === "IMPORTED" ||
+      menuIntakes[index].deletedAt
+    ) return null;
+    menuIntakes[index] = {
+      ...menuIntakes[index],
+      deletedAt: new Date(at),
+      updatedAt: new Date(at),
+    };
+    await revokeMenuIntakeAccess(intakeId, at);
+    return cloneMenuIntake(menuIntakes[index]);
+  }
+
+  async function restoreMenuIntake(
+    intakeId: string,
+    at: Date,
+  ): Promise<MenuIntake | null> {
+    const index = menuIntakes.findIndex(
+      (row) => row.id === intakeId && Boolean(row.deletedAt),
+    );
+    if (
+      index === -1 ||
+      canPurgeMenuIntake(menuIntakes[index].deletedAt!, at)
+    ) return null;
+    menuIntakes[index] = {
+      ...menuIntakes[index],
+      deletedAt: undefined,
+      updatedAt: new Date(at),
+    };
+    return cloneMenuIntake(menuIntakes[index]);
+  }
+
+  async function purgeMenuIntake(
+    intakeId: string,
+    at: Date,
+  ): Promise<MenuIntakeAttachment[] | null> {
+    const index = menuIntakes.findIndex((row) => row.id === intakeId);
+    const deletedAt = index === -1 ? undefined : menuIntakes[index].deletedAt;
+    if (
+      index === -1 ||
+      !deletedAt ||
+      !canPurgeMenuIntake(deletedAt, at)
+    ) {
+      return null;
+    }
+    const attachments = menuIntakeAttachments
+      .filter((row) => row.intakeId === intakeId)
+      .map((row) => ({ ...row, createdAt: new Date(row.createdAt) }));
+    menuIntakes.splice(index, 1);
+    menuIntakeRevisions = menuIntakeRevisions.filter((row) => row.intakeId !== intakeId);
+    menuIntakeAccess = menuIntakeAccess.filter((row) => row.intakeId !== intakeId);
+    menuIntakeQuestions = menuIntakeQuestions.filter((row) => row.intakeId !== intakeId);
+    menuIntakeAttachments = menuIntakeAttachments.filter((row) => row.intakeId !== intakeId);
+    menuIntakeContactLogs = menuIntakeContactLogs.filter((row) => row.intakeId !== intakeId);
+    menuIntakeImportResults = new Map(
+      [...menuIntakeImportResults].filter(([, result]) => result.intakeId !== intakeId),
+    );
+    return attachments;
   }
 
   async function authorizeMenuIntake(
@@ -1050,6 +1127,7 @@ export function createInMemoryStore(): ResettableStore {
         row.expiresAt.getTime() > at.getTime(),
     );
     if (accessIndex === -1) return null;
+    if (menuIntakes.find((row) => row.id === intakeId)?.deletedAt) return null;
     menuIntakeAccess[accessIndex] = {
       ...menuIntakeAccess[accessIndex],
       lastActiveAt: new Date(at),
@@ -1112,7 +1190,7 @@ export function createInMemoryStore(): ResettableStore {
   async function createMenuIntakeAccess(
     input: CreateMenuIntakeAccessInput,
   ): Promise<MenuIntakeAccess | null> {
-    if (!menuIntakes.some((row) => row.id === input.intakeId)) return null;
+    if (!menuIntakes.some((row) => row.id === input.intakeId && !row.deletedAt)) return null;
     const access: MenuIntakeAccess = {
       id: `menu_intake_access_${++menuIntakeAccessCounter}_${Date.now()}`,
       intakeId: input.intakeId,
@@ -1187,6 +1265,7 @@ export function createInMemoryStore(): ResettableStore {
     const index = menuIntakes.findIndex((row) => row.id === input.intakeId);
     if (
       index === -1 ||
+      menuIntakes[index].deletedAt ||
       ["IMPORTING", "IMPORTED"].includes(menuIntakes[index].status)
     ) {
       return null;
@@ -1262,7 +1341,8 @@ export function createInMemoryStore(): ResettableStore {
     const previous = menuIntakeImportResults.get(input.idempotencyKey);
     if (previous) return structuredClone(previous);
     const index = menuIntakes.findIndex((row) => row.id === input.intakeId);
-    if (index === -1) throw new Error("Menu intake not found");
+    if (index === -1 || menuIntakes[index].deletedAt)
+      throw new Error("Menu intake not found");
     if (menuIntakes[index].status === "IMPORTED") {
       throw new Error("Menu intake already imported");
     }
@@ -3435,6 +3515,10 @@ export function createInMemoryStore(): ResettableStore {
     getMenuIntake,
     addMenuIntakeRevision,
     listMenuIntakes,
+    listDeletedMenuIntakes,
+    deleteMenuIntake,
+    restoreMenuIntake,
+    purgeMenuIntake,
     updateMenuIntakeReview,
     answerMenuIntakeQuestion,
     importMenuIntake,

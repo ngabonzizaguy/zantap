@@ -201,6 +201,13 @@ export interface Store {
     input: MenuIntakeImportRequest,
   ): Promise<MenuIntakeImportResult>;
   listMenuIntakes(): Promise<MenuIntake[]>;
+  listDeletedMenuIntakes(): Promise<MenuIntake[]>;
+  deleteMenuIntake(intakeId: string, at: Date): Promise<MenuIntake | null>;
+  restoreMenuIntake(intakeId: string, at: Date): Promise<MenuIntake | null>;
+  purgeMenuIntake(
+    intakeId: string,
+    at: Date,
+  ): Promise<MenuIntakeAttachment[] | null>;
   updateMenuIntakeReview(
     input: UpdateMenuIntakeReviewInput,
   ): Promise<MenuIntakeDetail | null>;

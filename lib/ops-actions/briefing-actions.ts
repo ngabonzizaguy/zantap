@@ -26,7 +26,7 @@ function shareResult(grant: BriefingSecretResult["grant"], secret: string): Brie
   return {
     grant,
     secret,
-    shareText: `Private ZanTap Briefing for ${grant.recipientLabel}\n${origin}/briefing\nSecret: ${secret}\nExpires: ${grant.expiresAt.toLocaleString("en-RW", { timeZone: "Africa/Kigali" })}`,
+    shareText: `Private ZanTap Briefing for ${grant.recipientLabel}\n${origin}/briefing\nPIN: ${secret}\nExpires: ${grant.expiresAt.toLocaleString("en-RW", { timeZone: "Africa/Kigali" })}`,
   };
 }
 
