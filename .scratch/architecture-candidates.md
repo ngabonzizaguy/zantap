@@ -1157,3 +1157,12 @@ No KDS import occurred.
 Local Ops QA was restored on 2026-09-01 by configuring both required Operator
 environment values in gitignored `.env.local`; authenticated `/ops` loads cleanly.
 This is local runtime configuration only, not a product or production change.
+
+Authenticated Production Ops follow-up found previously undocumented intake
+`MI-260830-A50450` with `3 private files`. Its three private JPEG routes
+(`1001245003.jpg`, `1001245006.jpg`, `1001245009.jpg`) each load successfully
+through the authenticated boundary and report 589×1280 content. This proves the
+production private attachment persistence/read seam, but the release gate stays
+open until the owner confirms this generically labelled `Test` intake is their
+newly labelled submission. No Ops mutation, import, notification, product-code
+change, Marketing Lead Form work, or Questions 1–14 work occurred.

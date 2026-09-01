@@ -1,6 +1,6 @@
 # Candidate #29 — KDS, customer hub, lead capture and Ops improvements
 
-Status: OPS TRASH/OPTIONS + BRIEFING PIN DEPLOYED · READ-ONLY PROD SMOKE PASSED · PROD ATTACHMENT PERSISTENCE NOT YET PROVED · IMPORT GATED · QUESTIONS 1–14 NOT STARTED
+Status: OPS TRASH/OPTIONS + BRIEFING PIN DEPLOYED · PROD ATTACHMENTS VISIBLE, OWNER ATTRIBUTION PENDING · IMPORT GATED · QUESTIONS 1–14 NOT STARTED
 Date: 2026-09-01
 
 ## Owner request
@@ -1235,3 +1235,19 @@ image/PDF is visible in authenticated Ops. Marketing Lead Form and Questions
 Local QA note (2026-09-01): port 3000 now reads a gitignored `.env.local` with
 both required Operator values. Fresh-browser sign-in and `/ops` load pass with
 zero console errors. No product or production configuration changed.
+
+## Production attachment follow-up — FILES VISIBLE · OWNER ATTRIBUTION PENDING 2026-09-01
+
+- [x] Authenticated Production Ops now shows the previously undocumented intake
+  `MI-260830-A50450` with the authoritative count `3 private files`.
+- [x] All three private JPEG routes open successfully through the authenticated
+  Ops boundary: `1001245003.jpg`, `1001245006.jpg`, and `1001245009.jpg` (each
+  reported as private, 0.1 MB, 589×1280).
+- [ ] Confirm that `MI-260830-A50450` is the owner's newly labelled persistence
+  submission. Its visible business label is only `Test`, so the evidence proves
+  durable production attachment storage/readback but does not by itself prove
+  the required owner attribution.
+
+No Ops state was changed, no attachment was downloaded or exposed outside the
+authenticated route, and no Ops → KDS import or WhatsApp handoff occurred.
+Marketing Lead Form and Questions 1–14 remain untouched.

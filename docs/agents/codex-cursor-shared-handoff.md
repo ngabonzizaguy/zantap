@@ -34,6 +34,22 @@ Then run `git status --short --branch` and inspect the relevant commit/diff.
 Preserve every pre-existing dirty or untracked path unless the current task
 explicitly owns it.
 
+### 2026-09-01 — Codex — Production private attachments visible; attribution pending
+
+- Authenticated Production Ops now shows previously undocumented intake
+  `MI-260830-A50450` with `3 private files`. All three listed JPEG attachment
+  routes load successfully through the authenticated Ops boundary:
+  `1001245003.jpg`, `1001245006.jpg`, and `1001245009.jpg` (0.1 MB each,
+  589×1280).
+- This proves the production private attachment storage/read seam. Do not yet
+  close the owner-labelled release gate: the visible business label is only
+  `Test`, so the owner must confirm that this intake is their newly labelled
+  submission.
+- No Ops state changed, no file was downloaded, no WhatsApp action or KDS import
+  occurred, and no product code changed. Ops → KDS import remains separately
+  action-gated. Preserve `.playwright-cli/` and `output/`; do not touch the
+  Marketing Lead Form or Questions 1–14.
+
 ### 2026-09-01 — Codex — Menu Intake trash/options + Briefing PIN deployed
 
 - On `codex/candidate-29`, Ops Menu Intake now renders submitted sizes/extras
