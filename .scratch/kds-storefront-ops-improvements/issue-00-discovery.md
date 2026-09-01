@@ -1226,3 +1226,7 @@ Do not perform Ops → KDS import without its separate action-time approval.
 Production attachment persistence remains open until a newly labelled owner
 image/PDF is visible in authenticated Ops. Marketing Lead Form and Questions
 1–14 remain untouched.
+
+Local QA note (2026-09-01): port 3000 now reads a gitignored `.env.local` with
+both required Operator values. Fresh-browser sign-in and `/ops` load pass with
+zero console errors. No product or production configuration changed.

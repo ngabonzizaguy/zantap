@@ -53,6 +53,9 @@ explicitly owns it.
   and `output/`; do not touch Marketing Lead Form or Questions 1–14.
 - Owner-approved copy refinement: the Briefing access-gate footer now reads
   `Private viewing`; no other viewer copy or behavior changed.
+- Local port 3000 now has the two required Operator variables in gitignored
+  `.env.local`. Fresh-browser sign-in and `/ops` load pass with zero console
+  errors; no production environment changed.
 
 ### 2026-08-30 — Codex — Candidate #29 retry recovery deployed and read-only smoked
 

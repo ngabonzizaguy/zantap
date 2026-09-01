@@ -1151,3 +1151,7 @@ PIN unlock plus Menu Intake options/delete/restore QA also passes. Migration
 `20260901190000_menu_intake_ops_trash` and release remain
 pending owner approval. The Briefing gate footer was also softened to the short
 label “Private viewing”; no KDS import occurred.
+
+Local Ops QA was restored on 2026-09-01 by configuring both required Operator
+environment values in gitignored `.env.local`; authenticated `/ops` loads cleanly.
+This is local runtime configuration only, not a product or production change.
