@@ -1034,7 +1034,7 @@ error/fatal/warning/5xx scans were empty. No production fixture data changed.
 
 ---
 
-## Candidate #29 — Priority #1 Vendor Menu Intake — 🟠 DEPLOYED BASELINE · OPS TRASH/OPTIONS FOLLOW-UP LOCAL · RELEASE PENDING 2026-09-01
+## Candidate #29 — Priority #1 Vendor Menu Intake — ✅ OPS TRASH/OPTIONS + BRIEFING PIN DEPLOYED · READ-ONLY PROD-SMOKED 2026-09-01
 
 The separate shareable Vendor Menu Intake → Ops review → KDS import workflow is
 complete and deployed from `codex/candidate-29`. It includes both approved public paths,
@@ -1148,9 +1148,11 @@ PIN holder to open a session, rate-limits failures, and retains legacy-secret
 compatibility until reset. Focused tests 10/10, full tests 460/117, scoped
 ESLint, TypeScript, Prisma validation and production build pass; headed browser
 PIN unlock plus Menu Intake options/delete/restore QA also passes. Migration
-`20260901190000_menu_intake_ops_trash` and release remain
-pending owner approval. The Briefing gate footer was also softened to the short
-label “Private viewing”; no KDS import occurred.
+`20260901190000_menu_intake_ops_trash` is applied and all 22 migrations are
+current. Exact HEAD `5bd7d87` is pushed and deployed READY as Production
+`dpl_5kvk1NEtjwtgK66oMBKmn3n5TFbv` on `zantap.app`. The Briefing gate footer is
+the short label “Private viewing”; route and exact-deployment log smoke pass.
+No KDS import occurred.
 
 Local Ops QA was restored on 2026-09-01 by configuring both required Operator
 environment values in gitignored `.env.local`; authenticated `/ops` loads cleanly.

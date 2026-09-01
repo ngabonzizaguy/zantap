@@ -53,3 +53,10 @@ form. PIN allocation checks for lookup collisions, unlock attempts are
 rate-limited by a privacy-limited request fingerprint, and only the existing
 slow hash is stored. Legacy long secrets continue to verify until their grant is
 reset so this change does not strand an already-issued recipient.
+
+## Four-digit PIN release status — 2026-09-01
+
+The amendment is live from exact HEAD `5bd7d87` in Vercel Production deployment
+`dpl_5kvk1NEtjwtgK66oMBKmn3n5TFbv`, READY on `zantap.app`. Live read-only smoke
+confirmed the four-digit PIN gate and the owner-approved `Private viewing` label;
+the exact-deployment error, fatal, warning and HTTP-500 scans were empty.

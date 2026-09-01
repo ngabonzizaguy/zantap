@@ -1,6 +1,6 @@
 # Candidate #29 — KDS, customer hub, lead capture and Ops improvements
 
-Status: DEPLOYED BASELINE · OPS TRASH/OPTIONS FOLLOW-UP IMPLEMENTED LOCALLY · MIGRATION/RELEASE PENDING · PROD ATTACHMENT PERSISTENCE NOT YET PROVED · IMPORT GATED · QUESTIONS 1–14 NOT STARTED
+Status: OPS TRASH/OPTIONS + BRIEFING PIN DEPLOYED · READ-ONLY PROD SMOKE PASSED · PROD ATTACHMENT PERSISTENCE NOT YET PROVED · IMPORT GATED · QUESTIONS 1–14 NOT STARTED
 Date: 2026-09-01
 
 ## Owner request
@@ -1206,7 +1206,7 @@ untouched; no production business row was created during local verification.
 
 Do not perform Ops → KDS import without its separate action-time approval.
 
-## Ops review visibility and 30-day trash — IMPLEMENTED LOCALLY 2026-09-01
+## Ops review visibility and 30-day trash — DEPLOYED · READ-ONLY PROD-SMOKED 2026-09-01
 
 - [x] Ops review renders every submitted size price and add-on group/choice,
   including required/optional selection rules, included prices and availability.
@@ -1220,8 +1220,13 @@ Do not perform Ops → KDS import without its separate action-time approval.
   submitted Small/Large sizes and Sauce extras, verified them in authenticated
   Ops, then passed delete → Deleted/recover-until date → restore. No KDS import
   was performed.
-- [ ] Migration `20260901190000_menu_intake_ops_trash` and this local product
-  commit require explicit release approval before production deployment.
+- [x] Migration `20260901190000_menu_intake_ops_trash` applied; all 22
+  migrations are current and the production `deletedAt` column was confirmed.
+- [x] Exact product/release HEAD `5bd7d87` pushed and deployed READY as Vercel
+  Production `dpl_5kvk1NEtjwtgK66oMBKmn3n5TFbv` on `zantap.app`.
+- [x] Read-only production smoke passed for Briefing, Menu Intake, storefront,
+  KDS and the Ops login boundary. Exact-deployment error, fatal, warning and
+  HTTP-500 scans were empty.
 
 Production attachment persistence remains open until a newly labelled owner
 image/PDF is visible in authenticated Ops. Marketing Lead Form and Questions

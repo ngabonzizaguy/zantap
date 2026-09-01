@@ -241,3 +241,11 @@ that boundary and removes both the durable intake graph and its private source
 objects. Imported intakes remain immutable audit records and cannot enter this
 deletion lifecycle. The Store remains the sole database seam and private source
 cleanup remains behind the Menu Intake Blob seam.
+
+## Ops trash/options release status — 2026-09-01
+
+Migration `20260901190000_menu_intake_ops_trash` is applied; all 22 migrations
+are current and the production `MenuIntake.deletedAt` column was verified with a
+read-only query. Exact HEAD `5bd7d87` is pushed and deployed READY as Vercel
+Production `dpl_5kvk1NEtjwtgK66oMBKmn3n5TFbv` on `zantap.app`. Route and
+release-log smoke pass. No Ops → KDS import was performed or newly authorized.

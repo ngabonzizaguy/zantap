@@ -1,6 +1,6 @@
 # Issue 02 — Briefing Ops management and interest capture
 
-Status: **deployed baseline · 4-digit PIN repair implemented locally · release pending**
+Status: **4-digit PIN repair deployed · read-only production smoke passed**
 
 Complete the durable management slice already approved in ADR-0072,
 ADR-0076, and ADR-0077. The viewer remains free of Ops references; authenticated
@@ -22,7 +22,7 @@ Operators manage it from a dedicated `/ops/briefing` area.
   Email delivery is deliberately omitted from this release.
 - [x] Add structured content, Access, activity, and interest management under
   `/ops/briefing` using `DESIGN.md`.
-- [ ] Add migrations, Store adapter contract coverage, focused UI/action tests,
+- [x] Add migrations, Store adapter contract coverage, focused UI/action tests,
   production build, responsive browser QA, deploy, and production smoke.
 
 ## Boundaries
@@ -61,4 +61,6 @@ Operators manage it from a dedicated `/ops/briefing` area.
   hydration are deterministic.
 - The access-gate footer now uses the owner-approved subtle label “Private
   viewing” instead of the longer prohibition.
-- This repair is local only. It needs release approval before push/deploy.
+- Exact HEAD `5bd7d87` is deployed READY as Production
+  `dpl_5kvk1NEtjwtgK66oMBKmn3n5TFbv` on `zantap.app`. Live HTML includes
+  “four-digit PIN” and “Private viewing”; release-log scans are clean.

@@ -34,7 +34,7 @@ Then run `git status --short --branch` and inspect the relevant commit/diff.
 Preserve every pre-existing dirty or untracked path unless the current task
 explicitly owns it.
 
-### 2026-09-01 — Codex — Menu Intake trash/options + Briefing PIN repair local
+### 2026-09-01 — Codex — Menu Intake trash/options + Briefing PIN deployed
 
 - On `codex/candidate-29`, Ops Menu Intake now renders submitted sizes/extras
   and supports delete → 30-day restore window → permanent purge of the database
@@ -48,9 +48,15 @@ explicitly owns it.
   separate-browser PIN unlock and an authenticated size/extras submission → Ops
   delete → restore cycle with zero application console errors. No Ops → KDS
   import occurred.
-- Migration `20260901190000_menu_intake_ops_trash`, push and deploy remain
-  pending release approval. Preserve `.playwright-cli/`
-  and `output/`; do not touch Marketing Lead Form or Questions 1–14.
+- Owner approved release. Migration `20260901190000_menu_intake_ops_trash` is
+  applied, all 22 migrations are current, and the `deletedAt` column is verified.
+  Exact HEAD `5bd7d87` is pushed and READY as Vercel Production
+  `dpl_5kvk1NEtjwtgK66oMBKmn3n5TFbv` on `zantap.app`.
+- Briefing, Menu Intake, storefront and KDS return 200; Ops intake returns the
+  expected 307 to login; live Briefing HTML contains “four-digit PIN” and
+  “Private viewing”. Exact-deployment error/fatal/warning/HTTP-500 scans are
+  empty. Preserve `.playwright-cli/` and `output/`; do not touch Marketing Lead
+  Form or Questions 1–14.
 - Owner-approved copy refinement: the Briefing access-gate footer now reads
   `Private viewing`; no other viewer copy or behavior changed.
 - Local port 3000 now has the two required Operator variables in gitignored
