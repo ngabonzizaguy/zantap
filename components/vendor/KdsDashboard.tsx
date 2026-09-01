@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Driver, MenuItem, Order, Vendor } from "@/lib/types";
 import type { VendorFeatureFlags } from "@/lib/vendor/feature-and-profit-types";
@@ -61,6 +62,15 @@ import { Coachmark } from "@/components/vendor/Coachmark";
 import { InstallHintBanner } from "@/components/pwa/InstallHintBanner";
 import { Card, GradientOrbs } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
+import type { VisualGuideId } from "@/lib/kds/visual-guides";
+
+const VisualGuideViewer = dynamic(
+  () =>
+    import("@/components/vendor/VisualGuideViewer").then(
+      (module) => module.VisualGuideViewer
+    ),
+  { ssr: false }
+);
 
 const KDS_TABS = new Set<KdsTab>(["orders", "menu", "history", "inventory"]);
 
@@ -146,6 +156,8 @@ export function KdsDashboard({
   } = useOwnerToken(vendor.slug);
   const [setupOpen, setSetupOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [activeVisualGuide, setActiveVisualGuide] =
+    useState<VisualGuideId | null>(null);
   const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [profitOpen, setProfitOpen] = useState(
     () => initialTab === "profit"
@@ -339,6 +351,23 @@ export function KdsDashboard({
     url.searchParams.set("tab", target);
     window.history.replaceState(null, "", url);
   }, []);
+
+  const openVisualGuide = useCallback((guideId: VisualGuideId) => {
+    setHelpOpen(false);
+    setActiveVisualGuide(guideId);
+  }, []);
+
+  const showOrdersFromGuide = useCallback(() => {
+    setActiveVisualGuide(null);
+    navigateTab("orders");
+    window.requestAnimationFrame(() => {
+      const ordersSurface = document.querySelector<HTMLElement>(
+        '[data-kds-tab-content="orders"]'
+      );
+      ordersSurface?.focus({ preventScroll: true });
+      ordersSurface?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [navigateTab]);
 
   const changeLivePage = useCallback((nextPage: number) => {
     setLivePage(Math.max(1, nextPage));
@@ -558,7 +587,12 @@ export function KdsDashboard({
           onHistory={() => navigateTab("history")}
           onInventory={() => navigateTab("inventory")}
         />
-        <div key={tab} className="zt-list-in relative z-[1] px-[18px] pt-3.5">
+        <div
+          key={tab}
+          className="zt-list-in relative z-[1] px-[18px] pt-3.5"
+          data-kds-tab-content={tab}
+          tabIndex={-1}
+        >
           {tab === "orders" ? (
             <OrdersList
               orders={visibleOrders}
@@ -641,7 +675,17 @@ export function KdsDashboard({
         open={helpOpen}
         onClose={() => setHelpOpen(false)}
         vendorSlug={vendor.slug}
+        onOpenVisualGuide={openVisualGuide}
       />
+
+      {activeVisualGuide ? (
+        <VisualGuideViewer
+          guideId={activeVisualGuide}
+          vendorSlug={vendor.slug}
+          onClose={() => setActiveVisualGuide(null)}
+          onShowMe={showOrdersFromGuide}
+        />
+      ) : null}
 
       <RecoverAccessDialog
         open={recoveryOpen}

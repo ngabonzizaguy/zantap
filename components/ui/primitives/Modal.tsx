@@ -19,6 +19,7 @@ interface ModalProps {
   /** Sticky actions pinned below the scroll region (Save/Cancel, etc.). */
   footer?: React.ReactNode;
   className?: string;
+  panelStyle?: React.CSSProperties;
 }
 
 const FOCUSABLE =
@@ -36,6 +37,7 @@ export function Modal({
   children,
   footer,
   className,
+  panelStyle,
 }: ModalProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -208,6 +210,7 @@ export function Modal({
           "transition-transform duration-300 ease-[cubic-bezier(.22,1,.36,1)]",
           className
         )}
+        style={panelStyle}
         onPointerDown={revealHandle}
         onTouchStart={revealHandle}
       >

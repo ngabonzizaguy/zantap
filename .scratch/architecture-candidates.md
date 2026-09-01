@@ -1166,3 +1166,22 @@ production private attachment persistence/read seam, but the release gate stays
 open until the owner confirms this generically labelled `Test` intake is their
 newly labelled submission. No Ops mutation, import, notification, product-code
 change, Marketing Lead Form work, or Questions 1–14 work occurred.
+
+The owner selected Questions 9 and 10 as the next prepared Candidate #29 work
+and approved a two-stage delivery plan. Stage 1 is the reusable accessible
+Visual guides viewer plus the complete four-frame `Move an order through the
+kitchen` tracer. Stage 2 adds the remaining four approved task guides, Setup
+launchers and deterministic state-driven single-prompt behavior. Both local
+issues are `ready-for-agent`; Stage 2 is blocked by Stage 1. This is planning
+only—no product code, screenshots, production configuration or runtime state
+changed. Question 11 remains separate and unstarted.
+
+Stage 1 is now implemented and locally verified. Kitchen help launches a
+four-frame accessible `Move an order through the kitchen` guide built from
+authentic repository KDS screenshots and live callout/chrome UI. Versioned
+per-Vendor/device dismissal/completion stays behind a small Visual guides seam;
+`Show me Orders` returns to the live Orders surface without mutation. Focused
+3/3, full 463/117, scoped ESLint, TypeScript, production build, desktop and
+390×844 browser QA pass. Stage 2 remains `ready-for-agent` but is held for owner
+review of Stage 1; Question 11 remains unstarted. No deploy or production write
+occurred.

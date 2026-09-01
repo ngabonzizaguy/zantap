@@ -1,6 +1,6 @@
 # Candidate #29 — KDS, customer hub, lead capture and Ops improvements
 
-Status: OPS TRASH/OPTIONS + BRIEFING PIN DEPLOYED · PROD ATTACHMENTS VISIBLE, OWNER ATTRIBUTION PENDING · IMPORT GATED · QUESTIONS 1–14 NOT STARTED
+Status: QUESTIONS 9–10 STAGE 1 IMPLEMENTED LOCALLY · STAGE 2 AWAITS OWNER REVIEW · QUESTION 11 NOT STARTED · IMPORT GATED
 Date: 2026-09-01
 
 ## Owner request
@@ -1251,3 +1251,22 @@ zero console errors. No product or production configuration changed.
 No Ops state was changed, no attachment was downloaded or exposed outside the
 authenticated route, and no Ops → KDS import or WhatsApp handoff occurred.
 Marketing Lead Form and Questions 1–14 remain untouched.
+
+## Questions 9–10 staged implementation — STAGE 1 COMPLETE LOCALLY 2026-09-02
+
+- [x] Stage 1 adds a replayable Kitchen help entry and an accessible full-screen
+  Visual guide for `Move an order through the kitchen`.
+- [x] Four authentic KDS frames teach ACCEPTED, PREPARING/READY, driver
+  assignment and COMPLETED with one warm-orange callout per frame.
+- [x] Guide status is versioned and isolated per Vendor/device; Close records a
+  dismissal and final `Show me Orders` records completion, closes the viewer and
+  returns focus to the live Orders surface without mutating an order.
+- [x] Focused 3/3, full 463/117, scoped ESLint, TypeScript and production build
+  pass. Headed desktop and 390×844 QA completed all four frames with no
+  application console errors.
+- [ ] Stage 2 remains held for owner review of Stage 1. It adds the other four
+  approved guides, Setup launchers and deterministic one-at-a-time prompts.
+
+Question 11 remains separately prepared but unimplemented. No production
+deployment, production write, Ops → KDS import, Marketing Lead Form change or
+new design decision occurred in Stage 1.

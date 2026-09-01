@@ -34,6 +34,36 @@ Then run `git status --short --branch` and inspect the relevant commit/diff.
 Preserve every pre-existing dirty or untracked path unless the current task
 explicitly owns it.
 
+### 2026-09-02 — Codex — KDS visual education Stage 1 implemented locally
+
+- Stage 1 is complete locally: Kitchen help launches the four-frame accessible
+  `Move an order through the kitchen` Visual guide using authentic KDS
+  screenshots, one warm-orange callout and short instruction per frame.
+- Close/completion status is versioned per Vendor/device. Final `Show me Orders`
+  closes the guide and returns focus to the live Orders surface without changing
+  any order. The viewer is dynamically loaded only when opened.
+- Verification passes: focused 3/3; full 463/117; scoped ESLint; TypeScript;
+  production build; headed desktop and 390×844 Help → four frames → Orders.
+  There were no application console errors or warnings.
+- Stage 2 remains `ready-for-agent` but must wait for owner review of Stage 1.
+  Question 11 remains unstarted. No deployment, production write, Ops → KDS
+  import or Marketing Lead Form change occurred. Preserve `.playwright-cli/`
+  and `output/`.
+
+### 2026-09-02 — Codex — KDS visual education prepared as two stages
+
+- The owner selected Candidate #29 Questions 9 and 10 and approved phased
+  preparation. Two `ready-for-agent` local issues now define the work.
+- Stage 1 proves the reusable accessible Visual guides viewer with the complete
+  four-frame `Move an order through the kitchen` tracer, using the already
+  approved reference composition and authentic KDS screenshots.
+- Stage 2 depends on Stage 1 and adds the other four approved guides, Setup
+  launchers, replay from Kitchen help, and deterministic state-driven prompts
+  capped at one visible prompt. No full guide auto-opens.
+- This is planning only. No product implementation, new screenshot asset,
+  production mutation, Ops → KDS import, Marketing Lead Form change or Question
+  11 work occurred. Preserve `.playwright-cli/` and `output/`.
+
 ### 2026-09-01 — Codex — Production private attachments visible; attribution pending
 
 - Authenticated Production Ops now shows previously undocumented intake

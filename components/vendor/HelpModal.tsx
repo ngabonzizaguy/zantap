@@ -5,6 +5,7 @@ import { getStorefrontUrl } from "@/lib/base-url";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { Button, Modal } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
+import { getVisualGuide, type VisualGuideId } from "@/lib/kds/visual-guides";
 
 const OWNER_SUPPORT_PHONE = "250784928786";
 
@@ -79,11 +80,18 @@ interface HelpModalProps {
   open: boolean;
   onClose: () => void;
   vendorSlug: string;
+  onOpenVisualGuide: (guideId: VisualGuideId) => void;
 }
 
-export function HelpModal({ open, onClose, vendorSlug }: HelpModalProps) {
+export function HelpModal({
+  open,
+  onClose,
+  vendorSlug,
+  onOpenVisualGuide,
+}: HelpModalProps) {
   const [expandedId, setExpandedId] = useState<string>("");
   const [question, setQuestion] = useState("");
+  const orderGuide = getVisualGuide("orders-flow");
 
   const handleAsk = () => {
     const trimmed = question.trim();
@@ -106,6 +114,26 @@ export function HelpModal({ open, onClose, vendorSlug }: HelpModalProps) {
         <p className="font-body text-body-sm text-muted">
           Quick guides for the most important parts of your dashboard.
         </p>
+
+        <div className="rounded-brand-lg border border-primary/35 bg-primary/10 p-4">
+          <p className="font-body text-caption-uppercase uppercase text-primary">
+            Visual guide
+          </p>
+          <h3 className="mt-1 font-display text-display-sm text-ink">
+            {orderGuide.title}
+          </h3>
+          <p className="mt-2 font-body text-body-sm text-muted">
+            {orderGuide.summary}
+          </p>
+          <Button
+            type="button"
+            size="kds"
+            className="mt-4 w-full"
+            onClick={() => onOpenVisualGuide(orderGuide.id)}
+          >
+            Start visual guide
+          </Button>
+        </div>
 
         <div className="flex flex-col gap-2">
           {HELP_SECTIONS.map((section) => {
