@@ -51,6 +51,8 @@ explicitly owns it.
 - Migration `20260901190000_menu_intake_ops_trash`, push and deploy remain
   pending release approval. Preserve `.playwright-cli/`
   and `output/`; do not touch Marketing Lead Form or Questions 1–14.
+- Owner-approved copy refinement: the Briefing access-gate footer now reads
+  `Private viewing`; no other viewer copy or behavior changed.
 
 ### 2026-08-30 — Codex — Candidate #29 retry recovery deployed and read-only smoked
 

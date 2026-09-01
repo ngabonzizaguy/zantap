@@ -1149,4 +1149,5 @@ compatibility until reset. Focused tests 10/10, full tests 460/117, scoped
 ESLint, TypeScript, Prisma validation and production build pass; headed browser
 PIN unlock plus Menu Intake options/delete/restore QA also passes. Migration
 `20260901190000_menu_intake_ops_trash` and release remain
-pending owner approval; no KDS import occurred.
+pending owner approval. The Briefing gate footer was also softened to the short
+label “Private viewing”; no KDS import occurred.

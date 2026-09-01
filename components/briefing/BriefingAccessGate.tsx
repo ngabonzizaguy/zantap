@@ -76,7 +76,7 @@ export function BriefingAccessGate({ error, state }: BriefingAccessGateProps) {
         </form>
 
         <p className="mt-12 text-[11px] uppercase tracking-[0.18em] text-white/30">
-          Confidential · Do not record or redistribute
+          Private viewing
         </p>
       </section>
     </main>

@@ -59,4 +59,6 @@ Operators manage it from a dedicated `/ops/briefing` area.
   acknowledgement. No application console errors were recorded.
 - Ops date labels now use a fixed Kigali locale/time zone so server and browser
   hydration are deterministic.
+- The access-gate footer now uses the owner-approved subtle label “Private
+  viewing” instead of the longer prohibition.
 - This repair is local only. It needs release approval before push/deploy.
