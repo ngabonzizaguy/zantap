@@ -1290,7 +1290,7 @@ The exact three-screen reference is
   `Done — continue guide` chip while the Vendor works in the real KDS.
 - [x] Allow readiness steps in any order, recommend Storefront → Menu → Payment
   → Kitchen, and warn rather than block when opening early.
-- [ ] Replace/reframe the local `85e3091` order tracer with revised Stage 1 in a
+- [x] Replace/reframe the local `85e3091` order tracer with revised Stage 1 in a
   separate implementation session.
 - [ ] Implement the Stage 2 contextual row destinations and return chip after
   revised Stage 1.
@@ -1298,3 +1298,38 @@ The exact three-screen reference is
 ADR-0083 records the decision. The earlier broad order/Stock/customer-update
 catalogue is deferred. No product code, deploy, migration, production write,
 Ops → KDS import or Marketing Lead Form work occurred during this interview.
+
+Revised Stage 1 was subsequently implemented and verified locally on
+`codex/candidate-29` on 2026-09-02. The readiness modal replaces the old order
+tracer and automatic Setup opening; focused 6/6, full 466/117, TypeScript,
+scoped ESLint, production build, and headed mobile/desktop QA pass. Stage 2
+remains unstarted and held for owner review. No deploy, migration, push,
+Ops → KDS import, Marketing Lead Form, or Question 11 work occurred.
+
+Owner review then rejected the static checklist state on 2026-09-02. The yellow
+incomplete row identifies a problem but gives a low-English, low-technical-
+knowledge Vendor no clear tap affordance, instruction, or route to fix it.
+Stage 1 must be revised to include an obvious action-led row, a short missing-
+requirement explanation, direct navigation to the exact live KDS destination,
+and a visible return path. Stage 2 remains unstarted and blocked until the
+corrected Stage 1 is reviewed and explicitly approved.
+
+An actionability-flow preview is now pending owner review at
+`C:\Users\G\.codex\generated_images\01a060b7-f1d7-7fd2-a867-e3b9d6a768f1\exec-8c9b9a80-cb04-40e5-bec0-65362f3ceaff.png`.
+It proposes reusing the existing Setup drawer and controls: `Start here` is a
+tappable alias for the highlighted real control, uploads persist through the
+existing action, text uses the existing Save action, and readiness refreshes
+only from saved live data. The owner likes and accepts this exact visual/logic
+direction, but will authorize implementation in another session. No product
+implementation has begun.
+
+The owner authorized that exact target in the resumed 2026-09-02 session. The
+Stage 1 actionability correction is implemented and locally verified: the
+recommended row has direct button semantics and plain action copy; the existing
+live KDS destination is highlighted; Setup exposes `Start here` plus a live
+return chip; saved data advances the granular storefront target and ends at
+`Done — continue guide`. Focused 9/9, full 469/117, TypeScript, scoped ESLint,
+production build, and desktop/390×844 browser QA pass with zero application
+console errors or overflow. Stage 2 remains unstarted and held for owner review.
+No deploy, migration, push, Ops → KDS import, Marketing Lead Form, or Question
+11 work occurred.

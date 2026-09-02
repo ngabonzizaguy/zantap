@@ -1034,7 +1034,7 @@ error/fatal/warning/5xx scans were empty. No production fixture data changed.
 
 ---
 
-## Candidate #29 — Priority #1 Vendor Menu Intake — ✅ OPS TRASH/OPTIONS + BRIEFING PIN DEPLOYED · READ-ONLY PROD-SMOKED 2026-09-01
+## Candidate #29 — Priority #1 Vendor Menu Intake — ✅ OPS TRASH/OPTIONS + BRIEFING PIN DEPLOYED · READ-ONLY PROD-SMOKED 2026-09-01 · Q9–10 STAGE 1 ACTIONABLE LOCALLY · OWNER REVIEW PENDING
 
 The separate shareable Vendor Menu Intake → Ops review → KDS import workflow is
 complete and deployed from `codex/candidate-29`. It includes both approved public paths,
@@ -1199,3 +1199,46 @@ the decision. The existing `85e3091` tracer remains local and must not deploy
 unchanged. Both revised stages are ready for a separate implementation session;
 no code, deploy, migration, production write, Ops → KDS import, Marketing Lead
 Form or Question 11 work occurred in the interview.
+
+Revised Stage 1 is now implemented and locally verified on branch
+`codex/candidate-29`, awaiting owner review. The superseded order-progression
+viewer/assets are removed; one accessible real-UI modal now preserves the
+approved welcome → live four-row checklist → ready hierarchy. Readiness comes
+from Vendor storefront fields, available menu, valid payout setup, and live
+kitchen status. A versioned local per-Vendor/device preference implements both
+initial choices plus the two-Close grace rule, and Kitchen help always replays
+the guide. The former automatic Setup drawer is retired and education/recovery
+overlays are mutually exclusive. Focused 6/6, full 466/117, TypeScript, scoped
+ESLint, production build, and headed 390×844 + 1440×1000 QA pass with zero
+application console errors. Stage 2 remains unstarted and held for owner review;
+there was no deploy, migration, push, Ops → KDS import, Marketing Lead Form or
+Question 11 work.
+
+Owner review on 2026-09-02 rejected the static checklist as a releaseable Stage
+1: the highlighted incomplete row does not tell a low-English, low-technical-
+knowledge Vendor that it can be tapped, what is missing, or where to fix it.
+Stage 1 now requires a tightly scoped actionable-row correction with direct KDS
+navigation and a return path. Stage 2 remains unstarted and blocked pending a
+new explicit approval. No deploy, migration, push, import, Lead Form or Question
+11 work was authorized.
+
+The follow-up actionability preview is awaiting owner approval:
+`C:\Users\G\.codex\generated_images\01a060b7-f1d7-7fd2-a867-e3b9d6a768f1\exec-8c9b9a80-cb04-40e5-bec0-65362f3ceaff.png`.
+It keeps one source of truth in the existing Setup drawer, makes `Start here`
+tappable, invokes the highlighted live control, and re-derives progress only
+after saved live data changes. The owner accepted this exact visual/logic
+direction but deferred implementation approval to another session. No product
+implementation has started.
+
+The owner authorized the accepted actionability target in the resumed
+2026-09-02 session. Corrected Stage 1 now makes the recommended incomplete row
+an accessible direct action, routes to and highlights the existing live KDS
+control, and preserves a `Back to readiness` / `Done — continue guide` path.
+The existing Setup drawer owns the storefront/payment handoff; branding uploads
+remain immediate, text remains save-gated, and saved live state advances the
+granular target and count. Menu and Kitchen use their existing controls without
+adding contextual screenshot steps. Focused 9/9, full 469/117, TypeScript,
+scoped ESLint, production build, and desktop/390×844 QA pass with zero
+application console errors or overflow. Stage 2 and Question 11 remain
+unstarted; no deploy, migration, push, Ops import, Marketing Lead Form, or
+production action occurred. Corrected Stage 1 is `ready-for-human` owner review.

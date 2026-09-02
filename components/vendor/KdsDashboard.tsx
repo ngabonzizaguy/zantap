@@ -39,10 +39,6 @@ import type { PaginatedInventory } from "@/lib/inventory/types";
 import type { InventoryCategory } from "@/lib/inventory/types";
 import type { KitchenStage } from "@/lib/types";
 import { deriveOnboardingState } from "@/lib/vendor/onboarding";
-import {
-  incrementSetupVisitCount,
-  shouldAutoOpenSetupDrawer,
-} from "@/lib/vendor/setup-visit-cap";
 import { useOwnerToken } from "@/lib/vendor/useOwnerToken";
 import { MetricsBanner } from "@/components/vendor/MetricsBanner";
 import { Tabs, type KdsTab } from "@/components/vendor/Tabs";
@@ -62,12 +58,16 @@ import { Coachmark } from "@/components/vendor/Coachmark";
 import { InstallHintBanner } from "@/components/pwa/InstallHintBanner";
 import { Card, GradientOrbs } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
-import type { VisualGuideId } from "@/lib/kds/visual-guides";
+import {
+  deriveKdsReadiness,
+  shouldAutoShowReadinessGuide,
+  type KdsReadinessItemId,
+} from "@/lib/kds/visual-guides";
 
-const VisualGuideViewer = dynamic(
+const ReadinessGuideModal = dynamic(
   () =>
-    import("@/components/vendor/VisualGuideViewer").then(
-      (module) => module.VisualGuideViewer
+    import("@/components/vendor/ReadinessGuideModal").then(
+      (module) => module.ReadinessGuideModal
     ),
   { ssr: false }
 );
@@ -148,7 +148,6 @@ export function KdsDashboard({
   );
   const [assignOrderIds, setAssignOrderIds] = useState<string[]>([]);
   const [assignBusy, setAssignBusy] = useState(false);
-  const [setupAutoOpened, setSetupAutoOpened] = useState(false);
   const {
     token: ownerToken,
     clearToken: clearOwnerToken,
@@ -156,8 +155,16 @@ export function KdsDashboard({
   } = useOwnerToken(vendor.slug);
   const [setupOpen, setSetupOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
-  const [activeVisualGuide, setActiveVisualGuide] =
-    useState<VisualGuideId | null>(null);
+  const [readinessGuideOpen, setReadinessGuideOpen] = useState(false);
+  const [readinessGuideInitialView, setReadinessGuideInitialView] = useState<
+    "welcome" | "checklist"
+  >("welcome");
+  const [activeReadinessItemId, setActiveReadinessItemId] =
+    useState<KdsReadinessItemId | null>(null);
+  const [readinessAutoChecked, setReadinessAutoChecked] = useState(false);
+  const [validatedOwnerToken, setValidatedOwnerToken] = useState<string | null>(
+    null
+  );
   const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [profitOpen, setProfitOpen] = useState(
     () => initialTab === "profit"
@@ -206,14 +213,21 @@ export function KdsDashboard({
     if (!ownerTokenReady || !ownerToken) return;
     let cancelled = false;
     void validateOwnerAccess(vendor.slug, ownerToken).then((valid) => {
-      if (cancelled || valid) return;
-      clearOwnerToken();
-      setRecoveryOpen(true);
+      if (cancelled) return;
+      if (!valid) {
+        clearOwnerToken();
+        setRecoveryOpen(true);
+      } else {
+        setValidatedOwnerToken(ownerToken);
+      }
     });
     return () => {
       cancelled = true;
     };
   }, [clearOwnerToken, ownerToken, ownerTokenReady, vendor.slug]);
+
+  const ownerAccessChecked =
+    ownerTokenReady && (!ownerToken || validatedOwnerToken === ownerToken);
 
   useEffect(() => {
     ordersRef.current = orders;
@@ -228,6 +242,20 @@ export function KdsDashboard({
     [menu, kitchenOpen, orders, inventoryActiveCount]
   );
   const checklist = onboardingOverride ?? liveChecklist;
+
+  const readinessVendor = useMemo<Vendor>(
+    () => ({
+      ...vendor,
+      ...storefrontProfile,
+      ...businessProfile,
+      ...paymentProfile,
+    }),
+    [businessProfile, paymentProfile, storefrontProfile, vendor]
+  );
+  const readiness = useMemo(
+    () => deriveKdsReadiness({ vendor: readinessVendor, menu, kitchenOpen }),
+    [kitchenOpen, menu, readinessVendor]
+  );
 
   const [prevSnapshot, setPrevSnapshot] = useState({ menu, kitchenOpen, orders });
   if (
@@ -323,16 +351,44 @@ export function KdsDashboard({
   const visibleOrders = livePagination.items;
 
   useEffect(() => {
-    if (setupAutoOpened) return;
-    if (shouldAutoOpenSetupDrawer(vendor.slug, checklist)) {
-      incrementSetupVisitCount(vendor.slug);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage visit-cap is client-only external state; must run post-hydration
-      setSetupOpen(true);
+    if (
+      readinessAutoChecked ||
+      !ownerAccessChecked ||
+      recoveryOpen ||
+      setupOpen ||
+      helpOpen
+    ) {
+      return;
     }
-    setSetupAutoOpened(true);
-  }, [vendor.slug, checklist, setupAutoOpened]);
+    let shouldShow = false;
+    try {
+      shouldShow = shouldAutoShowReadinessGuide(
+        localStorage,
+        vendor.slug,
+        readiness
+      );
+    } catch {
+      // Storage can be unavailable in private browsing; the KDS must stay usable.
+    }
+    if (shouldShow) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- the first-run decision is persisted client-only state
+      setReadinessGuideOpen(true);
+    }
+    setReadinessAutoChecked(true);
+  }, [
+    helpOpen,
+    ownerAccessChecked,
+    readiness,
+    readinessAutoChecked,
+    recoveryOpen,
+    setupOpen,
+    vendor.slug,
+  ]);
 
   const openSetup = useCallback(() => {
+    setHelpOpen(false);
+    setReadinessGuideOpen(false);
+    setActiveReadinessItemId(null);
     setSetupOpen(true);
   }, []);
 
@@ -352,13 +408,52 @@ export function KdsDashboard({
     window.history.replaceState(null, "", url);
   }, []);
 
-  const openVisualGuide = useCallback((guideId: VisualGuideId) => {
+  const openReadinessGuide = useCallback(() => {
     setHelpOpen(false);
-    setActiveVisualGuide(guideId);
+    setSetupOpen(false);
+    setActiveReadinessItemId(null);
+    setReadinessGuideInitialView("welcome");
+    setReadinessGuideOpen(true);
+  }, []);
+
+  const activeReadinessItem = activeReadinessItemId
+    ? readiness.items.find((item) => item.id === activeReadinessItemId)
+    : undefined;
+
+  const showReadinessDestination = useCallback(
+    (itemId: KdsReadinessItemId) => {
+      setReadinessGuideOpen(false);
+      setActiveReadinessItemId(itemId);
+
+      if (itemId === "storefront" || itemId === "payment") {
+        setSetupOpen(true);
+        return;
+      }
+
+      if (itemId === "menu") navigateTab("menu");
+      const selector =
+        itemId === "menu"
+          ? '[data-coachmark-target="menu-add"]'
+          : '[data-coachmark-target="kitchen-toggle"]';
+      window.requestAnimationFrame(() => {
+        const target = document.querySelector<HTMLElement>(selector);
+        target?.scrollIntoView({ behavior: "smooth", block: "center" });
+        target?.focus({ preventScroll: true });
+      });
+    },
+    [navigateTab]
+  );
+
+  const returnToReadinessGuide = useCallback(() => {
+    setSetupOpen(false);
+    setHelpOpen(false);
+    setActiveReadinessItemId(null);
+    setReadinessGuideInitialView("checklist");
+    setReadinessGuideOpen(true);
   }, []);
 
   const showOrdersFromGuide = useCallback(() => {
-    setActiveVisualGuide(null);
+    setReadinessGuideOpen(false);
     navigateTab("orders");
     window.requestAnimationFrame(() => {
       const ordersSurface = document.querySelector<HTMLElement>(
@@ -557,7 +652,16 @@ export function KdsDashboard({
   };
 
   return (
-    <div className="kds-dark kds-surface min-h-screen w-full bg-canvas text-ink">
+    <div
+      className="kds-dark kds-surface min-h-screen w-full bg-canvas text-ink"
+      data-readiness-highlight={
+        activeReadinessItem &&
+        !activeReadinessItem.complete &&
+        (activeReadinessItemId === "menu" || activeReadinessItemId === "kitchen")
+          ? activeReadinessItemId
+          : undefined
+      }
+    >
       <InstallHintBanner variant="dark" surface="kds" appName="ZanTap Kitchen" />
       <div className="kds-surface relative mx-auto min-h-screen w-full max-w-kds overflow-hidden border-x border-hairline bg-canvas pb-10">
         <GradientOrbs className="opacity-25" />
@@ -660,7 +764,12 @@ export function KdsDashboard({
 
       <button
         type="button"
-        onClick={() => setHelpOpen(true)}
+        onClick={() => {
+          setSetupOpen(false);
+          setReadinessGuideOpen(false);
+          setActiveReadinessItemId(null);
+          setHelpOpen(true);
+        }}
         {...helpPeekHandlers}
         className={cn(
           "fixed bottom-24 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-hairline/70 bg-surface-card text-sm font-medium text-muted shadow-brand-soft motion-safe:transition-[opacity,color] motion-safe:duration-300",
@@ -675,16 +784,36 @@ export function KdsDashboard({
         open={helpOpen}
         onClose={() => setHelpOpen(false)}
         vendorSlug={vendor.slug}
-        onOpenVisualGuide={openVisualGuide}
+        onOpenReadinessGuide={openReadinessGuide}
       />
 
-      {activeVisualGuide ? (
-        <VisualGuideViewer
-          guideId={activeVisualGuide}
+      {readinessGuideOpen ? (
+        <ReadinessGuideModal
+          readiness={readiness}
           vendorSlug={vendor.slug}
-          onClose={() => setActiveVisualGuide(null)}
-          onShowMe={showOrdersFromGuide}
+          onClose={() => setReadinessGuideOpen(false)}
+          onGoToOrders={showOrdersFromGuide}
+          onReviewSetup={openSetup}
+          onShowMeWhere={showReadinessDestination}
+          initialView={readinessGuideInitialView}
         />
+      ) : null}
+
+      {activeReadinessItem && !setupOpen ? (
+        <button
+          type="button"
+          onClick={returnToReadinessGuide}
+          className={cn(
+            "fixed bottom-24 left-1/2 z-40 min-h-11 -translate-x-1/2 rounded-pill border px-4 py-2 font-body text-body-sm font-medium shadow-brand-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+            activeReadinessItem.complete
+              ? "border-success/70 bg-[#102318] text-success focus-visible:outline-success"
+              : "border-primary/70 bg-[#171719] text-primary focus-visible:outline-primary"
+          )}
+        >
+          {activeReadinessItem.complete
+            ? "✓ Done — continue guide"
+            : `← Back to readiness · ${activeReadinessItem.remainingCount} left`}
+        </button>
       ) : null}
 
       <RecoverAccessDialog
@@ -721,9 +850,15 @@ export function KdsDashboard({
           if (!kitchenOpen) void handleToggleKitchen();
         }}
         onDriversChange={setDrivers}
+        readinessItem={activeReadinessItem}
+        onReturnToReadiness={returnToReadinessGuide}
       />
 
-      {KDS_COACHMARKS_ENABLED ? (
+      {KDS_COACHMARKS_ENABLED &&
+      !readinessGuideOpen &&
+      !setupOpen &&
+      !helpOpen &&
+      !recoveryOpen ? (
         <>
           <Coachmark
             id="kitchen-toggle"

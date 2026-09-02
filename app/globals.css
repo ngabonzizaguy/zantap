@@ -265,6 +265,14 @@
 .kds-dark .bg-primary\/10 { --kds-resting-background: rgba(245, 166, 35, 0.12); background-color: rgba(245, 166, 35, 0.12); }
 .kds-dark .bg-primary\/5 { --kds-resting-background: rgba(245, 166, 35, 0.08); background-color: rgba(245, 166, 35, 0.08); }
 
+/* Readiness handoff: identify the real live control without adding a second UI. */
+.kds-dark[data-readiness-highlight="menu"] [data-coachmark-target="menu-add"],
+.kds-dark[data-readiness-highlight="kitchen"] [data-coachmark-target="kitchen-toggle"] {
+  outline: 2px solid #f5a623;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 7px rgba(245, 166, 35, 0.12);
+}
+
 /* Golden-yellow recover-access accent (D5) — distinct from primary CTAs */
 .kds-dark .text-gold { color: #ffd24c; }
 .kds-dark .border-gold { border-color: #ffd24c; }

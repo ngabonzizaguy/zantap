@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { MenuItem, PayoutMethod } from "@/lib/types";
+import type {
+  KdsReadinessItem,
+  KdsReadinessTarget,
+} from "@/lib/kds/visual-guides";
 import { Button, Card, Input, Select } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 import { splitPhoneForDisplay } from "@/lib/format";
@@ -62,6 +66,16 @@ export interface VendorPaymentProfile {
 type SlugAvailability = "idle" | "checking" | "available" | "taken" | "invalid";
 
 const SLUG_DEBOUNCE_MS = 400;
+const SETUP_READINESS_TARGET_IDS: Partial<
+  Record<KdsReadinessTarget, string>
+> = {
+  "storefront-logo": "setup-logo-editor",
+  "storefront-cover": "setup-cover-editor",
+  "storefront-description": "setup-description-editor",
+  "storefront-location": "setup-location-editor",
+  "storefront-phone": "setup-phone-editor",
+  "payment-setup": "setup-payment-editor",
+};
 
 function slugStatusMessage(status: SlugAvailability): string | null {
   switch (status) {
@@ -117,6 +131,8 @@ interface SetupDrawerProps {
   /** Opens the kitchen directly from the "Open the kitchen" step. */
   onOpenKitchen?: () => void;
   onDriversChange?: (drivers: import("@/lib/types").Driver[]) => void;
+  readinessItem?: KdsReadinessItem;
+  onReturnToReadiness?: () => void;
 }
 
 export function SetupDrawer({
@@ -136,6 +152,8 @@ export function SetupDrawer({
   onNavigateTab,
   onOpenKitchen,
   onDriversChange,
+  readinessItem,
+  onReturnToReadiness,
 }: SetupDrawerProps) {
   const [driversExpanded, setDriversExpanded] = useState(false);
   const router = useRouter();
@@ -262,6 +280,18 @@ export function SetupDrawer({
       previousFocus.current?.focus();
     };
   }, [open, onClose, onRefresh]);
+
+  useEffect(() => {
+    if (!open || !readinessItem?.target) return;
+    const id = SETUP_READINESS_TARGET_IDS[readinessItem.target];
+    if (!id) return;
+    const frame = window.requestAnimationFrame(() => {
+      const target = panelRef.current?.querySelector<HTMLElement>(`#${id}`);
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+      target?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, readinessItem?.target]);
 
   // Re-seed drafts when the drawer opens or saved data changes ("adjust state
   // during render" — no effect, no extra paint).
@@ -397,12 +427,12 @@ export function SetupDrawer({
     }
 
     const logoTrimmed = logoUrlDraft.trim();
-    if (logoTrimmed && !/^https?:\/\//i.test(logoTrimmed)) {
+    if (logoTrimmed && !/^(?:https?:\/\/|\/)/i.test(logoTrimmed)) {
       setProfileError("Logo must be a valid image URL (https://…).");
       return;
     }
     const coverTrimmed = coverImageUrlDraft.trim();
-    if (coverTrimmed && !/^https?:\/\//i.test(coverTrimmed)) {
+    if (coverTrimmed && !/^(?:https?:\/\/|\/)/i.test(coverTrimmed)) {
       setProfileError("Cover must be a valid image URL (https://…).");
       return;
     }
@@ -569,6 +599,52 @@ export function SetupDrawer({
     : payoutPhoneDraft.trim();
   const payoutPhoneValid = payoutPhoneLocal.length >= 6;
 
+  const readinessTargetClass = (target: KdsReadinessTarget) =>
+    cn(
+      "relative rounded-brand-lg",
+      readinessItem?.target === target &&
+        "scroll-m-6 border border-primary bg-primary/5 p-3 outline outline-1 outline-primary/80"
+    );
+
+  const activateReadinessTarget = (target: KdsReadinessTarget) => {
+    if (readinessItem?.target !== target) return;
+    const id = SETUP_READINESS_TARGET_IDS[target];
+    if (!id) return;
+    const group = panelRef.current?.querySelector<HTMLElement>(`#${id}`);
+    const control = group?.querySelector<HTMLElement>(
+      target === "storefront-logo" || target === "storefront-cover"
+        ? "button:not(:disabled)"
+        : "input:not(:disabled), textarea:not(:disabled), button:not(:disabled)"
+    );
+    if (control instanceof HTMLButtonElement &&
+        (target === "storefront-logo" || target === "storefront-cover")) {
+      control.click();
+      return;
+    }
+    control?.focus({ preventScroll: true });
+  };
+
+  const startHereBadge = (target: KdsReadinessTarget) =>
+    readinessItem?.target === target ? (
+      <button
+        type="button"
+        onClick={() => activateReadinessTarget(target)}
+        className="absolute -right-1 -top-4 z-10 min-h-9 rounded-brand-md bg-primary px-3 font-body text-caption font-semibold text-[#0c0a09] shadow-brand-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      >
+        Start here
+      </button>
+    ) : null;
+
+  const handleReadinessTargetKeyDown = (
+    event: React.KeyboardEvent<HTMLElement>,
+    target: KdsReadinessTarget
+  ) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    activateReadinessTarget(target);
+  };
+
   if (!open) return null;
 
   return (
@@ -596,12 +672,14 @@ export function SetupDrawer({
                 id={titleId}
                 className="font-display text-display-md text-ink"
               >
-                Setup guide
+                {readinessItem ? "Setup" : "Setup guide"}
               </h2>
-              <p className="mt-1 font-body text-body-sm text-muted">
-                {completed} of {total} steps complete — progress updates from
-                your live data.
-              </p>
+              {!readinessItem ? (
+                <p className="mt-1 font-body text-body-sm text-muted">
+                  {completed} of {total} steps complete — progress updates from
+                  your live data.
+                </p>
+              ) : null}
             </div>
             <button
               type="button"
@@ -612,12 +690,30 @@ export function SetupDrawer({
               ×
             </button>
           </div>
-          <div className="mt-4 h-2 overflow-hidden rounded-pill bg-canvas-soft">
-            <div
-              className="h-full rounded-pill bg-primary transition-all"
-              style={{ width: `${(completed / total) * 100}%` }}
-            />
-          </div>
+          {readinessItem && onReturnToReadiness ? (
+            <button
+              type="button"
+              onClick={onReturnToReadiness}
+              className={cn(
+                "mt-4 min-h-10 rounded-pill border px-4 py-2 font-body text-body-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+                readinessItem.complete
+                  ? "border-success/70 bg-success/10 text-success focus-visible:outline-success"
+                  : "border-primary/70 bg-primary/5 text-primary focus-visible:outline-primary"
+              )}
+            >
+              {readinessItem.complete
+                ? "✓ Done — continue guide"
+                : `← Back to readiness · ${readinessItem.remainingCount} ${readinessItem.remainingCount === 1 ? "detail" : "details"} left`}
+            </button>
+          ) : null}
+          {!readinessItem ? (
+            <div className="mt-4 h-2 overflow-hidden rounded-pill bg-canvas-soft">
+              <div
+                className="h-full rounded-pill bg-primary transition-all"
+                style={{ width: `${(completed / total) * 100}%` }}
+              />
+            </div>
+          ) : null}
         </header>
 
         <div className="flex-1 overflow-y-auto px-6 py-5">
@@ -817,7 +913,16 @@ export function SetupDrawer({
                 maxLength={80}
                 disabled={businessFieldsDisabled}
               />
-              <div className="flex flex-col gap-1.5">
+              <div
+                id="setup-phone-editor"
+                tabIndex={readinessItem?.target === "storefront-phone" ? 0 : undefined}
+                className={cn("flex flex-col gap-1.5", readinessTargetClass("storefront-phone"))}
+                onClick={(event) => {
+                  if (event.target === event.currentTarget) activateReadinessTarget("storefront-phone");
+                }}
+                onKeyDown={(event) => handleReadinessTargetKeyDown(event, "storefront-phone")}
+              >
+                {startHereBadge("storefront-phone")}
                 <label
                   htmlFor="setup-slug"
                   className="font-body text-body-sm font-medium text-ink"
@@ -940,7 +1045,16 @@ export function SetupDrawer({
             </div>
           </section>
 
-          <section className="mt-8">
+          <section
+            id="setup-payment-editor"
+            tabIndex={readinessItem?.target === "payment-setup" ? 0 : undefined}
+            className={cn("mt-8", readinessTargetClass("payment-setup"))}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) activateReadinessTarget("payment-setup");
+            }}
+            onKeyDown={(event) => handleReadinessTargetKeyDown(event, "payment-setup")}
+          >
+            {startHereBadge("payment-setup")}
             <h3 className="font-display text-display-sm text-ink">
               Payment settings
             </h3>
@@ -1108,13 +1222,24 @@ export function SetupDrawer({
                 placeholder="Premium grills"
                 disabled={profileFieldsDisabled}
               />
-              <Input
-                label="Location"
-                value={locationDraft}
-                onChange={(event) => setLocationDraft(event.target.value)}
-                placeholder="Kigali, Rwanda"
-                disabled={profileFieldsDisabled}
-              />
+              <div
+                id="setup-location-editor"
+                tabIndex={readinessItem?.target === "storefront-location" ? 0 : undefined}
+                className={readinessTargetClass("storefront-location")}
+                onClick={(event) => {
+                  if (event.target === event.currentTarget) activateReadinessTarget("storefront-location");
+                }}
+                onKeyDown={(event) => handleReadinessTargetKeyDown(event, "storefront-location")}
+              >
+                {startHereBadge("storefront-location")}
+                <Input
+                  label="Location"
+                  value={locationDraft}
+                  onChange={(event) => setLocationDraft(event.target.value)}
+                  placeholder="Kigali, Rwanda"
+                  disabled={profileFieldsDisabled}
+                />
+              </div>
               <Input
                 label="Delivery time"
                 value={deliveryTimeDraft}
@@ -1134,7 +1259,16 @@ export function SetupDrawer({
                 placeholder="4.8"
                 disabled={profileFieldsDisabled}
               />
-              <div id="setup-logo-editor" className="flex flex-col gap-2">
+              <div
+                id="setup-logo-editor"
+                tabIndex={readinessItem?.target === "storefront-logo" ? 0 : undefined}
+                className={cn("flex flex-col gap-2", readinessTargetClass("storefront-logo"))}
+                onClick={(event) => {
+                  if (event.target === event.currentTarget) activateReadinessTarget("storefront-logo");
+                }}
+                onKeyDown={(event) => handleReadinessTargetKeyDown(event, "storefront-logo")}
+              >
+                {startHereBadge("storefront-logo")}
                 <Input
                   label="Logo URL"
                   type="url"
@@ -1174,7 +1308,16 @@ export function SetupDrawer({
                   </div>
                 ) : null}
               </div>
-              <div id="setup-cover-editor" className="flex flex-col gap-2">
+              <div
+                id="setup-cover-editor"
+                tabIndex={readinessItem?.target === "storefront-cover" ? 0 : undefined}
+                className={cn("flex flex-col gap-2", readinessTargetClass("storefront-cover"))}
+                onClick={(event) => {
+                  if (event.target === event.currentTarget) activateReadinessTarget("storefront-cover");
+                }}
+                onKeyDown={(event) => handleReadinessTargetKeyDown(event, "storefront-cover")}
+              >
+                {startHereBadge("storefront-cover")}
                 <Input
                   label="Cover image URL"
                   type="url"
@@ -1214,7 +1357,16 @@ export function SetupDrawer({
                   </div>
                 ) : null}
               </div>
-              <div className="flex w-full flex-col gap-1.5">
+              <div
+                id="setup-description-editor"
+                tabIndex={readinessItem?.target === "storefront-description" ? 0 : undefined}
+                className={cn("flex w-full flex-col gap-1.5", readinessTargetClass("storefront-description"))}
+                onClick={(event) => {
+                  if (event.target === event.currentTarget) activateReadinessTarget("storefront-description");
+                }}
+                onKeyDown={(event) => handleReadinessTargetKeyDown(event, "storefront-description")}
+              >
+                {startHereBadge("storefront-description")}
                 <label
                   htmlFor="vendor-description"
                   className="font-body text-body-sm font-medium text-ink"

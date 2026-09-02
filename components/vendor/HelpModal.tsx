@@ -5,7 +5,6 @@ import { getStorefrontUrl } from "@/lib/base-url";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { Button, Modal } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
-import { getVisualGuide, type VisualGuideId } from "@/lib/kds/visual-guides";
 
 const OWNER_SUPPORT_PHONE = "250784928786";
 
@@ -80,18 +79,17 @@ interface HelpModalProps {
   open: boolean;
   onClose: () => void;
   vendorSlug: string;
-  onOpenVisualGuide: (guideId: VisualGuideId) => void;
+  onOpenReadinessGuide: () => void;
 }
 
 export function HelpModal({
   open,
   onClose,
   vendorSlug,
-  onOpenVisualGuide,
+  onOpenReadinessGuide,
 }: HelpModalProps) {
   const [expandedId, setExpandedId] = useState<string>("");
   const [question, setQuestion] = useState("");
-  const orderGuide = getVisualGuide("orders-flow");
 
   const handleAsk = () => {
     const trimmed = question.trim();
@@ -117,21 +115,22 @@ export function HelpModal({
 
         <div className="rounded-brand-lg border border-primary/35 bg-primary/10 p-4">
           <p className="font-body text-caption-uppercase uppercase text-primary">
-            Visual guide
+            Readiness guide
           </p>
           <h3 className="mt-1 font-display text-display-sm text-ink">
-            {orderGuide.title}
+            Become ready to receive orders
           </h3>
           <p className="mt-2 font-body text-body-sm text-muted">
-            {orderGuide.summary}
+            Check your storefront, menu, payment setup, and kitchen status.
+            Replay it anytime.
           </p>
           <Button
             type="button"
             size="kds"
             className="mt-4 w-full"
-            onClick={() => onOpenVisualGuide(orderGuide.id)}
+            onClick={onOpenReadinessGuide}
           >
-            Start visual guide
+            Open readiness guide
           </Button>
         </div>
 

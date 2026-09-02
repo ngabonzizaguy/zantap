@@ -15,6 +15,7 @@ interface ModalProps {
   open: boolean;
   onClose: () => void;
   title?: string;
+  ariaLabel?: string;
   children: React.ReactNode;
   /** Sticky actions pinned below the scroll region (Save/Cancel, etc.). */
   footer?: React.ReactNode;
@@ -34,6 +35,7 @@ export function Modal({
   open,
   onClose,
   title,
+  ariaLabel,
   children,
   footer,
   className,
@@ -204,6 +206,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
+        aria-label={!title ? ariaLabel : undefined}
         className={cn(
           "zt-dialog-enter relative z-10 flex w-full max-w-md flex-col overflow-hidden rounded-brand-xl border border-hairline bg-surface-card shadow-brand-soft",
           "max-h-[min(90dvh,calc(100dvh-2rem))]",

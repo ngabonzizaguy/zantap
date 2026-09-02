@@ -13,6 +13,58 @@ files, ADRs, commit diffs, or the production log in `AGENTS.md`.
 
 ## Prompt for the next Cursor or Codex session
 
+### 2026-09-02 — Codex — actionable readiness Stage 1 implemented; owner review next
+
+- The owner explicitly authorized the accepted actionability preview. Corrected
+  Stage 1 is implemented locally on `codex/candidate-29`: the recommended row is
+  a keyboard-accessible direct action with plain missing-state copy,
+  `Show me where`, and a directional affordance.
+- The existing Setup drawer is reused exactly: guided mode shows `Setup` plus a
+  live return chip, scrolls/highlights the exact missing control, and exposes a
+  tappable/keyboard `Start here`. Branding uploads persist through the existing
+  action; text stays save-gated. Saved live state advances the target/count and
+  ends at `Done — continue guide`; returning opens the refreshed checklist.
+- Menu, Payment, and Kitchen use their existing live destinations and the same
+  minimum return loop. Stage 2 contextual screenshot views were not started.
+- Verification passes: focused 9/9; full 469/117; TypeScript; scoped ESLint;
+  production build; headed desktop and 390×844 QA; zero application console
+  errors and no horizontal overflow. Evidence remains in
+  `output/playwright/kds-readiness-stage1/`.
+- Next gate is owner review of corrected Stage 1. Do not start Stage 2 or
+  Question 11; do not deploy, migrate, push, perform Ops → KDS import, or touch
+  the Marketing Lead Form. Preserve `.playwright-cli/` and `output/`.
+
+### 2026-09-02 — Codex — actionable readiness visual accepted; implementation deferred
+
+- The owner asked to see what follows the tappable `Start here` affordance
+  before any implementation. Preview:
+  `C:\Users\G\.codex\generated_images\01a060b7-f1d7-7fd2-a867-e3b9d6a768f1\exec-8c9b9a80-cb04-40e5-bec0-65362f3ceaff.png`.
+- Proposed minimum flow: `Show me where` opens/scrolls the existing Setup
+  drawer; `Start here` and the highlighted group invoke the same real control;
+  branding uploads use the existing immediate persistence action; text uses the
+  existing Save action; successfully saved live data re-derives readiness and
+  advances the recommendation. No nested setup form or new editor modal.
+- The owner likes and accepts this exact visual/logic direction. Formal
+  implementation authorization is explicitly deferred to another session.
+  Until then, do not implement, deploy, migrate, push, import Ops data, touch
+  the Marketing Lead Form, start Stage 2, or begin Question 11. Preserve
+  `.playwright-cli/` and `output/`.
+
+### 2026-09-02 — Codex — Stage 1 owner review rejected static checklist
+
+- The owner did not approve revised Candidate #29 Stage 1. The yellow
+  incomplete row is a passive status display and gives a low-English,
+  low-technical-knowledge Vendor no clear indication that it can be tapped,
+  what is missing, or where to fix it.
+- Correct Stage 1 before another review: make the recommended row an obvious
+  accessible action, use short action-led copy and direction, explain the
+  missing requirement, navigate directly to the exact live KDS destination,
+  and retain a visible return path to readiness.
+- Keep this correction narrow. Stage 2 is still unstarted and blocked until the
+  owner explicitly approves the corrected Stage 1. Do not deploy, migrate,
+  push, perform Ops → KDS import, touch the Marketing Lead Form, or begin
+  Question 11. Preserve `.playwright-cli/` and `output/`.
+
 You are continuing ZanTap in a repository that has recently been worked on by
 both Cursor and Codex. Treat the filesystem and Git history as shared state.
 Do not assume that a branch name identifies the only author, and do not discard
@@ -34,6 +86,28 @@ Then run `git status --short --branch` and inspect the relevant commit/diff.
 Preserve every pre-existing dirty or untracked path unless the current task
 explicitly owns it.
 
+### 2026-09-02 — Codex — revised readiness Stage 1 implemented; owner review next
+
+- Revised Candidate #29 Stage 1 is complete locally on `codex/candidate-29`.
+  The superseded `85e3091` order-progression viewer and three guide bitmaps are
+  removed. Do not restore or deploy that tracer.
+- The real accessible dark modal preserves the approved welcome → live
+  Storefront/Menu/Payment/Kitchen checklist → ready hierarchy, primary wording
+  and actions, Close icon, `OPEN · LIVE`, and permanent Kitchen-help replay.
+- Live readiness and a versioned local per-Vendor/device preference implement
+  already-ready suppression, both initial choices, and first-Close/second-Close
+  semantics. The previous first-load Setup drawer is retired; readiness, Help,
+  Setup, recovery, and coachmarks never stack.
+- Verification passes: focused 6/6; full 466/117; TypeScript; scoped ESLint;
+  production build; headed 390×844 and 1440×1000 QA with zero application
+  console errors or horizontal overflow. QA evidence is preserved under
+  `output/playwright/kds-readiness-stage1/` alongside the pre-existing
+  `.playwright-cli/` and `output/` trees.
+- Stage 2 is unstarted and must remain held until the owner reviews Stage 1.
+  No deploy, migration, push, Ops → KDS import, Marketing Lead Form, or Question
+  11 work occurred. Read the Stage 1 issue, Stage 2 issue, ADR-0083, and this
+  entry before continuing.
+
 ### 2026-09-02 — Codex — readiness-guide interview closed; implementation deferred
 
 - Owner review superseded the local `Move an order through the kitchen` tracer
@@ -54,10 +128,12 @@ explicitly owns it.
   code, deploy, migration, production write, Ops → KDS import, Marketing Lead
   Form or Question 11 work occurred. Preserve `.playwright-cli/` and `output/`.
 
-### 2026-09-02 — Codex — KDS visual education Stage 1 implemented locally
+### 2026-09-02 — Codex — superseded order-progression tracer (historical)
 
-- Stage 1 is complete locally: Kitchen help launches the four-frame accessible
-  `Move an order through the kitchen` Visual guide using authentic KDS
+- This historical implementation was rejected as the first-run subject and was
+  replaced by the revised readiness Stage 1 above. It must not be restored or
+  deployed. At the time, Kitchen help launched the four-frame accessible `Move
+  an order through the kitchen` Visual guide using authentic KDS
   screenshots, one warm-orange callout and short instruction per frame.
 - Close/completion status is versioned per Vendor/device. Final `Show me Orders`
   closes the guide and returns focus to the live Orders surface without changing

@@ -1,139 +1,184 @@
-export const VISUAL_GUIDE_IDS = ["orders-flow"] as const;
+import { validateVendorPayout } from "@/lib/momo/ussd-dial";
+import type { MenuItem, Vendor } from "@/lib/types";
 
-export type VisualGuideId = (typeof VISUAL_GUIDE_IDS)[number];
-export type VisualGuideStage =
-  | "ACCEPTED"
-  | "PREPARING"
-  | "DISPATCH"
-  | "COMPLETED";
+export const KDS_READINESS_ITEMS = [
+  { id: "storefront", label: "Storefront details" },
+  { id: "menu", label: "Available menu" },
+  { id: "payment", label: "Payment setup" },
+  { id: "kitchen", label: "Kitchen status" },
+] as const;
 
-export interface VisualGuideCallout {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-}
-
-export interface VisualGuideFrame {
-  stage: VisualGuideStage;
-  imageSrc: string;
-  imageAlt: string;
-  imageWidth: number;
-  imageHeight: number;
-  instruction: string;
-  callout: VisualGuideCallout;
-}
-
-export interface VisualGuideDefinition {
-  id: VisualGuideId;
-  title: string;
-  summary: string;
-  frames: readonly VisualGuideFrame[];
-  showMe: {
-    label: string;
-    tab: "orders";
-  };
-}
+export type KdsReadinessItemId = (typeof KDS_READINESS_ITEMS)[number]["id"];
+export type ReadinessGuideChoice = "guided" | "self";
+export type KdsReadinessTarget =
+  | "storefront-logo"
+  | "storefront-cover"
+  | "storefront-description"
+  | "storefront-location"
+  | "storefront-phone"
+  | "menu-add"
+  | "payment-setup"
+  | "kitchen-toggle";
 
 export interface VisualGuideStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
 }
 
-export type VisualGuideStatus = "unseen" | "dismissed" | "complete";
-
-const ORDER_FLOW_GUIDE: VisualGuideDefinition = {
-  id: "orders-flow",
-  title: "Move an order through the kitchen",
-  summary: "See each step from a new paid order to completed delivery.",
-  frames: [
-    {
-      stage: "ACCEPTED",
-      imageSrc: "/guides/kds-order-accepted.png",
-      imageAlt: "An expanded new paid order in the ZanTap kitchen dashboard",
-      imageWidth: 403,
-      imageHeight: 828,
-      instruction: "Tap ACCEPTED when you see the new paid order.",
-      callout: { left: 5.2, top: 54.8, width: 25.4, height: 6.5 },
-    },
-    {
-      stage: "PREPARING",
-      imageSrc: "/guides/kds-order-accepted.png",
-      imageAlt: "An expanded paid order with kitchen stage controls",
-      imageWidth: 403,
-      imageHeight: 828,
-      instruction: "Tap PREPARING when cooking starts, then READY when it is packed.",
-      callout: { left: 31.6, top: 54.8, width: 25.4, height: 6.5 },
-    },
-    {
-      stage: "DISPATCH",
-      imageSrc: "/guides/kds-order-dispatch.png",
-      imageAlt: "The ZanTap driver assignment sheet for a ready order",
-      imageWidth: 565,
-      imageHeight: 756,
-      instruction: "Choose the driver, then confirm the assignment for delivery.",
-      callout: { left: 4.2, top: 79.4, width: 93.2, height: 9.1 },
-    },
-    {
-      stage: "COMPLETED",
-      imageSrc: "/guides/kds-order-completed.png",
-      imageAlt: "An out-for-delivery order with its assigned driver",
-      imageWidth: 558,
-      imageHeight: 768,
-      instruction: "Tap Mark completed after the customer receives the order.",
-      callout: { left: 5.4, top: 89.4, width: 88.3, height: 7.1 },
-    },
-  ],
-  showMe: {
-    label: "Show me Orders",
-    tab: "orders",
-  },
-};
-
-const VISUAL_GUIDES: Record<VisualGuideId, VisualGuideDefinition> = {
-  "orders-flow": ORDER_FLOW_GUIDE,
-};
-
-export function getVisualGuide(id: VisualGuideId): VisualGuideDefinition {
-  return VISUAL_GUIDES[id];
+export interface KdsReadinessItem {
+  id: KdsReadinessItemId;
+  label: string;
+  complete: boolean;
+  detail: string;
+  actionLabel?: "Show me where";
+  remainingCount: number;
+  target?: KdsReadinessTarget;
 }
 
-export function visualGuideStorageKey(
-  vendorSlug: string,
-  guideId: VisualGuideId
-): string {
-  return `zantap:kds-guide:v1:${encodeURIComponent(vendorSlug)}:${guideId}`;
+export interface KdsReadiness {
+  items: readonly KdsReadinessItem[];
+  completedCount: number;
+  isReady: boolean;
 }
 
-export function isVisualGuideComplete(
-  storage: VisualGuideStorage,
+interface ReadinessGuidePreference {
+  choice?: ReadinessGuideChoice;
+  dismissals: number;
+}
+
+export function deriveKdsReadiness({
+  vendor,
+  menu,
+  kitchenOpen,
+}: {
+  vendor: Vendor;
+  menu: readonly MenuItem[];
+  kitchenOpen: boolean;
+}): KdsReadiness {
+  const storefrontMissingRequirements = [
+    !vendor.logoUrl?.trim()
+      ? { detail: "Add your logo", target: "storefront-logo" as const }
+      : null,
+    !vendor.coverImageUrl?.trim()
+      ? { detail: "Add a cover photo", target: "storefront-cover" as const }
+      : null,
+    !vendor.description?.trim()
+      ? {
+          detail: "Add your business description",
+          target: "storefront-description" as const,
+        }
+      : null,
+    !vendor.location?.trim()
+      ? { detail: "Add your location", target: "storefront-location" as const }
+      : null,
+    !vendor.phoneNumber.trim()
+      ? { detail: "Add your phone number", target: "storefront-phone" as const }
+      : null,
+  ].filter((requirement) => requirement !== null);
+  const storefrontMissing = storefrontMissingRequirements[0];
+  const menuReady = menu.some((item) => item.isAvailable && !item.archivedAt);
+  const paymentReady = validateVendorPayout(vendor).ok;
+  const state: Record<KdsReadinessItemId, boolean> = {
+    storefront: !storefrontMissing,
+    menu: menuReady,
+    payment: paymentReady,
+    kitchen: kitchenOpen,
+  };
+  const incompleteDetails: Record<
+    KdsReadinessItemId,
+    { detail: string; target: KdsReadinessTarget } | undefined
+  > = {
+    storefront: storefrontMissing ?? undefined,
+    menu: menuReady
+      ? undefined
+      : { detail: "No available dishes", target: "menu-add" },
+    payment: paymentReady
+      ? undefined
+      : { detail: "Choose where payments go", target: "payment-setup" },
+    kitchen: kitchenOpen
+      ? undefined
+      : { detail: "Open your kitchen", target: "kitchen-toggle" },
+  };
+  const items = KDS_READINESS_ITEMS.map((item) => {
+    const complete = state[item.id];
+    const incomplete = incompleteDetails[item.id];
+    return {
+      ...item,
+      complete,
+      detail: complete ? "Complete" : incomplete!.detail,
+      remainingCount:
+        item.id === "storefront" ? storefrontMissingRequirements.length : complete ? 0 : 1,
+      ...(!complete
+        ? { actionLabel: "Show me where" as const, target: incomplete!.target }
+        : {}),
+    };
+  });
+  const completedCount = items.filter((item) => item.complete).length;
+
+  return {
+    items,
+    completedCount,
+    isReady: completedCount === items.length,
+  };
+}
+
+export function readinessGuideStorageKey(vendorSlug: string): string {
+  return `zantap:kds-readiness-guide:v1:${encodeURIComponent(vendorSlug)}`;
+}
+
+function readReadinessGuidePreference(
+  storage: Pick<VisualGuideStorage, "getItem">,
+  vendorSlug: string
+): ReadinessGuidePreference {
+  const raw = storage.getItem(readinessGuideStorageKey(vendorSlug));
+  if (!raw) return { dismissals: 0 };
+
+  try {
+    const value = JSON.parse(raw) as Partial<ReadinessGuidePreference>;
+    const choice =
+      value.choice === "guided" || value.choice === "self"
+        ? value.choice
+        : undefined;
+    const dismissals =
+      typeof value.dismissals === "number" && value.dismissals >= 0
+        ? Math.min(2, Math.trunc(value.dismissals))
+        : 0;
+    return { choice, dismissals };
+  } catch {
+    return { dismissals: 0 };
+  }
+}
+
+export function shouldAutoShowReadinessGuide(
+  storage: Pick<VisualGuideStorage, "getItem">,
   vendorSlug: string,
-  guideId: VisualGuideId
+  readiness: KdsReadiness
 ): boolean {
-  return getVisualGuideStatus(storage, vendorSlug, guideId) === "complete";
+  if (readiness.isReady) return false;
+  const preference = readReadinessGuidePreference(storage, vendorSlug);
+  return !preference.choice && preference.dismissals < 2;
 }
 
-export function getVisualGuideStatus(
-  storage: VisualGuideStorage,
+export function recordReadinessGuideChoice(
+  storage: Pick<VisualGuideStorage, "setItem">,
   vendorSlug: string,
-  guideId: VisualGuideId
-): VisualGuideStatus {
-  const value = storage.getItem(visualGuideStorageKey(vendorSlug, guideId));
-  return value === "complete" || value === "dismissed" ? value : "unseen";
-}
-
-export function markVisualGuideDismissed(
-  storage: VisualGuideStorage,
-  vendorSlug: string,
-  guideId: VisualGuideId
+  choice: ReadinessGuideChoice
 ): void {
-  storage.setItem(visualGuideStorageKey(vendorSlug, guideId), "dismissed");
+  storage.setItem(
+    readinessGuideStorageKey(vendorSlug),
+    JSON.stringify({ choice, dismissals: 0 })
+  );
 }
 
-export function markVisualGuideComplete(
+export function recordReadinessGuideDismissal(
   storage: VisualGuideStorage,
-  vendorSlug: string,
-  guideId: VisualGuideId
-): void {
-  storage.setItem(visualGuideStorageKey(vendorSlug, guideId), "complete");
+  vendorSlug: string
+): number {
+  const preference = readReadinessGuidePreference(storage, vendorSlug);
+  const dismissals = Math.min(2, preference.dismissals + 1);
+  storage.setItem(
+    readinessGuideStorageKey(vendorSlug),
+    JSON.stringify({ ...preference, dismissals })
+  );
+  return dismissals;
 }
