@@ -1,64 +1,96 @@
-# Stage 1 — KDS visual-guide foundation and order walkthrough
+# Stage 1 — First-run `Become ready to receive orders` guide
 
-Status: done · local verification complete 2026-09-02 · awaiting owner review before Stage 2
+Status: ready-for-agent · owner-approved redesign 2026-09-02 · implement in a separate session
 
 ## Parent
 
 `.scratch/kds-storefront-ops-improvements/issue-00-discovery.md` — Questions 9
 and 10.
 
+## Superseded local tracer
+
+Commit `85e3091` implemented and verified a four-frame
+`Move an order through the kitchen` screenshot carousel. The implementation is
+local only and must not be deployed in its current form: owner review determined
+that order progression is not the main first-run operation. Reuse sound
+accessibility/viewer/persistence seams where useful, but replace the first-run
+subject and UI with the approved readiness flow below.
+
+## Exact visual reference
+
+Keep the approved three-screen composition, hierarchy, copy, dark KDS styling,
+checklist order, actions and completion state intact:
+
+`C:\Users\G\.codex\generated_images\01a05eed-040b-77c3-96d8-7ca58625e0df\exec-eaf121ea-6bcb-4dea-b661-fea903b914a3.png`
+
+The generated bitmap is a decision reference, not a shipping asset. Build the
+modal with real accessible UI and authentic product state.
+
 ## What to build
 
-Deliver the first complete Visual guide as a tracer through the existing KDS
-education surfaces. A Vendor can open `Move an order through the kitchen` from
-Kitchen help, move through four short frames, close or replay it, and use the
-final `Show me` action to return to the live Orders surface.
+On a new Vendor's first incomplete KDS visit, show one modal over the dimmed
+dashboard:
 
-The guide uses authentic KDS screenshots kept large and recognizable. Its
-title, progress, Close control, one restrained warm-orange callout, one short
-instruction, and Back/Next actions are accessible interface elements layered
-over the screenshot—not generated text or buttons baked into a bitmap. The
-owner-approved preview is the composition reference:
-`C:\Users\G\.codex\generated_images\01a04613-b147-7470-a459-555c3fd7a924\exec-f5a4dd90-08be-44f9-a9bc-60db40039f2b.png`.
+- `Welcome to your kitchen`
+- `Let's make sure you're ready to receive orders.`
+- primary `Guide me`
+- secondary `I'll do it myself`
+- a clear close icon
+- quiet copy explaining that the guide is always available again from Kitchen
+  help.
 
-The four frames teach the real operational path: acknowledge a NEW paid order,
-move it through PREPARING and READY, dispatch it to OUT FOR DELIVERY, and mark
-it COMPLETED. Completion/dismissal is remembered per Vendor and device, while
-Kitchen help always keeps the guide replayable. This stage establishes the
-reusable guide definition, viewer behavior, screenshot/callout composition and
-completion seam that Stage 2 will extend.
+`Guide me` opens the exact checklist overview from the reference:
+
+1. Storefront details
+2. Available menu
+3. Payment setup
+4. Kitchen status
+
+Each row uses current Vendor data and may be completed in any order. The visual
+sequence and suggested next incomplete item remain Storefront → Menu → Payment
+→ Kitchen. Begin at the checklist overview, not inside the first detail step.
+
+The completed screen retains the approved `You're ready for orders`, all four
+checks, `OPEN · LIVE`, `Go to Orders`, `Review setup`, and Help replay cue.
+
+## First-run and close semantics
+
+- Auto-show only when readiness is incomplete and this Vendor/device has no
+  stored choice.
+- If the Vendor is already fully ready, do not auto-show, including on a new
+  device.
+- `Guide me` records the choice and the guide never auto-opens again on that
+  device.
+- `I'll do it myself` immediately stops all future automatic appearances on
+  that Vendor/device.
+- The first close-icon dismissal means `not now`; if readiness is still
+  incomplete, offer the modal once more on the next KDS visit.
+- A second close-icon dismissal stops future automatic appearances on that
+  Vendor/device.
+- Manual replay from Kitchen help is always available, regardless of choice,
+  close count or completion.
+- This modal replaces the current first-load Setup drawer/coachmark opening;
+  never stack education overlays.
 
 ## Acceptance criteria
 
-- [x] Kitchen help offers `Move an order through the kitchen` and opens one
-  full-screen, responsive Visual guide without adding a new KDS tab.
-- [x] The guide contains four ordered frames covering NEW/ACCEPTED,
-  PREPARING, READY/dispatch, and OUT FOR DELIVERY/COMPLETED.
-- [x] Every frame uses an authentic KDS screenshot with exactly one restrained
-  warm-orange callout and one short plain-English instruction.
-- [x] Title, `N of 4`, Close, Back, Next and final `Show me` are real accessible
-  controls layered over the image; no generated text/button raster is shipped.
-- [x] Back/Next boundaries, keyboard operation, focus handling, Close and
-  reduced-motion behavior work on mobile and desktop.
-- [x] The final `Show me` action closes the guide, opens Orders and makes the
-  relevant live order workflow discoverable without mutating an order.
-- [x] Completion/dismissal is stored per Vendor and device; the guide remains
-  replayable from Kitchen help.
-- [x] Focused automated coverage proves navigation, persistence isolation by
-  Vendor, replay, Close, and `Show me`; headed mobile and desktop QA confirms
-  the approved composition and reports no application console errors.
+- [ ] The first incomplete KDS visit shows the exact approved welcome modal and
+  offers `Guide me`, `I'll do it myself`, Close and an unobtrusive Help replay
+  explanation.
+- [ ] `Guide me` opens the approved four-row readiness checklist overview.
+- [ ] Readiness derives from live Vendor/menu/payment/kitchen data; already-ready
+  Vendors never receive the automatic modal.
+- [ ] Choice and two-dismissal behavior are versioned and isolated per Vendor
+  and device.
+- [ ] No Setup drawer, coachmark or second guide overlay stacks with the modal.
+- [ ] Kitchen help provides a clear, permanent replay entry without obstructing
+  ordinary KDS work.
+- [ ] The approved complete state offers `Go to Orders` and `Review setup`.
+- [ ] Accessible focus, keyboard, Close, reduced-motion and 390×844/desktop
+  behavior are verified with no application console errors or overflow.
+- [ ] Focused tests cover readiness derivation, Vendor/device isolation, first
+  and second Close, both initial choices, already-ready suppression and replay.
 
 ## Blocked by
 
-None — can start immediately.
-
-## Verification record
-
-- Focused Visual guides tests: 3/3 passing.
-- Full suite: 463 passing / 117 expected skips.
-- Scoped ESLint, TypeScript and production build: passing.
-- Headed browser QA: desktop plus 390×844 passed Help → all four frames →
-  `Show me Orders`; the guide closed on the live Orders tab without mutating an
-  order. The instruction and controls remain visible on mobile.
-- Browser console: no application errors or warnings; the only warnings were
-  emitted by an unrelated browser extension.
+None — owner interview is complete. Implement only in the next session.

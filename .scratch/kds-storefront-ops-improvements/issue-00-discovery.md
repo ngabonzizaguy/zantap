@@ -1,6 +1,6 @@
 # Candidate #29 — KDS, customer hub, lead capture and Ops improvements
 
-Status: QUESTIONS 9–10 STAGE 1 IMPLEMENTED LOCALLY · STAGE 2 AWAITS OWNER REVIEW · QUESTION 11 NOT STARTED · IMPORT GATED
+Status: QUESTIONS 9–10 READINESS REDESIGN APPROVED · IMPLEMENT IN NEXT SESSION · QUESTION 11 NOT STARTED · IMPORT GATED
 Date: 2026-09-01
 
 ## Owner request
@@ -1270,3 +1270,31 @@ Marketing Lead Form and Questions 1–14 remain untouched.
 Question 11 remains separately prepared but unimplemented. No production
 deployment, production write, Ops → KDS import, Marketing Lead Form change or
 new design decision occurred in Stage 1.
+
+### 2026-09-02 owner interview amendment — first-run readiness replaces order progression
+
+Owner review rejected `Move an order through the kitchen` as the main first-run
+subject. The approved primary outcome is now `Become ready to receive orders`.
+The exact three-screen reference is
+`C:\Users\G\.codex\generated_images\01a05eed-040b-77c3-96d8-7ca58625e0df\exec-eaf121ea-6bcb-4dea-b661-fea903b914a3.png`.
+
+- [x] Lock the exact welcome → readiness checklist → ready hierarchy, copy,
+  dark styling, checklist order and actions shown in the reference.
+- [x] Auto-show only for an incomplete Vendor/device with no stored choice;
+  suppress it for already-ready Vendors.
+- [x] `Guide me` and `I'll do it myself` both stop future automatic openings;
+  the first Close is `not now`, the second Close stops future auto-open.
+- [x] Keep the full guide permanently replayable from Kitchen help and state
+  that return path clearly inside the welcome modal.
+- [x] Use short contextual row steps plus an unobtrusive `Return to guide` /
+  `Done — continue guide` chip while the Vendor works in the real KDS.
+- [x] Allow readiness steps in any order, recommend Storefront → Menu → Payment
+  → Kitchen, and warn rather than block when opening early.
+- [ ] Replace/reframe the local `85e3091` order tracer with revised Stage 1 in a
+  separate implementation session.
+- [ ] Implement the Stage 2 contextual row destinations and return chip after
+  revised Stage 1.
+
+ADR-0083 records the decision. The earlier broad order/Stock/customer-update
+catalogue is deferred. No product code, deploy, migration, production write,
+Ops → KDS import or Marketing Lead Form work occurred during this interview.

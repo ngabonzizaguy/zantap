@@ -9,7 +9,7 @@ is never lost again.
 > convention — local markdown, no GitHub round-trips). It persists on this machine
 > across sessions, but does **not** sync via git to other clones/machines.
 
-Last verified against the codebase: 2026-08-22.
+Last verified against the codebase: 2026-09-02.
 
 ## Product architecture audit (2026-08-05)
 
@@ -1185,3 +1185,17 @@ per-Vendor/device dismissal/completion stays behind a small Visual guides seam;
 390×844 browser QA pass. Stage 2 remains `ready-for-agent` but is held for owner
 review of Stage 1; Question 11 remains unstarted. No deploy or production write
 occurred.
+
+Owner review then superseded that first-run subject before release. The main
+new-Vendor operation is `Become ready to receive orders`, not order progression.
+Questions 9–10 are now split into two newly approved phases: Stage 1 replaces
+the automatic first-load education with the exact welcome → four-row readiness
+checklist → ready modal; Stage 2 adds short contextual row views plus an
+unobtrusive `Return to guide` / `Done — continue guide` chip while the Vendor
+works in the live KDS. The guide is permanently replayable from Kitchen help.
+First Close is `not now`, second Close stops auto-show; either initial choice
+stops it immediately; fully ready Vendors never receive it. ADR-0083 records
+the decision. The existing `85e3091` tracer remains local and must not deploy
+unchanged. Both revised stages are ready for a separate implementation session;
+no code, deploy, migration, production write, Ops → KDS import, Marketing Lead
+Form or Question 11 work occurred in the interview.

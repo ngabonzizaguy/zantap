@@ -1,6 +1,6 @@
-# Stage 2 — Complete the KDS visual-guide catalogue and contextual entry
+# Stage 2 — Contextual readiness steps and unobtrusive return flow
 
-Status: ready-for-agent · start after Stage 1 owner review
+Status: ready-for-agent · owner-approved design 2026-09-02 · start after revised Stage 1
 
 ## Parent
 
@@ -9,47 +9,73 @@ and 10.
 
 ## What to build
 
-Extend the proven Stage 1 viewer with the remaining four high-risk task guides:
+Make every readiness row in the Stage 1 checklist useful without turning it
+into another long carousel. Tapping a row opens one short contextual step that
+shows:
 
-1. `Get ready for orders` — OPEN/CLOSED and what Customers experience.
-2. `Add and update dishes` — customer-facing details, photos, price and Dish
-   count.
-3. `Track your Stock` — supplies, Received/Used/Wasted and low-stock state.
-4. `See what customers see` — Menu updates, the collapsed live preview, Views,
-   Menu visits and Storefront preview.
+- current live status;
+- why the item matters to receiving orders;
+- one authentic annotated product screenshot;
+- `Back to checklist`;
+- `Show me` (or `View setup` for an already-complete row).
 
-Each guide contains three to five authentic, annotated KDS screenshots and uses
-the same approved accessible chrome and single-callout language as Stage 1.
-Kitchen help owns the complete replayable catalogue. Relevant Setup rows and
-small contextual coachmarks may open the matching guide, but the full viewer
-never opens automatically.
+`Show me` closes the modal and navigates to/highlights the real KDS control. It
+never completes an action for the Vendor. A compact, unobtrusive `Return to
+guide` chip stays available while they work. After the relevant live state
+becomes complete, the chip changes to `Done — continue guide`; returning updates
+the checklist and suggests the next incomplete row. The full modal never
+reopens automatically.
 
-Prompt eligibility comes from real Vendor state and completion/dismissal state.
-A Vendor sees at most one eligible prompt at a time, selected deterministically;
-several coachmarks must never stack on first load. A final `Show me` returns the
-Vendor to the matching live tab/control without performing the action for them.
-History, receipts, Profit and profile editing stay outside this first catalogue.
+## Row contracts
+
+1. **Storefront details** — show live completeness for logo, cover,
+   description, location and phone; open the Storefront/Setup editor and allow
+   the Vendor to preview what Customers see.
+2. **Available menu** — show available-dish count and missing basics; open Menu,
+   Add Item or a specific incomplete dish.
+3. **Payment setup** — show payout-method status and only a masked destination;
+   open Setup/Payments. Never expose a token or full sensitive credential.
+4. **Kitchen status** — explain CLOSED versus OPEN customer impact and
+   open/highlight the header toggle. Opening completes this row.
+
+Opening the kitchen remains possible when Menu or Payment is incomplete, but
+show a clear warning rather than hard-blocking the Vendor.
+
+## Exact visual reference
+
+Preserve the Stage 1 reference's modal frame, typography, dark styling,
+checklist order and action hierarchy:
+
+`C:\Users\G\.codex\generated_images\01a05eed-040b-77c3-96d8-7ca58625e0df\exec-eaf121ea-6bcb-4dea-b661-fea903b914a3.png`
+
+Contextual views extend that UI; they must not visually redesign it. Authentic
+screenshots and annotations are real layered UI, not generated raster controls.
 
 ## Acceptance criteria
 
-- [ ] Kitchen help lists and replays all five approved guides, including the
-  Stage 1 order walkthrough, without adding a new top-level KDS tab.
-- [ ] Each new guide has three to five authentic screenshots, one callout and
-  one plain-English instruction per frame using the approved Stage 1 viewer.
-- [ ] `Show me` routes to the correct live destination: kitchen availability,
-  Menu/Add Item, Stock, or customer-update/Storefront preview.
-- [ ] Relevant Setup rows can deliberately open their matching guide.
-- [ ] Contextual prompts are derived from real Vendor state, show at most one at
-  a time, and never auto-open a full guide.
-- [ ] Completion/dismissal remains isolated per guide, Vendor and device, and
-  every completed/dismissed guide remains manually replayable from Help.
-- [ ] History, receipts, Profit and profile editing receive no new visual guide
-  in this stage.
-- [ ] Focused automated coverage proves guide definitions, eligibility order,
-  single-prompt behavior, persistence isolation and every `Show me` target;
-  headed mobile and desktop QA covers all four additions with no application
-  console errors.
+- [ ] Every row opens a short contextual step with current state, reason, one
+  authentic annotated screenshot, Back and Show/View action.
+- [ ] Completed rows remain tappable and say `View setup`.
+- [ ] `Show me` closes the modal, navigates to the correct live surface and
+  highlights the target without performing the action.
+- [ ] One compact `Return to guide` chip remains visible without covering KDS
+  controls; it becomes `Done — continue guide` when live state completes.
+- [ ] Returning refreshes the checklist and recommends the next incomplete row
+  in Storefront → Menu → Payment → Kitchen order.
+- [ ] Kitchen opening warns rather than blocks when Menu or Payment is
+  incomplete.
+- [ ] Payment status masks its destination and exposes no token or full
+  sensitive credential.
+- [ ] Help replay opens the same intact flow at any time and does not re-enable
+  automatic first-run appearances.
+- [ ] Focused tests cover every row destination, live refresh, chip states,
+  warning behavior and masking; mobile/desktop headed QA reports no overlap,
+  overflow or application console errors.
 
 ## Blocked by
 
-- `.scratch/kds-storefront-ops-improvements/issues/01-kds-visual-guide-foundation.md`
+- Revised `.scratch/kds-storefront-ops-improvements/issues/01-kds-visual-guide-foundation.md`
+
+The earlier broad five-guide catalogue is deferred. Do not implement the order,
+Stock or customer-update screenshot catalogues until the owner separately
+prioritizes them after this readiness flow is reviewed.

@@ -1,6 +1,6 @@
 # Codex ↔ Cursor shared continuity prompt
 
-Last reconciled: **2026-09-01 (Africa/Kigali)**
+Last reconciled: **2026-09-02 (Africa/Kigali)**
 Scope: the product-restructure, marketing, lead-capture, PWA/KDS-polish,
 Paypack-preparation work, plus the new **Ops outreach + KDS + marketing batch**
 on branch `feat/ops-kds-marketing-batch` (shared Cursor ↔ Codex), and candidate
@@ -33,6 +33,26 @@ Before changing anything, read these files in order:
 Then run `git status --short --branch` and inspect the relevant commit/diff.
 Preserve every pre-existing dirty or untracked path unless the current task
 explicitly owns it.
+
+### 2026-09-02 — Codex — readiness-guide interview closed; implementation deferred
+
+- Owner review superseded the local `Move an order through the kitchen` tracer
+  as the new-Vendor first-run subject. Commit `85e3091` remains local and must
+  not deploy unchanged.
+- The exact approved UI is welcome → four-row `Get ready to receive orders`
+  checklist → ready state, using the generated reference at
+  `C:\Users\G\.codex\generated_images\01a05eed-040b-77c3-96d8-7ca58625e0df\exec-eaf121ea-6bcb-4dea-b661-fea903b914a3.png`.
+  Preserve its hierarchy, copy, dark styling, checklist order and actions.
+- Stage 1 owns the first-run choice and live readiness overview. Stage 2 owns
+  each row's short contextual view, `Show me` route/highlight, and compact
+  `Return to guide` / `Done — continue guide` chip.
+- The modal explains that Kitchen help can replay it at any time. `Guide me`
+  and `I'll do it myself` stop future automatic openings; first Close is
+  `not now`, second Close stops them; already-ready Vendors never see it.
+- ADR-0083 and the two revised issue files are the implementation authority.
+  The broader order/Stock/customer-update catalogue is deferred. No product
+  code, deploy, migration, production write, Ops → KDS import, Marketing Lead
+  Form or Question 11 work occurred. Preserve `.playwright-cli/` and `output/`.
 
 ### 2026-09-02 — Codex — KDS visual education Stage 1 implemented locally
 
