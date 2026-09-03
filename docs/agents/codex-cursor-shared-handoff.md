@@ -1,6 +1,6 @@
 # Codex ↔ Cursor shared continuity prompt
 
-Last reconciled: **2026-09-02 (Africa/Kigali)**
+Last reconciled: **2026-09-03 (Africa/Kigali)**
 Scope: the product-restructure, marketing, lead-capture, PWA/KDS-polish,
 Paypack-preparation work, plus the new **Ops outreach + KDS + marketing batch**
 on branch `feat/ops-kds-marketing-batch` (shared Cursor ↔ Codex), and candidate
@@ -12,6 +12,73 @@ current truth and points to the detailed artifacts; it does not replace issue
 files, ADRs, commit diffs, or the production log in `AGENTS.md`.
 
 ## Prompt for the next Cursor or Codex session
+
+### 2026-09-03 — Codex — save-once Stage 1 amendment implemented locally
+
+- On branch `codex/candidate-29`, the owner-approved save-once Stage 1 amendment
+  is implemented in the existing Setup drawer: amber current step → green
+  completed state + `Next · … →` → next originally missing control → one final
+  `Save profile & continue`.
+- Draft text and staged branding URLs do not mutate the Vendor profile before
+  the final action. The owner-authorized asset upload stores bytes and returns a
+  draft URL only; normal non-guided branding behavior is preserved.
+- Verification is green: focused 17/17, full 471 passed / 117 skipped,
+  TypeScript, scoped ESLint, production build, and desktop plus 390×844 headed
+  QA. Both browser paths proved no premature storefront publication and correct
+  publication after final save. Repository-wide lint retains two unrelated,
+  pre-existing briefing-file hook errors.
+- Owner visual review is the next gate. Evidence is under
+  `output/playwright/kds-readiness-stage1/`. Preserve `.playwright-cli/`,
+  `output/`, and the existing issue-02 documentation change.
+- Stage 2 and Question 11 remain unstarted. Do not deploy, migrate, push,
+  perform Ops → KDS import, or touch the Marketing Lead Form without new
+  authorization.
+
+### 2026-09-03 — Codex — save-once Stage 1 amendment owner-approved
+
+- The owner approved the save-once Stage 1 reference and interaction direction:
+  amber current step → green completed state and `Next · … →` → next
+  incomplete control → one final `Save profile & continue` after all missing
+  details are ready.
+- Reference:
+  `C:\Users\G\.codex\generated_images\01a0633e-1b58-7aa1-8cf8-8a6697746584\exec-889dd54d-51c5-4939-80fa-47ed1f2f0e8c.png`.
+- Implementation has not started and requires its own isolated task. Stage 2
+  and Question 11 remain unstarted. Preserve `.playwright-cli/`, `output/`, and
+  the existing documentation changes; do not deploy, migrate, push, perform
+  Ops → KDS import, or touch the Marketing Lead Form without authorization.
+
+### 2026-09-03 — Codex — save-once Stage 1 visual pending owner approval
+
+- The owner reported an endless local KDS reconnect. A tight curl loop showed
+  page `200` / SSE `404`; after a controlled single-server restart, the same
+  endpoint returned `200` twice. This matches stale Next dev/HMR state after a
+  server/branch restart. No SSE code changed; hard-refresh or reopen the old
+  KDS tab against the now-healthy server.
+- A new approval-only Stage 1 reference replaces `Start here` with: amber
+  current step → green completed state and `Next · … →` → next incomplete
+  control → one final `Save profile & continue` after all missing details are
+  ready. Reference:
+  `C:\Users\G\.codex\generated_images\01a0633e-1b58-7aa1-8cf8-8a6697746584\exec-889dd54d-51c5-4939-80fa-47ed1f2f0e8c.png`.
+- Await owner approval. Do not implement this amendment, begin Stage 2 or
+  Question 11, deploy, migrate, push, perform Ops → KDS import, or touch the
+  Marketing Lead Form before explicit authorization. Preserve
+  `.playwright-cli/` and `output/`.
+
+### 2026-09-02 — Codex — actionable readiness Stage 1 owner-approved locally
+
+- Corrected Candidate #29 Stage 1 passed owner review on
+  `codex/candidate-29` at implementation commit `d09d039`.
+- Fresh headed desktop and 390×844 inspection confirmed that the recommended
+  incomplete row is a clear button with plain missing-state copy,
+  `Show me where`, and a chevron; it opens/highlights the exact live KDS
+  control. The return chip remains visible, saved state advances the target,
+  and completion changes it to `Done — continue guide` before the ready screen.
+- Stage 1 is approved locally. Stage 2 and Question 11 remain unstarted and
+  require a separate authorized session. Do not deploy, migrate, push, perform
+  Ops → KDS import, or touch the Marketing Lead Form without new authorization.
+- Preserve `.playwright-cli/` and `output/`. Review evidence remains under
+  `output/playwright/kds-readiness-stage1/`; this review added only normal
+  Playwright CLI artifacts under the already-preserved `.playwright-cli/` path.
 
 ### 2026-09-02 — Codex — actionable readiness Stage 1 implemented; owner review next
 

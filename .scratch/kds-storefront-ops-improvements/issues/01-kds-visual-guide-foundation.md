@@ -1,6 +1,6 @@
 # Stage 1 — First-run `Become ready to receive orders` guide
 
-Status: ready-for-human · actionable-row revision implemented and verified locally 2026-09-02 · owner review pending
+Status: ready-for-human · save-once Stage 1 amendment implemented and verified locally 2026-09-03 · owner review pending
 
 ## Parent
 
@@ -192,3 +192,80 @@ desktop live sequence proved `3 details left` → logo upload → `2 details lef
 
 Stage 2 and Question 11 remain unstarted. Nothing was deployed, migrated,
 pushed, imported from Ops, or changed in the Marketing Lead Form.
+
+## Owner review — APPROVED 2026-09-02
+
+The corrected Stage 1 UI is approved for its local release gate. Fresh headed
+review at 390×844 and desktop confirmed that the recommended incomplete row is
+visibly actionable, uses plain missing-state copy plus `Show me where` and a
+directional affordance, and opens the exact highlighted live KDS control. The
+return chip remains visible while the Vendor works; a successful profile save
+re-derived readiness, changed the chip to `Done — continue guide`, and returned
+to the approved completed state.
+
+The review also confirmed the intact welcome/checklist/ready hierarchy, real
+button semantics, the no-stacked-overlay behavior, and the existing evidence
+under `output/playwright/kds-readiness-stage1/`. Stage 1 is approved locally.
+Stage 2 and Question 11 remain unstarted and require a separate authorized
+session. Nothing was deployed, migrated, pushed, imported from Ops, or changed
+in the Marketing Lead Form.
+
+## Save-once guided progression — OWNER-APPROVED 2026-09-03
+
+The owner requested a visual follow-up before implementation. The proposal
+replaces the floating `Start here` behavior with one continuous guided pass:
+the active control is amber; completing it immediately renders a green
+completed state and a green `Next · … →` action to the next incomplete control;
+the Vendor completes every currently missing detail before seeing one final
+`Save profile & continue` action.
+
+Approval reference:
+`C:\Users\G\.codex\generated_images\01a0633e-1b58-7aa1-8cf8-8a6697746584\exec-889dd54d-51c5-4939-80fa-47ed1f2f0e8c.png`.
+
+The owner approved this reference and interaction direction. The isolated
+implementation is now complete locally; Stage 2 and Question 11 remain
+unstarted. The separate local KDS reconnect incident was
+reproduced as page `200` / SSE `404`; a controlled single-server restart made
+the same deterministic curl signal `200` / `200` twice. Evidence points to
+stale Next dev/HMR state after a server or branch restart, not the SSE route
+implementation. The current local server is healthy; the stale browser tab
+requires a hard refresh or reopen.
+
+## Save-once implementation — 2026-09-03
+
+- [x] The first originally missing storefront control is the amber current step.
+- [x] A valid draft changes that control to a green completed state and unlocks
+  `Next · … →` without publishing the Vendor profile.
+- [x] Next advances through the ordered set of originally missing logo, cover,
+  description, location, and phone controls.
+- [x] Existing profile/business save buttons are absent during this guided
+  storefront pass.
+- [x] The final review lists every completed missing detail and exposes one
+  `Save profile & continue` action.
+- [x] The final action publishes the full profile once, refreshes live readiness,
+  and returns to the ready guide state.
+
+The existing Setup drawer remains the sole editor. A new pure readiness helper
+derives the ordered missing-field sequence for both live readiness and the
+draft guide. Branding file bytes may be uploaded through the existing storage
+seam while the Vendor works, but the returned URL is staged only in the draft;
+the Vendor profile field and update announcement are not published until the
+final save. Normal, non-guided Setup behavior still uses the existing immediate
+branding action.
+
+TDD added ordered missing-field coverage and an owner-authorized branding-stage
+contract proving that upload alone does not mutate `logoUrl`. Focused tests are
+17/17; the full suite is 471 passed / 117 skipped; canonical TypeScript, scoped
+ESLint, and the production build are clean. Repository-wide lint still reports
+the two pre-existing `react-hooks/set-state-in-effect` failures in untouched
+`components/briefing/BriefingInterest.tsx` and `BriefingNotice.tsx`.
+
+Headed desktop and 390×844 QA both proved amber → green → Next progression,
+the single final review/save, no application console errors, no premature
+storefront publication, and publication after the final save. Evidence remains
+under `output/playwright/kds-readiness-stage1/`, including
+`save-once-review-desktop.png` and `save-once-review-mobile.png`.
+
+No deploy, migration, push, Ops → KDS import, Marketing Lead Form change,
+Stage 2 work, or Question 11 work occurred. Owner visual review of this local
+amendment is the only next gate.

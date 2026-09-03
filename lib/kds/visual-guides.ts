@@ -41,6 +41,44 @@ export interface KdsReadiness {
   isReady: boolean;
 }
 
+export interface StorefrontReadinessValues {
+  logoUrl?: string;
+  coverImageUrl?: string;
+  description?: string;
+  location?: string;
+  phoneNumber?: string;
+}
+
+export interface StorefrontReadinessStep {
+  detail: string;
+  target: Extract<KdsReadinessTarget, `storefront-${string}`>;
+}
+
+export function deriveMissingStorefrontReadiness(
+  values: StorefrontReadinessValues
+): StorefrontReadinessStep[] {
+  return [
+    !values.logoUrl?.trim()
+      ? { detail: "Add your logo", target: "storefront-logo" as const }
+      : null,
+    !values.coverImageUrl?.trim()
+      ? { detail: "Add a cover photo", target: "storefront-cover" as const }
+      : null,
+    !values.description?.trim()
+      ? {
+          detail: "Add your business description",
+          target: "storefront-description" as const,
+        }
+      : null,
+    !values.location?.trim()
+      ? { detail: "Add your location", target: "storefront-location" as const }
+      : null,
+    !values.phoneNumber?.trim()
+      ? { detail: "Add your phone number", target: "storefront-phone" as const }
+      : null,
+  ].filter((step) => step !== null);
+}
+
 interface ReadinessGuidePreference {
   choice?: ReadinessGuideChoice;
   dismissals: number;
@@ -55,26 +93,7 @@ export function deriveKdsReadiness({
   menu: readonly MenuItem[];
   kitchenOpen: boolean;
 }): KdsReadiness {
-  const storefrontMissingRequirements = [
-    !vendor.logoUrl?.trim()
-      ? { detail: "Add your logo", target: "storefront-logo" as const }
-      : null,
-    !vendor.coverImageUrl?.trim()
-      ? { detail: "Add a cover photo", target: "storefront-cover" as const }
-      : null,
-    !vendor.description?.trim()
-      ? {
-          detail: "Add your business description",
-          target: "storefront-description" as const,
-        }
-      : null,
-    !vendor.location?.trim()
-      ? { detail: "Add your location", target: "storefront-location" as const }
-      : null,
-    !vendor.phoneNumber.trim()
-      ? { detail: "Add your phone number", target: "storefront-phone" as const }
-      : null,
-  ].filter((requirement) => requirement !== null);
+  const storefrontMissingRequirements = deriveMissingStorefrontReadiness(vendor);
   const storefrontMissing = storefrontMissingRequirements[0];
   const menuReady = menu.some((item) => item.isAvailable && !item.archivedAt);
   const paymentReady = validateVendorPayout(vendor).ok;

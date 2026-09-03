@@ -356,3 +356,28 @@ export async function uploadBrandingImage(
 
 }
 
+/** Uploads a private-owner-authorized branding asset without publishing it. */
+export async function uploadBrandingAsset(
+  ownerToken: string,
+  vendorSlug: string,
+  field: "logo" | "cover",
+  formData: FormData
+): Promise<string> {
+  await assertOwnerToken(vendorSlug, ownerToken);
+
+  const file = formData.get("file");
+  if (!(file instanceof File)) {
+    throw new Error("No image file provided");
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const validationError = validateMenuImageFile(buffer.byteLength, file.type);
+  if (validationError) {
+    throw new Error(validationError);
+  }
+
+  const pathname = buildBrandingBlobPathname(vendorSlug, field, file.type);
+  const uploaded = await putBrandingBlob(pathname, buffer, file.type);
+  return uploaded.url;
+}
+

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   deriveKdsReadiness,
+  deriveMissingStorefrontReadiness,
   recordReadinessGuideChoice,
   recordReadinessGuideDismissal,
   shouldAutoShowReadinessGuide,
@@ -46,6 +47,26 @@ function memoryStorage() {
 }
 
 describe("KDS readiness guide", () => {
+  it("orders every missing storefront detail for one guided save", () => {
+    expect(
+      deriveMissingStorefrontReadiness({
+        logoUrl: "",
+        coverImageUrl: undefined,
+        description: "",
+        location: "Kigali",
+        phoneNumber: "",
+      })
+    ).toEqual([
+      { detail: "Add your logo", target: "storefront-logo" },
+      { detail: "Add a cover photo", target: "storefront-cover" },
+      {
+        detail: "Add your business description",
+        target: "storefront-description",
+      },
+      { detail: "Add your phone number", target: "storefront-phone" },
+    ]);
+  });
+
   it("derives the approved four-row ready state from live product data", () => {
     const readiness = deriveKdsReadiness({ vendor, menu, kitchenOpen: true });
 

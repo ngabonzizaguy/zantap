@@ -2,7 +2,7 @@
 
 Date: 2026-09-02
 
-Status: Accepted · Stage 1 actionability amendment implemented locally; owner review pending; Stage 2 held
+Status: Accepted · save-once Stage 1 amendment implemented locally; owner review pending; Stage 2 unstarted
 
 ## Context
 
@@ -123,3 +123,56 @@ This is the minimum Stage 1 actionability loop, not Stage 2: no contextual
 screenshot view, warning flow, completed-row review catalogue, or broader guide
 set was added. No schema, migration, production configuration, deployment, push,
 Ops import, Marketing Lead Form, or Question 11 change occurred.
+
+## Stage 1 owner approval — 2026-09-02
+
+Headed owner review approved the corrected Stage 1. At desktop and 390×844, the
+recommended row is an unmistakable button with plain missing-state copy,
+`Show me where`, and a chevron; it opens and highlights the exact existing live
+control. The compact return chip stays available during the task, saved live
+state advances the derived target, and completion changes the chip to
+`Done — continue guide` before returning to the ready state.
+
+This closes only the Stage 1 approval gate. Stage 2 and Question 11 remain
+unstarted and require a separate authorized session. No deploy, migration,
+push, Ops import, Marketing Lead Form change, or production action occurred.
+
+## Approved save-once amendment — 2026-09-03
+
+The owner requested an approval reference for a tighter completion loop. The
+proposal keeps the existing real-control handoff but changes the guided surface
+to: amber current step → green completed state with `Next` → next incomplete
+control → one final `Save profile & continue` after all currently missing
+details are ready. It deliberately avoids prompting for `Save profile` between
+each guided detail.
+
+Reference:
+`C:\Users\G\.codex\generated_images\01a0633e-1b58-7aa1-8cf8-8a6697746584\exec-889dd54d-51c5-4939-80fa-47ed1f2f0e8c.png`.
+
+The owner approved this amendment and its reference on 2026-09-03.
+
+## Save-once implementation — 2026-09-03
+
+The approved sequence is implemented in the existing Setup drawer. The ordered
+set of fields is captured from saved live Vendor data when guided storefront
+work begins. Valid draft input changes the current amber target to green and
+unlocks the next incomplete target; no intermediate profile or business save
+is available. Once all originally missing details are valid, a review surface
+shows one `Save profile & continue`, which writes the complete profile and
+returns to freshly derived readiness.
+
+Branding file selection still requires an owner-authorized storage upload, but
+the upload action now returns only the staged URL. It does not mutate the Vendor
+or publish an update; the URL joins the other draft values in the one final
+profile write. The existing `uploadBrandingImage` behavior remains unchanged
+outside the guided storefront pass.
+
+Verification: focused tests 17/17, full tests 471 passed / 117 skipped,
+TypeScript, scoped ESLint, production build, and headed desktop plus 390×844
+browser QA. Both browser paths proved the storefront remained unchanged before
+the final save and contained the new details afterward. Full repository lint
+retains two pre-existing briefing-file hook errors outside this decision.
+
+This remains Stage 1 only. Owner review is pending. Stage 2, Question 11,
+deployment, migration, push, Ops → KDS import, the Marketing Lead Form, and all
+production actions remain untouched.

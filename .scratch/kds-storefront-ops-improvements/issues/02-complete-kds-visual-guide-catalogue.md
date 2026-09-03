@@ -1,6 +1,6 @@
 # Stage 2 — Contextual readiness steps and unobtrusive return flow
 
-Status: ready-for-agent · owner-approved design 2026-09-02 · actionable Stage 1 implemented locally · held for owner review
+Status: ready-for-agent · owner-approved design 2026-09-02 · Stage 1 approval gate satisfied · not started
 
 ## Parent
 
@@ -74,9 +74,9 @@ screenshots and annotations are real layered UI, not generated raster controls.
 
 ## Blocked by
 
-- Owner approval of the actionable revised Stage 1 after reviewing the next
-  local UI correction in
-  `.scratch/kds-storefront-ops-improvements/issues/01-kds-visual-guide-foundation.md`.
+None. The actionable Stage 1 was approved locally on 2026-09-02. Stage 2 still
+requires a separate implementation session and explicit authorization; this
+approval session did not begin it.
 
 The earlier broad five-guide catalogue is deferred. Do not implement the order,
 Stock or customer-update screenshot catalogues until the owner separately

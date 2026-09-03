@@ -1034,7 +1034,7 @@ error/fatal/warning/5xx scans were empty. No production fixture data changed.
 
 ---
 
-## Candidate #29 — Priority #1 Vendor Menu Intake — ✅ OPS TRASH/OPTIONS + BRIEFING PIN DEPLOYED · READ-ONLY PROD-SMOKED 2026-09-01 · Q9–10 STAGE 1 ACTIONABLE LOCALLY · OWNER REVIEW PENDING
+## Candidate #29 — Priority #1 Vendor Menu Intake — ✅ OPS TRASH/OPTIONS + BRIEFING PIN DEPLOYED · READ-ONLY PROD-SMOKED 2026-09-01 · Q9–10 STAGE 1 SAVE-ONCE AMENDMENT IMPLEMENTED LOCALLY · OWNER REVIEW PENDING · STAGE 2 UNSTARTED
 
 The separate shareable Vendor Menu Intake → Ops review → KDS import workflow is
 complete and deployed from `codex/candidate-29`. It includes both approved public paths,
@@ -1241,4 +1241,33 @@ adding contextual screenshot steps. Focused 9/9, full 469/117, TypeScript,
 scoped ESLint, production build, and desktop/390×844 QA pass with zero
 application console errors or overflow. Stage 2 and Question 11 remain
 unstarted; no deploy, migration, push, Ops import, Marketing Lead Form, or
-production action occurred. Corrected Stage 1 is `ready-for-human` owner review.
+production action occurred. Corrected Stage 1 then passed owner review as
+recorded below.
+
+Owner review then approved corrected Stage 1 locally on 2026-09-02. Fresh
+desktop and 390×844 headed inspection confirmed the actionable recommended row,
+plain missing-state copy, direct highlighted live-control handoff, persistent
+return chip, saved-state advancement, and completed readiness screen. Stage 2
+and Question 11 remain unstarted and require a separate authorized session. No
+deploy, migration, push, Ops import, Marketing Lead Form change, or production
+action occurred.
+
+On 2026-09-03 the owner requested a follow-up Stage 1 visual before any new
+implementation. The proposed guided pass replaces `Start here` with an amber
+current step, a green `Next` after each completed control, and one final
+`Save profile & continue` only after all missing details are ready. Reference:
+`C:\Users\G\.codex\generated_images\01a0633e-1b58-7aa1-8cf8-8a6697746584\exec-889dd54d-51c5-4939-80fa-47ed1f2f0e8c.png`.
+The owner approved the reference and interaction direction on 2026-09-03. The
+isolated implementation now stages every originally missing storefront detail
+in the existing Setup drawer, advances amber → green → `Next`, and publishes
+the profile only through one final `Save profile & continue`. Branding uploads
+return a staged URL without mutating the Vendor until that final action. Focused
+tests are 17/17, the full suite is 471/117, TypeScript/scoped lint/build are
+clean, and desktop plus 390×844 browser QA proved no premature publication and
+successful final publication. Repository-wide lint retains two unrelated
+briefing-file baseline errors. Owner visual review is pending; Stage 2/Question
+11 remain unstarted. In the same review, the reported endless local KDS reconnect
+was reproduced as page `200` / SSE `404` and cleared to `200` / `200` twice by
+a controlled single-server restart, identifying stale Next dev/HMR state. No
+SSE product change, deploy, migration, push, Ops import, Lead Form change, or
+production action occurred.

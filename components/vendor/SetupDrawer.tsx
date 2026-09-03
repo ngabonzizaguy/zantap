@@ -8,11 +8,16 @@ import type {
   KdsReadinessItem,
   KdsReadinessTarget,
 } from "@/lib/kds/visual-guides";
+import { deriveMissingStorefrontReadiness } from "@/lib/kds/visual-guides";
 import { Button, Card, Input, Select } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 import { splitPhoneForDisplay } from "@/lib/format";
 import { checkSlugAvailable } from "@/lib/actions/vendor-provision";
-import { updateVendorProfile, uploadBrandingImage } from "@/lib/actions/vendor-profile";
+import {
+  updateVendorProfile,
+  uploadBrandingAsset,
+  uploadBrandingImage,
+} from "@/lib/actions/vendor-profile";
 import { getDisplayHostPrefix } from "@/lib/base-url";
 import {
   countCompletedSteps,
@@ -76,6 +81,42 @@ const SETUP_READINESS_TARGET_IDS: Partial<
   "storefront-phone": "setup-phone-editor",
   "payment-setup": "setup-payment-editor",
 };
+
+const GUIDED_STOREFRONT_COPY: Record<
+  Extract<KdsReadinessTarget, `storefront-${string}`>,
+  { action: string; complete: string; review: string }
+> = {
+  "storefront-logo": {
+    action: "Add logo",
+    complete: "Logo added",
+    review: "Logo",
+  },
+  "storefront-cover": {
+    action: "Add cover photo",
+    complete: "Cover photo added",
+    review: "Cover photo",
+  },
+  "storefront-description": {
+    action: "Add business description",
+    complete: "Business description added",
+    review: "Business description",
+  },
+  "storefront-location": {
+    action: "Add location",
+    complete: "Location added",
+    review: "Location",
+  },
+  "storefront-phone": {
+    action: "Add phone number",
+    complete: "Phone number added",
+    review: "Phone number",
+  },
+};
+
+function validImageUrl(value: string): boolean {
+  const trimmed = value.trim();
+  return !!trimmed && /^(?:https?:\/\/|\/)/i.test(trimmed);
+}
 
 function slugStatusMessage(status: SlugAvailability): string | null {
   switch (status) {
@@ -176,6 +217,9 @@ export function SetupDrawer({
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [suppressNextAnnouncement, setSuppressNextAnnouncement] = useState(false);
+  const [guidedStep, setGuidedStep] = useState<
+    KdsReadinessTarget | "review" | null
+  >(null);
 
   const [nameDraft, setNameDraft] = useState("");
   const [slugDraft, setSlugDraft] = useState("");
@@ -218,6 +262,38 @@ export function SetupDrawer({
   );
   const normalizedSlugDraft = normalizeVendorSlug(slugDraft);
   const hostPrefix = getDisplayHostPrefix();
+  const guidedStorefront = readinessItem?.id === "storefront";
+  const guidedTargets = useMemo(
+    () =>
+      guidedStorefront
+        ? deriveMissingStorefrontReadiness({
+            logoUrl: profile.logoUrl,
+            coverImageUrl: profile.coverImageUrl,
+            description: profile.description,
+            location: profile.location,
+            phoneNumber: business.phoneNumber,
+          })
+        : [],
+    [business.phoneNumber, guidedStorefront, profile]
+  );
+  const guidedDraftMissing = deriveMissingStorefrontReadiness({
+    logoUrl: validImageUrl(logoUrlDraft) ? logoUrlDraft : "",
+    coverImageUrl: validImageUrl(coverImageUrlDraft) ? coverImageUrlDraft : "",
+    description: descriptionDraft,
+    location: locationDraft,
+    phoneNumber: phoneLocalDraft.trim().length >= 6 ? phoneLocalDraft : "",
+  });
+  const activeReadinessTarget =
+    guidedStep === "review"
+      ? undefined
+      : guidedStep ?? readinessItem?.target;
+  const guidedReview = guidedStorefront && guidedStep === "review";
+  const guidedAllReady =
+    guidedStorefront &&
+    guidedTargets.every(
+      (step) =>
+        !guidedDraftMissing.some((missing) => missing.target === step.target)
+    );
 
   // Instant idle/available/invalid/checking feedback while typing ("adjust
   // state during render"); the debounced availability probe stays in the effect.
@@ -282,8 +358,8 @@ export function SetupDrawer({
   }, [open, onClose, onRefresh]);
 
   useEffect(() => {
-    if (!open || !readinessItem?.target) return;
-    const id = SETUP_READINESS_TARGET_IDS[readinessItem.target];
+    if (!open || !activeReadinessTarget) return;
+    const id = SETUP_READINESS_TARGET_IDS[activeReadinessTarget];
     if (!id) return;
     const frame = window.requestAnimationFrame(() => {
       const target = panelRef.current?.querySelector<HTMLElement>(`#${id}`);
@@ -291,7 +367,7 @@ export function SetupDrawer({
       target?.focus({ preventScroll: true });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [open, readinessItem?.target]);
+  }, [activeReadinessTarget, open]);
 
   // Re-seed drafts when the drawer opens or saved data changes ("adjust state
   // during render" — no effect, no extra paint).
@@ -327,6 +403,7 @@ export function SetupDrawer({
     setDescriptionDraft(profile.description ?? "");
     setProfileError(null);
     setProfileSaved(false);
+    setGuidedStep(readinessItem?.target ?? null);
 
     setNameDraft(business.name);
     setSlugDraft(business.slug);
@@ -382,6 +459,20 @@ export function SetupDrawer({
     try {
       const formData = new FormData();
       formData.set("file", file);
+      if (guidedStorefront) {
+        const uploadedUrl = await uploadBrandingAsset(
+          token,
+          vendorSlug,
+          field,
+          formData
+        );
+        if (field === "logo") {
+          setLogoUrlDraft(uploadedUrl);
+        } else {
+          setCoverImageUrlDraft(uploadedUrl);
+        }
+        return;
+      }
       const updated = await uploadBrandingImage(token, vendorSlug, field, formData, {
         announce: !suppressNextAnnouncement,
       });
@@ -436,6 +527,10 @@ export function SetupDrawer({
       setProfileError("Cover must be a valid image URL (https://…).");
       return;
     }
+    if (guidedStorefront && phoneLocalDraft.trim().length < 6) {
+      setProfileError("A valid phone number is required.");
+      return;
+    }
 
     setProfileSaving(true);
     setProfileError(null);
@@ -453,6 +548,11 @@ export function SetupDrawer({
           logoUrl: logoUrlDraft,
           coverImageUrl: coverImageUrlDraft,
           description: descriptionDraft,
+          ...(guidedStorefront
+            ? {
+                phoneNumber: `${phoneDialCodeDraft} ${phoneLocalDraft}`.trim(),
+              }
+            : {}),
         },
         { announce: !suppressNextAnnouncement }
       );
@@ -465,9 +565,18 @@ export function SetupDrawer({
         coverImageUrl: updated.coverImageUrl,
         description: updated.description,
       });
+      if (guidedStorefront) {
+        onBusinessSaved?.({
+          name: updated.name,
+          slug: updated.slug,
+          phoneNumber: updated.phoneNumber,
+          businessCategory: updated.businessCategory,
+        });
+      }
       setProfileSaved(true);
       window.setTimeout(() => setProfileSaved(false), 2000);
       setSuppressNextAnnouncement(false);
+      if (guidedReview) onReturnToReadiness?.();
     } catch (error) {
       setProfileError(mapOwnerTokenError(error));
     } finally {
@@ -599,15 +708,31 @@ export function SetupDrawer({
     : payoutPhoneDraft.trim();
   const payoutPhoneValid = payoutPhoneLocal.length >= 6;
 
-  const readinessTargetClass = (target: KdsReadinessTarget) =>
-    cn(
+  const guidedTargetComplete = (target: KdsReadinessTarget) =>
+    guidedStorefront &&
+    guidedTargets.some((step) => step.target === target) &&
+    !guidedDraftMissing.some((step) => step.target === target);
+
+  const readinessTargetClass = (target: KdsReadinessTarget) => {
+    const isGuidedTarget =
+      guidedStorefront && guidedTargets.some((step) => step.target === target);
+    return cn(
       "relative rounded-brand-lg",
-      readinessItem?.target === target &&
+      isGuidedTarget &&
+        guidedTargetComplete(target) &&
+        "scroll-m-6 border border-success/70 bg-success/5 p-3 outline outline-1 outline-success/40",
+      isGuidedTarget &&
+        activeReadinessTarget === target &&
+        !guidedTargetComplete(target) &&
+        "scroll-m-6 border border-primary bg-primary/5 p-3 outline outline-1 outline-primary/80",
+      !isGuidedTarget &&
+        readinessItem?.target === target &&
         "scroll-m-6 border border-primary bg-primary/5 p-3 outline outline-1 outline-primary/80"
     );
+  };
 
   const activateReadinessTarget = (target: KdsReadinessTarget) => {
-    if (readinessItem?.target !== target) return;
+    if (activeReadinessTarget !== target) return;
     const id = SETUP_READINESS_TARGET_IDS[target];
     if (!id) return;
     const group = panelRef.current?.querySelector<HTMLElement>(`#${id}`);
@@ -625,7 +750,7 @@ export function SetupDrawer({
   };
 
   const startHereBadge = (target: KdsReadinessTarget) =>
-    readinessItem?.target === target ? (
+    !guidedStorefront && readinessItem?.target === target ? (
       <button
         type="button"
         onClick={() => activateReadinessTarget(target)}
@@ -634,6 +759,70 @@ export function SetupDrawer({
         Start here
       </button>
     ) : null;
+
+  const advanceGuidedStep = (target: KdsReadinessTarget) => {
+    const currentIndex = guidedTargets.findIndex(
+      (step) => step.target === target
+    );
+    if (currentIndex < 0 || !guidedTargetComplete(target)) return;
+    const nextIncomplete = guidedTargets.find(
+      (step) => !guidedTargetComplete(step.target)
+    );
+    setGuidedStep(nextIncomplete?.target ?? "review");
+  };
+
+  const guidedStepStatus = (target: KdsReadinessTarget) => {
+    if (
+      !guidedStorefront ||
+      !guidedTargets.some((step) => step.target === target)
+    ) {
+      return null;
+    }
+    const copy = GUIDED_STOREFRONT_COPY[
+      target as keyof typeof GUIDED_STOREFRONT_COPY
+    ];
+    const complete = guidedTargetComplete(target);
+    const active = activeReadinessTarget === target;
+    const stepNumber =
+      guidedTargets.findIndex((step) => step.target === target) + 1;
+    const stepDetail = guidedTargets.find((step) => step.target === target)?.detail;
+    const nextStep = guidedTargets.find(
+      (step) => !guidedTargetComplete(step.target)
+    );
+    const nextLabel = nextStep
+      ? GUIDED_STOREFRONT_COPY[nextStep.target].action
+      : "Review details";
+
+    return (
+      <>
+        {active && !complete ? (
+          <span className="absolute -right-1 -top-4 z-10 min-h-9 rounded-brand-md bg-primary px-3 py-2 font-body text-caption font-semibold text-[#0c0a09] shadow-brand-soft">
+            {stepNumber} · {stepDetail}
+          </span>
+        ) : null}
+        {complete ? (
+          <div className="mt-2 flex items-center gap-2 font-body text-body-sm text-success">
+            <span
+              className="flex h-6 w-6 items-center justify-center rounded-full border border-success"
+              aria-hidden="true"
+            >
+              ✓
+            </span>
+            <span>{copy.complete}</span>
+          </div>
+        ) : null}
+        {active && complete ? (
+          <button
+            type="button"
+            onClick={() => advanceGuidedStep(target)}
+            className="mt-3 flex min-h-11 w-full items-center justify-center rounded-brand-md border border-success/80 bg-success/10 px-4 font-body text-button font-medium text-success transition-colors hover:bg-success/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-success"
+          >
+            Next · {nextLabel} →
+          </button>
+        ) : null}
+      </>
+    );
+  };
 
   const handleReadinessTargetKeyDown = (
     event: React.KeyboardEvent<HTMLElement>,
@@ -717,6 +906,62 @@ export function SetupDrawer({
         </header>
 
         <div className="flex-1 overflow-y-auto px-6 py-5">
+          {guidedReview ? (
+            <div className="zt-list-in flex min-h-full flex-col justify-center py-5">
+              <div className="rounded-brand-lg border border-white/10 bg-black/10 px-4 py-8 text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-success text-3xl text-success">
+                  ✓
+                </div>
+                <h3 className="mt-5 font-display text-display-md font-light text-success">
+                  All {guidedTargets.length} {guidedTargets.length === 1 ? "detail" : "details"} ready
+                </h3>
+                <p className="mx-auto mt-2 max-w-xs font-body text-body-md text-muted">
+                  Great work! Your profile is ready to save.
+                </p>
+
+                <ul className="mt-6 overflow-hidden rounded-brand-lg border border-white/10 text-left">
+                  {guidedTargets.map((step) => (
+                    <li
+                      key={step.target}
+                      className="flex min-h-14 items-center gap-3 border-b border-white/10 px-4 last:border-b-0"
+                    >
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full border border-success text-success" aria-hidden="true">
+                        ✓
+                      </span>
+                      <span className="font-body text-body-md text-ink">
+                        {GUIDED_STOREFRONT_COPY[step.target].review}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <Button
+                size="kds"
+                radius="lg"
+                className="mt-6 w-full bg-primary text-[#0c0a09] hover:bg-[#ffb52b]"
+                onClick={() => void handleSaveProfile()}
+                disabled={profileFieldsDisabled || !hasToken || !guidedAllReady}
+              >
+                {profileSaving ? "Saving…" : "Save profile & continue"}
+              </Button>
+              <Button
+                size="kds"
+                radius="lg"
+                variant="outline"
+                className="mt-3 w-full border-primary text-primary hover:border-primary hover:bg-primary/5"
+                onClick={onReturnToReadiness}
+              >
+                ← Back to readiness
+              </Button>
+              {profileError ? (
+                <p className="mt-3 font-body text-body-sm text-error" role="alert">
+                  {profileError}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          <div className={guidedReview ? "hidden" : undefined}>
           <ol className="flex flex-col gap-3">
             {ONBOARDING_STEPS.map((step, index) => {
               const done = checklist[step.id];
@@ -914,15 +1159,8 @@ export function SetupDrawer({
                 disabled={businessFieldsDisabled}
               />
               <div
-                id="setup-phone-editor"
-                tabIndex={readinessItem?.target === "storefront-phone" ? 0 : undefined}
-                className={cn("flex flex-col gap-1.5", readinessTargetClass("storefront-phone"))}
-                onClick={(event) => {
-                  if (event.target === event.currentTarget) activateReadinessTarget("storefront-phone");
-                }}
-                onKeyDown={(event) => handleReadinessTargetKeyDown(event, "storefront-phone")}
+                className="flex flex-col gap-1.5"
               >
-                {startHereBadge("storefront-phone")}
                 <label
                   htmlFor="setup-slug"
                   className="font-body text-body-sm font-medium text-ink"
@@ -963,7 +1201,16 @@ export function SetupDrawer({
                   </p>
                 ) : null}
               </div>
-              <div className="flex flex-col gap-1.5">
+              <div
+                id="setup-phone-editor"
+                tabIndex={activeReadinessTarget === "storefront-phone" ? 0 : undefined}
+                className={cn("flex flex-col gap-1.5", readinessTargetClass("storefront-phone"))}
+                onClick={(event) => {
+                  if (event.target === event.currentTarget) activateReadinessTarget("storefront-phone");
+                }}
+                onKeyDown={(event) => handleReadinessTargetKeyDown(event, "storefront-phone")}
+              >
+                {startHereBadge("storefront-phone")}
                 <label
                   htmlFor="setup-phone"
                   className="font-body text-body-sm font-medium text-ink"
@@ -999,6 +1246,7 @@ export function SetupDrawer({
                   Used for customer contact, account recovery, and your
                   storefront call button.
                 </p>
+                {guidedStepStatus("storefront-phone")}
               </div>
               <div className="flex flex-col gap-1.5">
                 <label
@@ -1025,13 +1273,15 @@ export function SetupDrawer({
                   ))}
                 </select>
               </div>
-              <Button
-                size="default"
-                onClick={() => void handleSaveBusiness()}
-                disabled={businessFieldsDisabled || !hasToken}
-              >
-                {businessSaving ? "Saving…" : "Save business"}
-              </Button>
+              {!guidedStorefront ? (
+                <Button
+                  size="default"
+                  onClick={() => void handleSaveBusiness()}
+                  disabled={businessFieldsDisabled || !hasToken}
+                >
+                  {businessSaving ? "Saving…" : "Save business"}
+                </Button>
+              ) : null}
               {businessSaved ? (
                 <p className="font-body text-body-sm text-primary">
                   Business settings saved.
@@ -1224,7 +1474,7 @@ export function SetupDrawer({
               />
               <div
                 id="setup-location-editor"
-                tabIndex={readinessItem?.target === "storefront-location" ? 0 : undefined}
+                tabIndex={activeReadinessTarget === "storefront-location" ? 0 : undefined}
                 className={readinessTargetClass("storefront-location")}
                 onClick={(event) => {
                   if (event.target === event.currentTarget) activateReadinessTarget("storefront-location");
@@ -1239,6 +1489,7 @@ export function SetupDrawer({
                   placeholder="Kigali, Rwanda"
                   disabled={profileFieldsDisabled}
                 />
+                {guidedStepStatus("storefront-location")}
               </div>
               <Input
                 label="Delivery time"
@@ -1261,7 +1512,7 @@ export function SetupDrawer({
               />
               <div
                 id="setup-logo-editor"
-                tabIndex={readinessItem?.target === "storefront-logo" ? 0 : undefined}
+                tabIndex={activeReadinessTarget === "storefront-logo" ? 0 : undefined}
                 className={cn("flex flex-col gap-2", readinessTargetClass("storefront-logo"))}
                 onClick={(event) => {
                   if (event.target === event.currentTarget) activateReadinessTarget("storefront-logo");
@@ -1307,10 +1558,11 @@ export function SetupDrawer({
                     />
                   </div>
                 ) : null}
+                {guidedStepStatus("storefront-logo")}
               </div>
               <div
                 id="setup-cover-editor"
-                tabIndex={readinessItem?.target === "storefront-cover" ? 0 : undefined}
+                tabIndex={activeReadinessTarget === "storefront-cover" ? 0 : undefined}
                 className={cn("flex flex-col gap-2", readinessTargetClass("storefront-cover"))}
                 onClick={(event) => {
                   if (event.target === event.currentTarget) activateReadinessTarget("storefront-cover");
@@ -1356,10 +1608,11 @@ export function SetupDrawer({
                     />
                   </div>
                 ) : null}
+                {guidedStepStatus("storefront-cover")}
               </div>
               <div
                 id="setup-description-editor"
-                tabIndex={readinessItem?.target === "storefront-description" ? 0 : undefined}
+                tabIndex={activeReadinessTarget === "storefront-description" ? 0 : undefined}
                 className={cn("flex w-full flex-col gap-1.5", readinessTargetClass("storefront-description"))}
                 onClick={(event) => {
                   if (event.target === event.currentTarget) activateReadinessTarget("storefront-description");
@@ -1388,14 +1641,17 @@ export function SetupDrawer({
                       "cursor-not-allowed bg-canvas-soft text-muted-soft"
                   )}
                 />
+                {guidedStepStatus("storefront-description")}
               </div>
-              <Button
-                size="default"
-                onClick={() => void handleSaveProfile()}
-                disabled={profileFieldsDisabled || !hasToken}
-              >
-                {profileSaving ? "Saving…" : "Save profile"}
-              </Button>
+              {!guidedStorefront ? (
+                <Button
+                  size="default"
+                  onClick={() => void handleSaveProfile()}
+                  disabled={profileFieldsDisabled || !hasToken}
+                >
+                  {profileSaving ? "Saving…" : "Save profile"}
+                </Button>
+              ) : null}
               {!hasToken ? (
                 <p className="font-body text-body-sm text-muted">
                   This device isn&apos;t unlocked yet. Use{" "}
@@ -1521,6 +1777,7 @@ export function SetupDrawer({
             </div>
           </section>
 
+          </div>
         </div>
       </aside>
     </div>

@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { updateVendorProfile } from "@/lib/actions/vendor-profile";
+import {
+  updateVendorProfile,
+  uploadBrandingAsset,
+} from "@/lib/actions/vendor-profile";
 import { provisionVendor } from "@/lib/actions/vendor-provision";
 import { getStore } from "@/lib/store";
 import type { ResettableStore } from "@/lib/store/types";
@@ -11,9 +14,11 @@ const globalForStore = globalThis as unknown as { __zantapStore?: unknown };
 
 describe("updateVendorProfile", () => {
   const originalDatabaseUrl = process.env.DATABASE_URL;
+  const originalBlobToken = process.env.BLOB_READ_WRITE_TOKEN;
 
   beforeEach(async () => {
     delete process.env.DATABASE_URL;
+    delete process.env.BLOB_READ_WRITE_TOKEN;
     delete globalForStore.__zantapStore;
     __resetRateLimits();
     const store = getStore() as ResettableStore;
@@ -25,6 +30,11 @@ describe("updateVendorProfile", () => {
       delete process.env.DATABASE_URL;
     } else {
       process.env.DATABASE_URL = originalDatabaseUrl;
+    }
+    if (originalBlobToken === undefined) {
+      delete process.env.BLOB_READ_WRITE_TOKEN;
+    } else {
+      process.env.BLOB_READ_WRITE_TOKEN = originalBlobToken;
     }
     delete globalForStore.__zantapStore;
   });
@@ -86,6 +96,27 @@ describe("updateVendorProfile", () => {
     });
 
     expect(updated.phoneNumber).toBe("250788123456");
+  });
+
+  it("stages a branding upload without publishing the profile field", async () => {
+    const { vendor, ownerToken } = await provisionTestVendor();
+    const formData = new FormData();
+    formData.set(
+      "file",
+      new File([new Uint8Array([137, 80, 78, 71])], "logo.png", {
+        type: "image/png",
+      })
+    );
+
+    const uploadedUrl = await uploadBrandingAsset(
+      ownerToken,
+      vendor.slug,
+      "logo",
+      formData
+    );
+
+    expect(uploadedUrl).toMatch(/^\/api\/local-blob\/branding\//);
+    expect((await getStore().getVendorBySlug(vendor.slug))?.logoUrl).toBeUndefined();
   });
 
   it("normalizes PHONE payout momoCode on write", async () => {
