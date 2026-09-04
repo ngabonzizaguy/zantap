@@ -185,7 +185,7 @@ workflow. Detached clean deployment `dpl_CvDf7he6jAQjDQzMcSzLPkQhXc5j` is
 `READY` on `zantap.app`; no migration was required. Production browser smoke
 confirmed the welcome modal, live checklist and actionable recommended row.
 
-Stage 2 is now authorized and in progress locally. Its first slice makes every
+Stage 2 is now authorized and in progress locally at commit `9772439`. Its first slice makes every
 checklist row open a short contextual view with live status, reason, one
 authentic repository screenshot plus a live annotation, Back, and Show/View
 action. Payment destinations expose only their type and final four characters.

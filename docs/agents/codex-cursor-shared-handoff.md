@@ -27,7 +27,7 @@ files, ADRs, commit diffs, or the production log in `AGENTS.md`.
   customer-update fixture was created. A Vercel log command using
   `--until now` failed because CLI 54 rejects that time format; do not cite it
   as log evidence.
-- Stage 2 is now in progress locally and uncommitted. Every readiness row opens
+- Stage 2 is now in progress locally at commit `9772439`. Every readiness row opens
   one contextual view with live status, reason, an authentic repository
   screenshot plus live annotation, Back and Show/View action. Completed rows
   remain tappable; payout destinations are masked to type + final four;

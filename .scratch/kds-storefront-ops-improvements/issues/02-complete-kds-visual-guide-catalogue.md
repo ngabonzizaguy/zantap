@@ -85,7 +85,7 @@ prioritizes them after this readiness flow is reviewed.
 ## Implementation start — 2026-09-04
 
 The owner explicitly authorized Stage 2 after releasing Stage 1. The first
-local slice is implemented: every readiness row now opens a contextual view
+local slice is implemented at commit `9772439`: every readiness row now opens a contextual view
 inside the existing modal frame with live status, short reason, one authentic
 repository product screenshot, a live annotation, Back, and Show/View action.
 Completed rows remain tappable. Payment displays only payout type plus the last
