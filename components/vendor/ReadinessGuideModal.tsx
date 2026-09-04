@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Button, Modal } from "@/components/ui/primitives";
 import {
+  deriveReadinessContext,
   recordReadinessGuideChoice,
   recordReadinessGuideDismissal,
   type KdsReadiness,
@@ -33,9 +34,19 @@ export function ReadinessGuideModal({
   onShowMeWhere,
   initialView = "welcome",
 }: ReadinessGuideModalProps) {
-  const [view, setView] = useState<"welcome" | "checklist">(initialView);
+  const [view, setView] = useState<"welcome" | "checklist" | "context">(
+    initialView
+  );
+  const [contextItemId, setContextItemId] =
+    useState<KdsReadinessItemId | null>(null);
   const showReady = view === "checklist" && readiness.isReady;
   const nextIncompleteId = readiness.items.find((item) => !item.complete)?.id;
+  const contextItem = contextItemId
+    ? readiness.items.find((item) => item.id === contextItemId)
+    : undefined;
+  const context = contextItem
+    ? deriveReadinessContext(contextItem, readiness)
+    : undefined;
 
   const safelyStore = (write: () => void) => {
     try {
@@ -131,6 +142,72 @@ export function ReadinessGuideModal({
               Replay this anytime from Kitchen help.
             </p>
           </div>
+        ) : context ? (
+          <div className="zt-list-in flex min-h-[31rem] flex-col py-6 text-left sm:min-h-[34rem]">
+            <div className="pr-12">
+              <p className="font-body text-caption-uppercase uppercase tracking-[0.08em] text-primary">
+                Readiness guide
+              </p>
+              <h2 className="mt-2 font-display text-[2rem] font-light leading-[1.08] tracking-[-0.02em] text-ink">
+                {context.title}
+              </h2>
+            </div>
+
+            <div className="mt-5 rounded-brand-lg border border-white/10 bg-black/15 px-4 py-3">
+              <p className="font-body text-caption text-muted">Current status</p>
+              <p className="mt-1 font-body text-body-strong text-ink" aria-live="polite">
+                {context.status}
+              </p>
+            </div>
+
+            <p className="mt-4 font-body text-body-sm leading-relaxed text-muted">
+              {context.reason}
+            </p>
+
+            <div className="relative mt-5 overflow-hidden rounded-brand-lg border border-white/15 bg-black/30">
+              <Image
+                src={context.screenshotSrc}
+                alt={context.screenshotAlt}
+                width={960}
+                height={600}
+                className="aspect-[16/9] w-full object-cover object-top"
+              />
+              <div className="absolute inset-x-3 bottom-3 rounded-brand-md border border-primary/70 bg-[#141416]/95 px-3 py-2 shadow-brand-soft">
+                <p className="font-body text-caption text-primary">
+                  {context.annotation}
+                </p>
+              </div>
+            </div>
+
+            {context.warning ? (
+              <p className="mt-4 rounded-brand-md border border-primary/50 bg-primary/10 px-3 py-2 font-body text-caption text-primary" role="note">
+                {context.warning}
+              </p>
+            ) : null}
+
+            <div className="mt-auto flex flex-col gap-3 pt-5 sm:flex-row-reverse">
+              <Button
+                size="kds"
+                radius="lg"
+                className="w-full bg-primary text-[#0c0a09] hover:bg-[#ffb52b]"
+                onClick={() => onShowMeWhere(context.itemId)}
+              >
+                {context.actionLabel}
+              </Button>
+              <Button
+                size="kds"
+                radius="lg"
+                variant="outline"
+                className="w-full border-white/20 text-ink hover:border-primary hover:text-primary"
+                onClick={() => {
+                  setContextItemId(null);
+                  setView("checklist");
+                }}
+              >
+                Back to checklist
+              </Button>
+            </div>
+          </div>
         ) : showReady ? (
           <div className="zt-list-in flex min-h-[31rem] flex-col items-center justify-center py-7 sm:min-h-[34rem]">
             <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-success/70 bg-success/15 text-success shadow-[0_0_28px_rgba(34,197,94,0.2)]">
@@ -144,7 +221,14 @@ export function ReadinessGuideModal({
               Customers can now browse, pay, and send orders to this queue.
             </p>
 
-            <ReadinessList readiness={readiness} compact />
+            <ReadinessList
+              readiness={readiness}
+              compact
+              onSelectItem={(itemId) => {
+                setContextItemId(itemId);
+                setView("context");
+              }}
+            />
 
             <div className="mt-4 flex w-full items-center justify-center gap-2 rounded-brand-lg border border-success/60 bg-success/10 px-4 py-3 font-body text-title-sm font-medium text-success">
               <span className="h-2.5 w-2.5 rounded-full bg-success" aria-hidden />
@@ -189,7 +273,10 @@ export function ReadinessGuideModal({
             <ReadinessList
               readiness={readiness}
               nextIncompleteId={nextIncompleteId}
-              onShowMeWhere={onShowMeWhere}
+              onSelectItem={(itemId) => {
+                setContextItemId(itemId);
+                setView("context");
+              }}
             />
 
             <div className="mt-5 rounded-brand-lg border border-white/10 bg-black/15 px-4 py-4">
@@ -212,12 +299,12 @@ function ReadinessList({
   readiness,
   compact = false,
   nextIncompleteId,
-  onShowMeWhere,
+  onSelectItem,
 }: {
   readiness: KdsReadiness;
   compact?: boolean;
   nextIncompleteId?: string;
-  onShowMeWhere?: (itemId: KdsReadinessItemId) => void;
+  onSelectItem?: (itemId: KdsReadinessItemId) => void;
 }) {
   return (
     <ul
@@ -233,7 +320,7 @@ function ReadinessList({
           compact ? "min-h-11" : "min-h-14",
           suggested &&
             "m-[-1px] rounded-brand-lg border border-primary bg-primary/5 last:border-b",
-          suggested && onShowMeWhere &&
+          onSelectItem &&
             "cursor-pointer transition-colors hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-primary"
         );
         const content = (
@@ -242,16 +329,17 @@ function ReadinessList({
             index={index}
             suggested={suggested}
             compact={compact}
+            interactive={Boolean(onSelectItem)}
           />
         );
         return (
           <li key={item.id}>
-            {suggested && onShowMeWhere ? (
+            {onSelectItem ? (
               <button
                 type="button"
                 className={rowClassName}
-                onClick={() => onShowMeWhere(item.id)}
-                aria-label={`${item.label}: ${item.detail}. ${item.actionLabel}`}
+                onClick={() => onSelectItem(item.id)}
+                aria-label={`${item.label}: ${item.detail}. ${item.complete ? "View setup" : "Open guide"}`}
               >
                 {content}
               </button>
@@ -270,11 +358,13 @@ function ReadinessRowContent({
   index,
   suggested,
   compact,
+  interactive,
 }: {
   item: KdsReadinessItem;
   index: number;
   suggested: boolean;
   compact: boolean;
+  interactive: boolean;
 }) {
   return (
     <>
@@ -299,7 +389,7 @@ function ReadinessRowContent({
         <span className="block font-body text-body-md text-ink">
           {item.label}
         </span>
-        {!compact ? (
+        {!compact || interactive ? (
           <span
             className={cn(
               "mt-0.5 block font-body text-caption",
@@ -307,12 +397,20 @@ function ReadinessRowContent({
             )}
           >
             {item.detail}
-            {suggested && item.actionLabel ? ` · ${item.actionLabel}` : ""}
+            {item.complete && interactive
+              ? " · View setup"
+              : suggested && item.actionLabel
+                ? ` · ${item.actionLabel}`
+                : ""}
           </span>
         ) : null}
       </span>
-      {suggested ? (
-        <Icon name="chevronRight" size={20} className="flex-none text-primary" />
+      {interactive ? (
+        <Icon
+          name="chevronRight"
+          size={20}
+          className={cn("flex-none", suggested ? "text-primary" : "text-muted")}
+        />
       ) : null}
       <span className="sr-only">
         {item.complete ? "Complete" : "Not complete"}

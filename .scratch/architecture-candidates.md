@@ -1034,7 +1034,7 @@ error/fatal/warning/5xx scans were empty. No production fixture data changed.
 
 ---
 
-## Candidate #29 — Priority #1 Vendor Menu Intake — ✅ OPS TRASH/OPTIONS + BRIEFING PIN DEPLOYED · READ-ONLY PROD-SMOKED 2026-09-01 · Q9–10 STAGE 1 SAVE-ONCE AMENDMENT IMPLEMENTED LOCALLY · `/RESTAURANTS` REMOTE-IMAGE FIX OWNER-TESTED GREEN · OWNER REVIEW PENDING · STAGE 2 UNSTARTED
+## Candidate #29 — Priority #1 Vendor Menu Intake — ✅ OPS TRASH/OPTIONS + BRIEFING PIN DEPLOYED · STAGE 1 + `/RESTAURANTS` REMOTE-IMAGE FIX DEPLOYED/PROD-SMOKED 2026-09-04 · STAGE 2 IN PROGRESS LOCALLY
 
 Separate `/restaurants` bug fix completed locally 2026-09-04: an active
 customer-update snapshot containing an absolute Vercel Blob branding URL no
@@ -1043,10 +1043,11 @@ media accepts same-origin paths and arbitrary approved credential-free HTTPS
 URLs outside the optimizer, while unsupported or failed sources fall back to
 Vendor initials or an accessible unavailable panel. Original headed browser
 repro is green; focused 12/12, full 480/117, TypeScript, scoped ESLint,
-production build and 390×844/1440×1000 rendering pass. ADR-0084. This local-only
-repair did not deploy, migrate, push, begin Stage 2/Question 11, import Ops data
-or touch the Marketing Lead Form. Owner test feedback was green on 2026-09-04;
-the fix remains unreleased.
+production build and 390×844/1440×1000 rendering pass. ADR-0084. Owner test
+feedback was green on 2026-09-04. Exact commit `9dc87fa` is deployed READY as
+`dpl_CvDf7he6jAQjDQzMcSzLPkQhXc5j` on `zantap.app`; fresh Production
+`/restaurants` browser smoke had zero console errors. No migration or customer-
+update fixture was needed.
 
 The separate shareable Vendor Menu Intake → Ops review → KDS import workflow is
 complete and deployed from `codex/candidate-29`. It includes both approved public paths,
@@ -1283,3 +1284,16 @@ was reproduced as page `200` / SSE `404` and cleared to `200` / `200` twice by
 a controlled single-server restart, identifying stale Next dev/HMR state. No
 SSE product change, deploy, migration, push, Ops import, Lead Form change, or
 production action occurred.
+
+Owner authorization on 2026-09-04 released the save-once Stage 1, remote-image
+fix and unchanged owner-tested Ops → KDS import workflow together at exact
+commit `9dc87fa`. Production KDS smoke confirmed welcome → Guide me → live
+`3 of 4` checklist and the actionable missing-logo row. Stage 2 then began
+locally: every readiness row now opens a short live-status/reason/authentic-
+screenshot context with Back and Show/View action; payment is masked, Kitchen
+warns without blocking, completed rows remain reviewable, and the compact chip
+uses `Return to guide` / `Done — continue guide`. Focused 12/12, full 482/117,
+TypeScript, scoped ESLint, build, mobile/desktop browser rendering and zero
+application console errors pass. Final incomplete-state destination/live-
+transition QA remains open; Stage 2 is not pushed or deployed. Question 11 and
+the Marketing Lead Form remain untouched.

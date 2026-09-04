@@ -1,6 +1,6 @@
 # Issue 05 — Resilient remote customer-update images
 
-Status: done · implemented, verified and owner-tested green 2026-09-04 · not released
+Status: done · deployed and production-smoked 2026-09-04
 
 ## Parent
 
@@ -48,5 +48,13 @@ Verification: focused 12/12; full 480 passed / 117 skipped; TypeScript; scoped
 ESLint; production build; `git diff --check`. No deploy, migration, push, Stage
 2, Question 11, Ops import or Marketing Lead Form work occurred.
 
-Owner test feedback was green on 2026-09-04. The fix remains local and the
-release boundary is unchanged.
+Owner test feedback was green on 2026-09-04, clearing the later release below.
+
+## Production release
+
+Exact commit `9dc87fa` shipped in Production deployment
+`dpl_CvDf7he6jAQjDQzMcSzLPkQhXc5j` and now holds `zantap.app`. Production
+`/restaurants` rendered normally in a fresh real-browser session with zero
+console errors. The owner-tested active remote-image fixture remains the
+behavioral acceptance evidence; this smoke added no production update or saved-
+restaurant fixture. No migration was needed or run.

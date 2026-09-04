@@ -13,6 +13,36 @@ files, ADRs, commit diffs, or the production log in `AGENTS.md`.
 
 ## Prompt for the next Cursor or Codex session
 
+### 2026-09-04 — Codex — Stage 1 released; Stage 2 first slice local
+
+- Owner explicitly authorized the exact `9dc87fa` release, including save-once
+  Stage 1, the `/restaurants` remote-image fix and the already-tested Ops → KDS
+  import workflow. `codex/candidate-29` was pushed; detached clean Vercel
+  Production `dpl_CvDf7he6jAQjDQzMcSzLPkQhXc5j` is `READY` on `zantap.app`.
+  No migration was needed or run.
+- Production browser smoke: KDS welcome → Guide me → live `3 of 4` checklist
+  with actionable missing-logo row; `/restaurants` rendered with zero console
+  errors; guarded `/ops/menu-intakes` correctly redirected to operator login.
+  The owner had already passed the real import flow. No production import or
+  customer-update fixture was created. A Vercel log command using
+  `--until now` failed because CLI 54 rejects that time format; do not cite it
+  as log evidence.
+- Stage 2 is now in progress locally and uncommitted. Every readiness row opens
+  one contextual view with live status, reason, an authentic repository
+  screenshot plus live annotation, Back and Show/View action. Completed rows
+  remain tappable; payout destinations are masked to type + final four;
+  Kitchen warns about incomplete Menu/Payment without blocking; the existing
+  live-control handoff uses `Return to guide` / `Done — continue guide`.
+- Verification: focused 12/12, full 482 passed / 117 skipped, TypeScript,
+  scoped ESLint, production build and diff hygiene. Headed local desktop and
+  390×844 context QA passed with zero application console errors; evidence is
+  under preserved `output/playwright/kds-readiness-stage2/`.
+- Next: run the dedicated incomplete-state browser walkthrough across all four
+  destinations, live completion/chip changes and the Kitchen warning; then
+  finish Stage 2 docs/owner review. Do not push or deploy Stage 2 without a new
+  owner release decision. Question 11 and the Marketing Lead Form remain
+  untouched. Preserve `.playwright-cli/` and `output/`.
+
 ### 2026-09-04 — Codex — `/restaurants` remote update images owner-tested green
 
 - Separate scoped bug fix on `codex/candidate-29`: reproduced the exact

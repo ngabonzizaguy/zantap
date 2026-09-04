@@ -2,7 +2,7 @@
 
 Date: 2026-09-02
 
-Status: Accepted · save-once Stage 1 amendment implemented locally; owner review pending; Stage 2 unstarted
+Status: Accepted · Stage 1 deployed 2026-09-04; Stage 2 in progress locally
 
 ## Context
 
@@ -176,3 +176,20 @@ retains two pre-existing briefing-file hook errors outside this decision.
 This remains Stage 1 only. Owner review is pending. Stage 2, Question 11,
 deployment, migration, push, Ops → KDS import, the Marketing Lead Form, and all
 production actions remain untouched.
+
+## Stage 1 release and Stage 2 start — 2026-09-04
+
+The owner approved production release of exact commit `9dc87fa`, including the
+save-once Stage 1 amendment and the existing owner-tested Ops → KDS import
+workflow. Detached clean deployment `dpl_CvDf7he6jAQjDQzMcSzLPkQhXc5j` is
+`READY` on `zantap.app`; no migration was required. Production browser smoke
+confirmed the welcome modal, live checklist and actionable recommended row.
+
+Stage 2 is now authorized and in progress locally. Its first slice makes every
+checklist row open a short contextual view with live status, reason, one
+authentic repository screenshot plus a live annotation, Back, and Show/View
+action. Payment destinations expose only their type and final four characters.
+Kitchen context warns when Menu or Payment is incomplete without blocking the
+OPEN control. Completed rows remain reviewable, and the existing real-control
+handoff now uses the approved `Return to guide` / `Done — continue guide` copy.
+This slice adds no schema, production configuration or data mutation.

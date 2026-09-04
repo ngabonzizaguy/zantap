@@ -1,6 +1,6 @@
 # Stage 1 — First-run `Become ready to receive orders` guide
 
-Status: ready-for-human · save-once Stage 1 amendment implemented and verified locally 2026-09-03 · owner review pending
+Status: done · owner-approved, deployed and production-smoked 2026-09-04
 
 ## Parent
 
@@ -269,3 +269,18 @@ under `output/playwright/kds-readiness-stage1/`, including
 No deploy, migration, push, Ops → KDS import, Marketing Lead Form change,
 Stage 2 work, or Question 11 work occurred. Owner visual review of this local
 amendment is the only next gate.
+
+## Production release — 2026-09-04
+
+Owner approval authorized exact commit `9dc87fa` for Production. The branch was
+pushed and a detached clean worktree deployed it as
+`dpl_CvDf7he6jAQjDQzMcSzLPkQhXc5j`, `READY` and aliased to `zantap.app`. No
+migration was required or run.
+
+Headed Production smoke opened the real first-run welcome modal, selected
+`Guide me`, and confirmed the live `3 of 4` checklist plus the actionable
+`Add your logo · Show me where` row on `/vendor/inka-steakhouse`. The release
+also contains the previously shipped and owner-tested Ops → KDS import workflow
+unchanged. The malformed log query `--until now` was rejected by Vercel CLI 54,
+so no claim is made from that query; browser smoke and deployment readiness are
+the release evidence.

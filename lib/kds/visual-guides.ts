@@ -33,12 +33,25 @@ export interface KdsReadinessItem {
   actionLabel?: "Show me where";
   remainingCount: number;
   target?: KdsReadinessTarget;
+  contextStatus: string;
 }
 
 export interface KdsReadiness {
   items: readonly KdsReadinessItem[];
   completedCount: number;
   isReady: boolean;
+}
+
+export interface ReadinessContext {
+  itemId: KdsReadinessItemId;
+  title: string;
+  status: string;
+  reason: string;
+  screenshotSrc: string;
+  screenshotAlt: string;
+  annotation: string;
+  actionLabel: "Show me" | "View setup";
+  warning?: string;
 }
 
 export interface StorefrontReadinessValues {
@@ -95,8 +108,15 @@ export function deriveKdsReadiness({
 }): KdsReadiness {
   const storefrontMissingRequirements = deriveMissingStorefrontReadiness(vendor);
   const storefrontMissing = storefrontMissingRequirements[0];
-  const menuReady = menu.some((item) => item.isAvailable && !item.archivedAt);
-  const paymentReady = validateVendorPayout(vendor).ok;
+  const storefrontMissingLabels = storefrontMissingRequirements.map((step) =>
+    step.detail.replace(/^Add (?:your |a )?/, "").toLowerCase()
+  );
+  const availableDishCount = menu.filter(
+    (item) => item.isAvailable && !item.archivedAt
+  ).length;
+  const menuReady = availableDishCount > 0;
+  const payout = validateVendorPayout(vendor);
+  const paymentReady = payout.ok;
   const state: Record<KdsReadinessItemId, boolean> = {
     storefront: !storefrontMissing,
     menu: menuReady,
@@ -125,6 +145,20 @@ export function deriveKdsReadiness({
       ...item,
       complete,
       detail: complete ? "Complete" : incomplete!.detail,
+      contextStatus:
+        item.id === "storefront"
+          ? storefrontMissingRequirements.length === 0
+            ? "All customer details are ready"
+            : `Missing: ${storefrontMissingLabels.join(", ")}`
+          : item.id === "menu"
+            ? `${availableDishCount} available ${availableDishCount === 1 ? "dish" : "dishes"}`
+            : item.id === "payment"
+              ? payout.ok
+                ? `${payout.payoutMethod === "PHONE" ? "Phone" : "Merchant code"} •••${payout.dialTarget.slice(-4)}`
+                : "Payment destination is not ready"
+              : kitchenOpen
+                ? "OPEN — customers can order"
+                : "CLOSED — customers cannot place orders",
       remainingCount:
         item.id === "storefront" ? storefrontMissingRequirements.length : complete ? 0 : 1,
       ...(!complete
@@ -138,6 +172,67 @@ export function deriveKdsReadiness({
     items,
     completedCount,
     isReady: completedCount === items.length,
+  };
+}
+
+const READINESS_CONTEXT_COPY: Record<
+  KdsReadinessItemId,
+  Pick<ReadinessContext, "reason" | "screenshotSrc" | "screenshotAlt" | "annotation">
+> = {
+  storefront: {
+    reason: "Customers need clear business details before they can trust and contact you.",
+    screenshotSrc:
+      "/brand/UI-screens/new-UI-screens & video walkthrough/kds-full-business-logo-and-cover-upload.png",
+    screenshotAlt: "KDS storefront profile editor with branding controls",
+    annotation: "Add the missing customer-facing details here.",
+  },
+  menu: {
+    reason: "At least one available dish gives customers something they can order.",
+    screenshotSrc:
+      "/brand/UI-screens/new-UI-screens & video walkthrough/kds-menuitem-crud-additem.png",
+    screenshotAlt: "KDS Menu tab with the Add item control",
+    annotation: "Add a dish, then keep it available.",
+  },
+  payment: {
+    reason: "A valid payout destination lets customers complete MoMo payment.",
+    screenshotSrc:
+      "/brand/UI-screens/new-UI-screens & video walkthrough/kds-setup-guide-vendor_able_to_change_payment_settings.png",
+    screenshotAlt: "KDS payment settings in the Setup drawer",
+    annotation: "Choose and save where payments should go.",
+  },
+  kitchen: {
+    reason: "Customers can only place new orders while your kitchen is open.",
+    screenshotSrc:
+      "/brand/UI-screens/new-UI-screens & video walkthrough/kds-dashboard.png",
+    screenshotAlt: "KDS dashboard with the kitchen status control",
+    annotation: "Use the OPEN or CLOSED control in the header.",
+  },
+};
+
+export function deriveReadinessContext(
+  item: KdsReadinessItem,
+  readiness: KdsReadiness
+): ReadinessContext {
+  const copy = READINESS_CONTEXT_COPY[item.id];
+  const unfinishedBeforeKitchen = readiness.items.filter(
+    (candidate) =>
+      (candidate.id === "menu" || candidate.id === "payment") &&
+      !candidate.complete
+  );
+
+  return {
+    itemId: item.id,
+    title: item.label,
+    status: item.contextStatus,
+    ...copy,
+    actionLabel: item.complete ? "View setup" : "Show me",
+    ...(item.id === "kitchen" && unfinishedBeforeKitchen.length > 0
+      ? {
+          warning: `You can open now, but finish your ${unfinishedBeforeKitchen
+            .map((candidate) => candidate.id)
+            .join(" and ")} so customers can order successfully.`,
+        }
+      : {}),
   };
 }
 

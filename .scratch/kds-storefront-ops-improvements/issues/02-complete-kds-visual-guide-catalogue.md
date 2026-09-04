@@ -1,6 +1,6 @@
 # Stage 2 — Contextual readiness steps and unobtrusive return flow
 
-Status: ready-for-agent · owner-approved design 2026-09-02 · Stage 1 approval gate satisfied · not started
+Status: in-progress · implementation authorized and started 2026-09-04 · local only
 
 ## Parent
 
@@ -53,20 +53,20 @@ screenshots and annotations are real layered UI, not generated raster controls.
 
 ## Acceptance criteria
 
-- [ ] Every row opens a short contextual step with current state, reason, one
+- [x] Every row opens a short contextual step with current state, reason, one
   authentic annotated screenshot, Back and Show/View action.
-- [ ] Completed rows remain tappable and say `View setup`.
-- [ ] `Show me` closes the modal, navigates to the correct live surface and
+- [x] Completed rows remain tappable and say `View setup`.
+- [x] `Show me` closes the modal, navigates to the correct live surface and
   highlights the target without performing the action.
-- [ ] One compact `Return to guide` chip remains visible without covering KDS
+- [x] One compact `Return to guide` chip remains visible without covering KDS
   controls; it becomes `Done — continue guide` when live state completes.
-- [ ] Returning refreshes the checklist and recommends the next incomplete row
+- [x] Returning refreshes the checklist and recommends the next incomplete row
   in Storefront → Menu → Payment → Kitchen order.
-- [ ] Kitchen opening warns rather than blocks when Menu or Payment is
+- [x] Kitchen opening warns rather than blocks when Menu or Payment is
   incomplete.
-- [ ] Payment status masks its destination and exposes no token or full
+- [x] Payment status masks its destination and exposes no token or full
   sensitive credential.
-- [ ] Help replay opens the same intact flow at any time and does not re-enable
+- [x] Help replay opens the same intact flow at any time and does not re-enable
   automatic first-run appearances.
 - [ ] Focused tests cover every row destination, live refresh, chip states,
   warning behavior and masking; mobile/desktop headed QA reports no overlap,
@@ -81,3 +81,27 @@ approval session did not begin it.
 The earlier broad five-guide catalogue is deferred. Do not implement the order,
 Stock or customer-update screenshot catalogues until the owner separately
 prioritizes them after this readiness flow is reviewed.
+
+## Implementation start — 2026-09-04
+
+The owner explicitly authorized Stage 2 after releasing Stage 1. The first
+local slice is implemented: every readiness row now opens a contextual view
+inside the existing modal frame with live status, short reason, one authentic
+repository product screenshot, a live annotation, Back, and Show/View action.
+Completed rows remain tappable. Payment displays only payout type plus the last
+four characters; Kitchen warns about incomplete Menu/Payment without blocking.
+The real-control handoff retains the Stage 1 destination/highlight behavior and
+uses the approved `Return to guide` / `Done — continue guide` chip.
+
+Verification: focused 12/12, full 482 passed / 117 skipped, TypeScript, scoped
+ESLint, production build and diff hygiene pass. Headed local Help → guide →
+completed Payment context → View setup → Done return passed; 390×844 and
+1440×1000 contextual renders fit with zero application console errors.
+Evidence is under `output/playwright/kds-readiness-stage2/` and remains
+untracked with the preserved output tree.
+
+The final acceptance checkbox remains open for a dedicated incomplete-state
+browser walkthrough of every destination, live completion/chip transition and
+Kitchen warning. This Stage 2 slice is local only and must not be pushed or
+deployed without a new owner release decision. Question 11 and the Marketing
+Lead Form remain untouched.

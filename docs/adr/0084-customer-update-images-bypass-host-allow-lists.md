@@ -1,7 +1,7 @@
 # ADR-0084 — Customer update images bypass optimizer host allow-lists
 
 Date: 2026-09-04
-Status: Accepted · implemented, verified and owner-tested green · not released
+Status: Accepted · deployed and production-smoked 2026-09-04
 Amends: ADR-0064 customer update rendering
 
 ## Context
@@ -48,5 +48,12 @@ a wildcard or provider-specific hostname rule.
   loading lazy and layout dimensions remain explicit.
 - The browser, rather than a ZanTap image proxy, requests the public URL. The
   no-referrer policy avoids disclosing the ZanTap page URL to that host.
-- This is a local bug fix only. It does not change persistence, migrations,
-  Candidate #29 Stage 2, production configuration or deployment state.
+- The release changes no persistence, migration or production configuration;
+  Candidate #29 Stage 2 remains a separate implementation boundary.
+
+## Release
+
+The owner-approved fix shipped at exact commit `9dc87fa` in Production
+deployment `dpl_CvDf7he6jAQjDQzMcSzLPkQhXc5j`, now `READY` on `zantap.app`.
+A fresh real-browser `/restaurants` smoke rendered with zero console errors.
+No migration or production customer-update fixture was created.

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  deriveReadinessContext,
   deriveKdsReadiness,
   deriveMissingStorefrontReadiness,
   recordReadinessGuideChoice,
@@ -114,6 +115,7 @@ describe("KDS readiness guide", () => {
 
     expect(readiness.items[0]).toMatchObject({
       detail: "Add your logo",
+      contextStatus: "Missing: logo, cover photo",
       actionLabel: "Show me where",
       remainingCount: 2,
       target: "storefront-logo",
@@ -161,6 +163,55 @@ describe("KDS readiness guide", () => {
         target: "kitchen-toggle",
       },
     ]);
+  });
+
+  it("builds one contextual guide contract for every readiness row", () => {
+    const readiness = deriveKdsReadiness({ vendor, menu, kitchenOpen: true });
+
+    expect(
+      readiness.items.map((item) => deriveReadinessContext(item, readiness))
+    ).toMatchObject([
+      {
+        itemId: "storefront",
+        actionLabel: "View setup",
+        status: "All customer details are ready",
+        screenshotSrc: expect.stringContaining("kds-full-business-logo"),
+      },
+      {
+        itemId: "menu",
+        actionLabel: "View setup",
+        status: "1 available dish",
+        screenshotSrc: expect.stringContaining("kds-menuitem-crud-additem"),
+      },
+      {
+        itemId: "payment",
+        actionLabel: "View setup",
+        status: "Merchant code •••0001",
+        screenshotSrc: expect.stringContaining("payment_settings"),
+      },
+      {
+        itemId: "kitchen",
+        actionLabel: "View setup",
+        status: "OPEN — customers can order",
+        screenshotSrc: expect.stringContaining("kds-dashboard"),
+      },
+    ]);
+  });
+
+  it("masks payment destinations and warns without blocking kitchen opening", () => {
+    const readiness = deriveKdsReadiness({
+      vendor: { ...vendor, payoutMethod: "PHONE", momoCode: "0788123456" },
+      menu: [],
+      kitchenOpen: false,
+    });
+    const payment = deriveReadinessContext(readiness.items[2], readiness);
+    const kitchen = deriveReadinessContext(readiness.items[3], readiness);
+
+    expect(payment.status).toBe("Phone •••3456");
+    expect(payment.status).not.toContain("0788123456");
+    expect(kitchen.actionLabel).toBe("Show me");
+    expect(kitchen.warning).toContain("menu");
+    expect(kitchen.warning).not.toContain("blocked");
   });
 
   it("auto-offers only to a fresh incomplete Vendor/device", () => {

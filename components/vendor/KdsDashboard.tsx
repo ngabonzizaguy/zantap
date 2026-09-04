@@ -812,7 +812,7 @@ export function KdsDashboard({
         >
           {activeReadinessItem.complete
             ? "✓ Done — continue guide"
-            : `← Back to readiness · ${activeReadinessItem.remainingCount} left`}
+            : `← Return to guide · ${activeReadinessItem.remainingCount} left`}
         </button>
       ) : null}
 

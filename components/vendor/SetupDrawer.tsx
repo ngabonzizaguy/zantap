@@ -262,7 +262,8 @@ export function SetupDrawer({
   );
   const normalizedSlugDraft = normalizeVendorSlug(slugDraft);
   const hostPrefix = getDisplayHostPrefix();
-  const guidedStorefront = readinessItem?.id === "storefront";
+  const guidedStorefront =
+    readinessItem?.id === "storefront" && !readinessItem.complete;
   const guidedTargets = useMemo(
     () =>
       guidedStorefront
@@ -892,7 +893,7 @@ export function SetupDrawer({
             >
               {readinessItem.complete
                 ? "✓ Done — continue guide"
-                : `← Back to readiness · ${readinessItem.remainingCount} ${readinessItem.remainingCount === 1 ? "detail" : "details"} left`}
+                : `← Return to guide · ${readinessItem.remainingCount} ${readinessItem.remainingCount === 1 ? "detail" : "details"} left`}
             </button>
           ) : null}
           {!readinessItem ? (
