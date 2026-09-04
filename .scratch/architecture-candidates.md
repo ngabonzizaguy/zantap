@@ -9,7 +9,7 @@ is never lost again.
 > convention — local markdown, no GitHub round-trips). It persists on this machine
 > across sessions, but does **not** sync via git to other clones/machines.
 
-Last verified against the codebase: 2026-09-02.
+Last verified against the codebase: 2026-09-04.
 
 ## Product architecture audit (2026-08-05)
 
@@ -1034,7 +1034,19 @@ error/fatal/warning/5xx scans were empty. No production fixture data changed.
 
 ---
 
-## Candidate #29 — Priority #1 Vendor Menu Intake — ✅ OPS TRASH/OPTIONS + BRIEFING PIN DEPLOYED · READ-ONLY PROD-SMOKED 2026-09-01 · Q9–10 STAGE 1 SAVE-ONCE AMENDMENT IMPLEMENTED LOCALLY · OWNER REVIEW PENDING · STAGE 2 UNSTARTED
+## Candidate #29 — Priority #1 Vendor Menu Intake — ✅ OPS TRASH/OPTIONS + BRIEFING PIN DEPLOYED · READ-ONLY PROD-SMOKED 2026-09-01 · Q9–10 STAGE 1 SAVE-ONCE AMENDMENT IMPLEMENTED LOCALLY · `/RESTAURANTS` REMOTE-IMAGE FIX OWNER-TESTED GREEN · OWNER REVIEW PENDING · STAGE 2 UNSTARTED
+
+Separate `/restaurants` bug fix completed locally 2026-09-04: an active
+customer-update snapshot containing an absolute Vercel Blob branding URL no
+longer crashes through Next's unconfigured-host guard. Dynamic customer hub
+media accepts same-origin paths and arbitrary approved credential-free HTTPS
+URLs outside the optimizer, while unsupported or failed sources fall back to
+Vendor initials or an accessible unavailable panel. Original headed browser
+repro is green; focused 12/12, full 480/117, TypeScript, scoped ESLint,
+production build and 390×844/1440×1000 rendering pass. ADR-0084. This local-only
+repair did not deploy, migrate, push, begin Stage 2/Question 11, import Ops data
+or touch the Marketing Lead Form. Owner test feedback was green on 2026-09-04;
+the fix remains unreleased.
 
 The separate shareable Vendor Menu Intake → Ops review → KDS import workflow is
 complete and deployed from `codex/candidate-29`. It includes both approved public paths,

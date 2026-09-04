@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { getBrowserSavedRestaurantRepository } from "@/lib/customer-restaurants/browser";
+import { PublicCustomerImage } from "@/components/customer/PublicCustomerImage";
 import { RestaurantUpdates } from "@/components/customer/RestaurantUpdates";
 import {
   filterSavedRestaurants,
@@ -69,12 +70,13 @@ export function SavedRestaurantList({
                 className="flex h-[52px] w-[52px] flex-none items-center justify-center overflow-hidden rounded-brand-lg border border-primary/40 bg-primary/10 font-display text-title-sm text-ink"
               >
               {restaurant.logoUrl ? (
-                // Public Vendor branding can be remote; the fixed shell prevents layout shift.
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <PublicCustomerImage
                   src={restaurant.logoUrl}
                   alt=""
+                  width={52}
+                  height={52}
                   className="h-full w-full object-cover"
+                  fallback={restaurantInitials(restaurant.name)}
                 />
               ) : (
                 restaurantInitials(restaurant.name)

@@ -1,6 +1,6 @@
 # Codex ↔ Cursor shared continuity prompt
 
-Last reconciled: **2026-09-03 (Africa/Kigali)**
+Last reconciled: **2026-09-04 (Africa/Kigali)**
 Scope: the product-restructure, marketing, lead-capture, PWA/KDS-polish,
 Paypack-preparation work, plus the new **Ops outreach + KDS + marketing batch**
 on branch `feat/ops-kds-marketing-batch` (shared Cursor ↔ Codex), and candidate
@@ -12,6 +12,29 @@ current truth and points to the detailed artifacts; it does not replace issue
 files, ADRs, commit diffs, or the production log in `AGENTS.md`.
 
 ## Prompt for the next Cursor or Codex session
+
+### 2026-09-04 — Codex — `/restaurants` remote update images owner-tested green
+
+- Separate scoped bug fix on `codex/candidate-29`: reproduced the exact
+  `/restaurants` error boundary by saving Inka with an active update whose logo
+  snapshot used an unconfigured absolute Vercel Blob hostname.
+- `PublicCustomerImage` now renders root-relative and arbitrary approved,
+  credential-free public HTTPS sources outside Next's optimizer. Unsupported or
+  failed logos fall back to initials; failed update media keeps its aspect ratio
+  and exposes an accessible `Image unavailable` fallback. The update ring,
+  viewer and saved-restaurant card share this boundary. ADR-0084.
+- The original headed browser fixture now renders without the Next loader
+  exception. Its deliberately absent Blob object produces only expected network
+  404s. Mobile 390×844 and desktop 1440×1000 pass with no horizontal overflow;
+  evidence is under `output/playwright/customer-update-remote-images/`.
+- Verification: focused 12/12; full 480 passed / 117 skipped; TypeScript;
+  scoped ESLint; production build; diff check. The fix is local and uncommitted.
+- Owner test feedback is green. This closes the local acceptance gate only;
+  the fix remains unreleased.
+- Preserve save-once commit `19e7bff`, existing documentation changes,
+  `.playwright-cli/` and `output/`. Do not deploy, migrate, push, start Stage 2
+  or Question 11, perform Ops → KDS import, or touch the Marketing Lead Form
+  without explicit authorization.
 
 ### 2026-09-03 — Codex — save-once Stage 1 amendment implemented locally
 

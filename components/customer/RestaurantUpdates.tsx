@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Check, ChevronRight, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronRight, ImageOff, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PublicCustomerImage } from "@/components/customer/PublicCustomerImage";
 import type { SavedRestaurantRepository } from "@/lib/customer-restaurants/types";
 import {
   buildUpdateTray,
@@ -188,7 +188,16 @@ export function RestaurantUpdates({ vendorIds, repository }: RestaurantUpdatesPr
             <button type="button" onClick={() => openVendor(vendor)} className="group flex min-h-[52px] w-full items-center gap-3 rounded-brand-md text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" aria-label={`View updates from ${vendor.name}`}>
               <span className={`relative flex h-11 w-11 flex-none items-center justify-center rounded-full p-[2px] ${hasUnseen ? "bg-momo" : "bg-hairline-strong"}`}>
                 <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-canvas bg-surface-card font-display text-title-sm text-ink">
-                  {vendor.logoUrl ? <Image src={vendor.logoUrl} alt="" width={44} height={44} className="h-full w-full object-cover" /> : vendor.name.slice(0, 1)}
+                  {vendor.logoUrl ? (
+                    <PublicCustomerImage
+                      src={vendor.logoUrl}
+                      alt=""
+                      width={44}
+                      height={44}
+                      className="h-full w-full object-cover"
+                      fallback={vendor.name.slice(0, 1)}
+                    />
+                  ) : vendor.name.slice(0, 1)}
                 </span>
                 {hasUnseen ? (
                   <span className="absolute -right-1 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-surface-card bg-momo px-1 font-body text-[9px] font-semibold leading-none text-momo-dark" aria-hidden>
@@ -235,7 +244,20 @@ export function RestaurantUpdates({ vendorIds, repository }: RestaurantUpdatesPr
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               {activeBatch.entries.map((entry) => (
                 <article key={entry.id} className="overflow-hidden rounded-brand-xl border border-hairline bg-surface-card">
-                  {entry.imageUrl ? <Image src={entry.imageUrl} alt="" width={720} height={420} className="aspect-[16/10] w-full object-cover" /> : null}
+                  {entry.imageUrl ? (
+                    <PublicCustomerImage
+                      src={entry.imageUrl}
+                      alt=""
+                      width={720}
+                      height={420}
+                      className="aspect-[16/10] w-full object-cover"
+                      fallback={(
+                        <span className="flex aspect-[16/10] w-full items-center justify-center bg-surface-strong text-muted" role="img" aria-label="Image unavailable">
+                          <ImageOff size={24} aria-hidden />
+                        </span>
+                      )}
+                    />
+                  ) : null}
                   <div className="p-5">
                     <p className="font-body text-title-sm font-medium">{entry.name}</p>
                     {entry.summary ? <p className="mt-2 font-body text-body-sm text-body">{entry.summary}</p> : null}

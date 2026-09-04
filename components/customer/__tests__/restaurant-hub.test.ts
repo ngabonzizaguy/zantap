@@ -12,6 +12,7 @@ describe("saved restaurant list accessibility", () => {
             vendorId: "active",
             slug: "active-restaurant",
             name: "Active Restaurant",
+            logoUrl: "https://vendor-assets.example/logo.png",
             isAvailable: true,
             lastInteractedAt: "2026-08-21T10:00:00.000Z",
           },
@@ -29,6 +30,8 @@ describe("saved restaurant list accessibility", () => {
 
     expect(markup).toContain('aria-label="Saved restaurants"');
     expect(markup).toContain('href="/active-restaurant"');
+    expect(markup).toContain('src="https://vendor-assets.example/logo.png"');
+    expect(markup).not.toContain("/_next/image?url=https");
     expect(markup).not.toContain('href="/paused-restaurant"');
     expect(markup).toContain("Open menu");
     expect(markup).toContain("Temporarily unavailable");
