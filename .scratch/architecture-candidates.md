@@ -9,7 +9,7 @@ is never lost again.
 > convention — local markdown, no GitHub round-trips). It persists on this machine
 > across sessions, but does **not** sync via git to other clones/machines.
 
-Last verified against the codebase: 2026-09-04.
+Last verified against the codebase: 2026-09-08 (Candidate #29 Stage 2 release).
 
 ## Product architecture audit (2026-08-05)
 
@@ -1034,7 +1034,19 @@ error/fatal/warning/5xx scans were empty. No production fixture data changed.
 
 ---
 
-## Candidate #29 — Priority #1 Vendor Menu Intake — ✅ OPS TRASH/OPTIONS + BRIEFING PIN DEPLOYED · STAGE 1 + `/RESTAURANTS` REMOTE-IMAGE FIX DEPLOYED/PROD-SMOKED 2026-09-04 · STAGE 2 IN PROGRESS LOCALLY
+## Candidate #29 — Priority #1 Vendor Menu Intake — ✅ OPS TRASH/OPTIONS + BRIEFING PIN DEPLOYED · STAGE 1 + `/RESTAURANTS` REMOTE-IMAGE FIX DEPLOYED/PROD-SMOKED 2026-09-04 · STAGE 2 DEPLOYED/PROD-SMOKED 2026-09-08
+
+Stage 2 owner-authorized release: exact `3337db5` (implementation `9772439`)
+pushed to `codex/candidate-29` and deployed from a clean detached checkout as
+`dpl_FWg1wrFxKR5pKTRJbfoZxjRQPPTo`, READY on `zantap.app`. All 22 Production
+migrations current; none applied. Focused 12/12, full 482/117, TypeScript,
+scoped ESLint and remote build pass. Read-only production smoke passed all
+four desktop/mobile contexts, masked payment, real destinations/return chips,
+Help replay/no automatic reopen, route responses and restaurants render.
+Runtime scan: 27 requests, zero error/fatal/warning/5xx. Browser errors zero;
+pre-existing unused-font-preload warnings noted. No production business writes.
+Issue 02 and ADR-0083 hold the full evidence. Question 11 and Marketing Lead
+Form remain untouched; `.playwright-cli/` and `output/` are preserved.
 
 Separate `/restaurants` bug fix completed locally 2026-09-04: an active
 customer-update snapshot containing an absolute Vercel Blob branding URL no
@@ -1294,6 +1306,20 @@ screenshot context with Back and Show/View action; payment is masked, Kitchen
 warns without blocking, completed rows remain reviewable, and the compact chip
 uses `Return to guide` / `Done — continue guide`. Focused 12/12, full 482/117,
 TypeScript, scoped ESLint, build, mobile/desktop browser rendering and zero
-application console errors pass. Final incomplete-state destination/live-
-transition QA remains open; Stage 2 is not pushed or deployed. Question 11 and
-the Marketing Lead Form remain untouched.
+application console errors pass. At implementation start the final incomplete-
+state destination/live-transition QA remained open; the follow-up below closes
+it. Stage 2 is not pushed or deployed. Question 11 and the Marketing Lead Form
+remain untouched.
+
+The dedicated Stage 2 incomplete-state gate passed on 2026-09-05 with a
+disposable in-memory Vendor. All four contextual destinations reached and
+highlighted the real controls; payment exposed only payout type + final four;
+Menu availability changed the chip live in both directions; and the Kitchen
+context warned about the incomplete menu while still allowing OPEN, which
+changed the chip to `Done — continue guide`. At 390×844 and 1440×1000 the modal
+and document had no horizontal overflow, the fixed chip intersected zero visible
+interactive controls, and Playwright reported zero console errors/warnings.
+Evidence remains under `output/playwright/kds-readiness-stage2/`. No source fix
+was needed. Stage 2 is complete in the local working tree, still unpushed and
+undeployed pending explicit owner release approval. Question 11 and the
+Marketing Lead Form remain untouched.

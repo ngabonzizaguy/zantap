@@ -2,7 +2,7 @@
 
 Date: 2026-09-02
 
-Status: Accepted · Stage 1 deployed 2026-09-04; Stage 2 in progress locally
+Status: Accepted · Stage 1 deployed 2026-09-04; Stage 2 deployed and production-smoked 2026-09-08
 
 ## Context
 
@@ -193,3 +193,36 @@ Kitchen context warns when Menu or Payment is incomplete without blocking the
 OPEN control. Completed rows remain reviewable, and the existing real-control
 handoff now uses the approved `Return to guide` / `Done — continue guide` copy.
 This slice adds no schema, production configuration or data mutation.
+
+## Stage 2 browser-gate closeout — 2026-09-05
+
+A headed incomplete-state walkthrough closed the remaining acceptance gate.
+All four contextual destinations reached and highlighted their real controls;
+Menu and Kitchen changes re-derived readiness and updated the compact chip live;
+and the Kitchen view warned about the unavailable menu while still allowing the
+Vendor to open. Payment remained masked to payout type plus final four.
+
+The contextual modal fit without overflow at 390×844 and 1440×1000, and the
+fixed return chip intersected no visible interactive control. Playwright
+reported zero application console errors or warnings. No product change or new
+design decision was needed; this verification confirms the existing warning-
+gated, live-derived decision. Stage 2 remains local pending owner release
+approval.
+
+## Stage 2 release confirmation — 2026-09-08
+
+Owner authorized the completed scope. Exact `3337db5` (product `9772439`) was
+pushed and deployed from a clean detached worktree as
+`dpl_FWg1wrFxKR5pKTRJbfoZxjRQPPTo`, READY on `zantap.app`. All 22 Production
+migrations were current; no migration, configuration, or domain-data change
+was necessary. Full tests 482/117, focused 12/12, TypeScript, scoped lint and
+remote production build pass.
+
+Production desktop/mobile smoke confirms all four contexts, authentic images,
+masked payment, real-control handoffs, return chips, refreshed checklist and
+Help replay without restoring automatic offers. No overflow or browser errors;
+existing Chrome unused-font-preload warnings remain. Exact-deployment runtime
+scan found no error/fatal/warning/5xx entries across 27 requests. The local
+in-memory gate remains the evidence for live mutation transitions and Kitchen
+warnings; no production business data was changed. This confirms the accepted
+decision without extending scope. Question 11 and broader guides remain deferred.

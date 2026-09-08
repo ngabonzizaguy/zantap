@@ -1,6 +1,6 @@
 # Codex ↔ Cursor shared continuity prompt
 
-Last reconciled: **2026-09-04 (Africa/Kigali)**
+Last reconciled: **2026-09-08 (Africa/Kigali)**
 Scope: the product-restructure, marketing, lead-capture, PWA/KDS-polish,
 Paypack-preparation work, plus the new **Ops outreach + KDS + marketing batch**
 on branch `feat/ops-kds-marketing-batch` (shared Cursor ↔ Codex), and candidate
@@ -13,7 +13,42 @@ files, ADRs, commit diffs, or the production log in `AGENTS.md`.
 
 ## Prompt for the next Cursor or Codex session
 
-### 2026-09-04 — Codex — Stage 1 released; Stage 2 first slice local
+### 2026-09-08 — Codex — Candidate #29 Stage 2 released and production-smoked
+
+- Owner explicitly authorized release. Verified remote `9dc87fa` plus exactly
+  `9772439` (Stage 2) and `3337db5` (docs); pushed through `3337db5` to
+  `codex/candidate-29`. No main merge or unrelated product scope was included.
+- Clean detached checkout `C:\Users\G\Desktop\2025\Projects\zantap-release-stage2-20260908`
+  deployed full SHA `3337db5e5598ae7c2b9e53ceb36481a4b2904dde` as
+  `dpl_FWg1wrFxKR5pKTRJbfoZxjRQPPTo`, READY on `https://zantap.app`.
+  Immutable deployment: `https://zantap-g5ushkko8-ngabonziza-guys-projects.vercel.app`.
+- Migration check: all 22 current on documented Production Supabase project
+  `vzhauguzvhdlpwvqhsfo`. Vercel downloaded DB variables were empty/redacted;
+  initial Prisma validation failed before connecting. Successful read-only
+  check used main checkout's existing direct connection. No migration/seed or
+  Production configuration change. Credentials never printed.
+- Verification: focused 12/12, full 482 passed / 117 expected skips,
+  TypeScript, scoped ESLint, diff hygiene and Vercel production build pass.
+- Read-only production browser smoke PASS: welcome/checklist; all four
+  contexts and decoded authentic images at 390×844/1440×1000; masked payout;
+  all four live destinations; Done versus Return chip; checklist return;
+  Help replay; no automatic reopen after reload. Routes KDS/storefront/
+  restaurants/menu-intake 200 and Ops intake 307 → login. Restaurants renders.
+  Zero browser errors; existing unused-font-preload warnings were observed
+  before/after deployment. Runtime scan: 27 requests, zero
+  error/fatal/warning/5xx entries. Mutation transitions/Kitchen warning retain
+  the completed local in-memory gate; no production business data was changed.
+- Pre-existing four closeout-document edits were preserved and incorporated.
+  All `.playwright-cli/` and `output/` artifacts remain; new evidence lives in
+  `output/playwright/kds-readiness-stage2/prod-*.png` and
+  `output/stage2-*20260908.*`. Release checkout retained. Browser CLI's Node 25
+  help crash was avoided with the bundled stable Node runtime; a cache scan's
+  transient missing concurrency.lock did not affect any release operation.
+- Next: Stage 2 is complete. Await the owner's next scoped priority; do not
+  start Question 11, broader guide catalogues or Marketing Lead Form work by
+  inference. Read AGENTS.md, issue 02, ADR-0083 and this handoff first.
+
+### 2026-09-05 — Codex — Stage 2 complete locally; release held
 
 - Owner explicitly authorized the exact `9dc87fa` release, including save-once
   Stage 1, the `/restaurants` remote-image fix and the already-tested Ops → KDS
@@ -27,7 +62,7 @@ files, ADRs, commit diffs, or the production log in `AGENTS.md`.
   customer-update fixture was created. A Vercel log command using
   `--until now` failed because CLI 54 rejects that time format; do not cite it
   as log evidence.
-- Stage 2 is now in progress locally at commit `9772439`. Every readiness row opens
+- Stage 2 is complete locally after commits `9772439` and `3337db5`. Every readiness row opens
   one contextual view with live status, reason, an authentic repository
   screenshot plus live annotation, Back and Show/View action. Completed rows
   remain tappable; payout destinations are masked to type + final four;
@@ -37,11 +72,17 @@ files, ADRs, commit diffs, or the production log in `AGENTS.md`.
   scoped ESLint, production build and diff hygiene. Headed local desktop and
   390×844 context QA passed with zero application console errors; evidence is
   under preserved `output/playwright/kds-readiness-stage2/`.
-- Next: run the dedicated incomplete-state browser walkthrough across all four
-  destinations, live completion/chip changes and the Kitchen warning; then
-  finish Stage 2 docs/owner review. Do not push or deploy Stage 2 without a new
-  owner release decision. Question 11 and the Marketing Lead Form remain
-  untouched. Preserve `.playwright-cli/` and `output/`.
+- Dedicated incomplete-state headed QA passed on 2026-09-05 with a disposable
+  in-memory Vendor: all four contextual destinations, live Menu and Kitchen
+  chip changes, masked payment, and the incomplete-menu Kitchen warning all
+  passed. The warning did not block OPEN. At 390×844 and 1440×1000 there was no
+  modal/document overflow, the chip intersected zero visible controls, and
+  Playwright reported zero console errors/warnings. New evidence is preserved
+  under `output/playwright/kds-readiness-stage2/`.
+- No source fix was needed. The branch remains two commits ahead of origin and
+  Stage 2 remains unpushed/undeployed. Next is owner review and an explicit
+  release decision. Do not push or deploy without it. Do not start Question 11
+  or touch the Marketing Lead Form. Preserve `.playwright-cli/` and `output/`.
 
 ### 2026-09-04 — Codex — `/restaurants` remote update images owner-tested green
 
