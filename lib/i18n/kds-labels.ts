@@ -109,12 +109,72 @@ export const KDS_LABEL_KEYS: Record<string, KdsCopyKey> = {
   "Utilities": "kds.labels.utilities",
   "Staff": "kds.labels.staff",
   "Equipment": "kds.labels.equipment",
-  "Marketing": "kds.labels.marketing"
+  "Marketing": "kds.labels.marketing",
+  "Storefront details": "kds.labels.storefront-details",
+  "Available menu": "kds.labels.available-menu",
+  "Payment setup": "kds.labels.payment-setup",
+  "Kitchen status": "kds.labels.kitchen-status",
+  "Add your logo": "kds.labels.add-your-logo",
+  "Add a cover photo": "kds.labels.add-a-cover-photo",
+  "Add your business description": "kds.labels.add-your-business-description",
+  "Add your location": "kds.labels.add-your-location",
+  "Add your phone number": "kds.labels.add-your-phone-number",
+  "No available dishes": "kds.labels.no-available-dishes",
+  "Choose where payments go": "kds.labels.choose-where-payments-go",
+  "Open your kitchen": "kds.labels.open-your-kitchen",
+  "All customer details are ready": "kds.labels.all-customer-details-ready",
+  "Payment destination is not ready": "kds.labels.payment-destination-not-ready",
+  "OPEN — customers can order": "kds.labels.open-customers-can-order",
+  "CLOSED — customers cannot place orders": "kds.labels.closed-customers-cannot-order",
+  "Show me where": "kds.labels.show-me-where",
+  "Customers need clear business details before they can trust and contact you.": "kds.labels.customers-need-clear-business-details",
+  "Add the missing customer-facing details here.": "kds.labels.add-missing-details-here",
+  "At least one available dish gives customers something they can order.": "kds.labels.at-least-one-available-dish",
+  "Add a dish, then keep it available.": "kds.labels.add-a-dish-then-keep-available",
+  "A valid payout destination lets customers complete MoMo payment.": "kds.labels.valid-payout-lets-customers-pay",
+  "Choose and save where payments should go.": "kds.labels.choose-and-save-payment-destination",
+  "Customers can only place new orders while your kitchen is open.": "kds.labels.customers-order-only-while-open",
+  "Use the OPEN or CLOSED control in the header.": "kds.labels.use-open-or-closed-control",
+  "Show me": "kds.labels.show-me",
+  "View setup": "kds.labels.view-setup",
+  "Complete": "kds.readiness-guide.complete",
+  "Logo added": "kds.labels.logo-added",
+  "Logo": "kds.labels.logo",
+  "Add cover photo": "kds.labels.add-cover-photo-action",
+  "Cover photo added": "kds.labels.cover-photo-added",
+  "Cover photo": "kds.labels.cover-photo",
+  "Add business description": "kds.labels.add-business-description-action",
+  "Business description added": "kds.labels.business-description-added",
+  "Add location": "kds.labels.add-location-action",
+  "Location added": "kds.labels.location-added",
+  "Add phone number": "kds.labels.add-phone-number-action",
+  "Phone number added": "kds.labels.phone-number-added",
+  "Phone number": "kds.labels.phone-number",
+  "Location": "kds.labels.location"
 };
 
 export function translateKdsLabel(t: KdsTranslate, label: string): string {
   const key = Object.hasOwn(KDS_LABEL_KEYS, label) ? KDS_LABEL_KEYS[label] : undefined;
   return key ? t(key) : label;
+}
+
+export const KDS_EXPENSE_CATEGORY_VALUES = [
+  "Ingredients",
+  "Packaging",
+  "Delivery",
+  "Rent",
+  "Utilities",
+  "Staff",
+  "Equipment",
+  "Marketing",
+  "Other",
+] as const;
+
+export function getKdsExpenseCategoryOptions(t: KdsTranslate) {
+  return KDS_EXPENSE_CATEGORY_VALUES.map((value) => ({
+    value,
+    label: translateKdsLabel(t, value),
+  }));
 }
 
 const STATUS_KEYS: Record<string, KdsCopyKey> = {

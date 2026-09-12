@@ -118,14 +118,13 @@ export function HelpModal({
 
         <div className="rounded-brand-lg border border-primary/35 bg-primary/10 p-4">
           <p className="font-body text-caption-uppercase uppercase text-primary">
-            Readiness guide
+            {t("kds.help-modal.readiness-guide")}
           </p>
           <h3 className="mt-1 font-display text-display-sm text-ink">
-            Become ready to receive orders
+            {t("kds.help-modal.become-ready-to-receive-orders")}
           </h3>
           <p className="mt-2 font-body text-body-sm text-muted">
-            Check your storefront, menu, payment setup, and kitchen status.
-            Replay it anytime.
+            {t("kds.help-modal.check-your-storefront-menu-payment-setup-and-kitchen-status")}
           </p>
           <Button
             type="button"
@@ -133,7 +132,7 @@ export function HelpModal({
             className="mt-4 w-full"
             onClick={onOpenReadinessGuide}
           >
-            Open readiness guide
+            {t("kds.help-modal.open-readiness-guide")}
           </Button>
         </div>
 

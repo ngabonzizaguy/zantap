@@ -17,4 +17,6 @@ Translate interface labels only. Vendor-entered names, menu content, order data,
 
 No schema migration or competing data path is required. New KDS interface copy must be added to the registered catalog before Ops can edit it. Saved wording appears after the KDS is refreshed; language switching within that loaded dictionary is immediate.
 
+The owner confirmed on 2026-09-12 that reviewed KDS leftovers—including readiness, guided Setup, and update metrics—must also be editable in Ops. Translation is display-only: persisted expense categories and other machine/domain values retain their canonical English tokens even when the visible label is translated.
+
 Tracking: `.scratch/kds-translation-control/issues/01-ops-kds-translations.md`.

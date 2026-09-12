@@ -6,6 +6,14 @@ Do **not** re-run the 2026-09-12 fast-forward. Owner approved push + merge + Pro
 
 Last reconciled: **2026-09-18 (Africa/Kigali)** — Git/Q11 isolate; Candidate #29 product truth below still starts 2026-09-08.
 
+### 2026-09-12 — Cursor — owner-approved KDS translation coverage complete locally
+
+Owner chose full reviewed coverage because KDS wording must be editable/replaceable in Ops. On `codex/kds-translation-control-c29`, the follow-up fixes `ProfitPanel` so translated expense labels never replace persisted English category tokens, and registers/wires `ReadinessGuideModal`, the Help readiness CTA, SetupDrawer guided/status/error copy, and VendorUpdatesPanel metrics. DPO, Terms, payment runtime, schema, database, and production remain untouched. Focused tests 8/8; full suite 488/117; TypeScript, changed-file lint, build, and diff check pass. Follow-up is local only; ask the owner before push or deploy. See ADR-0089 and `.scratch/kds-translation-control/issues/01-ops-kds-translations.md`.
+
+### 2026-09-12 — Cursor — KDS translation review of `6079447` (no push/deploy)
+
+Reviewed local branch `codex/kds-translation-control-c29` tip `ac93913` (feature `6079447` on repaired `main` `3037217`). Architecture matches ADR-0089. **Do not push or deploy yet.** Blocker: `ProfitPanel` expense `<option value>` uses translated text (can persist non-English categories). Coverage gaps: `ReadinessGuideModal` fully English; Help readiness CTA English; SetupDrawer guided copy partially English; VendorUpdatesPanel metric titles English. Original dirty `zantap` tree and production snapshot remain preserved. DPO/Terms/payment runtime untouched. Details: `.scratch/kds-translation-control/issues/01-ops-kds-translations.md` § Review.
+
 ### 2026-09-12 — Cursor — GitHub main repaired; KDS translation ported
 
 GitHub `main` was fast-forwarded from `6510df6` to Candidate 29 tip `3037217`; no production history was rebased. The push-triggered Production build is a docs-only child of live product SHA `3337db5`, not an old-main deployment.

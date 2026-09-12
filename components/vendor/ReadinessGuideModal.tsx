@@ -3,8 +3,11 @@
 import Image from "next/image";
 import { useState } from "react";
 
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
 import { Icon } from "@/components/ui/Icon";
 import { Button, Modal } from "@/components/ui/primitives";
+import { translateKdsLabel } from "@/lib/i18n/kds-labels";
+import type { KdsTranslate } from "@/lib/i18n/kds-localize";
 import {
   deriveReadinessContext,
   recordReadinessGuideChoice,
@@ -25,6 +28,74 @@ interface ReadinessGuideModalProps {
   initialView?: "welcome" | "checklist";
 }
 
+const READINESS_SCREENSHOT_ALT_KEYS = {
+  storefront: "kds.readiness-guide.storefront-screenshot-alt",
+  menu: "kds.readiness-guide.menu-screenshot-alt",
+  payment: "kds.readiness-guide.payment-screenshot-alt",
+  kitchen: "kds.readiness-guide.kitchen-screenshot-alt",
+} as const;
+
+function translateReadinessText(t: KdsTranslate, text: string): string {
+  const fixed = translateKdsLabel(t, text);
+  if (fixed !== text) return fixed;
+
+  const missing = text.match(/^Missing: (.+)$/);
+  if (missing) {
+    const details = missing[1]
+      .split(", ")
+      .map((detail) =>
+        translateKdsLabel(
+          t,
+          detail.replace(/^./, (character) => character.toUpperCase())
+        )
+      )
+      .join(", ");
+    return t("kds.readiness-guide.missing", { details });
+  }
+
+  const available = text.match(/^(\d+) available dishes?$/);
+  if (available) {
+    const count = Number(available[1]);
+    return t(
+      count === 1
+        ? "kds.readiness-guide.available-dish"
+        : "kds.readiness-guide.available-dishes",
+      { count }
+    );
+  }
+
+  const payout = text.match(/^(Phone|Merchant code) •••(.+)$/);
+  if (payout) {
+    return t("kds.readiness-guide.masked-payout", {
+      method: t(
+        payout[1] === "Phone"
+          ? "kds.readiness-guide.phone"
+          : "kds.readiness-guide.merchant-code"
+      ),
+      last4: payout[2],
+    });
+  }
+
+  const warning = text.match(
+    /^You can open now, but finish your (.+) so customers can order successfully\.$/
+  );
+  if (warning) {
+    const items = warning[1]
+      .split(" and ")
+      .map((item) =>
+        t(
+          item === "menu"
+            ? "kds.readiness-guide.menu"
+            : "kds.readiness-guide.payment"
+        )
+      )
+      .join(` ${t("kds.readiness-guide.and")} `);
+    return t("kds.readiness-guide.open-now-warning", { items });
+  }
+
+  return text;
+}
+
 export function ReadinessGuideModal({
   readiness,
   vendorSlug,
@@ -34,6 +105,7 @@ export function ReadinessGuideModal({
   onShowMeWhere,
   initialView = "welcome",
 }: ReadinessGuideModalProps) {
+  const t = useKdsTranslation();
   const [view, setView] = useState<"welcome" | "checklist" | "context">(
     initialView
   );
@@ -79,13 +151,13 @@ export function ReadinessGuideModal({
     <Modal
       open
       onClose={handleClose}
-      ariaLabel="Become ready to receive orders"
+      ariaLabel={t("kds.readiness-guide.become-ready-to-receive-orders")}
       className="max-w-[25rem] border-white/15 bg-[#141416] shadow-[0_28px_90px_rgba(0,0,0,0.65)]"
     >
       <div className="relative min-h-[31rem] px-1 pb-2 pt-1 text-center sm:min-h-[34rem] sm:px-2">
         <button
           type="button"
-          aria-label="Close readiness guide"
+          aria-label={t("kds.readiness-guide.close-readiness-guide")}
           onClick={handleClose}
           className="absolute right-0 top-0 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/20 text-muted transition-colors hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
@@ -112,10 +184,10 @@ export function ReadinessGuideModal({
             </div>
 
             <h2 className="max-w-[18rem] font-display text-[2rem] font-light leading-[1.08] tracking-[-0.02em] text-ink">
-              Welcome to your kitchen
+              {t("kds.readiness-guide.welcome-to-your-kitchen")}
             </h2>
             <p className="mt-5 max-w-[17rem] font-body text-body-md leading-relaxed text-ink">
-              Let&apos;s make sure you&apos;re ready to receive orders.
+              {t("kds.readiness-guide.lets-make-sure-youre-ready")}
             </p>
 
             <div className="mt-8 flex w-full flex-col gap-3">
@@ -125,7 +197,7 @@ export function ReadinessGuideModal({
                 className="w-full bg-primary text-[#0c0a09] hover:bg-[#ffb52b]"
                 onClick={handleGuideMe}
               >
-                Guide me
+                {t("kds.readiness-guide.guide-me")}
               </Button>
               <Button
                 size="kds"
@@ -134,54 +206,56 @@ export function ReadinessGuideModal({
                 className="w-full border-primary text-primary hover:border-primary hover:bg-primary/5"
                 onClick={handleSelf}
               >
-                I&apos;ll do it myself
+                {t("kds.readiness-guide.ill-do-it-myself")}
               </Button>
             </div>
 
             <p className="mt-5 font-body text-caption text-muted">
-              Replay this anytime from Kitchen help.
+              {t("kds.readiness-guide.replay-anytime")}
             </p>
           </div>
         ) : context ? (
           <div className="zt-list-in flex min-h-[31rem] flex-col py-6 text-left sm:min-h-[34rem]">
             <div className="pr-12">
               <p className="font-body text-caption-uppercase uppercase tracking-[0.08em] text-primary">
-                Readiness guide
+                {t("kds.readiness-guide.readiness-guide")}
               </p>
               <h2 className="mt-2 font-display text-[2rem] font-light leading-[1.08] tracking-[-0.02em] text-ink">
-                {context.title}
+                {translateReadinessText(t, context.title)}
               </h2>
             </div>
 
             <div className="mt-5 rounded-brand-lg border border-white/10 bg-black/15 px-4 py-3">
-              <p className="font-body text-caption text-muted">Current status</p>
+              <p className="font-body text-caption text-muted">
+                {t("kds.readiness-guide.current-status")}
+              </p>
               <p className="mt-1 font-body text-body-strong text-ink" aria-live="polite">
-                {context.status}
+                {translateReadinessText(t, context.status)}
               </p>
             </div>
 
             <p className="mt-4 font-body text-body-sm leading-relaxed text-muted">
-              {context.reason}
+              {translateReadinessText(t, context.reason)}
             </p>
 
             <div className="relative mt-5 overflow-hidden rounded-brand-lg border border-white/15 bg-black/30">
               <Image
                 src={context.screenshotSrc}
-                alt={context.screenshotAlt}
+                alt={t(READINESS_SCREENSHOT_ALT_KEYS[context.itemId])}
                 width={960}
                 height={600}
                 className="aspect-[16/9] w-full object-cover object-top"
               />
               <div className="absolute inset-x-3 bottom-3 rounded-brand-md border border-primary/70 bg-[#141416]/95 px-3 py-2 shadow-brand-soft">
                 <p className="font-body text-caption text-primary">
-                  {context.annotation}
+                  {translateReadinessText(t, context.annotation)}
                 </p>
               </div>
             </div>
 
             {context.warning ? (
               <p className="mt-4 rounded-brand-md border border-primary/50 bg-primary/10 px-3 py-2 font-body text-caption text-primary" role="note">
-                {context.warning}
+                {translateReadinessText(t, context.warning)}
               </p>
             ) : null}
 
@@ -192,7 +266,7 @@ export function ReadinessGuideModal({
                 className="w-full bg-primary text-[#0c0a09] hover:bg-[#ffb52b]"
                 onClick={() => onShowMeWhere(context.itemId)}
               >
-                {context.actionLabel}
+                {translateReadinessText(t, context.actionLabel)}
               </Button>
               <Button
                 size="kds"
@@ -204,7 +278,7 @@ export function ReadinessGuideModal({
                   setView("checklist");
                 }}
               >
-                Back to checklist
+                {t("kds.readiness-guide.back-to-checklist")}
               </Button>
             </div>
           </div>
@@ -215,10 +289,10 @@ export function ReadinessGuideModal({
             </div>
 
             <h2 className="font-display text-[2rem] font-light leading-tight tracking-[-0.02em] text-ink">
-              You&apos;re ready for orders
+              {t("kds.readiness-guide.ready-for-orders")}
             </h2>
             <p className="mt-2 max-w-[17rem] font-body text-body-sm text-muted">
-              Customers can now browse, pay, and send orders to this queue.
+              {t("kds.readiness-guide.customers-can-now-order")}
             </p>
 
             <ReadinessList
@@ -232,7 +306,7 @@ export function ReadinessGuideModal({
 
             <div className="mt-4 flex w-full items-center justify-center gap-2 rounded-brand-lg border border-success/60 bg-success/10 px-4 py-3 font-body text-title-sm font-medium text-success">
               <span className="h-2.5 w-2.5 rounded-full bg-success" aria-hidden />
-              OPEN · LIVE
+              {t("kds.readiness-guide.open-live")}
             </div>
 
             <Button
@@ -241,17 +315,17 @@ export function ReadinessGuideModal({
               className="mt-4 w-full bg-primary text-[#0c0a09] hover:bg-[#ffb52b]"
               onClick={onGoToOrders}
             >
-              Go to Orders
+              {t("kds.readiness-guide.go-to-orders")}
             </Button>
             <button
               type="button"
               onClick={onReviewSetup}
               className="mt-3 min-h-11 px-4 font-body text-button text-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
-              Review setup
+              {t("kds.readiness-guide.review-setup")}
             </button>
             <p className="mt-2 font-body text-caption text-muted">
-              Visual guides stay available in Kitchen help.
+              {t("kds.readiness-guide.visual-guides-stay-available")}
             </p>
           </div>
         ) : (
@@ -259,14 +333,17 @@ export function ReadinessGuideModal({
             <div className="pr-12">
               <div className="flex items-start justify-between gap-4">
                 <h2 className="min-w-0 flex-1 font-display text-[2rem] font-light leading-[1.08] tracking-[-0.02em] text-ink">
-                  Get ready to receive orders
+                  {t("kds.readiness-guide.get-ready-to-receive-orders")}
                 </h2>
                 <p className="min-w-[3.5rem] flex-none whitespace-nowrap pt-1 text-right font-body text-body-strong text-primary" aria-live="polite">
-                  {readiness.completedCount} of 4
+                  {t("kds.readiness-guide.completed-count", {
+                    completed: readiness.completedCount,
+                    total: readiness.items.length,
+                  })}
                 </p>
               </div>
               <p className="mt-3 font-body text-body-sm text-muted">
-                Complete these in any order. We recommend starting at the top.
+                {t("kds.readiness-guide.complete-in-any-order")}
               </p>
             </div>
 
@@ -281,12 +358,12 @@ export function ReadinessGuideModal({
 
             <div className="mt-5 rounded-brand-lg border border-white/10 bg-black/15 px-4 py-4">
               <p className="font-body text-body-sm text-muted">
-                Finish the remaining setup in your KDS. This checklist updates from your live details.
+                {t("kds.readiness-guide.finish-remaining-setup")}
               </p>
             </div>
 
             <p className="mt-auto pt-5 text-center font-body text-caption text-muted">
-              Close this guide anytime. Reopen it from Kitchen help.
+              {t("kds.readiness-guide.close-anytime")}
             </p>
           </div>
         )}
@@ -306,6 +383,8 @@ function ReadinessList({
   nextIncompleteId?: string;
   onSelectItem?: (itemId: KdsReadinessItemId) => void;
 }) {
+  const t = useKdsTranslation();
+
   return (
     <ul
       className={cn(
@@ -339,7 +418,13 @@ function ReadinessList({
                 type="button"
                 className={rowClassName}
                 onClick={() => onSelectItem(item.id)}
-                aria-label={`${item.label}: ${item.detail}. ${item.complete ? "View setup" : "Open guide"}`}
+                aria-label={t("kds.readiness-guide.item-aria", {
+                  label: translateReadinessText(t, item.label),
+                  detail: translateReadinessText(t, item.detail),
+                  action: item.complete
+                    ? t("kds.readiness-guide.view-setup")
+                    : t("kds.readiness-guide.open-guide"),
+                })}
               >
                 {content}
               </button>
@@ -366,6 +451,8 @@ function ReadinessRowContent({
   compact: boolean;
   interactive: boolean;
 }) {
+  const t = useKdsTranslation();
+
   return (
     <>
       <span
@@ -387,7 +474,7 @@ function ReadinessRowContent({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block font-body text-body-md text-ink">
-          {item.label}
+          {translateReadinessText(t, item.label)}
         </span>
         {!compact || interactive ? (
           <span
@@ -396,11 +483,15 @@ function ReadinessRowContent({
               suggested ? "text-primary" : "text-muted"
             )}
           >
-            {item.detail}
+            {translateReadinessText(t, item.detail)}
             {item.complete && interactive
-              ? " · View setup"
+              ? t("kds.readiness-guide.action-suffix", {
+                  action: t("kds.readiness-guide.view-setup"),
+                })
               : suggested && item.actionLabel
-                ? ` · ${item.actionLabel}`
+                ? t("kds.readiness-guide.action-suffix", {
+                    action: translateReadinessText(t, item.actionLabel),
+                  })
                 : ""}
           </span>
         ) : null}
@@ -413,7 +504,9 @@ function ReadinessRowContent({
         />
       ) : null}
       <span className="sr-only">
-        {item.complete ? "Complete" : "Not complete"}
+        {item.complete
+          ? t("kds.readiness-guide.complete")
+          : t("kds.readiness-guide.not-complete")}
       </span>
     </>
   );

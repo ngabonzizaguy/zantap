@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createInMemoryStore } from "@/lib/store/in-memory";
 import { getStore } from "@/lib/store";
@@ -7,11 +8,20 @@ import { getKdsTranslations } from "@/lib/i18n/get-kds-translations";
 import { createKdsTranslator, selectKdsTranslations } from "@/lib/i18n/kds-localize";
 import { KdsLanguageProvider } from "@/components/vendor/KdsLanguageProvider";
 import { Tabs } from "@/components/vendor/Tabs";
-import { translateKdsStatus } from "@/lib/i18n/kds-labels";
+import {
+  getKdsExpenseCategoryOptions,
+  translateKdsLabel,
+  translateKdsStatus,
+} from "@/lib/i18n/kds-labels";
 import { formatKdsRelativeTime } from "@/lib/i18n/kds-time";
 import { deleteOperatorSiteTranslation, upsertOperatorSiteTranslation } from "@/lib/operator-control/site-translations";
 
 const globalForStore = globalThis as unknown as { __zantapStore?: ReturnType<typeof createInMemoryStore> };
+const TestKdsLanguageProvider = KdsLanguageProvider as (
+  props: Omit<ComponentProps<typeof KdsLanguageProvider>, "children"> & {
+    children?: ReactNode;
+  }
+) => ReactNode;
 
 describe("KDS translations", () => {
   beforeEach(() => { globalForStore.__zantapStore = createInMemoryStore(); });
@@ -23,7 +33,7 @@ describe("KDS translations", () => {
     expect(Object.keys(dictionaries.fr!)).toEqual(["kds.tabs.orders"]);
     const markup = renderToStaticMarkup(
       createElement(
-        KdsLanguageProvider,
+        TestKdsLanguageProvider,
         { initialLocale: "fr", translations: dictionaries },
         createElement(Tabs, {
           active: "orders",
@@ -72,5 +82,46 @@ describe("KDS translations", () => {
     const t = createKdsTranslator({ "kds.status.preparing": "En préparation", "kds.time.minutes": "Il y a {count} min" });
     expect(translateKdsStatus(t, "PREPARING")).toBe("En préparation");
     expect(formatKdsRelativeTime(t, new Date("2026-09-10T10:00:00Z"), new Date("2026-09-10T10:05:00Z"))).toBe("Il y a 5 min");
+  });
+
+  it("registers readiness, guided setup, and update metrics as editable KDS copy", async () => {
+    await upsertOperatorSiteTranslation(
+      "rw",
+      "kds.readiness-guide.welcome-to-your-kitchen",
+      "Murakaza mu gikoni cyanyu"
+    );
+    await upsertOperatorSiteTranslation(
+      "rw",
+      "kds.setup-drawer.next-step",
+      "Ibikurikira · {label} →"
+    );
+    await upsertOperatorSiteTranslation(
+      "rw",
+      "kds.vendor-updates-panel.menu-visits",
+      "Abasuye menu"
+    );
+    await upsertOperatorSiteTranslation("rw", "kds.labels.logo-added", "Ikirango cyongewemo");
+
+    const t = createKdsTranslator((await getKdsTranslations()).rw);
+    expect(t("kds.readiness-guide.welcome-to-your-kitchen")).toBe(
+      "Murakaza mu gikoni cyanyu"
+    );
+    expect(t("kds.setup-drawer.next-step", { label: "Ikirango" })).toBe(
+      "Ibikurikira · Ikirango →"
+    );
+    expect(t("kds.vendor-updates-panel.menu-visits")).toBe("Abasuye menu");
+    expect(translateKdsLabel(t, "Logo added")).toBe("Ikirango cyongewemo");
+  });
+
+  it("translates expense labels without changing persisted category values", () => {
+    const t = createKdsTranslator({
+      "kds.labels.ingredients": "Ingrédients",
+    });
+    const ingredients = getKdsExpenseCategoryOptions(t)[0];
+
+    expect(ingredients).toEqual({
+      value: "Ingredients",
+      label: "Ingrédients",
+    });
   });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { translateKdsLabel } from "@/lib/i18n/kds-labels";
+import type { KdsCopyKey } from "@/lib/i18n/kds-copy";
 
 import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
 
@@ -122,16 +123,16 @@ function validImageUrl(value: string): boolean {
   return !!trimmed && /^(?:https?:\/\/|\/)/i.test(trimmed);
 }
 
-function slugStatusMessage(status: SlugAvailability): string | null {
+function slugStatusMessage(status: SlugAvailability): KdsCopyKey | null {
   switch (status) {
     case "checking":
-      return "Checking availability…";
+      return "kds.setup-drawer.slug-checking";
     case "available":
-      return "Available!";
+      return "kds.setup-drawer.slug-available";
     case "taken":
-      return "This URL is already taken";
+      return "kds.setup-drawer.slug-taken";
     case "invalid":
-      return "Use lowercase letters, numbers, and hyphens only";
+      return "kds.setup-drawer.slug-invalid";
     case "idle":
       return null;
     default: {
@@ -443,16 +444,18 @@ export function SetupDrawer({
 
   const mapOwnerTokenError = (error: unknown): string => {
     const message =
-      error instanceof Error ? error.message : "Could not save profile.";
+      error instanceof Error
+        ? error.message
+        : t("kds.setup-drawer.could-not-save-profile");
     return message.toLowerCase().includes("owner token")
-      ? "This device isn't unlocked. Recover access and try again."
+      ? t("kds.setup-drawer.device-locked-recover-and-retry")
       : message;
   };
 
   const handleBrandingUpload = async (field: "logo" | "cover", file: File) => {
     if (!token) {
       setProfileError(
-        "This device isn't unlocked. Recover access to edit your profile."
+        t("kds.setup-drawer.device-locked-recover-to-edit")
       );
       return;
     }
@@ -507,7 +510,7 @@ export function SetupDrawer({
   const handleSaveProfile = async () => {
     if (!token) {
       setProfileError(
-        "This device isn't unlocked. Recover access to edit your profile."
+        t("kds.setup-drawer.device-locked-recover-to-edit")
       );
       return;
     }
@@ -517,7 +520,7 @@ export function SetupDrawer({
     if (ratingTrimmed) {
       const parsed = Number.parseFloat(ratingTrimmed);
       if (!Number.isFinite(parsed) || parsed < 0 || parsed > 5) {
-        setProfileError("Rating must be a number between 0 and 5.");
+        setProfileError(t("kds.setup-drawer.rating-invalid"));
         return;
       }
       rating = parsed;
@@ -525,16 +528,16 @@ export function SetupDrawer({
 
     const logoTrimmed = logoUrlDraft.trim();
     if (logoTrimmed && !/^(?:https?:\/\/|\/)/i.test(logoTrimmed)) {
-      setProfileError("Logo must be a valid image URL (https://…).");
+      setProfileError(t("kds.setup-drawer.logo-url-invalid"));
       return;
     }
     const coverTrimmed = coverImageUrlDraft.trim();
     if (coverTrimmed && !/^(?:https?:\/\/|\/)/i.test(coverTrimmed)) {
-      setProfileError("Cover must be a valid image URL (https://…).");
+      setProfileError(t("kds.setup-drawer.cover-url-invalid"));
       return;
     }
     if (guidedStorefront && phoneLocalDraft.trim().length < 6) {
-      setProfileError("A valid phone number is required.");
+      setProfileError(t("kds.setup-drawer.phone-required"));
       return;
     }
 
@@ -593,21 +596,21 @@ export function SetupDrawer({
   const handleSaveBusiness = async () => {
     if (!token) {
       setBusinessError(
-        "This device isn't unlocked. Recover access to edit your profile."
+        t("kds.setup-drawer.device-locked-recover-to-edit")
       );
       return;
     }
 
     if (!nameDraft.trim()) {
-      setBusinessError("Business name is required.");
+      setBusinessError(t("kds.setup-drawer.business-name-required"));
       return;
     }
     if (slugStatus !== "available") {
-      setBusinessError("Choose an available storefront URL before saving.");
+      setBusinessError(t("kds.setup-drawer.storefront-url-required"));
       return;
     }
     if (phoneLocalDraft.trim().length < 6) {
-      setBusinessError("A valid phone number is required.");
+      setBusinessError(t("kds.setup-drawer.phone-required"));
       return;
     }
 
@@ -656,7 +659,7 @@ export function SetupDrawer({
   const handleSavePayments = async () => {
     if (!token) {
       setPaymentsError(
-        "This device isn't unlocked. Recover access to edit your profile."
+        t("kds.setup-drawer.device-locked-recover-to-edit")
       );
       return;
     }
@@ -672,11 +675,11 @@ export function SetupDrawer({
           : `${phoneDialCodeDraft} ${payoutPhoneDraft}`.trim();
 
     if (payoutMethodDraft === "MERCHANT_CODE" && !/^\d{6}$/.test(momoCode)) {
-      setPaymentsError("MoMo merchant code must be exactly 6 digits.");
+      setPaymentsError(t("kds.setup-drawer.merchant-code-invalid"));
       return;
     }
     if (payoutMethodDraft === "PHONE" && payoutLocal.length < 6) {
-      setPaymentsError("A valid MoMo payout phone number is required.");
+      setPaymentsError(t("kds.setup-drawer.payout-phone-required"));
       return;
     }
 
@@ -796,14 +799,14 @@ export function SetupDrawer({
       (step) => !guidedTargetComplete(step.target)
     );
     const nextLabel = nextStep
-      ? GUIDED_STOREFRONT_COPY[nextStep.target].action
-      : "Review details";
+      ? translateKdsLabel(t, GUIDED_STOREFRONT_COPY[nextStep.target].action)
+      : t("kds.setup-drawer.review-details");
 
     return (
       <>
         {active && !complete ? (
           <span className="absolute -right-1 -top-4 z-10 min-h-9 rounded-brand-md bg-primary px-3 py-2 font-body text-caption font-semibold text-[#0c0a09] shadow-brand-soft">
-            {stepNumber} · {stepDetail}
+            {stepNumber} · {stepDetail ? translateKdsLabel(t, stepDetail) : ""}
           </span>
         ) : null}
         {complete ? (
@@ -814,7 +817,7 @@ export function SetupDrawer({
             >
               ✓
             </span>
-            <span>{copy.complete}</span>
+            <span>{translateKdsLabel(t, copy.complete)}</span>
           </div>
         ) : null}
         {active && complete ? (
@@ -823,7 +826,7 @@ export function SetupDrawer({
             onClick={() => advanceGuidedStep(target)}
             className="mt-3 flex min-h-11 w-full items-center justify-center rounded-brand-md border border-success/80 bg-success/10 px-4 font-body text-button font-medium text-success transition-colors hover:bg-success/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-success"
           >
-            Next · {nextLabel} →
+            {t("kds.setup-drawer.next-step", { label: nextLabel })}
           </button>
         ) : null}
       </>
@@ -867,7 +870,9 @@ export function SetupDrawer({
                 id={titleId}
                 className="font-display text-display-md text-ink"
               >
-                {readinessItem ? "Setup" : "Setup guide"}
+                {readinessItem
+                  ? t("kds.setup-drawer.setup")
+                  : t("kds.setup-drawer.setup-guide")}
               </h2>
               {!readinessItem ? (
                 <p className="mt-1 font-body text-body-sm text-muted">
@@ -896,8 +901,13 @@ export function SetupDrawer({
               )}
             >
               {readinessItem.complete
-                ? "✓ Done — continue guide"
-                : `← Return to guide · ${readinessItem.remainingCount} ${readinessItem.remainingCount === 1 ? "detail" : "details"} left`}
+                ? t("kds.setup-drawer.done-continue-guide")
+                : t(
+                    readinessItem.remainingCount === 1
+                      ? "kds.setup-drawer.return-to-guide-one"
+                      : "kds.setup-drawer.return-to-guide-many",
+                    { count: readinessItem.remainingCount }
+                  )}
             </button>
           ) : null}
           {!readinessItem ? (
@@ -918,10 +928,15 @@ export function SetupDrawer({
                   ✓
                 </div>
                 <h3 className="mt-5 font-display text-display-md font-light text-success">
-                  All {guidedTargets.length} {guidedTargets.length === 1 ? "detail" : "details"} ready
+                  {t(
+                    guidedTargets.length === 1
+                      ? "kds.setup-drawer.all-details-ready-one"
+                      : "kds.setup-drawer.all-details-ready-many",
+                    { count: guidedTargets.length }
+                  )}
                 </h3>
                 <p className="mx-auto mt-2 max-w-xs font-body text-body-md text-muted">
-                  Great work! Your profile is ready to save.
+                  {t("kds.setup-drawer.profile-ready-to-save")}
                 </p>
 
                 <ul className="mt-6 overflow-hidden rounded-brand-lg border border-white/10 text-left">
@@ -934,7 +949,10 @@ export function SetupDrawer({
                         ✓
                       </span>
                       <span className="font-body text-body-md text-ink">
-                        {GUIDED_STOREFRONT_COPY[step.target].review}
+                        {translateKdsLabel(
+                          t,
+                          GUIDED_STOREFRONT_COPY[step.target].review
+                        )}
                       </span>
                     </li>
                   ))}
@@ -948,7 +966,9 @@ export function SetupDrawer({
                 onClick={() => void handleSaveProfile()}
                 disabled={profileFieldsDisabled || !hasToken || !guidedAllReady}
               >
-                {profileSaving ? "Saving…" : "Save profile & continue"}
+                {profileSaving
+                  ? t("kds.setup-drawer.saving")
+                  : t("kds.setup-drawer.save-profile-and-continue")}
               </Button>
               <Button
                 size="kds"
@@ -957,7 +977,7 @@ export function SetupDrawer({
                 className="mt-3 w-full border-primary text-primary hover:border-primary hover:bg-primary/5"
                 onClick={onReturnToReadiness}
               >
-                ← Back to readiness
+                {t("kds.setup-drawer.back-to-readiness")}
               </Button>
               {profileError ? (
                 <p className="mt-3 font-body text-body-sm text-error" role="alert">
@@ -1186,7 +1206,7 @@ export function SetupDrawer({
                     className={`font-body text-caption ${slugStatusClass(slugStatus)}`}
                     role="status"
                   >
-                    {slugMessage}
+                    {t(slugMessage)}
                   </p>
                 ) : null}
               </div>

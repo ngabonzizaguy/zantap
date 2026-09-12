@@ -110,10 +110,10 @@ export function VendorUpdatesPanel({
 
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[
-          ["Batches", overview.totals.batches],
-          ["Changes", overview.totals.revisions],
-          ["Opens", overview.totals.opens],
-          ["Menu visits", overview.totals.menuVisits],
+          [t("kds.vendor-updates-panel.batches"), overview.totals.batches],
+          [t("kds.vendor-updates-panel.changes"), overview.totals.revisions],
+          [t("kds.vendor-updates-panel.opens"), overview.totals.opens],
+          [t("kds.vendor-updates-panel.menu-visits"), overview.totals.menuVisits],
         ].map(([label, value]) => (
           <div key={label} className="rounded-brand-lg bg-surface-card px-3 py-3">
             <p className="font-body text-caption text-muted">{label}</p>

@@ -1,6 +1,10 @@
 "use client";
 
-import { translateKdsLabel } from "@/lib/i18n/kds-labels";
+import {
+  getKdsExpenseCategoryOptions,
+  KDS_EXPENSE_CATEGORY_VALUES,
+  translateKdsLabel,
+} from "@/lib/i18n/kds-labels";
 
 import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
 
@@ -52,18 +56,6 @@ const PERIOD_LABELS: Record<PeriodPreset, string> = {
   last30: "Last 30 days",
 };
 
-const EXPENSE_CATEGORIES = [
-  "Ingredients",
-  "Packaging",
-  "Delivery",
-  "Rent",
-  "Utilities",
-  "Staff",
-  "Equipment",
-  "Marketing",
-  "Other",
-];
-
 export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
   const t = useKdsTranslation();
   const { token: ownerToken } = useOwnerToken(vendorSlug);
@@ -74,7 +66,9 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
 
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [expenseAmount, setExpenseAmount] = useState("");
-  const [expenseCategory, setExpenseCategory] = useState(EXPENSE_CATEGORIES[0]);
+  const [expenseCategory, setExpenseCategory] = useState<string>(
+    KDS_EXPENSE_CATEGORY_VALUES[0]
+  );
   const [expenseNote, setExpenseNote] = useState("");
   const [expenseSaving, setExpenseSaving] = useState(false);
   const [expenseError, setExpenseError] = useState<string | null>(null);
@@ -331,7 +325,7 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
                     <Card key={exp.id} padding="sm" className="flex items-center gap-3 shadow-none">
                       <div className="min-w-0 flex-1">
                         <p className="font-body text-body-md font-medium text-ink">
-                          {exp.category}
+                          {translateKdsLabel(t, exp.category)}
                         </p>
                         {exp.note && (
                           <p className="mt-0.5 font-body text-body-sm text-muted">
@@ -401,9 +395,9 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
               value={expenseCategory}
               onChange={(e) => setExpenseCategory(e.target.value)}
             >
-              {EXPENSE_CATEGORIES.map((c) => (
-                <option key={translateKdsLabel(t, c)} value={translateKdsLabel(t, c)}>
-                  {translateKdsLabel(t, c)}
+              {getKdsExpenseCategoryOptions(t).map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>
