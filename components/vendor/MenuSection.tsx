@@ -1,5 +1,7 @@
 "use client";
 
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MenuItem } from "@/lib/types";
 import { formatRwf } from "@/lib/format";
@@ -44,6 +46,7 @@ interface RowMenuProps {
 }
 
 function RowMenu({ itemName, actions }: RowMenuProps) {
+  const t = useKdsTranslation();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -69,7 +72,7 @@ function RowMenu({ itemName, actions }: RowMenuProps) {
     <div ref={rootRef} className="relative flex-none">
       <button
         type="button"
-        aria-label={`Actions for ${itemName}`}
+        aria-label={t("kds.menu-section.actions-for-value1", { value1: itemName })}
         aria-expanded={open}
         onClick={() => setOpen((prev) => !prev)}
         className="flex h-9 w-9 items-center justify-center rounded-brand-md text-muted transition-colors hover:bg-surface-strong hover:text-ink"
@@ -189,6 +192,7 @@ function MenuRow({
   onArchive,
   onRestore,
 }: MenuRowProps) {
+  const t = useKdsTranslation();
   const thumbBg = `radial-gradient(circle at 32% 28%, ${item.thumbFrom ?? "#ffd2b0"}, ${item.thumbTo ?? "#f5945f"})`;
   const primaryImage = getPrimaryImageUrl(item);
   const sizeOptions = getMenuItemSizeOptions(item);
@@ -198,29 +202,29 @@ function MenuRow({
     ? [
         {
           key: "restore",
-          label: "Restore item",
+          label: t("kds.menu-actions.restore"),
           icon: restoreIcon,
           onSelect: onRestore,
         },
       ]
     : [
-        { key: "edit", label: "Edit item", icon: editIcon, onSelect: onEdit },
+        { key: "edit", label: t("kds.menu-actions.edit"), icon: editIcon, onSelect: onEdit },
         {
           key: "duplicate",
-          label: "Duplicate",
+          label: t("kds.menu-actions.duplicate"),
           icon: duplicateIcon,
           onSelect: onDuplicate,
         },
         {
           key: "toggle",
-          label: "Toggle availability",
+          label: t("kds.menu-actions.toggle"),
           icon: toggleIcon,
           switchOn: available,
           onSelect: onToggle,
         },
         {
           key: "archive",
-          label: "Archive item",
+          label: t("kds.menu-actions.archive"),
           icon: archiveIcon,
           danger: true,
           onSelect: onArchive,
@@ -290,7 +294,7 @@ function MenuRow({
             archived ? "bg-muted-soft" : available ? "bg-success" : "bg-error"
           )}
         />
-        {archived ? "Archived" : available ? "Available" : "Sold out"}
+        {archived ? t("kds.menu-section.archived") : available ? t("kds.menu-section.available") : t("kds.menu-section.sold-out")}
       </span>
 
       <RowMenu itemName={item.name} actions={actions} />
@@ -315,6 +319,7 @@ export function MenuSection({
   onRefresh,
   onUnlockEditing,
 }: MenuSectionProps) {
+  const t = useKdsTranslation();
   const { token, hasToken, ready } = useOwnerToken(vendorSlug);
   const [filter, setFilter] = useState<MenuFilter>("active");
   const [archivedItems, setArchivedItems] = useState<MenuItem[]>([]);
@@ -540,28 +545,22 @@ export function MenuSection({
     <div className="rounded-brand-xl border border-hairline bg-surface-card/80 p-4 backdrop-blur-sm">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="font-body text-caption-uppercase uppercase tracking-wide text-muted">
-            Menu
-          </p>
+          <p className="font-body text-caption-uppercase uppercase tracking-wide text-muted">{t("kds.menu-section.menu")}</p>
           <h2 className="mt-1 font-display text-display-sm text-ink">
             {filter === "active"
-              ? `${availCount} of ${items.length} items live`
-              : `${archivedItems.length} archived`}
+              ? t("kds.menu-section.value1-of-value2-items-live", { value1: availCount, value2: items.length })
+              : t("kds.menu-section.value1-archived", { value1: archivedItems.length })}
           </h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {filter === "active" ? (
             <>
-              <Button size="default" variant="outline" onClick={onResetAll}>
-                Reset all
-              </Button>
+              <Button size="default" variant="outline" onClick={onResetAll}>{t("kds.menu-section.reset-all")}</Button>
               <Button
                 size="default"
                 data-coachmark-target="menu-add"
                 onClick={openCreate}
-              >
-                + Add item
-              </Button>
+              >{t("kds.menu-section.add-item")}</Button>
             </>
           ) : null}
         </div>
@@ -572,16 +571,12 @@ export function MenuSection({
           size="default"
           variant={filter === "active" ? "primary" : "outline"}
           onClick={() => setFilter("active")}
-        >
-          Active
-        </Button>
+        >{t("kds.menu-section.active")}</Button>
         <Button
           size="default"
           variant={filter === "archived" ? "primary" : "outline"}
           onClick={() => setFilter("archived")}
-        >
-          Archived
-        </Button>
+        >{t("kds.menu-section.archived")}</Button>
       </div>
 
       <label className="mb-4 flex min-h-11 cursor-pointer items-center gap-3 rounded-brand-lg border border-hairline bg-surface-card px-4 py-3 font-body text-body-sm text-muted">
@@ -590,9 +585,7 @@ export function MenuSection({
           checked={suppressNextAnnouncement}
           onChange={(event) => setSuppressNextAnnouncement(event.target.checked)}
           className="h-5 w-5 rounded border-hairline-strong accent-ink"
-        />
-        Don&apos;t announce my next qualifying change
-      </label>
+        />{t("kds.menu-section.don-t-announce-my-next-qualifying-change")}</label>
 
       {actionError ? (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-brand-lg border border-hairline bg-surface-card p-3">
@@ -600,21 +593,19 @@ export function MenuSection({
             {actionError}
           </p>
           {actionError === NO_TOKEN_MESSAGE ? (
-            <Button type="button" variant="outline" onClick={onUnlockEditing}>
-              Unlock editing
-            </Button>
+            <Button type="button" variant="outline" onClick={onUnlockEditing}>{t("kds.menu-section.unlock-editing")}</Button>
           ) : null}
         </div>
       ) : null}
 
       {!ready ? (
-        <p className="font-body text-body-sm text-muted">Loading…</p>
+        <p className="font-body text-body-sm text-muted">{t("kds.menu-section.loading")}</p>
       ) : visibleItems.length === 0 ? (
         <Card padding="md" className="text-center">
           <p className="font-body text-body-md text-muted">
             {filter === "active"
-              ? "No active menu items yet."
-              : "No archived items."}
+              ? t("kds.menu-section.no-active-menu-items-yet")
+              : t("kds.menu-section.no-archived-items")}
           </p>
         </Card>
       ) : (
@@ -642,10 +633,8 @@ export function MenuSection({
           onClick={openCreate}
           className="mt-4 flex w-full flex-col items-center justify-center gap-1 rounded-brand-lg border border-dashed border-hairline-strong px-4 py-6 text-muted transition-colors hover:border-primary hover:text-ink"
         >
-          <span className="font-body text-body-md font-medium">+ Add item</span>
-          <span className="font-body text-caption text-muted-soft">
-            Add more dishes to your menu
-          </span>
+          <span className="font-body text-body-md font-medium">{t("kds.menu-section.add-item")}</span>
+          <span className="font-body text-caption text-muted-soft">{t("kds.menu-section.add-more-dishes-to-your-menu")}</span>
         </button>
       ) : null}
 
@@ -678,29 +667,22 @@ export function MenuSection({
         <Modal
           open
           onClose={() => setConfirmArchiveId(null)}
-          title="Archive item?"
+          title={t("kds.menu-section.archive-item")}
         >
-          <p className="font-body text-body-sm text-muted">
-            It will disappear from the storefront and active menu. You can restore
-            it from the Archived tab.
-          </p>
+          <p className="font-body text-body-sm text-muted">{t("kds.menu-section.it-will-disappear-from-the-storefront-and-active-menu-you-can-re")}</p>
           <div className="mt-6 flex flex-col gap-2 sm:flex-row">
             <Button
               size="kds"
               className="flex-1"
               disabled={saving}
               onClick={() => void handleArchive(confirmArchiveId)}
-            >
-              Archive
-            </Button>
+            >{t("kds.menu-section.archive")}</Button>
             <Button
               size="kds"
               variant="outline"
               className="flex-1"
               onClick={() => setConfirmArchiveId(null)}
-            >
-              Cancel
-            </Button>
+            >{t("kds.menu-section.cancel")}</Button>
           </div>
         </Modal>
       ) : null}

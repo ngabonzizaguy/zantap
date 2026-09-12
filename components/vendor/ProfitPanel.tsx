@@ -1,5 +1,9 @@
 "use client";
 
+import { translateKdsLabel } from "@/lib/i18n/kds-labels";
+
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import { useCallback, useEffect, useState } from "react";
 import type {
   CreateVendorExpenseInput,
@@ -61,6 +65,7 @@ const EXPENSE_CATEGORIES = [
 ];
 
 export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
+  const t = useKdsTranslation();
   const { token: ownerToken } = useOwnerToken(vendorSlug);
   const [period, setPeriod] = useState<PeriodPreset>("last7");
   const [snapshot, setSnapshot] = useState<ProfitSnapshot | null>(null);
@@ -171,14 +176,12 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-canvas text-ink">
       <header className="flex items-center justify-between border-b border-hairline px-4 py-4">
-        <h2 className="font-display text-display-md text-ink">
-          Know Your Profit
-        </h2>
+        <h2 className="font-display text-display-md text-ink">{t("kds.profit-panel.know-your-profit")}</h2>
         <button
           type="button"
           onClick={onClose}
           className="flex h-10 w-10 items-center justify-center rounded-full border border-hairline text-lg font-bold text-ink hover:bg-canvas-soft"
-          aria-label="Close"
+          aria-label={t("kds.profit-panel.close")}
         >
           ×
         </button>
@@ -198,38 +201,36 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
                   : "bg-surface-strong text-muted hover:text-ink"
               )}
             >
-              {PERIOD_LABELS[p]}
+              {translateKdsLabel(t, PERIOD_LABELS[p])}
             </button>
           ))}
         </div>
 
         {loading ? (
           <Card padding="lg" className="text-center">
-            <p className="font-body text-body-md text-muted">Loading…</p>
+            <p className="font-body text-body-md text-muted">{t("kds.profit-panel.loading")}</p>
           </Card>
         ) : !s ? (
           <Card padding="lg" className="text-center">
-            <p className="font-body text-body-md text-muted">
-              No profit data available yet.
-            </p>
+            <p className="font-body text-body-md text-muted">{t("kds.profit-panel.no-profit-data-available-yet")}</p>
           </Card>
         ) : (
           <>
             <div className="grid grid-cols-2 gap-2.5">
               <Card padding="sm" className="border-l-2 border-l-primary shadow-none">
-                <p className="font-body text-caption-uppercase text-muted">Revenue</p>
+                <p className="font-body text-caption-uppercase text-muted">{t("kds.profit-panel.revenue")}</p>
                 <p className="mt-1 font-display text-display-sm text-ink">
                   {formatRwf(s.periodRevenueRwf)}
                 </p>
               </Card>
               <Card padding="sm" className="shadow-none">
-                <p className="font-body text-caption-uppercase text-muted">Expenses</p>
+                <p className="font-body text-caption-uppercase text-muted">{t("kds.profit-panel.expenses")}</p>
                 <p className="mt-1 font-display text-display-sm text-ink">
                   {formatRwf(s.periodExpensesRwf)}
                 </p>
               </Card>
               <Card padding="sm" className="shadow-none">
-                <p className="font-body text-caption-uppercase text-muted">Food costs</p>
+                <p className="font-body text-caption-uppercase text-muted">{t("kds.profit-panel.food-costs")}</p>
                 <p className="mt-1 font-display text-display-sm text-ink">
                   {formatRwf(s.periodCostOfGoodsRwf)}
                 </p>
@@ -243,7 +244,7 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
                     : "border-l-2 border-l-error"
                 )}
               >
-                <p className="font-body text-caption-uppercase text-muted">Profit</p>
+                <p className="font-body text-caption-uppercase text-muted">{t("kds.profit-panel.profit")}</p>
                 <p
                   className={cn(
                     "mt-1 font-display text-display-sm",
@@ -258,17 +259,13 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
             <Card padding="sm" className="mt-4 shadow-none">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-body text-caption-uppercase text-muted">
-                    Weekday average
-                  </p>
+                  <p className="font-body text-caption-uppercase text-muted">{t("kds.profit-panel.weekday-average")}</p>
                   <p className="mt-0.5 font-display text-display-sm text-ink">
                     {formatRwf(s.weekdayAverageRwf)}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-body text-caption-uppercase text-muted">
-                    Performance
-                  </p>
+                  <p className="font-body text-caption-uppercase text-muted">{t("kds.profit-panel.performance")}</p>
                   <p className={cn("mt-0.5 font-body text-body-strong font-semibold", glowColor)}>
                     {s.glowScore >= 0 ? "+" : ""}
                     {(s.glowScore * 100).toFixed(0)}%
@@ -279,9 +276,7 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
 
             {s.itemMargins.length > 0 && (
               <section className="mt-6">
-                <h3 className="font-display text-display-sm text-ink">
-                  Profit by menu item
-                </h3>
+                <h3 className="font-display text-display-sm text-ink">{t("kds.profit-panel.profit-by-menu-item")}</h3>
                 <div className="mt-3 flex flex-col gap-2">
                   {s.itemMargins.map((m) => (
                     <Card key={m.menuItemId} padding="sm" className="shadow-none">
@@ -291,7 +286,7 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
                             {m.name}
                           </p>
                           <p className="mt-0.5 font-body text-body-sm text-muted">
-                            {m.soldQty} sold · Rev {formatRwf(m.revenueRwf)} · Cost{" "}
+                            {m.soldQty}{" "}{t("kds.profit-panel.sold-rev")}{" "}{formatRwf(m.revenueRwf)}{" "}{t("kds.profit-panel.cost")}{" "}
                             {formatRwf(m.costRwf)}
                           </p>
                         </div>
@@ -302,7 +297,7 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
                           )}
                         >
                           {m.marginPct != null
-                            ? `You keep ${m.marginPct.toFixed(0)}%`
+                            ? t("kds.profit-panel.you-keep-value1", { value1: m.marginPct.toFixed(0) })
                             : formatRwf(m.marginRwf)}
                         </span>
                       </div>
@@ -314,9 +309,7 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
 
             <section className="mt-6">
               <div className="flex items-center justify-between">
-                <h3 className="font-display text-display-sm text-ink">
-                  Expenses
-                </h3>
+                <h3 className="font-display text-display-sm text-ink">{t("kds.profit-panel.expenses")}</h3>
                 <Button
                   type="button"
                   variant="outline"
@@ -327,15 +320,11 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
                   }}
                   disabled={!ownerToken}
                 >
-                  <Icon name="plus" size={16} strokeWidth={2.2} />
-                  Add
-                </Button>
+                  <Icon name="plus" size={16} strokeWidth={2.2} />{t("kds.profit-panel.add")}</Button>
               </div>
 
               {expenses.length === 0 && !showExpenseForm ? (
-                <p className="mt-3 font-body text-body-sm text-muted">
-                  No expenses recorded for this period.
-                </p>
+                <p className="mt-3 font-body text-body-sm text-muted">{t("kds.profit-panel.no-expenses-recorded-for-this-period")}</p>
               ) : (
                 <div className="mt-3 flex flex-col gap-2">
                   {expenses.map((exp) => (
@@ -357,7 +346,7 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
                         type="button"
                         onClick={() => void handleDeleteExpense(exp.id)}
                         className="flex h-8 w-8 items-center justify-center rounded-brand-sm text-muted hover:text-error"
-                        aria-label="Delete expense"
+                        aria-label={t("kds.profit-panel.delete-expense")}
                       >
                         <Icon name="close" size={14} strokeWidth={2.2} />
                       </button>
@@ -373,7 +362,7 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
       <Modal
         open={showExpenseForm}
         onClose={() => setShowExpenseForm(false)}
-        title="Add expense"
+        title={t("kds.profit-panel.add-expense")}
         footer={
           <div className="flex gap-2">
             <Button
@@ -382,9 +371,7 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
               className="flex-1"
               onClick={() => setShowExpenseForm(false)}
               disabled={expenseSaving}
-            >
-              Cancel
-            </Button>
+            >{t("kds.profit-panel.cancel")}</Button>
             <Button
               type="button"
               variant="primary"
@@ -392,14 +379,14 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
               onClick={() => void handleAddExpense()}
               disabled={expenseSaving || !expenseAmount.trim()}
             >
-              {expenseSaving ? "Saving…" : "Save"}
+              {expenseSaving ? t("kds.profit-panel.saving") : t("kds.profit-panel.save")}
             </Button>
           </div>
         }
       >
         <div className="flex flex-col gap-4">
           <Input
-            label="Amount (RWF)"
+            label={t("kds.profit-panel.amount-rwf")}
             type="number"
             inputMode="numeric"
             min={0}
@@ -408,26 +395,24 @@ export function ProfitPanel({ vendorSlug, open, onClose }: ProfitPanelProps) {
             placeholder="2500"
           />
           <div className="flex flex-col gap-1.5">
-            <label className="font-body text-body-sm font-medium text-ink">
-              Category
-            </label>
+            <label className="font-body text-body-sm font-medium text-ink">{t("kds.profit-panel.category")}</label>
             <select
               className="h-12 w-full rounded-brand-md border border-hairline-strong bg-surface-card px-4 font-body text-body-md text-ink focus:border-2 focus:border-ink focus:outline-none"
               value={expenseCategory}
               onChange={(e) => setExpenseCategory(e.target.value)}
             >
               {EXPENSE_CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
+                <option key={translateKdsLabel(t, c)} value={translateKdsLabel(t, c)}>
+                  {translateKdsLabel(t, c)}
                 </option>
               ))}
             </select>
           </div>
           <Input
-            label="Note (optional)"
+            label={t("kds.profit-panel.note-optional")}
             value={expenseNote}
             onChange={(e) => setExpenseNote(e.target.value)}
-            placeholder="What was this expense for?"
+            placeholder={t("kds.profit-panel.what-was-this-expense-for")}
           />
           {expenseError && (
             <p className="font-body text-body-sm text-error">{expenseError}</p>

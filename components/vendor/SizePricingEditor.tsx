@@ -1,5 +1,7 @@
 "use client";
 
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import { useRef, useState } from "react";
 import {
   ChevronDown,
@@ -111,6 +113,7 @@ export function SizePricingEditor({
   onSinglePriceChange,
   onSizeOptionsChange,
 }: SizePricingEditorProps) {
+  const t = useKdsTranslation();
   const rowRefs = useRef(new Map<string, HTMLDivElement>());
   const draggingIdRef = useRef<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -190,18 +193,14 @@ export function SizePricingEditor({
   return (
     <section className="border-t border-hairline pt-4" aria-labelledby={`${idPrefix}-pricing-heading`}>
       <div>
-        <h3 id={`${idPrefix}-pricing-heading`} className="font-body text-body-sm font-medium text-ink">
-          Pricing setup
-        </h3>
-        <p className="mt-0.5 font-body text-caption text-muted">
-          Choose how this item will be priced.
-        </p>
+        <h3 id={`${idPrefix}-pricing-heading`} className="font-body text-body-sm font-medium text-ink">{t("kds.size-pricing-editor.pricing-setup")}</h3>
+        <p className="mt-0.5 font-body text-caption text-muted">{t("kds.size-pricing-editor.choose-how-this-item-will-be-priced")}</p>
       </div>
 
       <div className="mt-3 grid grid-cols-2 overflow-hidden rounded-brand-md border border-hairline-strong bg-canvas-soft">
         {[
-          { value: false, label: "Single price" },
-          { value: true, label: "By size" },
+          { value: false, label: t("kds.labels.single-price") },
+          { value: true, label: t("kds.labels.by-size") },
         ].map((option) => {
           const active = useSizes === option.value;
           return (
@@ -227,28 +226,22 @@ export function SizePricingEditor({
       {useSizes ? (
         <>
           <p className="mt-2 flex items-center gap-1.5 font-body text-caption text-muted">
-            <Info size={13} aria-hidden />
-            Customers will choose a size on the storefront.
-          </p>
+            <Info size={13} aria-hidden />{t("kds.size-pricing-editor.customers-will-choose-a-size-on-the-storefront")}</p>
 
           <div className="mt-4 flex items-center justify-between gap-3">
-            <h4 className="font-body text-body-sm font-medium text-ink">Size pricing</h4>
+            <h4 className="font-body text-body-sm font-medium text-ink">{t("kds.size-pricing-editor.size-pricing")}</h4>
             <button
               type="button"
               disabled={disabled}
               onClick={resetOptions}
               className="flex min-h-11 items-center gap-1.5 rounded-pill px-2 font-body text-caption text-muted transition-colors hover:text-ink disabled:opacity-50"
-            >
-              Reset to default
-              <RotateCcw size={14} strokeWidth={1.8} aria-hidden />
+            >{t("kds.size-pricing-editor.reset-to-default")}<RotateCcw size={14} strokeWidth={1.8} aria-hidden />
             </button>
           </div>
 
-          <p className="font-body text-caption text-muted">
-            Drag to reorder. Tap a size to edit.
-          </p>
+          <p className="font-body text-caption text-muted">{t("kds.size-pricing-editor.drag-to-reorder-tap-a-size-to-edit")}</p>
 
-          <div className="mt-2 flex flex-col gap-2" aria-label="Size options">
+          <div className="mt-2 flex flex-col gap-2" aria-label={t("kds.size-pricing-editor.size-options")}>
             {sizeOptions.map((option, index) => {
               const canDisable = !option.isAvailable || availableCount > 1;
               const canDelete =
@@ -270,7 +263,7 @@ export function SizePricingEditor({
                     <button
                       type="button"
                       disabled={disabled}
-                      aria-label={`Reorder ${option.label}. Use arrow keys or drag.`}
+                      aria-label={t("kds.size-pricing-editor.reorder-value1-use-arrow-keys-or-drag", { value1: option.label })}
                       onPointerDown={(event) => {
                         event.currentTarget.setPointerCapture(event.pointerId);
                         draggingIdRef.current = option.id;
@@ -306,15 +299,14 @@ export function SizePricingEditor({
                         {option.label || `Size ${index + 1}`}
                       </span>
                       <span className="whitespace-nowrap font-mono text-caption font-semibold text-ink">
-                        {displayPrice(option.priceRwf) || "—"} RWF
-                      </span>
+                        {displayPrice(option.priceRwf) || "—"}{" "}{t("kds.size-pricing-editor.rwf")}</span>
                     </button>
 
                     <button
                       type="button"
                       disabled={disabled || !canDisable}
-                      aria-label={`${option.isAvailable ? "Hide" : "Show"} ${option.label} on the storefront`}
-                      title={!canDisable ? "Keep at least one size visible" : undefined}
+                      aria-label={t("kds.size-pricing-editor.value1-value2-on-the-storefront", { value1: option.isAvailable ? "Hide" : "Show", value2: option.label })}
+                      title={!canDisable ? t("kds.size-pricing-editor.keep-at-least-one-size-visible") : undefined}
                       onClick={() => updateOption(option.id, { isAvailable: !option.isAvailable })}
                       className={cn(
                         "flex h-11 w-9 items-center justify-center rounded-brand-sm transition-colors hover:bg-surface-strong disabled:cursor-not-allowed disabled:opacity-40 sm:w-11",
@@ -339,7 +331,7 @@ export function SizePricingEditor({
                       <button
                         type="button"
                         disabled={disabled}
-                        aria-label={`More actions for ${option.label}`}
+                        aria-label={t("kds.size-pricing-editor.more-actions-for-value1", { value1: option.label })}
                         aria-haspopup="menu"
                         aria-expanded={actionsId === option.id}
                         onClick={() => setActionsId(actionsId === option.id ? null : option.id)}
@@ -368,7 +360,7 @@ export function SizePricingEditor({
                             ) : (
                               <Eye size={18} strokeWidth={1.8} aria-hidden />
                             )}
-                            {option.isAvailable ? "Hide on storefront" : "Show on storefront"}
+                            {option.isAvailable ? t("kds.size-pricing-editor.hide-on-storefront") : t("kds.size-pricing-editor.show-on-storefront")}
                           </button>
                           <button
                             type="button"
@@ -377,9 +369,7 @@ export function SizePricingEditor({
                             onClick={() => deleteOption(option)}
                             className="flex min-h-11 w-full items-center gap-3 rounded-brand-sm px-3 text-left font-body text-body-sm text-error transition-colors hover:bg-error/10 disabled:opacity-40"
                           >
-                            <Trash2 size={18} strokeWidth={1.8} aria-hidden />
-                            Delete size
-                          </button>
+                            <Trash2 size={18} strokeWidth={1.8} aria-hidden />{t("kds.size-pricing-editor.delete-size")}</button>
                         </div>
                       ) : null}
                     </div>
@@ -414,26 +404,22 @@ export function SizePricingEditor({
                       className="border-t border-hairline bg-canvas-soft px-3 pb-3 pt-3"
                     >
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <label className="min-w-0 font-body text-caption text-muted">
-                          Size name
-                          <input
+                        <label className="min-w-0 font-body text-caption text-muted">{t("kds.size-pricing-editor.size-name")}<input
                             id={`${idPrefix}-size-${option.id}-label`}
                             value={option.label}
                             maxLength={30}
                             disabled={disabled}
-                            aria-label={`Size ${index + 1} name`}
+                            aria-label={t("kds.size-pricing-editor.size-value1-name", { value1: index + 1 })}
                             onChange={(event) => updateOption(option.id, { label: event.target.value })}
                             className={cn(inputClass, "mt-1.5 w-full px-3 text-ink")}
                           />
                         </label>
 
-                        <label className="min-w-0 font-body text-caption text-muted">
-                          Price (RWF)
-                          <input
+                        <label className="min-w-0 font-body text-caption text-muted">{t("kds.size-pricing-editor.price-rwf")}<input
                             value={option.priceRwf}
                             inputMode="numeric"
                             disabled={disabled}
-                            aria-label={`${option.label || `Size ${index + 1}`} price in RWF`}
+                            aria-label={t("kds.size-pricing-editor.value1-price-in-rwf", { value1: option.label || `Size ${index + 1}` })}
                             onChange={(event) =>
                               updateOption(option.id, { priceRwf: event.target.value.replace(/[^0-9,]/g, "") })
                             }
@@ -448,14 +434,14 @@ export function SizePricingEditor({
                       </div>
 
                       <div className="mt-3 flex min-h-11 items-center justify-between gap-3">
-                        <span className="font-body text-body-sm text-ink">Show on storefront</span>
+                        <span className="font-body text-body-sm text-ink">{t("kds.size-pricing-editor.show-on-storefront")}</span>
                         <button
                           type="button"
                           role="switch"
                           aria-checked={option.isAvailable}
-                          aria-label={`${option.isAvailable ? "Hide" : "Show"} ${option.label} on the storefront`}
+                          aria-label={t("kds.size-pricing-editor.value1-value2-on-the-storefront", { value1: option.isAvailable ? "Hide" : "Show", value2: option.label })}
                           disabled={disabled || !canDisable}
-                          title={!canDisable ? "Keep at least one size visible" : undefined}
+                          title={!canDisable ? t("kds.size-pricing-editor.keep-at-least-one-size-visible") : undefined}
                           onClick={() => updateOption(option.id, { isAvailable: !option.isAvailable })}
                           className={cn(
                             "relative h-6 w-11 flex-none rounded-pill transition-colors disabled:cursor-not-allowed disabled:opacity-50",
@@ -476,17 +462,15 @@ export function SizePricingEditor({
                         disabled={disabled || !canDelete}
                         title={
                           sizeOptions.length <= MIN_MENU_ITEM_SIZE_OPTIONS
-                            ? `Keep at least ${MIN_MENU_ITEM_SIZE_OPTIONS} sizes`
+                            ? t("kds.size-pricing-editor.keep-at-least-value1-sizes", { value1: MIN_MENU_ITEM_SIZE_OPTIONS })
                             : !canDelete
-                              ? "Keep at least one size visible"
+                              ? t("kds.size-pricing-editor.keep-at-least-one-size-visible")
                               : undefined
                         }
                         onClick={() => deleteOption(option)}
                         className="mt-2 flex min-h-11 items-center gap-2 rounded-brand-sm font-body text-body-sm font-medium text-error transition-colors hover:bg-error/10 disabled:cursor-not-allowed disabled:opacity-40"
                       >
-                        <Trash2 size={18} strokeWidth={1.8} aria-hidden />
-                        Delete size
-                      </button>
+                        <Trash2 size={18} strokeWidth={1.8} aria-hidden />{t("kds.size-pricing-editor.delete-size")}</button>
                     </div>
                   ) : null}
                 </div>
@@ -500,20 +484,14 @@ export function SizePricingEditor({
             onClick={addCustomOption}
             className="mt-3 flex min-h-11 items-center gap-2 rounded-brand-md border border-dashed border-primary/60 px-3 font-body text-body-sm font-medium text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <Plus size={17} strokeWidth={1.8} aria-hidden />
-            Add custom size
-          </button>
+            <Plus size={17} strokeWidth={1.8} aria-hidden />{t("kds.size-pricing-editor.add-custom-size")}</button>
 
           <p className="mt-3 flex items-center gap-1.5 font-body text-caption text-muted">
-            <Info size={14} strokeWidth={1.8} aria-hidden />
-            Customers see enabled sizes on the storefront.
-          </p>
+            <Info size={14} strokeWidth={1.8} aria-hidden />{t("kds.size-pricing-editor.customers-see-enabled-sizes-on-the-storefront")}</p>
         </>
       ) : (
         <div className="mt-3">
-          <label htmlFor={`${idPrefix}-single-price`} className="font-body text-body-sm font-medium text-ink">
-            Price (RWF)
-          </label>
+          <label htmlFor={`${idPrefix}-single-price`} className="font-body text-body-sm font-medium text-ink">{t("kds.size-pricing-editor.price-rwf")}</label>
           <input
             id={`${idPrefix}-single-price`}
             inputMode="numeric"

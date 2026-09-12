@@ -1,5 +1,7 @@
 "use client";
 
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import { useId, useMemo, useState } from "react";
 import type { Driver } from "@/lib/types";
 import { formatPhoneDisplay, orderDisplayId } from "@/lib/format";
@@ -24,6 +26,7 @@ export function AssignDriverModal({
   onClose,
   onAssign,
 }: AssignDriverModalProps) {
+  const t = useKdsTranslation();
   const titleId = useId();
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(() =>
@@ -56,8 +59,8 @@ export function AssignDriverModal({
 
   const title =
     orderIds.length === 1
-      ? `Assign driver to order #${orderDisplayId(orderIds[0] ?? "")}`
-      : `Assign driver to ${orderIds.length} orders`;
+      ? t("kds.assign.title-one", { order: orderDisplayId(orderIds[0] ?? "") })
+      : t("kds.assign.title-many", { count: orderIds.length });
 
   if (!open) return null;
 
@@ -68,7 +71,7 @@ export function AssignDriverModal({
     >
       <button
         type="button"
-        aria-label="Close assign driver dialog"
+        aria-label={t("kds.assign-driver-modal.close-assign-driver-dialog")}
         className="zt-overlay-enter absolute inset-0 bg-canvas-deep/40 backdrop-blur-sm"
         onClick={onClose}
       />
@@ -90,7 +93,7 @@ export function AssignDriverModal({
               type="button"
               onClick={onClose}
               className="flex h-11 w-11 flex-none items-center justify-center rounded-full border border-hairline bg-surface-card transition-colors hover:bg-canvas-soft"
-              aria-label="Close"
+              aria-label={t("kds.assign-driver-modal.close")}
             >
               <Icon name="close" size={18} className="text-muted" strokeWidth={2.2} />
             </button>
@@ -98,23 +101,19 @@ export function AssignDriverModal({
 
           <div className="mt-5 flex gap-2">
             <label className="min-w-0 flex-1">
-              <span className="sr-only">Search drivers</span>
+              <span className="sr-only">{t("kds.assign-driver-modal.search-drivers")}</span>
               <input
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search drivers"
+                placeholder={t("kds.assign-driver-modal.search-drivers")}
                 className="h-11 w-full rounded-brand-lg border border-hairline bg-surface-strong px-3 font-body text-body-sm text-ink outline-none focus:border-primary"
               />
             </label>
             <div
               className="flex h-11 flex-none items-center rounded-brand-lg border border-hairline bg-surface-strong px-3 font-body text-body-sm text-muted"
-              title="Coming soon"
-            >
-              All status
-              <span className="ml-2 rounded-pill bg-primary/15 px-2 py-0.5 text-caption text-primary">
-                Soon
-              </span>
+              title={t("kds.assign-driver-modal.coming-soon")}
+            >{t("kds.assign-driver-modal.all-status")}<span className="ml-2 rounded-pill bg-primary/15 px-2 py-0.5 text-caption text-primary">{t("kds.assign-driver-modal.soon")}</span>
             </div>
           </div>
 
@@ -122,8 +121,8 @@ export function AssignDriverModal({
             {filteredDrivers.length === 0 ? (
               <p className="rounded-brand-lg border border-hairline bg-surface-strong p-4 text-center font-body text-body-sm text-muted">
                 {drivers.length === 0
-                  ? "Add a driver in the Drivers tab first."
-                  : "No drivers match your search."}
+                  ? t("kds.assign-driver-modal.add-a-driver-in-the-drivers-tab-first")
+                  : t("kds.assign-driver-modal.no-drivers-match-your-search")}
               </p>
             ) : (
               filteredDrivers.map((driver) => {
@@ -189,15 +188,13 @@ export function AssignDriverModal({
             className="mt-[18px] w-full rounded-pill"
           >
             {selectedDriver
-              ? `Assign to ${selectedDriver.name}`
-              : "Select a driver"}
+              ? t("kds.assign-driver-modal.assign-to-value1", { value1: selectedDriver.name })
+              : t("kds.assign-driver-modal.select-a-driver")}
           </Button>
 
           <div className="mt-3 flex items-center gap-2 rounded-brand-lg border border-hairline bg-surface-strong px-3.5 py-3">
             <Icon name="phone" size={18} className="text-primary" strokeWidth={2} />
-            <p className="font-body text-body-sm text-muted">
-              Call the driver after assigning to coordinate delivery.
-            </p>
+            <p className="font-body text-body-sm text-muted">{t("kds.assign-driver-modal.call-the-driver-after-assigning-to-coordinate-delivery")}</p>
           </div>
         </div>
       </div>

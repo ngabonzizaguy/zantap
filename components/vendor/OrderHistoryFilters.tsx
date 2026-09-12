@@ -1,5 +1,9 @@
 "use client";
 
+import { translateKdsLabel } from "@/lib/i18n/kds-labels";
+
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import type { OrderHistoryFilters as Filters } from "@/lib/types";
 import { Button, Input, Select } from "@/components/ui/primitives";
 
@@ -52,6 +56,7 @@ export function OrderHistoryFilters({
   onApply,
   loading = false,
 }: OrderHistoryFiltersProps) {
+  const t = useKdsTranslation();
   const preset = filters.datePreset ?? "last30";
 
   const handlePresetClick = (itemId: DatePreset) => {
@@ -77,7 +82,7 @@ export function OrderHistoryFilters({
             className="min-w-[88px] shrink-0 snap-start"
             onClick={() => handlePresetClick(item.id)}
           >
-            {item.label}
+            {translateKdsLabel(t, item.label)}
           </Button>
         ))}
       </div>
@@ -85,7 +90,7 @@ export function OrderHistoryFilters({
       {preset === "custom" ? (
         <div className="grid gap-3 sm:grid-cols-2">
           <Input
-            label="From"
+            label={t("kds.order-history-filters.from")}
             type="date"
             value={toDateInputValue(filters.dateFrom)}
             onChange={(event) =>
@@ -99,7 +104,7 @@ export function OrderHistoryFilters({
             }
           />
           <Input
-            label="To"
+            label={t("kds.order-history-filters.to")}
             type="date"
             value={toDateInputValue(filters.dateTo)}
             onChange={(event) =>
@@ -117,11 +122,11 @@ export function OrderHistoryFilters({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Select
-          label="Order status"
+          label={t("kds.order-history-filters.order-status")}
           value={filters.status ?? "ALL"}
           options={ORDER_STATUSES.map((option) => ({
             value: option.value ?? "ALL",
-            label: option.label,
+            label: translateKdsLabel(t, option.label),
           }))}
           onChange={(status) =>
             onChange({
@@ -132,11 +137,11 @@ export function OrderHistoryFilters({
         />
 
         <Select
-          label="Payment status"
+          label={t("kds.order-history-filters.payment-status")}
           value={filters.paymentStatus ?? "ALL"}
           options={PAYMENT_STATUSES.map((option) => ({
             value: option.value ?? "ALL",
-            label: option.label,
+            label: translateKdsLabel(t, option.label),
           }))}
           onChange={(paymentStatus) =>
             onChange({
@@ -149,8 +154,8 @@ export function OrderHistoryFilters({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <Input
-          label="Search phone or order #"
-          placeholder="e.g. 0788 or #1204"
+          label={t("kds.order-history-filters.search-phone-or-order")}
+          placeholder={t("kds.order-history-filters.e-g-0788-or-1204")}
           value={filters.search ?? ""}
           onChange={(event) =>
             onChange({ ...filters, search: event.target.value })
@@ -165,7 +170,7 @@ export function OrderHistoryFilters({
           disabled={loading}
           onClick={onApply}
         >
-          {loading ? "Loading…" : "Apply filters"}
+          {loading ? t("kds.order-history-filters.loading") : t("kds.order-history-filters.apply-filters")}
         </Button>
       </div>
     </div>

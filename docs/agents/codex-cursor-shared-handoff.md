@@ -2,9 +2,15 @@
 
 ### 2026-09-18 — Cursor — Q11 phones live on `main` / Production
 
-Do **not** re-run the 2026-09-12 fast-forward. Owner approved push + merge + Production. GitHub `origin/main` is `3ff2bc2` (`f32fca8` phones + docs). Live `zantap.app` is Production `dpl_AbmSN4zVWPhhi8VuhddoQPvjKErY` (`zantap-jqur1qppf`), aliased. Browser smoke: lead form defaults Rwanda `+250`, search `+44` lists United Kingdom, selecting it sets `GB +44`. Did not submit a Lead. KDS translation stays in `zantap-kds-translation-c29`. ADR-0093. Tracking: `.scratch/repository-continuity/issue-02-canonical-main-then-q11.md`.
+Do **not** re-run the 2026-09-12 fast-forward. Owner approved push + merge + Production. GitHub `origin/main` is `5db897c` (`f32fca8` phones + docs). Live `zantap.app` is Production `dpl_AbmSN4zVWPhhi8VuhddoQPvjKErY` (`zantap-jqur1qppf`), aliased. Browser smoke: lead form defaults Rwanda `+250`, search `+44` lists United Kingdom, selecting it sets `GB +44`. Did not submit a Lead. KDS translation is being ported onto `feat/kds-translation-on-main` from `zantap-kds-translation-c29`. ADR-0093 is the Q11 isolate ADR. Tracking: `.scratch/repository-continuity/issue-02-canonical-main-then-q11.md`.
 
-Last reconciled: **2026-09-18 (Africa/Kigali)** — Git/Q11 isolate only; Candidate #29 product truth below still starts 2026-09-08.
+Last reconciled: **2026-09-18 (Africa/Kigali)** — Git/Q11 isolate; Candidate #29 product truth below still starts 2026-09-08.
+
+### 2026-09-12 — Cursor — GitHub main repaired; KDS translation ported
+
+GitHub `main` was fast-forwarded from `6510df6` to Candidate 29 tip `3037217`; no production history was rebased. The push-triggered Production build is a docs-only child of live product SHA `3337db5`, not an old-main deployment.
+
+KDS translation work was copied from the preserved dirty `codex/kds-translation-control` checkout onto `codex/kds-translation-control-c29`, based directly on repaired `main`. Candidate 29 behavior won every overlap; translation hooks were then combined into `HelpModal`, `KdsDashboard`, and `SetupDrawer`. No DPO, Terms, or payment runtime code was touched. Read `.scratch/repository-continuity/issue-01.md`, `.scratch/kds-translation-control/issues/01-ops-kds-translations.md`, ADR-0089, and ADR-0090 next.
 Scope: the product-restructure, marketing, lead-capture, PWA/KDS-polish,
 Paypack-preparation work, plus the new **Ops outreach + KDS + marketing batch**
 on branch `feat/ops-kds-marketing-batch` (shared Cursor ↔ Codex), and candidate

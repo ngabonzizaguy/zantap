@@ -1,5 +1,9 @@
 "use client";
 
+import { translateKdsLabel } from "@/lib/i18n/kds-labels";
+
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
@@ -196,6 +200,7 @@ export function SetupDrawer({
   readinessItem,
   onReturnToReadiness,
 }: SetupDrawerProps) {
+  const t = useKdsTranslation();
   const [driversExpanded, setDriversExpanded] = useState(false);
   const router = useRouter();
   const titleId = useId();
@@ -841,7 +846,7 @@ export function SetupDrawer({
     <div className="fixed inset-0 z-50 flex justify-end" role="presentation">
       <button
         type="button"
-        aria-label="Close setup guide"
+        aria-label={t("kds.setup-drawer.close-setup-guide")}
         className="zt-overlay-enter absolute inset-0 bg-canvas-deep/40 backdrop-blur-sm"
         onClick={onClose}
       />
@@ -866,8 +871,7 @@ export function SetupDrawer({
               </h2>
               {!readinessItem ? (
                 <p className="mt-1 font-body text-body-sm text-muted">
-                  {completed} of {total} steps complete — progress updates from
-                  your live data.
+                  {t("kds.setup.progress", { completed, total })}
                 </p>
               ) : null}
             </div>
@@ -875,7 +879,7 @@ export function SetupDrawer({
               type="button"
               onClick={onClose}
               className="flex h-10 w-10 flex-none items-center justify-center rounded-full border border-hairline text-lg font-bold text-ink hover:bg-canvas-soft"
-              aria-label="Close"
+              aria-label={t("kds.setup-drawer.close")}
             >
               ×
             </button>
@@ -1024,11 +1028,11 @@ export function SetupDrawer({
                             done ? "text-muted line-through" : "text-ink"
                           )}
                         >
-                          {step.label}
+                          {translateKdsLabel(t, step.label)}
                         </p>
                         {!done ? (
                           <p className="mt-1 font-body text-body-sm text-muted">
-                            {step.hint}
+                            {translateKdsLabel(t, step.hint)}
                           </p>
                         ) : null}
                       </div>
@@ -1040,16 +1044,10 @@ export function SetupDrawer({
           </ol>
 
           <section className="mt-8">
-            <h3 className="font-display text-display-sm text-ink">
-              Keep improving your storefront
-            </h3>
-            <p className="mt-1 font-body text-body-sm text-muted">
-              You&apos;re live and accepting orders — these optional touches just
-              help you grow.
-            </p>
+            <h3 className="font-display text-display-sm text-ink">{t("kds.setup-drawer.keep-improving-your-storefront")}</h3>
+            <p className="mt-1 font-body text-body-sm text-muted">{t("kds.setup-drawer.you-re-live-and-accepting-orders-these-optional-touches-just-hel")}</p>
             <p className="mt-2 font-body text-body-sm font-medium text-ink">
-              {optionalProgress.completed} of {optionalProgress.total} completed
-            </p>
+              {t("kds.setup.optional-progress", optionalProgress)}</p>
             <ul className="mt-4 flex flex-col gap-2">
               {OPTIONAL_CHECKLIST_ITEMS.map((item) => {
                 const done = optionalChecklist[item.id];
@@ -1115,16 +1113,14 @@ export function SetupDrawer({
                             done ? "text-muted line-through" : "text-ink"
                           )}
                         >
-                          {item.label}
+                          {translateKdsLabel(t, item.label)}
                         </p>
                         {item.comingSoon ? (
-                          <span className="rounded-pill border border-hairline px-2 py-0.5 font-body text-caption text-muted-soft">
-                            Soon
-                          </span>
+                          <span className="rounded-pill border border-hairline px-2 py-0.5 font-body text-caption text-muted-soft">{t("kds.setup-drawer.soon")}</span>
                         ) : null}
                       </div>
                       <p className="mt-0.5 font-body text-body-sm text-muted">
-                        {item.hint}
+                        {translateKdsLabel(t, item.hint)}
                       </p>
                     </div>
                   </li>
@@ -1139,23 +1135,17 @@ export function SetupDrawer({
               checked={suppressNextAnnouncement}
               onChange={(event) => setSuppressNextAnnouncement(event.target.checked)}
               className="h-5 w-5 rounded border-hairline-strong accent-ink"
-            />
-            Don&apos;t announce my next storefront change
-          </label>
+            />{t("kds.setup-drawer.don-t-announce-my-next-storefront-change")}</label>
 
           <section className="mt-8">
-            <h3 className="font-display text-display-sm text-ink">
-              Business settings
-            </h3>
-            <p className="mt-1 font-body text-body-sm text-muted">
-              Your storefront URL, contact number, and category.
-            </p>
+            <h3 className="font-display text-display-sm text-ink">{t("kds.setup-drawer.business-settings")}</h3>
+            <p className="mt-1 font-body text-body-sm text-muted">{t("kds.setup-drawer.your-storefront-url-contact-number-and-category")}</p>
             <div className="mt-4 flex flex-col gap-3">
               <Input
-                label="Business name"
+                label={t("kds.setup-drawer.business-name")}
                 value={nameDraft}
                 onChange={(event) => setNameDraft(event.target.value)}
-                placeholder="Inka Steakhouse"
+                placeholder={t("kds.setup-drawer.inka-steakhouse")}
                 maxLength={80}
                 disabled={businessFieldsDisabled}
               />
@@ -1165,9 +1155,7 @@ export function SetupDrawer({
                 <label
                   htmlFor="setup-slug"
                   className="font-body text-body-sm font-medium text-ink"
-                >
-                  Storefront URL
-                </label>
+                >{t("kds.setup-drawer.storefront-url")}</label>
                 <div className="flex items-stretch overflow-hidden rounded-brand-md border border-hairline-strong bg-surface-card focus-within:border-2 focus-within:border-ink">
                   {hostPrefix ? (
                     <span className="flex items-center whitespace-nowrap border-r border-hairline-strong bg-canvas-soft px-3 font-body text-body-sm text-muted">
@@ -1179,7 +1167,7 @@ export function SetupDrawer({
                     className="h-12 min-w-0 flex-1 bg-transparent px-3 font-body text-body-md text-ink placeholder:text-muted-soft focus:outline-none disabled:cursor-not-allowed disabled:text-muted-soft"
                     value={slugDraft}
                     onChange={(event) => setSlugDraft(event.target.value)}
-                    placeholder="inka-steakhouse"
+                    placeholder={t("kds.setup-drawer.inka-steakhouse-2")}
                     autoComplete="off"
                     spellCheck={false}
                     disabled={businessFieldsDisabled}
@@ -1215,12 +1203,10 @@ export function SetupDrawer({
                 <label
                   htmlFor="setup-phone"
                   className="font-body text-body-sm font-medium text-ink"
-                >
-                  Phone number
-                </label>
+                >{t("kds.setup-drawer.phone-number")}</label>
                 <div className="flex items-stretch gap-2">
                   <Select
-                    ariaLabel="Country code"
+                    ariaLabel={t("kds.setup-drawer.country-code")}
                     value={phoneDialCodeDraft}
                     onChange={setPhoneDialCodeDraft}
                     options={DIAL_CODE_SELECT_OPTIONS}
@@ -1244,8 +1230,7 @@ export function SetupDrawer({
                   />
                 </div>
                 <p className="font-body text-caption text-muted">
-                  Used for customer contact, account recovery, and your
-                  storefront call button.
+                  {t("kds.setup-drawer.used-for-customer-contact-account-recovery-and-your-storefront-c")}
                 </p>
                 {guidedStepStatus("storefront-phone")}
               </div>
@@ -1253,9 +1238,7 @@ export function SetupDrawer({
                 <label
                   htmlFor="setup-category"
                   className="font-body text-body-sm font-medium text-ink"
-                >
-                  Business category
-                </label>
+                >{t("kds.setup-drawer.business-category")}</label>
                 <select
                   id="setup-category"
                   className={cn(
@@ -1280,13 +1263,13 @@ export function SetupDrawer({
                   onClick={() => void handleSaveBusiness()}
                   disabled={businessFieldsDisabled || !hasToken}
                 >
-                  {businessSaving ? "Saving…" : "Save business"}
+                  {businessSaving
+                    ? t("kds.setup-drawer.saving")
+                    : t("kds.setup-drawer.save-business")}
                 </Button>
               ) : null}
               {businessSaved ? (
-                <p className="font-body text-body-sm text-primary">
-                  Business settings saved.
-                </p>
+                <p className="font-body text-body-sm text-primary">{t("kds.setup-drawer.business-settings-saved")}</p>
               ) : null}
               {businessError ? (
                 <p className="font-body text-body-sm text-error" role="alert">
@@ -1307,10 +1290,10 @@ export function SetupDrawer({
           >
             {startHereBadge("payment-setup")}
             <h3 className="font-display text-display-sm text-ink">
-              Payment settings
+              {t("kds.setup-drawer.payment-settings")}
             </h3>
             <p className="mt-1 font-body text-body-sm text-muted">
-              Where MoMo payments land for your storefront.
+              {t("kds.setup-drawer.where-momo-payments-land-for-your-storefront")}
             </p>
             <div className="mt-4 flex flex-col gap-3">
               <div className="flex flex-col gap-2">
@@ -1325,16 +1308,12 @@ export function SetupDrawer({
                       : "border-hairline bg-surface-card"
                   )}
                 >
-                  <span className="font-body text-body-md font-medium text-ink">
-                    MoMo merchant code
-                  </span>
-                  <span className="mt-0.5 block font-body text-body-sm text-muted">
-                    Receive payments to your MoMo Pay merchant code.
-                  </span>
+                  <span className="font-body text-body-md font-medium text-ink">{t("kds.setup-drawer.momo-merchant-code")}</span>
+                  <span className="mt-0.5 block font-body text-body-sm text-muted">{t("kds.setup-drawer.receive-payments-to-your-momo-pay-merchant-code")}</span>
                 </button>
                 {payoutMethodDraft === "MERCHANT_CODE" ? (
                   <Input
-                    label="Merchant code"
+                    label={t("kds.setup-drawer.merchant-code")}
                     value={merchantCodeDraft}
                     onChange={(event) =>
                       setMerchantCodeDraft(event.target.value)
@@ -1359,12 +1338,8 @@ export function SetupDrawer({
                       : "border-hairline bg-surface-card"
                   )}
                 >
-                  <span className="font-body text-body-md font-medium text-ink">
-                    Receive to phone number
-                  </span>
-                  <span className="mt-0.5 block font-body text-body-sm text-muted">
-                    Receive payments to your MoMo registered phone.
-                  </span>
+                  <span className="font-body text-body-md font-medium text-ink">{t("kds.setup-drawer.receive-to-phone-number")}</span>
+                  <span className="mt-0.5 block font-body text-body-sm text-muted">{t("kds.setup-drawer.receive-payments-to-your-momo-registered-phone")}</span>
                 </button>
                 {payoutMethodDraft === "PHONE" ? (
                   <div className="flex flex-col gap-3 rounded-brand-lg border border-hairline px-4 py-3">
@@ -1378,9 +1353,7 @@ export function SetupDrawer({
                         disabled={paymentsFieldsDisabled}
                         className="mt-1 h-4 w-4 shrink-0 rounded border-hairline-strong accent-primary"
                       />
-                      <span className="font-body text-body-sm text-ink">
-                        Payment number is the same as my business number
-                      </span>
+                      <span className="font-body text-body-sm text-ink">{t("kds.setup-drawer.payment-number-is-the-same-as-my-business-number")}</span>
                     </label>
                     {payoutSameAsBusiness ? (
                       <p className="rounded-brand-md border border-hairline bg-canvas-soft px-3 py-2 font-body text-body-sm text-ink">
@@ -1391,12 +1364,10 @@ export function SetupDrawer({
                         <label
                           htmlFor="setup-payout-phone"
                           className="font-body text-body-sm font-medium text-ink"
-                        >
-                          Payout phone number
-                        </label>
+                        >{t("kds.setup-drawer.payout-phone-number")}</label>
                         <div className="flex items-stretch gap-2">
                           <Select
-                            ariaLabel="Country code"
+                            ariaLabel={t("kds.setup-drawer.country-code")}
                             value={phoneDialCodeDraft}
                             onChange={setPhoneDialCodeDraft}
                             options={DIAL_CODE_SELECT_OPTIONS}
@@ -1437,12 +1408,10 @@ export function SetupDrawer({
                     : !payoutPhoneValid)
                 }
               >
-                {paymentsSaving ? "Saving…" : "Save payments"}
+                {paymentsSaving ? t("kds.setup-drawer.saving") : t("kds.setup-drawer.save-payments")}
               </Button>
               {paymentsSaved ? (
-                <p className="font-body text-body-sm text-primary">
-                  Payment settings saved.
-                </p>
+                <p className="font-body text-body-sm text-primary">{t("kds.setup-drawer.payment-settings-saved")}</p>
               ) : null}
               {paymentsError ? (
                 <p className="font-body text-body-sm text-error" role="alert">
@@ -1453,24 +1422,18 @@ export function SetupDrawer({
           </section>
 
           <section className="mt-8">
-            <h3 className="font-display text-display-sm text-ink">
-              Storefront profile
-            </h3>
-            <p className="mt-1 font-body text-body-sm text-muted">
-              Shown on your customer menu page.
-            </p>
+            <h3 className="font-display text-display-sm text-ink">{t("kds.setup-drawer.storefront-profile")}</h3>
+            <p className="mt-1 font-body text-body-sm text-muted">{t("kds.setup-drawer.shown-on-your-customer-menu-page")}</p>
             <Link
               href={`/${slugDraft || vendorSlug}?from=kds`}
               className="mt-4 inline-flex h-10 min-h-10 w-full items-center justify-center rounded-brand-lg border border-hairline bg-canvas-soft px-5 font-body text-button font-medium text-ink transition-colors hover:bg-canvas"
-            >
-              Preview storefront
-            </Link>
+            >{t("kds.setup-drawer.preview-storefront")}</Link>
             <div className="mt-4 flex flex-col gap-3">
               <Input
-                label="Tagline"
+                label={t("kds.setup-drawer.tagline")}
                 value={taglineDraft}
                 onChange={(event) => setTaglineDraft(event.target.value)}
-                placeholder="Premium grills"
+                placeholder={t("kds.setup-drawer.premium-grills")}
                 disabled={profileFieldsDisabled}
               />
               <div
@@ -1484,23 +1447,23 @@ export function SetupDrawer({
               >
                 {startHereBadge("storefront-location")}
                 <Input
-                  label="Location"
+                  label={t("kds.setup-drawer.location")}
                   value={locationDraft}
                   onChange={(event) => setLocationDraft(event.target.value)}
-                  placeholder="Kigali, Rwanda"
+                  placeholder={t("kds.setup-drawer.kigali-rwanda")}
                   disabled={profileFieldsDisabled}
                 />
                 {guidedStepStatus("storefront-location")}
               </div>
               <Input
-                label="Delivery time"
+                label={t("kds.setup-drawer.delivery-time")}
                 value={deliveryTimeDraft}
                 onChange={(event) => setDeliveryTimeDraft(event.target.value)}
-                placeholder="30–40 min"
+                placeholder={t("kds.setup-drawer.30-40-min")}
                 disabled={profileFieldsDisabled}
               />
               <Input
-                label="Rating (optional)"
+                label={t("kds.setup-drawer.rating-optional")}
                 type="number"
                 inputMode="decimal"
                 min={0}
@@ -1522,12 +1485,12 @@ export function SetupDrawer({
               >
                 {startHereBadge("storefront-logo")}
                 <Input
-                  label="Logo URL"
+                  label={t("kds.setup-drawer.logo-url")}
                   type="url"
                   inputMode="url"
                   value={logoUrlDraft}
                   onChange={(event) => setLogoUrlDraft(event.target.value)}
-                  placeholder="https://…/logo.png"
+                  placeholder={t("kds.setup-drawer.https-logo-png")}
                   disabled={profileFieldsDisabled}
                 />
                 <input
@@ -1547,7 +1510,7 @@ export function SetupDrawer({
                   disabled={profileFieldsDisabled || !hasToken}
                   onClick={() => logoFileInputRef.current?.click()}
                 >
-                  {logoUploadBusy ? "Uploading logo…" : "Upload logo"}
+                  {logoUploadBusy ? t("kds.setup-drawer.uploading-logo") : t("kds.setup-drawer.upload-logo")}
                 </Button>
                 {logoUrlDraft ? (
                   <div className="overflow-hidden rounded-brand-md border border-hairline">
@@ -1572,12 +1535,12 @@ export function SetupDrawer({
               >
                 {startHereBadge("storefront-cover")}
                 <Input
-                  label="Cover image URL"
+                  label={t("kds.setup-drawer.cover-image-url")}
                   type="url"
                   inputMode="url"
                   value={coverImageUrlDraft}
                   onChange={(event) => setCoverImageUrlDraft(event.target.value)}
-                  placeholder="https://…/cover.jpg"
+                  placeholder={t("kds.setup-drawer.https-cover-jpg")}
                   disabled={profileFieldsDisabled}
                 />
                 <input
@@ -1597,7 +1560,7 @@ export function SetupDrawer({
                   disabled={profileFieldsDisabled || !hasToken}
                   onClick={() => coverFileInputRef.current?.click()}
                 >
-                  {coverUploadBusy ? "Uploading cover…" : "Upload cover"}
+                  {coverUploadBusy ? t("kds.setup-drawer.uploading-cover") : t("kds.setup-drawer.upload-cover")}
                 </Button>
                 {coverImageUrlDraft ? (
                   <div className="overflow-hidden rounded-brand-md border border-hairline">
@@ -1624,14 +1587,12 @@ export function SetupDrawer({
                 <label
                   htmlFor="vendor-description"
                   className="font-body text-body-sm font-medium text-ink"
-                >
-                  Business description
-                </label>
+                >{t("kds.setup-drawer.business-description")}</label>
                 <textarea
                   id="vendor-description"
                   value={descriptionDraft}
                   onChange={(event) => setDescriptionDraft(event.target.value)}
-                  placeholder="Tell your story — what makes your kitchen special."
+                  placeholder={t("kds.setup-drawer.tell-your-story-what-makes-your-kitchen-special")}
                   disabled={profileFieldsDisabled}
                   rows={3}
                   className={cn(
@@ -1650,25 +1611,20 @@ export function SetupDrawer({
                   onClick={() => void handleSaveProfile()}
                   disabled={profileFieldsDisabled || !hasToken}
                 >
-                  {profileSaving ? "Saving…" : "Save profile"}
+                  {profileSaving
+                    ? t("kds.setup-drawer.saving")
+                    : t("kds.setup-drawer.save-profile")}
                 </Button>
               ) : null}
               {!hasToken ? (
-                <p className="font-body text-body-sm text-muted">
-                  This device isn&apos;t unlocked yet. Use{" "}
+                <p className="font-body text-body-sm text-muted">{t("kds.setup-drawer.this-device-isn-t-unlocked-yet-use")}{" "}
                   <Link
                     href="/onboard?recover=1"
                     className="font-medium text-gold underline underline-offset-2 hover:text-gold/80"
-                  >
-                    Recover access
-                  </Link>{" "}
-                  to edit your store.
-                </p>
+                  >{t("kds.setup-drawer.recover-access")}</Link>{" "}{t("kds.setup-drawer.to-edit-your-store")}</p>
               ) : null}
               {profileSaved ? (
-                <p className="font-body text-body-sm text-primary">
-                  Profile saved. Refresh your menu page to see changes.
-                </p>
+                <p className="font-body text-body-sm text-primary">{t("kds.setup-drawer.profile-saved-refresh-your-menu-page-to-see-changes")}</p>
               ) : null}
               {profileError ? (
                 <p className="font-body text-body-sm text-error" role="alert">
@@ -1679,18 +1635,14 @@ export function SetupDrawer({
           </section>
 
           <section className="mt-8">
-            <h3 className="font-display text-display-sm text-ink">
-              Manage drivers
-            </h3>
-            <p className="mt-1 font-body text-body-sm text-muted">
-              Add delivery drivers here, then assign them from the Orders tab.
-            </p>
+            <h3 className="font-display text-display-sm text-ink">{t("kds.setup-drawer.manage-drivers")}</h3>
+            <p className="mt-1 font-body text-body-sm text-muted">{t("kds.setup-drawer.add-delivery-drivers-here-then-assign-them-from-the-orders-tab")}</p>
             <button
               type="button"
               onClick={() => setDriversExpanded((prev) => !prev)}
               className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-brand-lg border border-hairline bg-canvas-soft px-5 font-body text-button font-medium text-ink transition-colors hover:bg-canvas"
             >
-              {driversExpanded ? "Hide drivers" : "Show drivers"}
+              {driversExpanded ? t("kds.setup-drawer.hide-drivers") : t("kds.setup-drawer.show-drivers")}
             </button>
             {driversExpanded && drivers && onDriversChange ? (
               <div className="mt-4">
@@ -1705,12 +1657,8 @@ export function SetupDrawer({
 
           {onNavigateTab ? (
             <section className="mt-8">
-              <h3 className="font-display text-display-sm text-ink">
-                Inventory
-              </h3>
-              <p className="mt-1 font-body text-body-sm text-muted">
-                Track ingredients, drinks, packaging, and other supplies separately from your menu.
-              </p>
+              <h3 className="font-display text-display-sm text-ink">{t("kds.setup-drawer.inventory")}</h3>
+              <p className="mt-1 font-body text-body-sm text-muted">{t("kds.setup-drawer.track-ingredients-drinks-packaging-and-other-supplies-separately")}</p>
               <button
                 type="button"
                 onClick={() => {
@@ -1718,22 +1666,13 @@ export function SetupDrawer({
                   onClose();
                 }}
                 className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-brand-lg border border-hairline bg-canvas-soft px-5 font-body text-button font-medium text-ink transition-colors hover:bg-canvas"
-              >
-                Open inventory
-              </button>
+              >{t("kds.setup-drawer.open-inventory")}</button>
             </section>
           ) : null}
 
           <section className="mt-8">
-            <h3 className="font-display text-display-sm text-ink">
-              Owner access
-            </h3>
-            <p className="mt-1 font-body text-body-sm text-muted">
-              Editing is unlocked automatically on the device you set up your
-              store with — there is no code to type. On a new device or after
-              clearing your browser, recover access with your storefront URL and
-              signup phone number.
-            </p>
+            <h3 className="font-display text-display-sm text-ink">{t("kds.setup-drawer.owner-access")}</h3>
+            <p className="mt-1 font-body text-body-sm text-muted">{t("kds.setup-drawer.editing-is-unlocked-automatically-on-the-device-you-set-up-your")}</p>
             <div className="mt-4 flex flex-col gap-2">
               <div
                 className={cn(
@@ -1746,29 +1685,22 @@ export function SetupDrawer({
                 <span aria-hidden="true">{hasToken ? "🔓" : "🔒"}</span>
                 <span>
                   {hasToken
-                    ? "This device is unlocked."
-                    : "This device is not unlocked."}
+                    ? t("kds.setup-drawer.this-device-is-unlocked")
+                    : t("kds.setup-drawer.this-device-is-not-unlocked")}
                 </span>
               </div>
               {!hasToken ? (
                 <Link
                   href="/onboard?recover=1"
                   className="inline-flex h-10 min-h-10 w-full items-center justify-center rounded-brand-lg border border-gold/50 bg-gold/10 px-5 font-body text-button font-medium text-gold transition-colors hover:border-gold hover:bg-gold/20"
-                >
-                  Recover access
-                </Link>
+                >{t("kds.setup-drawer.recover-access")}</Link>
               ) : null}
             </div>
           </section>
 
           <section className="mt-8">
-            <h3 className="font-display text-display-sm text-ink">
-              Storefront QR
-            </h3>
-            <p className="mt-1 font-body text-body-sm text-muted">
-              Print or download a QR code so customers can open your menu on
-              their phone.
-            </p>
+            <h3 className="font-display text-display-sm text-ink">{t("kds.setup-drawer.storefront-qr")}</h3>
+            <p className="mt-1 font-body text-body-sm text-muted">{t("kds.setup-drawer.print-or-download-a-qr-code-so-customers-can-open-your-menu-on-t")}</p>
             <div className="mt-4">
               <StorefrontQr
                 url={storefrontUrl}

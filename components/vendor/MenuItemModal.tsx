@@ -1,5 +1,7 @@
 "use client";
 
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import { useId, useMemo, useRef, useState } from "react";
 import { ChevronDown, Plus, X } from "lucide-react";
 import type { MenuImage, MenuItem, MenuItemAddOnGroup } from "@/lib/types";
@@ -126,6 +128,7 @@ export function MenuItemModal({
   onImageSaveComplete,
   onToggleAvailability,
 }: MenuItemModalProps) {
+  const t = useKdsTranslation();
   const listId = useId();
   const createPhotoInputRef = useRef<HTMLInputElement>(null);
   const [values, setValues] = useState<MenuItemFormValues>(emptyForm);
@@ -200,23 +203,19 @@ export function MenuItemModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={mode === "create" ? "Add menu item" : "Edit menu item"}
+      title={mode === "create" ? t("kds.menu-item-modal.add-menu-item") : t("kds.menu-item-modal.edit-menu-item")}
       footer={addOnsOpen ? (
         <div className="flex gap-2">
-          <Button size="kds" variant="outline" className="flex-1" disabled={saving} onClick={() => setAddOnsOpen(false)}>
-            Back to item
-          </Button>
+          <Button size="kds" variant="outline" className="flex-1" disabled={saving} onClick={() => setAddOnsOpen(false)}>{t("kds.menu-item-modal.back-to-item")}</Button>
           <Button size="kds" className="flex-1" disabled={saving} onClick={handleSubmit}>
-            {saving ? "Saving…" : mode === "create" ? "Create item" : "Save add-ons"}
+            {saving ? t("kds.menu-item-modal.saving") : mode === "create" ? t("kds.menu-item-modal.create-item") : t("kds.menu-item-modal.save-add-ons")}
           </Button>
         </div>
       ) :
         <div className="flex gap-2">
-          <Button size="kds" variant="outline" className="flex-1" disabled={saving} onClick={onClose}>
-            Cancel
-          </Button>
+          <Button size="kds" variant="outline" className="flex-1" disabled={saving} onClick={onClose}>{t("kds.menu-item-modal.cancel")}</Button>
           <Button size="kds" className="flex-1" disabled={saving} onClick={handleSubmit}>
-            {saving ? "Saving…" : mode === "create" ? "Create item" : "Save changes"}
+            {saving ? t("kds.menu-item-modal.saving") : mode === "create" ? t("kds.menu-item-modal.create-item") : t("kds.menu-item-modal.save-changes")}
           </Button>
         </div>
       }
@@ -224,9 +223,7 @@ export function MenuItemModal({
       {addOnsOpen ? (
         <div className="space-y-4">
           <AddOnGroupsEditor groups={values.addOnGroups} disabled={saving} onChange={(addOnGroups) => setValues((previous) => ({ ...previous, addOnGroups }))} />
-          <p className="font-body text-caption text-muted">
-            Save add-ons to update this menu item.
-          </p>
+          <p className="font-body text-caption text-muted">{t("kds.menu-item-modal.save-add-ons-to-update-this-menu-item")}</p>
           {displayError ? <p className="font-body text-caption text-error" role="alert">{displayError}</p> : null}
         </div>
       ) : <div className="flex flex-col gap-5">
@@ -254,7 +251,7 @@ export function MenuItemModal({
                   className="mt-1.5 flex min-h-8 max-w-full items-center gap-1.5 rounded-brand-sm pr-1 text-left font-body text-caption font-medium text-primary transition-colors hover:text-ink"
                 >
                   <span className="truncate">
-                    {previewSizes.length} sizes · From {formatRwf(getMenuItemStartingPrice(item))}
+                    {previewSizes.length}{" "}{t("kds.menu-item-modal.sizes-from")}{" "}{formatRwf(getMenuItemStartingPrice(item))}
                   </span>
                   <ChevronDown
                     size={15}
@@ -291,7 +288,7 @@ export function MenuItemModal({
                       option.isAvailable ? "text-primary" : "text-muted"
                     )}>
                       {formatRwf(option.priceRwf)}
-                      {!option.isAvailable ? " · Hidden" : ""}
+                      {!option.isAvailable ? t("kds.menu-item-modal.hidden") : ""}
                     </span>
                   </div>
                 ))}
@@ -301,7 +298,7 @@ export function MenuItemModal({
         ) : null}
 
         <div className="flex w-full flex-col gap-1.5">
-          <label htmlFor={`${listId}-name`} className={fieldLabelClass}>Dish name</label>
+          <label htmlFor={`${listId}-name`} className={fieldLabelClass}>{t("kds.menu-item-modal.dish-name")}</label>
           <div className="relative">
             <input
               id={`${listId}-name`}
@@ -309,7 +306,7 @@ export function MenuItemModal({
               maxLength={NAME_MAX}
               onChange={(event) => setValues((previous) => ({ ...previous, name: event.target.value }))}
               disabled={saving}
-              placeholder="e.g. Roasted Chicken Feast"
+              placeholder={t("kds.menu-item-modal.e-g-roasted-chicken-feast")}
               className={cn(fieldControlClass, "pr-16")}
             />
             <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 font-body text-caption text-muted-soft">
@@ -328,18 +325,18 @@ export function MenuItemModal({
         >
           <Combobox
             id={`${listId}-category`}
-            label="Category"
+            label={t("kds.menu-item-modal.category")}
             value={values.category}
             onChange={(category) => setValues((previous) => ({ ...previous, category }))}
             suggestions={suggestions}
             disabled={saving}
-            placeholder="General"
+            placeholder={t("kds.menu-item-modal.general")}
           />
 
           {mode === "create" ? (
             <div>
               <div className="flex items-center justify-between gap-2">
-                <p className={fieldLabelClass}>Photos</p>
+                <p className={fieldLabelClass}>{t("kds.menu-item-modal.photos")}</p>
                 <p className="font-body text-caption text-muted">
                   {pendingPhotos.length}/{MAX_MENU_IMAGES}
                 </p>
@@ -368,19 +365,17 @@ export function MenuItemModal({
                       /* eslint-disable-next-line @next/next/no-img-element */
                       <img
                         src={pendingPhotoPreviews[index]}
-                        alt={`Selected photo ${index + 1}: ${file.name}`}
+                        alt={t("kds.menu-item-modal.selected-photo-value1-value2", { value1: index + 1, value2: file.name })}
                         className="h-full w-full object-cover object-center"
                         draggable={false}
                       />
                     ) : null}
                     {index === 0 ? (
-                      <span className="absolute bottom-1 left-1 rounded-pill bg-ink/70 px-1.5 py-0.5 font-body text-[10px] font-medium text-white">
-                        Cover
-                      </span>
+                      <span className="absolute bottom-1 left-1 rounded-pill bg-ink/70 px-1.5 py-0.5 font-body text-[10px] font-medium text-white">{t("kds.menu-item-modal.cover")}</span>
                     ) : null}
                     <button
                       type="button"
-                      aria-label={`Remove photo ${index + 1}`}
+                      aria-label={t("kds.menu-item-modal.remove-photo-value1", { value1: index + 1 })}
                       disabled={saving}
                       onClick={() => {
                         setPendingPhotos((current) =>
@@ -403,7 +398,7 @@ export function MenuItemModal({
                     className="flex aspect-square min-h-16 flex-col items-center justify-center gap-1 rounded-brand-md border border-dashed border-hairline-strong font-body text-caption text-muted transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
                   >
                     <Plus size={18} strokeWidth={1.8} aria-hidden />
-                    {pendingPhotos.length ? "Add more" : "Add photos"}
+                    {pendingPhotos.length ? t("kds.menu-item-modal.add-more") : t("kds.menu-item-modal.add-photos")}
                   </button>
                 ) : null}
               </div>
@@ -425,20 +420,20 @@ export function MenuItemModal({
         {mode === "edit" && item && onToggleAvailability ? (
           <div className="flex items-start justify-between gap-3 rounded-brand-lg border border-hairline bg-canvas-soft px-4 py-3">
             <div className="min-w-0">
-              <p className={fieldLabelClass}>Status</p>
+              <p className={fieldLabelClass}>{t("kds.menu-item-modal.status")}</p>
               <p className={cn("mt-1 flex items-center gap-1.5 font-body text-body-sm font-medium", available ? "text-success" : "text-error")}>
                 <span className={cn("h-1.5 w-1.5 rounded-full", available ? "bg-success" : "bg-error")} />
-                {available ? "Available" : "Sold out"}
+                {available ? t("kds.menu-item-modal.available") : t("kds.menu-item-modal.sold-out")}
               </p>
               <p className="mt-0.5 font-body text-caption text-muted">
-                {available ? "This item is visible on your storefront" : "Customers cannot order this item right now"}
+                {available ? t("kds.menu-item-modal.this-item-is-visible-on-your-storefront") : t("kds.menu-item-modal.customers-cannot-order-this-item-right-now")}
               </p>
             </div>
             <button
               type="button"
               role="switch"
               aria-checked={available}
-              aria-label={`Toggle ${item.name} availability`}
+              aria-label={t("kds.menu-item-modal.toggle-value1-availability", { value1: item.name })}
               disabled={saving}
               onClick={onToggleAvailability}
               className={cn("relative mt-0.5 h-7 w-12 flex-none rounded-pill transition-colors", available ? "bg-success" : "bg-muted-soft")}
@@ -470,9 +465,9 @@ export function MenuItemModal({
               aria-expanded={descriptionOpen}
               className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
             >
-              <span className="font-body text-body-md font-medium text-ink">Description</span>
+              <span className="font-body text-body-md font-medium text-ink">{t("kds.menu-item-modal.description")}</span>
               <span className="flex items-center gap-2 font-body text-caption text-muted">
-                {values.description.trim() ? "Added" : "Optional"}
+                {values.description.trim() ? t("kds.menu-item-modal.added") : t("kds.menu-item-modal.optional")}
                 <span className={cn("transition-transform", descriptionOpen && "rotate-90")}>›</span>
               </span>
             </button>
@@ -485,20 +480,20 @@ export function MenuItemModal({
                   onChange={(event) => setValues((previous) => ({ ...previous, description: event.target.value }))}
                   disabled={saving}
                   className="w-full resize-none rounded-brand-md border border-hairline-strong bg-surface-card px-4 py-3 font-body text-body-md text-ink placeholder:text-muted-soft focus:border-2 focus:border-primary focus:px-[15px] focus:outline-none"
-                  placeholder="Optional — ingredients, portion size…"
+                  placeholder={t("kds.menu-item-modal.optional-ingredients-portion-size")}
                 />
               </div>
             ) : null}
           </div>
 
           <button type="button" onClick={() => setAddOnsOpen(true)} className="flex min-h-14 items-center justify-between gap-3 rounded-brand-lg border border-hairline bg-surface-card px-4 py-3 text-left">
-            <span><span className="block font-body text-body-md font-medium text-ink">Add-ons</span><span className="mt-0.5 block font-body text-caption text-muted">{values.addOnGroups.length ? `${values.addOnGroups.length} configured` : "Optional groups and choices"}</span></span>
+            <span><span className="block font-body text-body-md font-medium text-ink">{t("kds.menu-item-modal.add-ons")}</span><span className="mt-0.5 block font-body text-caption text-muted">{values.addOnGroups.length ? t("kds.menu-item-modal.value1-configured", { value1: values.addOnGroups.length }) : t("kds.menu-item-modal.optional-groups-and-choices")}</span></span>
             <ChevronDown className="-rotate-90 text-muted" size={18} />
           </button>
           {COMING_SOON_SECTIONS.map((section) => (
             <div key={section} className="flex items-center justify-between gap-3 rounded-brand-lg border border-hairline bg-surface-card px-4 py-3 opacity-60">
               <span className="font-body text-body-md font-medium text-ink">{section}</span>
-              <Badge variant="muted">Soon</Badge>
+              <Badge variant="muted">{t("kds.menu-item-modal.soon")}</Badge>
             </div>
           ))}
         </div>

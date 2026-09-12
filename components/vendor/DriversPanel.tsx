@@ -1,5 +1,7 @@
 "use client";
 
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import { useMemo, useState } from "react";
 import type { Driver } from "@/lib/types";
 import {
@@ -29,6 +31,7 @@ export function DriversPanel({
   drivers,
   onDriversChange,
 }: DriversPanelProps) {
+  const t = useKdsTranslation();
   const { token: ownerToken } = useOwnerToken(vendorSlug);
   const [query, setQuery] = useState("");
   const [form, setForm] = useState<DriverFormMode>({ kind: "closed" });
@@ -96,7 +99,7 @@ export function DriversPanel({
 
   const handleDelete = async (driver: Driver) => {
     if (!ownerToken) return;
-    if (!window.confirm(`Remove ${driver.name} from your driver list?`)) return;
+    if (!window.confirm(t("kds.drivers.remove-confirm", { name: driver.name }))) return;
     setBusy(true);
     setError(null);
     try {
@@ -111,32 +114,26 @@ export function DriversPanel({
   };
 
   const formOpen = form.kind !== "closed";
-  const formTitle = form.kind === "edit" ? "Edit driver" : "Add driver";
+  const formTitle = form.kind === "edit" ? t("kds.drivers.edit") : t("kds.drivers.add");
 
   return (
     <div className="relative pb-24">
       <div className="mb-4">
-        <h2 className="font-display text-display-sm text-ink">Drivers</h2>
-        <p className="mt-1 font-body text-body-sm text-muted">
-          Manage delivery drivers and assign orders from the Orders tab.
-        </p>
+        <h2 className="font-display text-display-sm text-ink">{t("kds.drivers-panel.drivers")}</h2>
+        <p className="mt-1 font-body text-body-sm text-muted">{t("kds.drivers-panel.manage-delivery-drivers-and-assign-orders-from-the-orders-tab")}</p>
       </div>
 
       <div className="mb-4 flex gap-2">
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search drivers"
+          placeholder={t("kds.drivers-panel.search-drivers")}
           className="min-w-0 flex-1"
         />
         <div
           className="flex h-11 flex-none items-center rounded-brand-lg border border-hairline bg-surface-strong px-3 font-body text-body-sm text-muted"
-          title="Coming soon"
-        >
-          All status
-          <span className="ml-2 rounded-pill bg-primary/15 px-2 py-0.5 text-caption text-primary">
-            Soon
-          </span>
+          title={t("kds.drivers-panel.coming-soon")}
+        >{t("kds.drivers-panel.all-status")}<span className="ml-2 rounded-pill bg-primary/15 px-2 py-0.5 text-caption text-primary">{t("kds.drivers-panel.soon")}</span>
         </div>
       </div>
 
@@ -148,8 +145,8 @@ export function DriversPanel({
         <Card padding="md" className="text-center">
           <p className="font-body text-body-sm text-muted">
             {drivers.length === 0
-              ? "No drivers yet. Add your first delivery driver."
-              : "No drivers match your search."}
+              ? t("kds.drivers-panel.no-drivers-yet-add-your-first-delivery-driver")
+              : t("kds.drivers-panel.no-drivers-match-your-search")}
           </p>
         </Card>
       ) : (
@@ -182,7 +179,7 @@ export function DriversPanel({
                 type="button"
                 onClick={() => openEdit(driver)}
                 className="flex h-10 w-10 flex-none items-center justify-center rounded-brand-md border border-hairline text-muted transition-colors hover:bg-canvas-soft hover:text-ink"
-                aria-label={`Edit ${driver.name}`}
+                aria-label={t("kds.drivers-panel.edit-value1", { value1: driver.name })}
               >
                 <svg
                   width="16"
@@ -202,7 +199,7 @@ export function DriversPanel({
                 onClick={() => void handleDelete(driver)}
                 disabled={busy}
                 className="flex h-10 w-10 flex-none items-center justify-center rounded-brand-md border border-hairline text-muted transition-colors hover:bg-canvas-soft hover:text-error"
-                aria-label={`Remove ${driver.name}`}
+                aria-label={t("kds.drivers-panel.remove-value1", { value1: driver.name })}
               >
                 <Icon name="close" size={16} strokeWidth={2.2} />
               </button>
@@ -218,9 +215,7 @@ export function DriversPanel({
           "fixed bottom-24 right-6 z-40 flex h-14 items-center gap-2 rounded-pill border border-[#7c6fe0]/40 bg-[#7c6fe0] px-5 font-body text-button font-medium text-white shadow-brand-soft transition-colors hover:bg-[#6f62d6]"
         )}
       >
-        <Icon name="plus" size={18} strokeWidth={2.4} />
-        Add driver
-      </button>
+        <Icon name="plus" size={18} strokeWidth={2.4} />{t("kds.drivers-panel.add-driver")}</button>
 
       <Modal
         open={formOpen}
@@ -234,36 +229,28 @@ export function DriversPanel({
               className="flex-1"
               onClick={closeForm}
               disabled={busy}
-            >
-              Cancel
-            </Button>
+            >{t("kds.drivers-panel.cancel")}</Button>
             <Button
               type="button"
               variant="primary"
               className="flex-1"
               onClick={() => void handleSave()}
               disabled={busy || !name.trim() || !phone.trim()}
-            >
-              Save
-            </Button>
+            >{t("kds.drivers-panel.save")}</Button>
           </div>
         }
       >
         <div className="flex flex-col gap-4">
           <div>
-            <label className="mb-1.5 block font-body text-caption-uppercase uppercase tracking-wide text-muted">
-              Name
-            </label>
+            <label className="mb-1.5 block font-body text-caption-uppercase uppercase tracking-wide text-muted">{t("kds.drivers-panel.name")}</label>
             <Input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Jean Claude"
+              placeholder={t("kds.drivers-panel.jean-claude")}
             />
           </div>
           <div>
-            <label className="mb-1.5 block font-body text-caption-uppercase uppercase tracking-wide text-muted">
-              Phone
-            </label>
+            <label className="mb-1.5 block font-body text-caption-uppercase uppercase tracking-wide text-muted">{t("kds.drivers-panel.phone")}</label>
             <Input
               value={phone}
               onChange={(event) => setPhone(event.target.value)}

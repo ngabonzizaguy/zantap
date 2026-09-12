@@ -9,6 +9,7 @@ import {
 import { MARKETING_COPY } from "@/lib/marketing/copy";
 import { flattenCopy } from "@/lib/i18n/localize";
 import { BASELINE_TRANSLATIONS } from "@/lib/i18n/baselines";
+import { KDS_COPY } from "@/lib/i18n/kds-copy";
 
 export default async function OpsSettingsPage() {
   const [recipients, marketingSettings, translations] = await Promise.all([
@@ -29,6 +30,12 @@ export default async function OpsSettingsPage() {
       </div>
       <LeadRoutingSettingsForm recipients={recipients} />
       <MarketingSiteSettingsForm settings={marketingSettings} />
+      <SiteTranslationsEditor
+        surface="kds"
+        englishSource={KDS_COPY}
+        baselines={{}}
+        overrides={translations}
+      />
       <SiteTranslationsEditor
         englishSource={flattenCopy(MARKETING_COPY)}
         baselines={BASELINE_TRANSLATIONS}

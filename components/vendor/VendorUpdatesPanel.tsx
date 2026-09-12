@@ -1,5 +1,7 @@
 "use client";
 
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import { useState } from "react";
 import {
   loadVendorUpdateOverview,
@@ -33,6 +35,7 @@ export function VendorUpdatesPanel({
   initialOverview,
   onUnlockEditing,
 }: VendorUpdatesPanelProps) {
+  const t = useKdsTranslation();
   const { token, ready } = useOwnerToken(vendorSlug);
   const [overview, setOverview] = useState(initialOverview);
   const [busy, setBusy] = useState(false);
@@ -78,15 +81,9 @@ export function VendorUpdatesPanel({
     <Card padding="md" className="mb-5 bg-canvas/80 backdrop-blur-sm">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="font-body text-caption uppercase tracking-wide text-muted">
-            Customer updates
-          </p>
-          <h2 className="mt-1 font-display text-display-sm text-ink">
-            Share meaningful menu changes
-          </h2>
-          <p className="mt-1 max-w-xl font-body text-body-sm text-muted">
-            New dishes, prices, photos and storefront details are grouped for 20 minutes.
-          </p>
+          <p className="font-body text-caption uppercase tracking-wide text-muted">{t("kds.vendor-updates-panel.customer-updates")}</p>
+          <h2 className="mt-1 font-display text-display-sm text-ink">{t("kds.vendor-updates-panel.share-meaningful-menu-changes")}</h2>
+          <p className="mt-1 max-w-xl font-body text-body-sm text-muted">{t("kds.vendor-updates-panel.new-dishes-prices-photos-and-storefront-details-are-grouped-for")}</p>
         </div>
         <button
           type="button"
@@ -100,18 +97,14 @@ export function VendorUpdatesPanel({
             aria-hidden="true"
             className={`h-2.5 w-2.5 rounded-full ${overview.settings.enabled ? "bg-success" : "bg-muted-soft"}`}
           />
-          {overview.settings.enabled ? "Updates on" : "Updates off"}
+          {overview.settings.enabled ? t("kds.vendor-updates-panel.updates-on") : t("kds.vendor-updates-panel.updates-off")}
         </button>
       </div>
 
       {ready && (!token || error === "Unlock editing to change update settings.") ? (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-brand-lg border border-hairline bg-surface-card p-4">
-          <p className="font-body text-body-sm text-muted">
-            Unlock editing to change update settings.
-          </p>
-          <Button type="button" variant="outline" onClick={onUnlockEditing}>
-            Unlock editing
-          </Button>
+          <p className="font-body text-body-sm text-muted">{t("kds.vendor-updates-panel.unlock-editing-to-change-update-settings")}</p>
+          <Button type="button" variant="outline" onClick={onUnlockEditing}>{t("kds.vendor-updates-panel.unlock-editing")}</Button>
         </div>
       ) : null}
 
@@ -131,10 +124,8 @@ export function VendorUpdatesPanel({
 
       <div className="mt-4 rounded-brand-lg border border-hairline bg-surface-card p-4">
         <div className="flex items-center justify-between gap-3">
-          <p className="font-body text-body-sm font-medium text-ink">Active batch preview</p>
-          <Button type="button" variant="outline" disabled={busy} onClick={() => void refresh()}>
-            Refresh
-          </Button>
+          <p className="font-body text-body-sm font-medium text-ink">{t("kds.vendor-updates-panel.active-batch-preview")}</p>
+          <Button type="button" variant="outline" disabled={busy} onClick={() => void refresh()}>{t("kds.vendor-updates-panel.refresh")}</Button>
         </div>
         {overview.activeBatch ? (
           <ul className="mt-3 space-y-2">
@@ -145,9 +136,7 @@ export function VendorUpdatesPanel({
             ))}
           </ul>
         ) : (
-          <p className="mt-2 font-body text-body-sm text-muted">
-            No active customer update. Your next qualifying save publishes immediately.
-          </p>
+          <p className="mt-2 font-body text-body-sm text-muted">{t("kds.vendor-updates-panel.no-active-customer-update-your-next-qualifying-save-publishes-im")}</p>
         )}
       </div>
       {error ? <p className="mt-3 font-body text-body-sm text-error" role="alert">{error}</p> : null}

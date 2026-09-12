@@ -1,5 +1,9 @@
 "use client";
 
+import { translateKdsLabel } from "@/lib/i18n/kds-labels";
+
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import { useState } from "react";
 import { getStorefrontUrl } from "@/lib/base-url";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
@@ -88,6 +92,7 @@ export function HelpModal({
   vendorSlug,
   onOpenReadinessGuide,
 }: HelpModalProps) {
+  const t = useKdsTranslation();
   const [expandedId, setExpandedId] = useState<string>("");
   const [question, setQuestion] = useState("");
 
@@ -107,11 +112,9 @@ export function HelpModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Kitchen help" className="max-w-lg">
+    <Modal open={open} onClose={onClose} title={t("kds.help-modal.kitchen-help")} className="max-w-lg">
       <div className="flex flex-col gap-4">
-        <p className="font-body text-body-sm text-muted">
-          Quick guides for the most important parts of your dashboard.
-        </p>
+        <p className="font-body text-body-sm text-muted">{t("kds.help-modal.quick-guides-for-the-most-important-parts-of-your-dashboard")}</p>
 
         <div className="rounded-brand-lg border border-primary/35 bg-primary/10 p-4">
           <p className="font-body text-caption-uppercase uppercase text-primary">
@@ -151,7 +154,7 @@ export function HelpModal({
                   aria-expanded={expanded}
                 >
                   <span className="font-body text-body-md font-medium text-ink">
-                    {section.title}
+                    {translateKdsLabel(t, section.title)}
                   </span>
                   <span
                     className={cn(
@@ -167,8 +170,8 @@ export function HelpModal({
                   <div className="border-t border-hairline px-4 py-3">
                     <ul className="flex list-disc flex-col gap-2 pl-4">
                       {section.body.map((line) => (
-                        <li key={line} className="font-body text-body-sm text-muted">
-                          {line}
+                        <li key={translateKdsLabel(t, line)} className="font-body text-body-sm text-muted">
+                          {translateKdsLabel(t, line)}
                         </li>
                       ))}
                     </ul>
@@ -183,15 +186,13 @@ export function HelpModal({
           <label
             htmlFor="help-question"
             className="font-body text-body-sm font-medium text-ink"
-          >
-            Ask a question
-          </label>
+          >{t("kds.help-modal.ask-a-question")}</label>
           <textarea
             id="help-question"
             rows={3}
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
-            placeholder="What do you need help with?"
+            placeholder={t("kds.help-modal.what-do-you-need-help-with")}
             className="w-full resize-none rounded-brand-md border border-hairline-strong bg-canvas px-3 py-2 font-body text-body-sm text-ink placeholder:text-muted-soft focus:border-ink focus:outline-none"
           />
           <Button
@@ -200,12 +201,8 @@ export function HelpModal({
             className="w-full"
             disabled={!question.trim()}
             onClick={handleAsk}
-          >
-            Send on WhatsApp
-          </Button>
-          <p className="font-body text-caption text-muted">
-            Opens WhatsApp to the ZanTap team with your message and storefront link.
-          </p>
+          >{t("kds.help-modal.send-on-whatsapp")}</Button>
+          <p className="font-body text-caption text-muted">{t("kds.help-modal.opens-whatsapp-to-the-zantap-team-with-your-message-and-storefro")}</p>
         </div>
       </div>
     </Modal>

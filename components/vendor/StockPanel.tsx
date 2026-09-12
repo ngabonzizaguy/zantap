@@ -1,5 +1,7 @@
 "use client";
 
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import { useCallback, useMemo, useState } from "react";
 import type { MenuItem } from "@/lib/types";
 import { formatRwf } from "@/lib/format";
@@ -41,6 +43,7 @@ export function StockPanel({
   items,
   onRefresh,
 }: StockPanelProps) {
+  const t = useKdsTranslation();
   const { token: ownerToken } = useOwnerToken(vendorSlug);
   const [editing, setEditing] = useState<StockEdit | null>(null);
   const [saving, setSaving] = useState(false);
@@ -94,10 +97,8 @@ export function StockPanel({
   return (
     <div className="flex flex-col gap-4 pb-24">
       <div>
-        <h2 className="font-display text-display-sm text-ink">Stock</h2>
-        <p className="mt-1 font-body text-body-sm text-muted">
-          Track inventory counts, set low-stock alerts, and record cost prices for margins.
-        </p>
+        <h2 className="font-display text-display-sm text-ink">{t("kds.stock-panel.stock")}</h2>
+        <p className="mt-1 font-body text-body-sm text-muted">{t("kds.stock-panel.track-inventory-counts-set-low-stock-alerts-and-record-cost-pric")}</p>
       </div>
 
       {lowStockItems.length > 0 && (
@@ -110,9 +111,7 @@ export function StockPanel({
             aria-hidden
           />
           <span className="font-body text-body-sm font-medium text-amber-300">
-            {lowStockItems.length} item{lowStockItems.length === 1 ? "" : "s"} low
-            on stock
-          </span>
+            {t(lowStockItems.length === 1 ? "kds.counts.low-item" : "kds.counts.low-items", { count: lowStockItems.length })}</span>
         </Card>
       )}
 
@@ -122,9 +121,7 @@ export function StockPanel({
 
       {items.length === 0 ? (
         <Card padding="lg" className="text-center">
-          <p className="font-body text-body-sm text-muted">
-            No menu items yet. Add items in the Menu tab.
-          </p>
+          <p className="font-body text-body-sm text-muted">{t("kds.stock-panel.no-menu-items-yet-add-items-in-the-menu-tab")}</p>
         </Card>
       ) : (
         <div className="flex flex-col gap-2.5">
@@ -154,19 +151,13 @@ export function StockPanel({
                         {item.name}
                       </span>
                       {isSoldOut && (
-                        <span className="rounded-pill bg-error/15 px-2 py-0.5 font-body text-caption font-medium text-error">
-                          Sold out
-                        </span>
+                        <span className="rounded-pill bg-error/15 px-2 py-0.5 font-body text-caption font-medium text-error">{t("kds.stock-panel.sold-out")}</span>
                       )}
                       {isLow && !isSoldOut && (
-                        <span className="rounded-pill bg-amber-500/15 px-2 py-0.5 font-body text-caption font-medium text-amber-400">
-                          Low
-                        </span>
+                        <span className="rounded-pill bg-amber-500/15 px-2 py-0.5 font-body text-caption font-medium text-amber-400">{t("kds.stock-panel.low")}</span>
                       )}
                       {justSaved && (
-                        <span className="font-body text-caption text-primary">
-                          Saved
-                        </span>
+                        <span className="font-body text-caption text-primary">{t("kds.stock-panel.saved")}</span>
                       )}
                     </div>
                     <div className="mt-0.5 flex items-center gap-2 font-body text-body-sm text-muted">
@@ -186,14 +177,13 @@ export function StockPanel({
                                   : "text-ink"
                             )}
                           >
-                            {item.stockCount} in stock
-                          </span>
+                            {item.stockCount}{" "}{t("kds.stock-panel.in-stock")}</span>
                         </>
                       )}
                       {item.costPriceRwf != null && (
                         <>
                           <span>·</span>
-                          <span>Cost {formatRwf(item.costPriceRwf)}</span>
+                          <span>{t("kds.stock-panel.cost")}{" "}{formatRwf(item.costPriceRwf)}</span>
                         </>
                       )}
                     </div>
@@ -203,7 +193,7 @@ export function StockPanel({
                       type="button"
                       onClick={() => startEdit(item)}
                       className="flex h-10 w-10 flex-none items-center justify-center rounded-brand-md border border-hairline text-muted transition-colors hover:bg-canvas-soft hover:text-ink"
-                      aria-label={`Edit stock for ${item.name}`}
+                      aria-label={t("kds.stock-panel.edit-stock-for-value1", { value1: item.name })}
                     >
                       <svg
                         width="16"
@@ -225,7 +215,7 @@ export function StockPanel({
                   <div className="mt-3 flex flex-col gap-3 border-t border-dashed border-hairline pt-3">
                     <div className="grid grid-cols-3 gap-2">
                       <Input
-                        label="Stock count"
+                        label={t("kds.stock-panel.stock-count")}
                         type="number"
                         inputMode="numeric"
                         min={0}
@@ -237,7 +227,7 @@ export function StockPanel({
                         disabled={saving}
                       />
                       <Input
-                        label="Low alert"
+                        label={t("kds.stock-panel.low-alert")}
                         type="number"
                         inputMode="numeric"
                         min={0}
@@ -252,7 +242,7 @@ export function StockPanel({
                         disabled={saving}
                       />
                       <Input
-                        label="Cost (RWF)"
+                        label={t("kds.stock-panel.cost-rwf")}
                         type="number"
                         inputMode="numeric"
                         min={0}
@@ -275,9 +265,7 @@ export function StockPanel({
                         className="flex-1"
                         onClick={() => setEditing(null)}
                         disabled={saving}
-                      >
-                        Cancel
-                      </Button>
+                      >{t("kds.stock-panel.cancel")}</Button>
                       <Button
                         type="button"
                         variant="primary"
@@ -286,7 +274,7 @@ export function StockPanel({
                         onClick={() => void handleSave()}
                         disabled={saving || !ownerToken}
                       >
-                        {saving ? "Saving…" : "Save"}
+                        {saving ? t("kds.stock-panel.saving") : t("kds.stock-panel.save")}
                       </Button>
                     </div>
                   </div>

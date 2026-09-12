@@ -1,5 +1,7 @@
 "use client";
 
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import { cn } from "@/lib/cn";
 import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/primitives";
@@ -28,6 +30,7 @@ export function Tabs({
   onHistory,
   onInventory,
 }: TabsProps) {
+  const t = useKdsTranslation();
   return (
     <div className="relative z-[1] grid grid-cols-2 gap-2.5 px-[18px] pb-1 pt-4 sm:grid-cols-4">
       <Button
@@ -39,9 +42,7 @@ export function Tabs({
         onClick={onOrders}
         className={tabClass(active === "orders")}
       >
-        <Icon name="orders" size={20} strokeWidth={2.1} />
-        Orders
-      </Button>
+        <Icon name="orders" size={20} strokeWidth={2.1} />{t("kds.tabs.orders")}</Button>
       <Button
         type="button"
         aria-pressed={active === "menu"}
@@ -51,9 +52,7 @@ export function Tabs({
         onClick={onMenu}
         className={tabClass(active === "menu")}
       >
-        <Icon name="inventory" size={20} strokeWidth={2.1} />
-        Menu
-      </Button>
+        <Icon name="inventory" size={20} strokeWidth={2.1} />{t("kds.tabs.menu")}</Button>
       <Button
         type="button"
         aria-pressed={active === "history"}
@@ -63,9 +62,7 @@ export function Tabs({
         onClick={onHistory}
         className={tabClass(active === "history")}
       >
-        <Icon name="clock" size={20} strokeWidth={2.1} />
-        History
-      </Button>
+        <Icon name="clock" size={20} strokeWidth={2.1} />{t("kds.tabs.history")}</Button>
       <Button
         type="button"
         aria-pressed={active === "inventory"}
@@ -75,9 +72,7 @@ export function Tabs({
         onClick={onInventory}
         className={tabClass(active === "inventory")}
       >
-        <Icon name="inventory" size={20} strokeWidth={2.1} />
-        Inventory
-      </Button>
+        <Icon name="inventory" size={20} strokeWidth={2.1} />{t("kds.tabs.inventory")}</Button>
     </div>
   );
 }

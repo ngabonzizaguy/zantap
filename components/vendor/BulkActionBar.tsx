@@ -1,5 +1,9 @@
 "use client";
 
+import { translateKdsLabel } from "@/lib/i18n/kds-labels";
+
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import type { KitchenStage } from "@/lib/types";
 import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/primitives";
@@ -27,6 +31,7 @@ export function BulkActionBar({
   onBulkAdvance,
   onBulkAssign,
 }: BulkActionBarProps) {
+  const t = useKdsTranslation();
   if (selectedCount === 0) return null;
 
   return (
@@ -37,17 +42,14 @@ export function BulkActionBar({
           onClick={onClear}
           disabled={busy}
           className="flex h-11 w-11 flex-none items-center justify-center rounded-full border border-hairline bg-surface-card transition-colors hover:bg-canvas-soft disabled:cursor-not-allowed disabled:opacity-50"
-          aria-label="Clear selection"
+          aria-label={t("kds.bulk-action-bar.clear-selection")}
         >
           <Icon name="close" size={18} className="text-muted" strokeWidth={2.2} />
         </button>
         <div className="min-w-0 flex-1">
           <div className="font-body text-body-md font-semibold text-ink">
-            {selectedCount} selected
-          </div>
-          <div className="font-body text-caption text-muted">
-            Bulk advance kitchen stage
-            {canAssignDriver ? " or assign a driver" : ""}
+            {t("kds.counts.selected", { count: selectedCount })}</div>
+          <div className="font-body text-caption text-muted">{t("kds.bulk-action-bar.bulk-advance-kitchen-stage")}{canAssignDriver ? t("kds.bulk-action-bar.or-assign-a-driver") : ""}
           </div>
         </div>
       </div>
@@ -60,9 +62,7 @@ export function BulkActionBar({
             disabled={busy}
             onClick={onBulkAssign}
             className="flex-none rounded-pill px-4 font-body text-caption-uppercase uppercase tracking-wide"
-          >
-            Assign driver
-          </Button>
+          >{t("kds.bulk-action-bar.assign-driver")}</Button>
         ) : null}
         {BULK_ACTIONS.map(({ stage, label }) => (
           <Button
@@ -74,7 +74,7 @@ export function BulkActionBar({
             onClick={() => onBulkAdvance(stage)}
             className="flex-none rounded-pill px-4 font-body text-caption-uppercase uppercase tracking-wide"
           >
-            {label}
+            {translateKdsLabel(t, label)}
           </Button>
         ))}
       </div>

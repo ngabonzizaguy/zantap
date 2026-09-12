@@ -2,13 +2,15 @@ import { getStore } from "@/lib/store";
 import { MARKETING_COPY } from "@/lib/marketing/copy";
 import { isLocale } from "@/lib/i18n/config";
 import { flattenCopy } from "@/lib/i18n/localize";
+import { KDS_COPY } from "@/lib/i18n/kds-copy";
+import { hasMatchingPlaceholders, isKdsCopyKey } from "@/lib/i18n/kds-localize";
 import type { SiteTranslation } from "@/lib/i18n/site-translation-types";
 import { auditOperatorAction } from "@/lib/operator-control/audit";
 
-/** Valid translation keys = translatable string leaves of MARKETING_COPY. */
+/** Explicitly registered marketing and KDS interface copy only. */
 let knownKeys: Set<string> | null = null;
 function getKnownKeys(): Set<string> {
-  if (!knownKeys) knownKeys = new Set(Object.keys(flattenCopy(MARKETING_COPY)));
+  if (!knownKeys) knownKeys = new Set([...Object.keys(flattenCopy(MARKETING_COPY)), ...Object.keys(KDS_COPY)]);
   return knownKeys;
 }
 
@@ -41,6 +43,9 @@ export async function upsertOperatorSiteTranslation(
     throw new Error(
       "Value cannot be empty — reset the override to restore the baseline."
     );
+  }
+  if (isKdsCopyKey(key) && !hasMatchingPlaceholders(KDS_COPY[key], trimmed)) {
+    throw new Error("Keep every {placeholder} from the English source, with the same spelling.");
   }
   const saved = await getStore().upsertSiteTranslation(locale, key, trimmed);
   await auditOperatorAction({

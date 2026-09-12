@@ -1,5 +1,7 @@
 "use client";
 
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/primitives";
@@ -68,6 +70,7 @@ export function Coachmark({
   enabled = true,
   placement = "bottom",
 }: CoachmarkProps) {
+  const t = useKdsTranslation();
   const [dismissed, setDismissed] = useState(true);
   const [position, setPosition] = useState<Position | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -165,9 +168,7 @@ export function Coachmark({
           </p>
           <p className="mt-2 font-body text-body-sm text-muted">{body}</p>
           <div className="mt-4">
-            <Button size="default" className="w-full" onClick={handleDismiss}>
-              Got it
-            </Button>
+            <Button size="default" className="w-full" onClick={handleDismiss}>{t("kds.coachmark.got-it")}</Button>
           </div>
         </div>
       </div>

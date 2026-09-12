@@ -1,6 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Driver, MenuItem, Order, Vendor } from "@/lib/types";
 import type { VendorFeatureFlags } from "@/lib/vendor/feature-and-profit-types";
@@ -131,6 +133,7 @@ export function KdsDashboard({
   initialHistoryQuery,
   initialTab,
 }: KdsDashboardProps) {
+  const t = useKdsTranslation();
   const [tab, setTab] = useState<KdsTab>(() => parseInitialTab(initialTab));
   const [orders, setOrders] = useState(initialOrders);
   const [menu, setMenu] = useState(initialMenu);
@@ -679,9 +682,7 @@ export function KdsDashboard({
         />
 
         {!vendor.isActive ? (
-          <div className="relative z-[2] mx-[18px] mt-3 rounded-xl border border-red-500/30 bg-red-950/40 px-4 py-3 text-sm text-red-100">
-            This storefront is suspended by ZanTap. Customers cannot place orders.
-          </div>
+          <div className="relative z-[2] mx-[18px] mt-3 rounded-xl border border-red-500/30 bg-red-950/40 px-4 py-3 text-sm text-red-100">{t("kds.kds-dashboard.this-storefront-is-suspended-by-zantap-customers-cannot-place-or")}</div>
         ) : null}
 
         <Tabs
@@ -775,7 +776,7 @@ export function KdsDashboard({
           "fixed bottom-24 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-hairline/70 bg-surface-card text-sm font-medium text-muted shadow-brand-soft motion-safe:transition-[opacity,color] motion-safe:duration-300",
           helpPeekVisible ? "opacity-100" : "pointer-events-none opacity-0 motion-reduce:opacity-100 motion-reduce:pointer-events-auto"
         )}
-        aria-label="Open help"
+        aria-label={t("kds.kds-dashboard.open-help")}
       >
         ?
       </button>
@@ -863,21 +864,21 @@ export function KdsDashboard({
           <Coachmark
             id="kitchen-toggle"
             targetSelector='[data-coachmark-target="kitchen-toggle"]'
-            title="Kitchen status"
-            body="Toggle OPEN when you're ready to accept orders. Let customers know when you're accepting orders."
+            title={t("kds.kds-dashboard.kitchen-status")}
+            body={t("kds.kds-dashboard.toggle-open-when-you-re-ready-to-accept-orders-let-customers-kno")}
           />
           <Coachmark
             id="menu-add"
             targetSelector='[data-coachmark-target="menu-add"]'
-            title="Add your first dish"
-            body="Tap here to create a menu item customers can order from your storefront."
+            title={t("kds.kds-dashboard.add-your-first-dish")}
+            body={t("kds.kds-dashboard.tap-here-to-create-a-menu-item-customers-can-order-from-your-sto")}
             enabled={tab === "menu"}
           />
           <Coachmark
             id="dispatch-button"
             targetSelector='[data-coachmark-target="dispatch-button"]'
-            title="Assign a driver"
-            body="When an order is ready, expand the ticket and assign a driver to keep delivery records."
+            title={t("kds.kds-dashboard.assign-a-driver")}
+            body={t("kds.kds-dashboard.when-an-order-is-ready-expand-the-ticket-and-assign-a-driver-to")}
             enabled={tab === "orders" && !!expandedId}
           />
         </>

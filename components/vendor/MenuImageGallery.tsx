@@ -1,5 +1,7 @@
 "use client";
 
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import { useRef, useState } from "react";
 import type { MenuImage } from "@/lib/types";
 import { MAX_MENU_IMAGES } from "@/lib/menu/media";
@@ -35,6 +37,7 @@ export function MenuImageGallery({
   onSaveComplete,
   disabled = false,
 }: MenuImageGalleryProps) {
+  const t = useKdsTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -127,7 +130,7 @@ export function MenuImageGallery({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="font-body text-body-sm font-medium text-ink">Photos</p>
+        <p className="font-body text-body-sm font-medium text-ink">{t("kds.menu-image-gallery.photos")}</p>
         <p className="font-body text-caption text-muted">
           {sorted.length}/{MAX_MENU_IMAGES}
         </p>
@@ -170,7 +173,7 @@ export function MenuImageGallery({
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-ink/55 px-1.5 py-1">
               <button
                 type="button"
-                aria-label={image.isPrimary ? "Primary photo" : "Set as primary"}
+                aria-label={image.isPrimary ? t("kds.menu-image-gallery.primary-photo") : t("kds.menu-image-gallery.set-as-primary")}
                 disabled={disabled || busy || image.isPrimary}
                 onClick={() => void handleSetPrimary(image.id)}
                 className={cn(
@@ -184,7 +187,7 @@ export function MenuImageGallery({
               </button>
               <button
                 type="button"
-                aria-label="Remove photo"
+                aria-label={t("kds.menu-image-gallery.remove-photo")}
                 disabled={disabled || busy}
                 onClick={() => setConfirmRemoveId(image.id)}
                 className="font-body text-caption text-white/90 hover:text-white"
@@ -206,40 +209,32 @@ export function MenuImageGallery({
               +
             </span>
             <span className="font-body text-caption">
-              {busy ? "Uploading…" : "Add photo"}
+              {busy ? t("kds.menu-image-gallery.uploading") : t("kds.menu-image-gallery.add-photo")}
             </span>
           </button>
         ) : null}
       </div>
 
       {atLimit ? (
-        <p className="font-body text-caption text-muted">
-          Maximum {MAX_MENU_IMAGES} photos per item.
-        </p>
+        <p className="font-body text-caption text-muted">{t("kds.menu-image-gallery.maximum")}{" "}{MAX_MENU_IMAGES}{" "}{t("kds.menu-image-gallery.photos-per-item")}</p>
       ) : null}
 
       {confirmRemoveId ? (
-        <Modal open onClose={() => setConfirmRemoveId(null)} title="Remove photo?">
-          <p className="font-body text-body-sm text-muted">
-            This cannot be undone. Uploaded files are deleted from storage.
-          </p>
+        <Modal open onClose={() => setConfirmRemoveId(null)} title={t("kds.menu-image-gallery.remove-photo-2")}>
+          <p className="font-body text-body-sm text-muted">{t("kds.menu-image-gallery.this-cannot-be-undone-uploaded-files-are-deleted-from-storage")}</p>
           <div className="mt-6 flex flex-col gap-2 sm:flex-row">
             <Button
               size="kds"
               className="flex-1"
               disabled={busy}
               onClick={() => void handleRemove(confirmRemoveId)}
-            >
-              Remove
-            </Button>
+            >{t("kds.menu-image-gallery.remove")}</Button>
             <Button
               size="kds"
               variant="outline"
               className="flex-1"
               onClick={() => setConfirmRemoveId(null)}
-            >
-              Cancel
-            </Button>
+            >{t("kds.menu-image-gallery.cancel")}</Button>
           </div>
         </Modal>
       ) : null}

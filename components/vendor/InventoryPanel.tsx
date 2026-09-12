@@ -1,5 +1,9 @@
 "use client";
 
+import { translateKdsLabel } from "@/lib/i18n/kds-labels";
+
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   adjustInventoryItem,
@@ -132,6 +136,7 @@ export function InventoryPanel({
   onActiveCountChange,
   onUnlockEditing,
 }: InventoryPanelProps) {
+  const t = useKdsTranslation();
   const { token: ownerToken } = useOwnerToken(vendorSlug);
   const [result, setResult] = useState(initialResult);
   const [search, setSearch] = useState(initialQuery.search);
@@ -312,60 +317,50 @@ export function InventoryPanel({
   };
 
   const statusLabel = useMemo(
-    () => `${result.counts.out} out · ${result.counts.low} low`,
-    [result.counts.low, result.counts.out]
+    () => t("kds.inventory.alert-counts", { out: result.counts.out, low: result.counts.low }),
+    [result.counts.low, result.counts.out, t]
   );
 
   return (
     <div className="flex flex-col gap-4 pb-24" aria-busy={loading}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-display text-display-sm text-ink">Inventory</h2>
-          <p className="mt-1 font-body text-body-sm text-muted">
-            Supplies only — dishes and availability stay in Menu.
-          </p>
+          <h2 className="font-display text-display-sm text-ink">{t("kds.inventory-panel.inventory")}</h2>
+          <p className="mt-1 font-body text-body-sm text-muted">{t("kds.inventory-panel.supplies-only-dishes-and-availability-stay-in-menu")}</p>
         </div>
-        <Button size="default" className="flex-none" onClick={startCreate} disabled={!canWrite}>
-          + Add item
-        </Button>
+        <Button size="default" className="flex-none" onClick={startCreate} disabled={!canWrite}>{t("kds.inventory-panel.add-item")}</Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2" aria-label="Inventory summary">
+      <div className="grid grid-cols-3 gap-2" aria-label={t("kds.inventory-panel.inventory-summary")}>
         <Card padding="sm" className="shadow-none">
-          <p className="font-body text-caption text-muted">Active</p>
+          <p className="font-body text-caption text-muted">{t("kds.inventory-panel.active")}</p>
           <p className="mt-1 font-display text-display-sm text-ink">{result.counts.active}</p>
         </Card>
         <Card padding="sm" className="border-amber-500/30 bg-amber-500/10 shadow-none">
-          <p className="font-body text-caption text-amber-300">Low</p>
+          <p className="font-body text-caption text-amber-300">{t("kds.inventory-panel.low")}</p>
           <p className="mt-1 font-display text-display-sm text-amber-200">{result.counts.low}</p>
         </Card>
         <Card padding="sm" className="border-red-500/30 bg-red-500/10 shadow-none">
-          <p className="font-body text-caption text-red-300">Out</p>
+          <p className="font-body text-caption text-red-300">{t("kds.inventory-panel.out")}</p>
           <p className="mt-1 font-display text-display-sm text-red-200">{result.counts.out}</p>
         </Card>
       </div>
 
       {(result.counts.low > 0 || result.counts.out > 0) && !archived ? (
         <Card padding="sm" className="border-amber-500/30 bg-amber-500/10 shadow-none" role="status">
-          <p className="font-body text-body-sm font-medium text-amber-100">
-            Stock alert: {statusLabel}. Open an item to record what was received or used.
-          </p>
+          <p className="font-body text-body-sm font-medium text-amber-100">{t("kds.inventory-panel.stock-alert")}{" "}{statusLabel}{t("kds.inventory-panel.open-an-item-to-record-what-was-received-or-used")}</p>
         </Card>
       ) : null}
 
       {!online ? (
-        <p className="rounded-brand-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 font-body text-body-sm text-amber-100" role="status">
-          Inventory is online-only. Reconnect to view or update stock.
-        </p>
+        <p className="rounded-brand-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 font-body text-body-sm text-amber-100" role="status">{t("kds.inventory-panel.inventory-is-online-only-reconnect-to-view-or-update-stock")}</p>
       ) : null}
       {!ownerToken || error === INVENTORY_ACCESS_MESSAGE ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-brand-lg border border-hairline bg-surface-card p-4" role="status">
           <p className="font-body text-body-sm text-muted">
             {INVENTORY_ACCESS_MESSAGE}
           </p>
-          <Button type="button" variant="outline" onClick={onUnlockEditing}>
-            Unlock editing
-          </Button>
+          <Button type="button" variant="outline" onClick={onUnlockEditing}>{t("kds.inventory-panel.unlock-editing")}</Button>
         </div>
       ) : null}
       {error && !editing && !adjusting ? (
@@ -375,19 +370,19 @@ export function InventoryPanel({
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_190px]">
         <Input
-          label="Search inventory"
+          label={t("kds.inventory-panel.search-inventory")}
           type="search"
           value={search}
-          placeholder="Rice, bottles, boxes…"
+          placeholder={t("kds.inventory-panel.rice-bottles-boxes")}
           onChange={(event) => {
             setSearch(event.target.value);
             setPage(1);
           }}
         />
         <Select
-          label="Category"
+          label={t("kds.inventory-panel.category")}
           value={category}
-          options={[...CATEGORY_OPTIONS]}
+          options={CATEGORY_OPTIONS.map((option) => ({ ...option, label: translateKdsLabel(t, option.label) }))}
           onChange={(next) => {
             setCategory(next);
             setPage(1);
@@ -404,18 +399,16 @@ export function InventoryPanel({
         }}
         className="min-h-11 self-start rounded-pill border border-hairline-strong px-4 font-body text-body-sm font-medium text-ink"
       >
-        {archived ? "Show active inventory" : "View archived items"}
+        {archived ? t("kds.inventory-panel.show-active-inventory") : t("kds.inventory-panel.view-archived-items")}
       </button>
 
       {result.items.length === 0 ? (
         <Card padding="lg" className="text-center">
           <p className="font-body text-body-md text-ink">
-            {archived ? "No archived inventory items." : "No inventory items match this view."}
+            {archived ? t("kds.inventory-panel.no-archived-inventory-items") : t("kds.inventory-panel.no-inventory-items-match-this-view")}
           </p>
           {!archived ? (
-            <p className="mt-1 font-body text-body-sm text-muted">
-              Add a supply such as rice, tomato sauce, or takeaway boxes.
-            </p>
+            <p className="mt-1 font-body text-body-sm text-muted">{t("kds.inventory-panel.add-a-supply-such-as-rice-tomato-sauce-or-takeaway-boxes")}</p>
           ) : null}
         </Card>
       ) : (
@@ -441,17 +434,16 @@ export function InventoryPanel({
                             "rounded-pill px-2 py-0.5 font-body text-caption font-medium",
                             status === "OUT" ? "bg-red-500/20 text-red-200" : "bg-amber-500/20 text-amber-100"
                           )}>
-                            {status === "OUT" ? "Out" : "Low"}
+                            {status === "OUT" ? t("kds.inventory-panel.out") : t("kds.inventory-panel.low")}
                           </span>
                         ) : null}
                       </div>
                       <p className="mt-1 font-body text-body-sm text-muted">
                         <span className="font-medium text-ink">{displayQuantity(item.quantity)} {item.unit}</span>
-                        {" · "}{item.category}{" · "}Low at {displayQuantity(item.lowStockThreshold)}
+                        {" · "}{item.category}{" · "}{t("kds.inventory-panel.low-at")}{" "}{displayQuantity(item.lowStockThreshold)}
                       </p>
                       {item.unitCostRwf != null ? (
-                        <p className="mt-1 font-body text-caption text-muted">
-                          Reference cost {formatRwf(item.unitCostRwf)} per {item.unit}
+                        <p className="mt-1 font-body text-caption text-muted">{t("kds.inventory-panel.reference-cost")}{" "}{formatRwf(item.unitCostRwf)}{" "}{t("kds.inventory-panel.per")}{" "}{item.unit}
                         </p>
                       ) : null}
                     </div>
@@ -461,18 +453,12 @@ export function InventoryPanel({
                           size="default"
                           onClick={() => setAdjusting({ item, type: "RECEIVED", quantity: "", note: "" })}
                           disabled={!canWrite}
-                        >
-                          Adjust
-                        </Button>
+                        >{t("kds.inventory-panel.adjust")}</Button>
                       ) : null}
-                      <Button variant="outline" size="default" onClick={() => startEdit(item)} disabled={!canWrite}>
-                        Edit
-                      </Button>
-                      <Button variant="outline" size="default" onClick={() => void openHistory(item)}>
-                        History
-                      </Button>
+                      <Button variant="outline" size="default" onClick={() => startEdit(item)} disabled={!canWrite}>{t("kds.inventory-panel.edit")}</Button>
+                      <Button variant="outline" size="default" onClick={() => void openHistory(item)}>{t("kds.inventory-panel.history")}</Button>
                       <Button variant="outline" size="default" onClick={() => void toggleArchive(item)} disabled={!canWrite}>
-                        {item.archivedAt ? "Restore" : "Archive"}
+                        {item.archivedAt ? t("kds.inventory-panel.restore") : t("kds.inventory-panel.archive")}
                       </Button>
                     </div>
                   </div>
@@ -483,44 +469,38 @@ export function InventoryPanel({
         </ul>
       )}
 
-      <nav className="flex items-center justify-between gap-3" aria-label="Inventory pages">
-        <Button variant="outline" disabled={loading || result.page <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>
-          Previous
-        </Button>
-        <span className="font-body text-body-sm text-muted">Page {result.page} of {pageCount}</span>
-        <Button variant="outline" disabled={loading || result.page >= pageCount} onClick={() => setPage((value) => value + 1)}>
-          Next
-        </Button>
+      <nav className="flex items-center justify-between gap-3" aria-label={t("kds.inventory-panel.inventory-pages")}>
+        <Button variant="outline" disabled={loading || result.page <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>{t("kds.inventory-panel.previous")}</Button>
+        <span className="font-body text-body-sm text-muted">{t("kds.counts.page", { page: result.page, pages: pageCount })}</span>
+        <Button variant="outline" disabled={loading || result.page >= pageCount} onClick={() => setPage((value) => value + 1)}>{t("kds.inventory-panel.next")}</Button>
       </nav>
 
       <Modal
         open={editing !== null}
         onClose={() => setEditing(null)}
-        title={editing === "create" ? "Add inventory item" : "Edit inventory item"}
+        title={editing === "create" ? t("kds.inventory-panel.add-inventory-item") : t("kds.inventory-panel.edit-inventory-item")}
         footer={
           <div className="flex gap-2">
-            <Button variant="outline" size="kds" className="flex-1" onClick={() => setEditing(null)} disabled={saving}>Cancel</Button>
-            <Button size="kds" className="flex-1" onClick={() => void saveItem()} disabled={!canWrite}>{saving ? "Saving…" : "Save"}</Button>
+            <Button variant="outline" size="kds" className="flex-1" onClick={() => setEditing(null)} disabled={saving}>{t("kds.inventory-panel.cancel")}</Button>
+            <Button size="kds" className="flex-1" onClick={() => void saveItem()} disabled={!canWrite}>{saving ? t("kds.inventory-panel.saving") : t("kds.inventory-panel.save")}</Button>
           </div>
         }
       >
         <div className="flex flex-col gap-4">
-          <Input label="Item name" value={form.name} onChange={(event) => setForm((value) => ({ ...value, name: event.target.value }))} placeholder="e.g. Rice" />
+          <Input label={t("kds.inventory-panel.item-name")} value={form.name} onChange={(event) => setForm((value) => ({ ...value, name: event.target.value }))} placeholder={t("kds.inventory-panel.e-g-rice")} />
           {editing === "create" ? (
-            <Input label="Opening quantity" type="number" inputMode="decimal" min="0" step="any" value={form.quantity} onChange={(event) => setForm((value) => ({ ...value, quantity: event.target.value }))} />
+            <Input label={t("kds.inventory-panel.opening-quantity")} type="number" inputMode="decimal" min="0" step="any" value={form.quantity} onChange={(event) => setForm((value) => ({ ...value, quantity: event.target.value }))} />
           ) : null}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Select label="Unit" value={form.unit} options={UNIT_OPTIONS} onChange={(unit) => setForm((value) => ({ ...value, unit }))} />
+            <Select label={t("kds.inventory-panel.unit")} value={form.unit} options={UNIT_OPTIONS.map((option) => ({ ...option, label: translateKdsLabel(t, option.label) }))} onChange={(unit) => setForm((value) => ({ ...value, unit }))} />
             {form.unit === "custom" ? (
-              <Input label="Custom unit" value={form.customUnit} onChange={(event) => setForm((value) => ({ ...value, customUnit: event.target.value }))} placeholder="e.g. jerrycans" />
+              <Input label={t("kds.inventory-panel.custom-unit")} value={form.customUnit} onChange={(event) => setForm((value) => ({ ...value, customUnit: event.target.value }))} placeholder={t("kds.inventory-panel.e-g-jerrycans")} />
             ) : null}
-            <Input label="Low-stock alert" type="number" inputMode="decimal" min="0" step="any" value={form.lowStockThreshold} onChange={(event) => setForm((value) => ({ ...value, lowStockThreshold: event.target.value }))} />
-            <Select label="Category" value={form.category} options={FORM_CATEGORY_OPTIONS} onChange={(next) => setForm((value) => ({ ...value, category: next }))} />
-            <Input label="Unit cost (RWF, optional)" type="number" inputMode="numeric" min="0" step="1" value={form.unitCostRwf} onChange={(event) => setForm((value) => ({ ...value, unitCostRwf: event.target.value }))} />
+            <Input label={t("kds.inventory-panel.low-stock-alert")} type="number" inputMode="decimal" min="0" step="any" value={form.lowStockThreshold} onChange={(event) => setForm((value) => ({ ...value, lowStockThreshold: event.target.value }))} />
+            <Select label={t("kds.inventory-panel.category")} value={form.category} options={FORM_CATEGORY_OPTIONS.map((option) => ({ ...option, label: translateKdsLabel(t, option.label) }))} onChange={(next) => setForm((value) => ({ ...value, category: next }))} />
+            <Input label={t("kds.inventory-panel.unit-cost-rwf-optional")} type="number" inputMode="numeric" min="0" step="1" value={form.unitCostRwf} onChange={(event) => setForm((value) => ({ ...value, unitCostRwf: event.target.value }))} />
           </div>
-          <label className="flex flex-col gap-1.5 font-body text-body-sm font-medium text-ink">
-            Note (optional)
-            <textarea className="min-h-24 rounded-brand-md border border-hairline-strong bg-surface-card px-4 py-3 font-body text-body-md text-ink focus:border-2 focus:border-ink focus:outline-none" value={form.note} onChange={(event) => setForm((value) => ({ ...value, note: event.target.value }))} />
+          <label className="flex flex-col gap-1.5 font-body text-body-sm font-medium text-ink">{t("kds.inventory-panel.note-optional")}<textarea className="min-h-24 rounded-brand-md border border-hairline-strong bg-surface-card px-4 py-3 font-body text-body-md text-ink focus:border-2 focus:border-ink focus:outline-none" value={form.note} onChange={(event) => setForm((value) => ({ ...value, note: event.target.value }))} />
           </label>
           {error ? <p role="alert" className="font-body text-body-sm text-error">{error}</p> : null}
         </div>
@@ -529,22 +509,20 @@ export function InventoryPanel({
       <Modal
         open={adjusting !== null}
         onClose={() => setAdjusting(null)}
-        title={adjusting ? `Adjust ${adjusting.item.name}` : "Adjust stock"}
+        title={adjusting ? t("kds.inventory-panel.adjust-value1", { value1: adjusting.item.name }) : t("kds.inventory-panel.adjust-stock")}
         footer={
           <div className="flex gap-2">
-            <Button variant="outline" size="kds" className="flex-1" onClick={() => setAdjusting(null)} disabled={saving}>Cancel</Button>
-            <Button size="kds" className="flex-1" onClick={() => void saveAdjustment()} disabled={!canWrite}>{saving ? "Saving…" : "Record"}</Button>
+            <Button variant="outline" size="kds" className="flex-1" onClick={() => setAdjusting(null)} disabled={saving}>{t("kds.inventory-panel.cancel")}</Button>
+            <Button size="kds" className="flex-1" onClick={() => void saveAdjustment()} disabled={!canWrite}>{saving ? t("kds.inventory-panel.saving") : t("kds.inventory-panel.record")}</Button>
           </div>
         }
       >
         {adjusting ? (
           <div className="flex flex-col gap-4">
-            <p className="font-body text-body-sm text-muted">
-              Current: {displayQuantity(adjusting.item.quantity)} {adjusting.item.unit}. Used and Wasted cannot take stock below zero.
-            </p>
-            <Select label="Change" value={adjusting.type} options={[...ADJUSTMENT_OPTIONS]} onChange={(type) => setAdjusting((value) => value ? { ...value, type } : null)} />
+            <p className="font-body text-body-sm text-muted">{t("kds.inventory-panel.current")}{" "}{displayQuantity(adjusting.item.quantity)} {adjusting.item.unit}{t("kds.inventory-panel.used-and-wasted-cannot-take-stock-below-zero")}</p>
+            <Select label={t("kds.inventory-panel.change")} value={adjusting.type} options={ADJUSTMENT_OPTIONS.map((option) => ({ ...option, label: translateKdsLabel(t, option.label) }))} onChange={(type) => setAdjusting((value) => value ? { ...value, type } : null)} />
             <Input
-              label={adjusting.type === "CORRECTION" ? "Correct stock count" : "Quantity"}
+              label={adjusting.type === "CORRECTION" ? t("kds.inventory-panel.correct-stock-count") : t("kds.inventory-panel.quantity")}
               type="number"
               inputMode="decimal"
               min="0"
@@ -552,23 +530,21 @@ export function InventoryPanel({
               value={adjusting.quantity}
               onChange={(event) => setAdjusting((value) => value ? { ...value, quantity: event.target.value } : null)}
             />
-            <label className="flex flex-col gap-1.5 font-body text-body-sm font-medium text-ink">
-              Note (optional)
-              <textarea className="min-h-20 rounded-brand-md border border-hairline-strong bg-surface-card px-4 py-3 font-body text-body-md text-ink focus:border-2 focus:border-ink focus:outline-none" value={adjusting.note} onChange={(event) => setAdjusting((value) => value ? { ...value, note: event.target.value } : null)} />
+            <label className="flex flex-col gap-1.5 font-body text-body-sm font-medium text-ink">{t("kds.inventory-panel.note-optional")}<textarea className="min-h-20 rounded-brand-md border border-hairline-strong bg-surface-card px-4 py-3 font-body text-body-md text-ink focus:border-2 focus:border-ink focus:outline-none" value={adjusting.note} onChange={(event) => setAdjusting((value) => value ? { ...value, note: event.target.value } : null)} />
             </label>
             {error ? <p role="alert" className="font-body text-body-sm text-error">{error}</p> : null}
           </div>
         ) : null}
       </Modal>
 
-      <Modal open={history !== null} onClose={() => setHistory(null)} title={history ? `${history.item.name} history` : "Inventory history"}>
+      <Modal open={history !== null} onClose={() => setHistory(null)} title={history ? t("kds.inventory-panel.value1-history", { value1: history.item.name }) : t("kds.inventory-panel.inventory-history")}>
         {history ? (
           <ol className="flex flex-col gap-3">
             {history.history.map((entry) => (
               <li key={entry.id} className="rounded-brand-lg border border-hairline bg-canvas-soft px-4 py-3">
                 <div className="flex items-start justify-between gap-3">
                   <p className="font-body text-body-md font-medium text-ink">
-                    {ADJUSTMENT_OPTIONS.find((option) => option.value === entry.type)?.label}
+                    {translateKdsLabel(t, ADJUSTMENT_OPTIONS.find((option) => option.value === entry.type)?.label ?? entry.type)}
                   </p>
                   <time className="font-body text-caption text-muted" dateTime={entry.createdAt.toISOString()}>
                     {entry.createdAt.toLocaleString("en-RW", { dateStyle: "medium", timeStyle: "short" })}

@@ -1,5 +1,9 @@
 "use client";
 
+import { translateKdsLabel, translateKdsStatus } from "@/lib/i18n/kds-labels";
+
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import type {
@@ -69,6 +73,7 @@ function dateKey(value?: Date): string | null {
 }
 
 export function HistoryPanel({ vendorSlug, initialQuery, onUnlockEditing }: HistoryPanelProps) {
+  const t = useKdsTranslation();
   const { token, hasToken, ready } = useOwnerToken(vendorSlug);
   const [filters, setFilters] = useState<OrderHistoryFilters>(initialQuery.filters);
   const [appliedFilters, setAppliedFilters] =
@@ -216,10 +221,8 @@ export function HistoryPanel({ vendorSlug, initialQuery, onUnlockEditing }: Hist
   return (
     <div className="flex flex-col gap-5">
       <Card padding="md" className="bg-canvas/80 backdrop-blur-sm">
-        <h2 className="font-display text-display-sm text-ink">Order history</h2>
-        <p className="mt-1 font-body text-body-sm text-muted">
-          Browse past orders with date, status, and search filters.
-        </p>
+        <h2 className="font-display text-display-sm text-ink">{t("kds.history-panel.order-history")}</h2>
+        <p className="mt-1 font-body text-body-sm text-muted">{t("kds.history-panel.browse-past-orders-with-date-status-and-search-filters")}</p>
         <div className="mt-4">
           <OrderHistoryFiltersBar
             filters={filters}
@@ -242,24 +245,20 @@ export function HistoryPanel({ vendorSlug, initialQuery, onUnlockEditing }: Hist
           <p className="font-body text-body-sm text-muted">
             {HISTORY_ACCESS_MESSAGE}
           </p>
-          <Button type="button" variant="outline" onClick={onUnlockEditing}>
-            Unlock editing
-          </Button>
+          <Button type="button" variant="outline" onClick={onUnlockEditing}>{t("kds.history-panel.unlock-editing")}</Button>
         </Card>
       ) : null}
 
       {loading && !result ? (
         <Card padding="md">
-          <p className="font-body text-body-md text-muted">Loading orders…</p>
+          <p className="font-body text-body-md text-muted">{t("kds.history-panel.loading-orders")}</p>
         </Card>
       ) : null}
 
       {result && result.total === 0 ? (
         <Card padding="lg" className="text-center">
-          <p className="font-display text-display-sm text-ink">No orders found</p>
-          <p className="mt-2 font-body text-body-sm text-muted">
-            Try widening the date range or clearing filters.
-          </p>
+          <p className="font-display text-display-sm text-ink">{t("kds.history-panel.no-orders-found")}</p>
+          <p className="mt-2 font-body text-body-sm text-muted">{t("kds.history-panel.try-widening-the-date-range-or-clearing-filters")}</p>
         </Card>
       ) : null}
 
@@ -267,8 +266,7 @@ export function HistoryPanel({ vendorSlug, initialQuery, onUnlockEditing }: Hist
         <>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="font-body text-body-sm text-muted">
-              {result.total} order{result.total === 1 ? "" : "s"} · page{" "}
-              {result.page} of {totalPages}
+              {t(result.total === 1 ? "kds.counts.history-order" : "kds.counts.history-orders", { count: result.total, page: result.page, pages: totalPages })}
             </p>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -278,7 +276,7 @@ export function HistoryPanel({ vendorSlug, initialQuery, onUnlockEditing }: Hist
                 disabled={!ready || !hasToken || exporting !== null || loading}
                 onClick={() => void handleExport("csv")}
               >
-                {exporting === "csv" ? "Exporting…" : "Export CSV"}
+                {exporting === "csv" ? t("kds.history-panel.exporting") : t("kds.history-panel.export-csv")}
               </Button>
               <Button
                 type="button"
@@ -287,7 +285,7 @@ export function HistoryPanel({ vendorSlug, initialQuery, onUnlockEditing }: Hist
                 disabled={!ready || !hasToken || exporting !== null || loading}
                 onClick={() => void handleExport("xlsx")}
               >
-                {exporting === "xlsx" ? "Exporting…" : "Export Excel"}
+                {exporting === "xlsx" ? t("kds.history-panel.exporting") : t("kds.history-panel.export-excel")}
               </Button>
             </div>
           </div>
@@ -312,9 +310,9 @@ export function HistoryPanel({ vendorSlug, initialQuery, onUnlockEditing }: Hist
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant={statusBadgeVariant(order.status)}>
-                      {order.status}
+                      {translateKdsStatus(t, order.status)}
                     </Badge>
-                    <Badge variant="muted">{paymentLabel(paymentStatus)}</Badge>
+                    <Badge variant="muted">{translateKdsLabel(t, paymentLabel(paymentStatus))}</Badge>
                     <Link
                       href={`/vendor/${vendorSlug}/receipt/${order.id}`}
                       className={cn(
@@ -322,42 +320,32 @@ export function HistoryPanel({ vendorSlug, initialQuery, onUnlockEditing }: Hist
                         "border border-hairline-strong px-4 font-body text-body-sm font-medium text-ink",
                         "transition-colors hover:bg-surface-strong"
                       )}
-                    >
-                      Receipt
-                    </Link>
+                    >{t("kds.history-panel.receipt")}</Link>
                   </div>
                 </div>
 
                 <div className="grid gap-2 sm:grid-cols-3">
                   <div>
-                    <p className="font-body text-caption uppercase text-muted-soft">
-                      Phone
-                    </p>
+                    <p className="font-body text-caption uppercase text-muted-soft">{t("kds.history-panel.phone")}</p>
                     <p className="font-body text-body-md text-ink">
                       {formatPhoneDisplay(order.customerPhone)}
                     </p>
                   </div>
                   <div>
-                    <p className="font-body text-caption uppercase text-muted-soft">
-                      Sector
-                    </p>
+                    <p className="font-body text-caption uppercase text-muted-soft">{t("kds.history-panel.sector")}</p>
                     <p className="font-body text-body-md text-ink">
                       {order.deliverySector}
                     </p>
                   </div>
                   <div>
-                    <p className="font-body text-caption uppercase text-muted-soft">
-                      Total
-                    </p>
+                    <p className="font-body text-caption uppercase text-muted-soft">{t("kds.history-panel.total")}</p>
                     <p className="font-body text-body-md font-medium text-primary">
                       {formatRwf(order.totalAmount)}
                     </p>
                   </div>
                   {order.assignedDriver ? (
                     <div>
-                      <p className="font-body text-caption uppercase text-muted-soft">
-                        Driver
-                      </p>
+                      <p className="font-body text-caption uppercase text-muted-soft">{t("kds.history-panel.driver")}</p>
                       <p className="font-body text-body-md text-ink">
                         {order.assignedDriver.name}
                       </p>
@@ -368,23 +356,20 @@ export function HistoryPanel({ vendorSlug, initialQuery, onUnlockEditing }: Hist
             ))}
           </div>
 
-          <nav className="flex flex-wrap items-center justify-between gap-3" aria-label="Order history pages">
+          <nav className="flex flex-wrap items-center justify-between gap-3" aria-label={t("kds.history-panel.order-history-pages")}>
             <Button
               type="button"
               variant="outline"
               size="kds"
               disabled={page <= 1 || loading}
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-            >
-              Previous
-            </Button>
+            >{t("kds.history-panel.previous")}</Button>
             <span
               className={cn(
                 "font-body text-body-sm text-muted",
                 loading && "opacity-60"
               )}
-            >
-              Page {page} of {totalPages}
+            >{t("kds.counts.page", { page, pages: totalPages })}
             </span>
             <Button
               type="button"
@@ -392,9 +377,7 @@ export function HistoryPanel({ vendorSlug, initialQuery, onUnlockEditing }: Hist
               size="kds"
               disabled={page >= totalPages || loading}
               onClick={() => setPage((prev) => prev + 1)}
-            >
-              Next
-            </Button>
+            >{t("kds.history-panel.next")}</Button>
           </nav>
         </>
       ) : null}

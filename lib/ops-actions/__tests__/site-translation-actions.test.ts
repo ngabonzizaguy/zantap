@@ -1,51 +1,33 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { revalidatePath, upsertSiteTranslation, deleteSiteTranslation } =
-  vi.hoisted(() => ({
-    revalidatePath: vi.fn(),
-    upsertSiteTranslation: vi.fn(),
-    deleteSiteTranslation: vi.fn(),
-  }));
+vi.mock("@/lib/ops-auth/session", () => ({ isOpsSessionValid: vi.fn() }));
+vi.mock("@/lib/operator-client", () => ({ upsertSiteTranslation: vi.fn(), deleteSiteTranslation: vi.fn() }));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
-vi.mock("next/cache", () => ({ revalidatePath }));
-vi.mock("@/lib/operator-client", () => ({
-  upsertSiteTranslation,
-  deleteSiteTranslation,
-}));
+import { isOpsSessionValid } from "@/lib/ops-auth/session";
+import { upsertSiteTranslation, deleteSiteTranslation } from "@/lib/operator-client";
+import { revalidatePath } from "next/cache";
+import { saveSiteTranslationAction, deleteSiteTranslationAction } from "@/lib/ops-actions/site-translation-actions";
 
-import {
-  deleteSiteTranslationAction,
-  saveSiteTranslationAction,
-} from "@/lib/ops-actions/site-translation-actions";
+describe("translation server actions", () => {
+  beforeEach(() => vi.resetAllMocks());
 
-describe("site translation actions", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  it("rejects unauthenticated mutations before using the operator credential", async () => {
+    vi.mocked(isOpsSessionValid).mockResolvedValue(false);
+    await expect(saveSiteTranslationAction("fr", "kds.tabs.orders", "Commandes")).rejects.toThrow("sign in");
+    await expect(deleteSiteTranslationAction("fr", "kds.tabs.orders")).rejects.toThrow("sign in");
+    expect(upsertSiteTranslation).not.toHaveBeenCalled();
+    expect(deleteSiteTranslation).not.toHaveBeenCalled();
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 
-  it("saves and revalidates Ops plus the marketing root", async () => {
-    upsertSiteTranslation.mockResolvedValue({
-      locale: "rw",
-      key: "leadForm.submit",
-      value: "Ohereza",
-      updatedAt: new Date(),
-    });
-
-    await saveSiteTranslationAction("rw", "leadForm.submit", "Ohereza");
-    expect(upsertSiteTranslation).toHaveBeenCalledWith(
-      "rw",
-      "leadForm.submit",
-      "Ohereza"
-    );
+  it("allows authenticated save and reset and invalidates KDS rendering", async () => {
+    vi.mocked(isOpsSessionValid).mockResolvedValue(true);
+    await saveSiteTranslationAction("fr", "kds.tabs.orders", "Commandes");
+    await deleteSiteTranslationAction("fr", "kds.tabs.orders");
+    expect(upsertSiteTranslation).toHaveBeenCalledWith("fr", "kds.tabs.orders", "Commandes");
+    expect(deleteSiteTranslation).toHaveBeenCalledWith("fr", "kds.tabs.orders");
+    expect(revalidatePath).toHaveBeenCalledWith("/vendor/[slug]", "page");
     expect(revalidatePath).toHaveBeenCalledWith("/ops/settings");
-    expect(revalidatePath).toHaveBeenCalledWith("/");
-  });
-
-  it("resets and revalidates Ops plus the marketing root", async () => {
-    deleteSiteTranslation.mockResolvedValue(true);
-    await deleteSiteTranslationAction("fr", "leadForm.submit");
-    expect(deleteSiteTranslation).toHaveBeenCalledWith("fr", "leadForm.submit");
-    expect(revalidatePath).toHaveBeenCalledWith("/ops/settings");
-    expect(revalidatePath).toHaveBeenCalledWith("/");
   });
 });

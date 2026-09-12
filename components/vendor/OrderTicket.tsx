@@ -1,11 +1,14 @@
 "use client";
 
+import { translateKdsLabel, translateKdsStatus } from "@/lib/i18n/kds-labels";
+import { formatKdsRelativeTime } from "@/lib/i18n/kds-time";
+
+import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
+
 import { useEffect, useState } from "react";
 import type { KitchenStage, Order } from "@/lib/types";
 import {
-  formatKitchenStageLabel,
   formatPhoneDisplay,
-  formatRelativeTime,
   formatRwf,
   getPaidAgeUrgency,
   orderDisplayId,
@@ -114,6 +117,7 @@ export function OrderTicket({
   onAssign,
   onAdvanceStage,
 }: OrderTicketProps) {
+  const t = useKdsTranslation();
   const stage = resolveKitchenStage(order);
   const stageStyle = kitchenStageStyle(stage);
   const isOutForDelivery =
@@ -154,7 +158,7 @@ export function OrderTicket({
             type="button"
             onClick={onSelect}
             className="flex w-12 flex-none items-center justify-center border-r border-hairline"
-            aria-label={selected ? "Deselect order" : "Select order"}
+            aria-label={selected ? t("kds.order-ticket.deselect-order") : t("kds.order-ticket.select-order")}
           >
             <span
               className={cn(
@@ -207,7 +211,7 @@ export function OrderTicket({
                     isNew && "animate-pulse"
                   )}
                 />
-                {formatKitchenStageLabel(stage)}
+                {translateKdsStatus(t, stage)}
               </span>
             </div>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
@@ -216,9 +220,7 @@ export function OrderTicket({
                   variant="success"
                   className="inline-flex h-[20px] gap-1 normal-case tracking-normal"
                 >
-                  <span className="h-[5px] w-[5px] rounded-full bg-success" />
-                  Paid via MoMo
-                </Badge>
+                  <span className="h-[5px] w-[5px] rounded-full bg-success" />{t("kds.order-ticket.paid-via-momo")}</Badge>
               )}
               <span
                 className={cn(
@@ -239,7 +241,7 @@ export function OrderTicket({
                     aria-hidden
                   />
                 )}
-                {itemCount} item{itemCount === 1 ? "" : "s"} · {formatRelativeTime(ageSource)}
+                {t(itemCount === 1 ? "kds.counts.item" : "kds.counts.items", { count: itemCount })} · {formatKdsRelativeTime(t, ageSource)}
               </span>
             </div>
           </div>
@@ -281,7 +283,7 @@ export function OrderTicket({
                   className="rounded-pill px-4 font-body text-caption-uppercase uppercase tracking-wide"
                   onClick={() => onAdvanceStage(target)}
                 >
-                  → {formatKitchenStageLabel(target)}
+                  → {translateKdsStatus(t, target)}
                 </Button>
               ))}
             </div>
@@ -309,12 +311,11 @@ export function OrderTicket({
                     )}
                     <div className="min-w-0 flex-1">
                       <span className="font-body text-body-md font-medium text-ink">
-                        {item.quantity}x {item.menuItem?.name ?? "Item"}
+                        {item.quantity}{t("kds.order-ticket.x")}{" "}{item.menuItem?.name ?? t("kds.order-ticket.item-2")}
                       </span>
                       <span className="mt-0.5 block font-body text-caption font-medium text-primary">
                         {item.sizeLabel ? `${item.sizeLabel} · ` : ""}
-                        {formatRwf(item.unitPriceRwf)} each
-                      </span>
+                        {formatRwf(item.unitPriceRwf)}{" "}{t("kds.order-ticket.each")}</span>
                     </div>
                   </div>
                   {item.notes && (
@@ -336,9 +337,7 @@ export function OrderTicket({
           >
             <Icon name="phone" size={18} className="flex-none text-primary" strokeWidth={2} />
             <div>
-              <div className="font-body text-caption-uppercase uppercase text-muted">
-                Customer
-              </div>
+              <div className="font-body text-caption-uppercase uppercase text-muted">{t("kds.order-ticket.customer")}</div>
               <div className="font-mono font-body text-body-md font-medium text-ink">
                 {formatPhoneDisplay(order.customerPhone)}
               </div>
@@ -353,9 +352,7 @@ export function OrderTicket({
               strokeWidth={2.1}
             />
             <div>
-              <div className="font-body text-caption-uppercase uppercase text-muted">
-                Location
-              </div>
+              <div className="font-body text-caption-uppercase uppercase text-muted">{t("kds.order-ticket.location")}</div>
               <div className="font-body text-body-md font-medium leading-snug text-ink">
                 {order.deliverySector} — {order.landmark}
               </div>
@@ -368,7 +365,7 @@ export function OrderTicket({
               variant="outline"
               size="kds"
               disabled={!vendorE164}
-              title={vendorE164 ? undefined : "Add vendor phone in setup"}
+              title={vendorE164 ? undefined : t("kds.order-ticket.add-vendor-phone-in-setup")}
               onClick={() => {
                 if (!vendorE164) return;
                 const url = buildVendorWhatsAppUrl(
@@ -383,9 +380,7 @@ export function OrderTicket({
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                 <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.86 9.86 0 0 0 12.04 2zm5.8 14.13c-.24.68-1.42 1.31-1.95 1.36-.5.05-1.13.27-3.82-.8-3.21-1.27-5.26-4.54-5.42-4.75-.16-.21-1.3-1.73-1.3-3.3 0-1.57.82-2.34 1.12-2.66.3-.32.65-.4.86-.4.21 0 .43 0 .61.01.2.01.46-.07.72.55.27.64.92 2.21 1 2.37.08.16.13.35.03.56-.1.21-.16.34-.31.53-.16.18-.33.41-.47.55-.16.16-.32.33-.14.64.18.32.8 1.32 1.72 2.14 1.18 1.05 2.18 1.38 2.49 1.54.31.16.49.13.67-.08.18-.21.77-.9.98-1.21.21-.32.42-.26.71-.16.29.11 1.85.87 2.17 1.03.32.16.53.24.61.37.08.14.08.78-.16 1.46z" />
-              </svg>
-              Notify vendor on WhatsApp
-            </Button>
+              </svg>{t("kds.order-ticket.notify-vendor-on-whatsapp")}</Button>
           )}
 
           {order.assignedDriver ? (
@@ -404,9 +399,7 @@ export function OrderTicket({
                 {order.assignedDriver.initials}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="font-body text-caption-uppercase uppercase text-muted">
-                  Assigned driver
-                </div>
+                <div className="font-body text-caption-uppercase uppercase text-muted">{t("kds.order-ticket.assigned-driver")}</div>
                 <div className="font-body text-body-md font-medium text-ink">
                   {order.assignedDriver.name}
                 </div>
@@ -415,9 +408,7 @@ export function OrderTicket({
                 </div>
               </div>
               <span className="flex h-[42px] flex-none items-center gap-1.5 rounded-pill border border-success/40 bg-success/10 px-4 font-body text-body-sm font-medium text-success">
-                <Icon name="call" size={17} strokeWidth={2.3} />
-                Call
-              </span>
+                <Icon name="call" size={17} strokeWidth={2.3} />{t("kds.order-ticket.call")}</span>
             </a>
           ) : null}
 
@@ -431,7 +422,7 @@ export function OrderTicket({
               className="mt-3.5 w-full gap-2.5"
             >
               <Icon name="dispatch" size={22} strokeWidth={2.3} />
-              {order.assignedDriver ? "Change driver" : "Assign driver"}
+              {order.assignedDriver ? t("kds.order-ticket.change-driver") : t("kds.order-ticket.assign-driver")}
             </Button>
           )}
 
@@ -443,9 +434,7 @@ export function OrderTicket({
               onClick={() => onAdvanceStage("OUT_FOR_DELIVERY")}
               className="mt-2.5 w-full gap-2"
             >
-              <Icon name="dispatch" size={18} strokeWidth={2.3} />
-              Mark out for delivery
-            </Button>
+              <Icon name="dispatch" size={18} strokeWidth={2.3} />{t("kds.order-ticket.mark-out-for-delivery")}</Button>
           )}
 
           {stage === "OUT_FOR_DELIVERY" && (
@@ -457,7 +446,7 @@ export function OrderTicket({
               className="mt-3.5 w-full gap-2"
             >
               <Icon name="dispatch" size={18} strokeWidth={2.3} />
-              {order.assignedDriver ? "Change driver" : "Assign driver"}
+              {order.assignedDriver ? t("kds.order-ticket.change-driver") : t("kds.order-ticket.assign-driver")}
             </Button>
           )}
 
@@ -467,9 +456,7 @@ export function OrderTicket({
               onClick={() => onAdvanceStage("COMPLETED")}
               className="mt-2.5 flex h-12 w-full items-center justify-center gap-2 rounded-pill border border-success/40 bg-success/10 font-body text-body-sm font-medium text-success transition-colors hover:bg-success/15"
             >
-              <Icon name="check" size={18} strokeWidth={2.4} />
-              Mark completed
-            </button>
+              <Icon name="check" size={18} strokeWidth={2.4} />{t("kds.order-ticket.mark-completed")}</button>
           )}
         </div>
       </Collapse>
@@ -544,6 +531,7 @@ export function OrdersList({
   onAdvanceStage,
   onToggleBulkMode,
 }: OrdersListProps) {
+  const t = useKdsTranslation();
 
   return (
     <div className="flex flex-col gap-3">
@@ -553,9 +541,7 @@ export function OrdersList({
             className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-400/30 border-t-amber-400"
             aria-hidden
           />
-          <span className="font-body text-caption font-medium text-amber-300">
-            Reconnecting…
-          </span>
+          <span className="font-body text-caption font-medium text-amber-300">{t("kds.order-ticket.reconnecting")}</span>
         </div>
       )}
 
@@ -566,11 +552,8 @@ export function OrdersList({
           aria-live="polite"
         >
           <span className="font-body text-body-sm font-medium text-amber-200">
-            {newOrderCount} new order{newOrderCount === 1 ? "" : "s"} — view page 1
-          </span>
-          <Button type="button" variant="outline" size="default" onClick={onViewNewOrders}>
-            View page 1
-          </Button>
+            {t(newOrderCount === 1 ? "kds.counts.new-order" : "kds.counts.new-orders", { count: newOrderCount })}</span>
+          <Button type="button" variant="outline" size="default" onClick={onViewNewOrders}>{t("kds.order-ticket.view-page-1-2")}</Button>
         </div>
       )}
 
@@ -578,12 +561,8 @@ export function OrdersList({
         <Card padding="sm" className="flex items-center gap-2.5">
           <Icon name="close" size={18} className="text-muted" strokeWidth={2.2} />
           <div>
-            <div className="font-body text-body-sm font-medium text-ink">
-              Kitchen closed
-            </div>
-            <div className="font-body text-caption text-muted">
-              Customers cannot place new orders. Existing tickets stay visible below.
-            </div>
+            <div className="font-body text-body-sm font-medium text-ink">{t("kds.order-ticket.kitchen-closed")}</div>
+            <div className="font-body text-caption text-muted">{t("kds.order-ticket.customers-cannot-place-new-orders-existing-tickets-stay-visible")}</div>
           </div>
         </Card>
       )}
@@ -607,7 +586,7 @@ export function OrdersList({
                 active ? chip.activeBg : cn(chip.bg, "hover:opacity-90")
               )}
             >
-              {label}
+              {translateKdsLabel(t, label)}
               <span className="opacity-60">({count})</span>
             </button>
           );
@@ -637,7 +616,7 @@ export function OrdersList({
                   <Icon name="check" size={12} className="text-primary" strokeWidth={2.8} />
                 )}
               </span>
-              {bulkMode ? "Done selecting" : "Select"}
+              {bulkMode ? t("kds.order-ticket.done-selecting") : t("kds.order-ticket.select")}
             </button>
             {bulkMode ? (
               <button
@@ -646,8 +625,8 @@ export function OrdersList({
                 className="font-body text-body-sm font-medium text-muted underline-offset-4 hover:text-ink hover:underline"
               >
                 {orders.every((order) => selectedIds.has(order.id))
-                  ? "Clear page"
-                  : `Select all ${orders.length}`}
+                  ? t("kds.order-ticket.clear-page")
+                  : t("kds.order-ticket.select-all-value1", { value1: orders.length })}
               </button>
             ) : null}
           </div>
@@ -657,12 +636,12 @@ export function OrdersList({
             align="end"
             value={sortDirection}
             onChange={onSortDirection}
-            options={SORT_OPTIONS}
-            ariaLabel="Sort orders"
+            options={SORT_OPTIONS.map((option) => ({ ...option, label: translateKdsLabel(t, option.label) }))}
+            ariaLabel={t("kds.order-ticket.sort-orders")}
             prefix={
               <>
                 <Icon name="orders" size={14} className="text-muted" strokeWidth={2.1} />
-                <span>Sort:</span>
+                <span>{t("kds.order-ticket.sort")}</span>
               </>
             }
           />
@@ -670,7 +649,7 @@ export function OrdersList({
       )}
 
       <p className="font-body text-body-sm text-muted" aria-live="polite">
-        {totalOrders} matching order{totalOrders === 1 ? "" : "s"} · page {page} of {pageCount}
+        {t(totalOrders === 1 ? "kds.counts.matching-order" : "kds.counts.matching-orders", { count: totalOrders, page, pages: pageCount })}
       </p>
 
       {orders.length === 0 ? (
@@ -679,12 +658,12 @@ export function OrdersList({
             <Icon name="check" size={34} className="text-success" strokeWidth={2.4} />
           </div>
           <div className="font-display text-display-sm text-ink">
-            {kitchenOpen ? "All caught up" : "No active orders"}
+            {kitchenOpen ? t("kds.order-ticket.all-caught-up") : t("kds.order-ticket.no-active-orders")}
           </div>
           <div className="mt-1.5 font-body text-body-sm text-muted">
             {kitchenOpen
-              ? "No orders match this filter. New paid orders appear here instantly."
-              : "Open the kitchen when you are ready to accept orders."}
+              ? t("kds.order-ticket.no-orders-match-this-filter-new-paid-orders-appear-here-instantl")
+              : t("kds.order-ticket.open-the-kitchen-when-you-are-ready-to-accept-orders")}
           </div>
         </Card>
       ) : (
@@ -708,18 +687,15 @@ export function OrdersList({
         </div>
       )}
 
-      <nav className="flex items-center justify-between gap-3" aria-label="Live order pages">
+      <nav className="flex items-center justify-between gap-3" aria-label={t("kds.order-ticket.live-order-pages")}>
         <Button
           type="button"
           variant="outline"
           size="kds"
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
-        >
-          Previous
-        </Button>
-        <span className="font-body text-body-sm text-muted">
-          Page {page} of {pageCount}
+        >{t("kds.order-ticket.previous")}</Button>
+        <span className="font-body text-body-sm text-muted">{t("kds.counts.page", { page, pages: pageCount })}
         </span>
         <Button
           type="button"
@@ -727,9 +703,7 @@ export function OrdersList({
           size="kds"
           disabled={page >= pageCount}
           onClick={() => onPageChange(page + 1)}
-        >
-          Next
-        </Button>
+        >{t("kds.order-ticket.next")}</Button>
       </nav>
     </div>
   );
