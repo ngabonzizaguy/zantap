@@ -109,6 +109,10 @@ Owner gate before release approval: Operators must be able to switch the KDS lan
 3. Switch **Show the language selector** off, Save, reload the KDS: no selector, header has no leftover gap, interface is English even if the device was on KN.
 4. Switch it back on to confirm the previous language choice returns.
 
+## Owner self-serve — 2026-09-18
+
+Owner will toggle live Soon / selector flags from Ops (no agent write). Path: `/ops/settings` → **KDS languages** → Save languages. Kitchens see the change after a dashboard reload. English has no switch. Do not toggle Production flags from an agent session unless the owner asks.
+
 ## Read next
 
 This issue, `docs/adr/0089-kds-translation-control-discovery.md`, `.cursorrules`, `DESIGN.md`, and the source files listed above.

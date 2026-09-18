@@ -1,5 +1,9 @@
 # Codex ↔ Cursor shared continuity prompt
 
+### 2026-09-18 — Cursor — owner self-serves KDS Soon flags in Ops
+
+KDS translation is already live. Owner will mark languages Soon / hide the selector from Ops → Settings → **KDS languages** (authenticated `patchMarketingSiteSettingsAction`). Agent will not toggle Production flags. Next session waits for a new scoped card. ADR-0094.
+
 ### 2026-09-18 — Cursor — KDS translation shipped on `main` / Production
 
 Owner liked the c29 local KDS translation. Ported onto `feat/kds-translation-on-main`, fast-forwarded `origin/main` to `f6c3932`. Production `dpl_SPtBgijdcTpfb63jGKZ3L1ePT1Nd` (`zantap-gjreeypto`) READY, aliased `zantap.app`. Migration `20260916120000_kds_language_availability` applied first (defaults true). Curl: `/` 200 with phone picker; `/vendor/inka-steakhouse` 200 `kds-dark` + KDS language bundle; storefront has no `kds-dark`. Stash `2026-09-18 tracked dirty on 6510df6 before canonical main` kept and not mixed. Do not toggle live language flags unless the owner asks. ADR-0094.
