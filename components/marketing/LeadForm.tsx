@@ -1,7 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
+import type { CountryCode } from "libphonenumber-js";
 import { submitLead } from "@/lib/actions/lead-submit";
+import { LeadPhoneField } from "@/components/marketing/LeadPhoneField";
 import type {
   SubmitLeadErrorCode,
   SubmitLeadInput,
@@ -9,8 +11,8 @@ import type {
 import { LEAD_FORM as LEAD_FORM_EN } from "@/lib/marketing/copy";
 import type { Localized } from "@/lib/i18n/localize";
 import { TornPanelBackdrop } from "@/components/marketing/TornPaint";
-import { toWhatsAppE164 } from "@/lib/whatsapp";
 import { pairLeadBusinessTypeOptions } from "@/lib/leads/business-types";
+import { parseLeadPhone } from "@/lib/leads/phone";
 import { trackMarketingEvent } from "@/lib/analytics/client";
 
 /**
@@ -57,6 +59,7 @@ export function LeadForm({ copy }: { copy?: LeadFormCopy } = {}) {
       businessType: String(data.get("businessType") ?? "").trim(),
       contactName: String(data.get("contactName") ?? "").trim(),
       phone: String(data.get("phone") ?? "").trim(),
+      phoneCountry: String(data.get("phoneCountry") ?? "RW") as CountryCode,
       area: String(data.get("area") ?? "").trim(),
       source: "marketing-root",
       website: String(data.get("website") ?? "").trim(),
@@ -72,7 +75,7 @@ export function LeadForm({ copy }: { copy?: LeadFormCopy } = {}) {
       setError(LEAD_FORM.errors.required);
       return;
     }
-    if (!toWhatsAppE164(lead.phone)) {
+    if (!parseLeadPhone(lead.phone, lead.phoneCountry)) {
       setError(LEAD_FORM.errors.phone);
       return;
     }
@@ -203,18 +206,13 @@ export function LeadForm({ copy }: { copy?: LeadFormCopy } = {}) {
             />
           </label>
 
-          <label className="block space-y-1.5">
-            <span className={labelClass}>{LEAD_FORM.fields.phone.label}</span>
-            <input
-              name="phone"
-              required
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              placeholder={LEAD_FORM.fields.phone.placeholder}
-              className={inputClass}
-            />
-          </label>
+          <LeadPhoneField
+            label={LEAD_FORM.fields.phone.label}
+            placeholder={LEAD_FORM.fields.phone.placeholder}
+            countryLabel={LEAD_FORM.fields.phone.countryLabel}
+            searchPlaceholder={LEAD_FORM.fields.phone.searchPlaceholder}
+            noResults={LEAD_FORM.fields.phone.noResults}
+          />
 
           <label className="block space-y-1.5">
             <span className={labelClass}>{LEAD_FORM.fields.area.label}</span>

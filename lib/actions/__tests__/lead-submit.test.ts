@@ -46,6 +46,31 @@ describe("submitLead", () => {
     ]);
   });
 
+  it("persists a valid international Lead from national or complete international input", async () => {
+    const national = await submitLead({
+      businessName: "London Kitchen",
+      businessType: "Restaurant",
+      contactName: "Amara",
+      phone: "07123 456789",
+      phoneCountry: "GB",
+      area: "Kigali",
+    });
+    const complete = await submitLead({
+      businessName: "San Francisco Kitchen",
+      businessType: "Restaurant",
+      contactName: "Maya",
+      phone: "+1 415 555 2671",
+      phoneCountry: "RW",
+      area: "Kigali",
+    });
+
+    expect(national).toEqual({ ok: true });
+    expect(complete).toEqual({ ok: true });
+    expect(
+      (await getStore().listLeads()).map((lead) => lead.phone).sort()
+    ).toEqual(["14155552671", "447123456789"]);
+  });
+
   it("returns a configured WhatsApp handoff after the lead is durably stored", async () => {
     const recipient = await getStore().createLeadRoutingRecipient({
       name: "Primary operator",

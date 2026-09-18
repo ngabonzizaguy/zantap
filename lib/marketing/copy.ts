@@ -53,7 +53,13 @@ export const LEAD_FORM = {
       ],
     },
     contactName: { label: "Contact person", placeholder: "Your full name" },
-    phone: { label: "WhatsApp number", placeholder: "07\u2022\u2022 \u2022\u2022\u2022 \u2022\u2022\u2022" },
+    phone: {
+      label: "WhatsApp number",
+      placeholder: "Phone number",
+      countryLabel: "Country or calling code",
+      searchPlaceholder: "Search country or code",
+      noResults: "No countries found.",
+    },
     area: { label: "Area", placeholder: "e.g. Kimihurura, Kigali" },
   },
   submit: "Request setup",
@@ -63,7 +69,7 @@ export const LEAD_FORM = {
   reassurance: "No long contract. No pressure.",
   errors: {
     required: "Please fill in every field.",
-    phone: "Enter a valid Rwandan phone number (07XX XXX XXX).",
+    phone: "Enter a valid WhatsApp number for the selected country.",
     rateLimited: "Too many requests. Please wait a while and try again.",
     submissionFailed: "We couldn\u2019t save your request. Please try again.",
   },

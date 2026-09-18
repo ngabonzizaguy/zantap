@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Badge, Card, Input, Select } from "@/components/ui/primitives";
 import { formatRelativeTime } from "@/lib/format";
+import { formatStoredLeadPhone } from "@/lib/leads/phone";
 import { nextLeadStatuses } from "@/lib/leads/status";
 import type { Lead, LeadStatus } from "@/lib/leads/types";
 import { patchLeadStatusAction } from "@/lib/ops-actions/lead-actions";
@@ -163,7 +164,9 @@ export function LeadInbox({ leads: initialLeads }: LeadInboxProps) {
                     </td>
                     <td className="px-4 py-3">
                       <p className="text-body">{lead.contactName}</p>
-                      <p className="text-xs text-muted">+{lead.phone}</p>
+                      <p className="text-xs text-muted">
+                        {formatStoredLeadPhone(lead.phone)}
+                      </p>
                     </td>
                     <td className="px-4 py-3 text-body">{lead.area}</td>
                     <td className="px-4 py-3 text-muted">
@@ -229,7 +232,9 @@ export function LeadInbox({ leads: initialLeads }: LeadInboxProps) {
                   </div>
                   <div>
                     <dt className="text-xs text-muted">Phone</dt>
-                    <dd className="mt-0.5 text-body">+{lead.phone}</dd>
+                    <dd className="mt-0.5 text-body">
+                      {formatStoredLeadPhone(lead.phone)}
+                    </dd>
                   </div>
                   <div>
                     <dt className="text-xs text-muted">Received</dt>

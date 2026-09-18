@@ -62,8 +62,8 @@ describe("marketing copy localization", () => {
     }
   });
 
-  it("keeps the complete 137-key marketing contract translated", () => {
-    expect(Object.keys(english)).toHaveLength(137);
+  it("keeps the complete 140-key marketing contract translated", () => {
+    expect(Object.keys(english)).toHaveLength(140);
     for (const code of ["rw", "fr", "sw"] as const) {
       const missing = Object.keys(english).filter(
         (key) => !BASELINE_TRANSLATIONS[code][key]
@@ -72,11 +72,11 @@ describe("marketing copy localization", () => {
     }
   });
 
-  it("covers every one of the 30 Lead Form strings in all non-English locales", () => {
+  it("covers every one of the 33 Lead Form strings in all non-English locales", () => {
     const leadFormKeys = Object.keys(english).filter((key) =>
       key.startsWith("leadForm.")
     );
-    expect(leadFormKeys).toHaveLength(30);
+    expect(leadFormKeys).toHaveLength(33);
     for (const code of ["rw", "fr", "sw"] as const) {
       for (const key of leadFormKeys) {
         expect(BASELINE_TRANSLATIONS[code][key], `${code} missing ${key}`).toBeTruthy();

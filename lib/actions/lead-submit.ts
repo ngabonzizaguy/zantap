@@ -2,13 +2,16 @@
 
 import { headers } from "next/headers";
 
-import { canonicalizePhone } from "@/lib/format";
 import type {
   CreateLeadInput,
   SubmitLeadErrorCode,
   SubmitLeadInput,
   SubmitLeadResult,
 } from "@/lib/leads/types";
+import {
+  DEFAULT_LEAD_PHONE_COUNTRY,
+  parseLeadPhone,
+} from "@/lib/leads/phone";
 import { getStore } from "@/lib/store";
 import { buildLeadWhatsAppUrl } from "@/lib/whatsapp";
 import {
@@ -50,10 +53,11 @@ function parseLeadInput(
     return { ok: false, error: "INVALID_INPUT" };
   }
 
-  const phone = canonicalizePhone(
-    typeof input?.phone === "string" ? input.phone : ""
+  const phone = parseLeadPhone(
+    typeof input?.phone === "string" ? input.phone : "",
+    input?.phoneCountry ?? DEFAULT_LEAD_PHONE_COUNTRY
   );
-  if (!/^2507\d{8}$/.test(phone)) {
+  if (!phone) {
     return { ok: false, error: "INVALID_PHONE" };
   }
 
@@ -63,7 +67,7 @@ function parseLeadInput(
       businessName,
       businessType,
       contactName,
-      phone,
+      phone: phone.digits,
       area,
       message: cleanOptional(input.message, 500),
       source: cleanOptional(input.source, 80),

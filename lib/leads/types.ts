@@ -1,3 +1,5 @@
+import type { CountryCode } from "libphonenumber-js";
+
 /**
  * Lead-capture interface shared by the marketing form (Issue 03) and the
  * durable Store-backed `submitLead` server action (Issue 04). The form is
@@ -9,8 +11,10 @@ export interface SubmitLeadInput {
   businessName: string;
   businessType: string;
   contactName: string;
-  /** Raw phone as typed; canonicalized server-side (E.164, Rwanda-first). */
+  /** Raw phone as typed; canonicalized and validated server-side. */
   phone: string;
+  /** Country context for national input. A complete `+` phone takes authority. */
+  phoneCountry?: CountryCode;
   area: string;
   message?: string;
   /** Attribution, e.g. "marketing-root". */
