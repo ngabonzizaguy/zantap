@@ -1,7 +1,7 @@
 # ADR-0093: Canonical `zantap` folder on GitHub `main`; Q11 phones isolated
 
 Date: 2026-09-18
-Status: Accepted · local only · not pushed
+Status: Accepted · merged to `main` · Production `dpl_AbmSN4zVWPhhi8VuhddoQPvjKErY` (`zantap-jqur1qppf`) · 2026-09-18
 
 ## Context
 
@@ -11,8 +11,8 @@ The owner forbade re-running the 2026-09-12 fast-forward, forbade deleting this 
 
 ## Decision
 
-Keep `C:\Users\G\Desktop\2025\Projects\zantap` as the business working copy. Check it out onto GitHub `main` (`3037217`) without rewriting `main`. Preserve the mixed dirty tree as a stash plus `.scratch/repository-continuity/preserved-2026-09-18/`. Isolate Q11 onto `feat/q11-international-lead-phone` (`f32fca8`) with only the listed Lead-phone files. Do not push or deploy until the owner approves. Leave KDS translation in the other folder.
+Keep `C:\Users\G\Desktop\2025\Projects\zantap` as the business working copy. Check it out onto GitHub `main` (`3037217`) without rewriting `main`. Preserve the mixed dirty tree as a stash plus `.scratch/repository-continuity/preserved-2026-09-18/`. Isolate Q11 onto `feat/q11-international-lead-phone` (`f32fca8`) with only the listed Lead-phone files. After owner approval, fast-forward `main` to `3ff2bc2` and ship Production. Leave KDS translation in the other folder.
 
 ## Consequences
 
-New product work in this folder starts from live `main`. Q11 is reviewable as one commit ahead of `origin/main`. Leftover KDS files from this folder are in stash `2026-09-18 tracked dirty on 6510df6 before canonical main` and the preserve directory; they are not on the Q11 branch. ADR-0090's "do not deploy GitHub main" instruction is obsolete for the current `3037217` tip.
+GitHub `main` and live `zantap.app` are `3ff2bc2` / `dpl_AbmSN4zVWPhhi8VuhddoQPvjKErY`. New product work in this folder starts from that tip. Leftover KDS files from this folder remain in stash `2026-09-18 tracked dirty on 6510df6 before canonical main` and `.scratch/repository-continuity/preserved-2026-09-18/`. ADR-0090's "do not deploy GitHub main" instruction is obsolete.

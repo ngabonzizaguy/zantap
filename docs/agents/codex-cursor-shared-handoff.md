@@ -1,8 +1,8 @@
 # Codex ↔ Cursor shared continuity prompt
 
-### 2026-09-18 — Cursor — canonical folder on `main`; Q11 isolated locally
+### 2026-09-18 — Cursor — Q11 phones live on `main` / Production
 
-Do **not** re-run the 2026-09-12 fast-forward. GitHub `origin/main` remains `3037217`. Live `zantap.app` remains Production `dpl_4FHqF84QTkajoeL1MmHYd3v3BEgf` on that line. This folder is now `feat/q11-international-lead-phone` at `f32fca8` (Q11 phones only), one commit ahead of that `main`. Dirty mixed work from `6510df6` was preserved (stash + `.scratch/repository-continuity/preserved-2026-09-18/`), not one-committed. KDS translation stays in `zantap-kds-translation-c29`. **Stopped before push and Production deploy — owner must approve.** ADR-0093. Tracking: `.scratch/repository-continuity/issue-02-canonical-main-then-q11.md`.
+Do **not** re-run the 2026-09-12 fast-forward. Owner approved push + merge + Production. GitHub `origin/main` is `3ff2bc2` (`f32fca8` phones + docs). Live `zantap.app` is Production `dpl_AbmSN4zVWPhhi8VuhddoQPvjKErY` (`zantap-jqur1qppf`), aliased. Browser smoke: lead form defaults Rwanda `+250`, search `+44` lists United Kingdom, selecting it sets `GB +44`. Did not submit a Lead. KDS translation stays in `zantap-kds-translation-c29`. ADR-0093. Tracking: `.scratch/repository-continuity/issue-02-canonical-main-then-q11.md`.
 
 Last reconciled: **2026-09-18 (Africa/Kigali)** — Git/Q11 isolate only; Candidate #29 product truth below still starts 2026-09-08.
 Scope: the product-restructure, marketing, lead-capture, PWA/KDS-polish,
