@@ -19,4 +19,10 @@ No schema migration or competing data path is required. New KDS interface copy m
 
 The owner confirmed on 2026-09-12 that reviewed KDS leftovers—including readiness, guided Setup, and update metrics—must also be editable in Ops. Translation is display-only: persisted expense categories and other machine/domain values retain their canonical English tokens even when the visible label is translated.
 
+Owner QA follow-up on 2026-09-16 required two behavior refinements in the same scope: stage-filter chips must honor KN translation work even if Operators only translated stage-status keys, and the KDS language selector must stay compact in the header. The implementation now resolves stage chips via status-first fallback (`kds.status.*` then `kds.labels.*`) and uses compact selector labels (`EN/KN/FR/SW`) while preserving the same cookie-based locale storage.
+
+The selector is built on the shared `Select` primitive rather than a native `<select>`, because a native option list is rendered by the operating system and cannot inherit the dark KDS treatment. `Select` gained an optional `triggerLabel` so a compact trigger can pair with full language names in the list. Two `.kds-dark` constraints are reconfirmed here: the theme remaps class rules on descendants, and it covers only the enumerated background alpha variants (`/80`, `/90`, `/95`), so an unlisted variant such as `bg-surface-card/85` silently renders in the light editorial palette.
+
+Superseded in part on 2026-09-16: the selector no longer always offers all four locales. Which languages a kitchen may pick is now an Ops-managed platform setting — see ADR-0094.
+
 Tracking: `.scratch/kds-translation-control/issues/01-ops-kds-translations.md`.

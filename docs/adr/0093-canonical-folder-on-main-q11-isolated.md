@@ -15,4 +15,4 @@ Keep `C:\Users\G\Desktop\2025\Projects\zantap` as the business working copy. Che
 
 ## Consequences
 
-GitHub `main` and live `zantap.app` are `3ff2bc2` / `dpl_AbmSN4zVWPhhi8VuhddoQPvjKErY`. New product work in this folder starts from that tip. Leftover KDS files from this folder remain in stash `2026-09-18 tracked dirty on 6510df6 before canonical main` and `.scratch/repository-continuity/preserved-2026-09-18/`. ADR-0090's "do not deploy GitHub main" instruction is obsolete.
+GitHub `origin/main` is `5db897c` (Q11 `f32fca8` + docs). Live phone picker is Production `dpl_AbmSN4zVWPhhi8VuhddoQPvjKErY` on `zantap.app`. Leftover KDS files from this folder remain in stash `2026-09-18 tracked dirty on 6510df6 before canonical main` — do not drop it. Canonical translation work is now ported locally onto `feat/kds-translation-on-main` (ADR-0094 for language availability). ADR-0090's "do not deploy GitHub main" instruction is obsolete.

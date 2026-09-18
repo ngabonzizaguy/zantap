@@ -15,6 +15,10 @@ export interface MarketingSiteSettings {
   socialYoutube?: string;
   socialWhatsapp?: string;
   showMenuIntakeLanguageChoices: boolean;
+  showKdsLanguageSelector: boolean;
+  kdsLanguageRw: boolean;
+  kdsLanguageFr: boolean;
+  kdsLanguageSw: boolean;
   updatedAt: Date;
 }
 
@@ -29,6 +33,10 @@ export interface UpdateMarketingSiteSettingsInput {
   socialYoutube?: string | null;
   socialWhatsapp?: string | null;
   showMenuIntakeLanguageChoices?: boolean;
+  showKdsLanguageSelector?: boolean;
+  kdsLanguageRw?: boolean;
+  kdsLanguageFr?: boolean;
+  kdsLanguageSw?: boolean;
 }
 
 export interface VendorExpense {

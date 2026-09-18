@@ -4188,6 +4188,10 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       socialYoutube: row.socialYoutube ?? undefined,
       socialWhatsapp: row.socialWhatsapp ?? undefined,
       showMenuIntakeLanguageChoices: row.showMenuIntakeLanguageChoices,
+      showKdsLanguageSelector: row.showKdsLanguageSelector,
+      kdsLanguageRw: row.kdsLanguageRw,
+      kdsLanguageFr: row.kdsLanguageFr,
+      kdsLanguageSw: row.kdsLanguageSw,
       updatedAt: row.updatedAt,
     };
   }
@@ -4223,6 +4227,10 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       socialYoutube: row.socialYoutube ?? undefined,
       socialWhatsapp: row.socialWhatsapp ?? undefined,
       showMenuIntakeLanguageChoices: row.showMenuIntakeLanguageChoices,
+      showKdsLanguageSelector: row.showKdsLanguageSelector,
+      kdsLanguageRw: row.kdsLanguageRw,
+      kdsLanguageFr: row.kdsLanguageFr,
+      kdsLanguageSw: row.kdsLanguageSw,
       updatedAt: row.updatedAt,
     };
   }

@@ -1,8 +1,12 @@
 # Codex ↔ Cursor shared continuity prompt
 
+### 2026-09-18 — Cursor — KDS translation ported onto `feat/kds-translation-on-main`
+
+Owner liked the c29 local KDS translation. Ported onto this folder from `zantap-kds-translation-c29` (`be28a09` + language-availability working tree) onto GitHub `main` `5db897c` (Q11 phones kept). Branch `feat/kds-translation-on-main`. Cherry-picks: `5edc595` / `52cd57e` / `1167a24`. Language-availability overlay uses ADR-0094 (ADR-0093 stays the Q11 isolate). Stash `2026-09-18 tracked dirty on 6510df6 before canonical main` was not dropped and leftover KDS from this folder was not mixed. **Not pushed. Not deployed. Migration `20260916120000_kds_language_availability` not applied.** Store seam: flags on `MarketingSiteSettings` in both adapters.
+
 ### 2026-09-18 — Cursor — Q11 phones live on `main` / Production
 
-Do **not** re-run the 2026-09-12 fast-forward. Owner approved push + merge + Production. GitHub `origin/main` is `5db897c` (`f32fca8` phones + docs). Live `zantap.app` is Production `dpl_AbmSN4zVWPhhi8VuhddoQPvjKErY` (`zantap-jqur1qppf`), aliased. Browser smoke: lead form defaults Rwanda `+250`, search `+44` lists United Kingdom, selecting it sets `GB +44`. Did not submit a Lead. KDS translation is being ported onto `feat/kds-translation-on-main` from `zantap-kds-translation-c29`. ADR-0093 is the Q11 isolate ADR. Tracking: `.scratch/repository-continuity/issue-02-canonical-main-then-q11.md`.
+Do **not** re-run the 2026-09-12 fast-forward. Owner approved push + merge + Production. GitHub `origin/main` is `5db897c` (`f32fca8` phones + docs). Live `zantap.app` is Production `dpl_AbmSN4zVWPhhi8VuhddoQPvjKErY` (`zantap-jqur1qppf`), aliased. Browser smoke: lead form defaults Rwanda `+250`, search `+44` lists United Kingdom, selecting it sets `GB +44`. Did not submit a Lead. KDS translation now lives locally on `feat/kds-translation-on-main`. ADR-0093 is the Q11 isolate ADR. Tracking: `.scratch/repository-continuity/issue-02-canonical-main-then-q11.md`.
 
 Last reconciled: **2026-09-18 (Africa/Kigali)** — Git/Q11 isolate; Candidate #29 product truth below still starts 2026-09-08.
 

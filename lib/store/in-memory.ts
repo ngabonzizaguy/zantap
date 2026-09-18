@@ -269,6 +269,10 @@ export function createInMemoryStore(): ResettableStore {
   let marketingSettings: MarketingSiteSettings = {
     id: "default",
     showMenuIntakeLanguageChoices: false,
+    showKdsLanguageSelector: true,
+    kdsLanguageRw: true,
+    kdsLanguageFr: true,
+    kdsLanguageSw: true,
     updatedAt: new Date(),
   };
   const siteTranslations = new Map<
@@ -468,6 +472,10 @@ export function createInMemoryStore(): ResettableStore {
     marketingSettings = {
       id: "default",
       showMenuIntakeLanguageChoices: false,
+      showKdsLanguageSelector: true,
+      kdsLanguageRw: true,
+      kdsLanguageFr: true,
+      kdsLanguageSw: true,
       updatedAt: new Date(),
     };
     kitchenOpen = true;

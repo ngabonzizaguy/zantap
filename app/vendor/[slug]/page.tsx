@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
-import { resolveLocale } from "@/lib/i18n/config";
 import { KDS_LOCALE_COOKIE } from "@/lib/i18n/kds-localize";
+import {
+  resolveKdsLanguageAvailability,
+  resolveKdsLocale,
+} from "@/lib/i18n/kds-language-availability";
 import { getKdsTranslations } from "@/lib/i18n/get-kds-translations";
 import { KdsLanguageProvider } from "@/components/vendor/KdsLanguageProvider";
 import { getStore } from "@/lib/store";
@@ -54,7 +57,7 @@ export default async function VendorKdsPage({ params, searchParams }: PageProps)
   const vendor = await store.getVendorBySlug(slug);
   if (!vendor) notFound();
 
-  const [snapshot, drivers, inventory, translations, cookieJar] = await Promise.all([
+  const [snapshot, drivers, inventory, translations, siteSettings, cookieJar] = await Promise.all([
     fetchKdsSnapshot(slug),
     store.getDrivers(slug),
     store.listInventory(
@@ -67,11 +70,18 @@ export default async function VendorKdsPage({ params, searchParams }: PageProps)
       { page: inventoryQuery.page, pageSize: 10 }
     ),
     getKdsTranslations(),
+    store.getMarketingSiteSettings(),
     cookies(),
   ]);
 
+  const languages = resolveKdsLanguageAvailability(siteSettings);
+
   return (
-    <KdsLanguageProvider initialLocale={resolveLocale(cookieJar.get(KDS_LOCALE_COOKIE)?.value)} translations={translations}>
+    <KdsLanguageProvider
+      initialLocale={resolveKdsLocale(cookieJar.get(KDS_LOCALE_COOKIE)?.value, languages)}
+      translations={translations}
+      languages={languages}
+    >
     <KdsDashboard
       vendor={vendor}
       initialOrders={snapshot.orders}

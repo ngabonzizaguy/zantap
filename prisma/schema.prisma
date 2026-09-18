@@ -420,6 +420,12 @@ model MarketingSiteSettings {
   socialYoutube   String?
   socialWhatsapp  String?
   showMenuIntakeLanguageChoices Boolean @default(false)
+  /// KDS interface language availability (Ops → Settings → KDS languages).
+  /// English is always available and is the fallback, so it has no flag.
+  showKdsLanguageSelector Boolean @default(true)
+  kdsLanguageRw   Boolean  @default(true)
+  kdsLanguageFr   Boolean  @default(true)
+  kdsLanguageSw   Boolean  @default(true)
   updatedAt       DateTime @updatedAt
 }
 

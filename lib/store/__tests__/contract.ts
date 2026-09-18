@@ -2084,6 +2084,8 @@ export function runStoreContract(
         const initial = await store.getMarketingSiteSettings();
         expect(initial.id).toBe("default");
         expect(initial.showMenuIntakeLanguageChoices).toBe(false);
+        expect(initial.showKdsLanguageSelector).toBe(true);
+        expect(initial.kdsLanguageFr).toBe(true);
 
         const updated = await store.updateMarketingSiteSettings({
           publicPhone: "0784928786",
@@ -2098,10 +2100,19 @@ export function runStoreContract(
         expect(fetched.publicPhone).toBe("0784928786");
         expect(fetched.showMenuIntakeLanguageChoices).toBe(true);
 
+        const languages = await store.updateMarketingSiteSettings({
+          kdsLanguageFr: false,
+          kdsLanguageSw: false,
+        });
+        expect(languages.kdsLanguageFr).toBe(false);
+        expect(languages.kdsLanguageSw).toBe(false);
+        expect(languages.kdsLanguageRw).toBe(true);
+
         const cleared = await store.updateMarketingSiteSettings({
           publicPhone: null,
         });
         expect(cleared.publicPhone).toBeUndefined();
+        expect(cleared.kdsLanguageFr).toBe(false);
       });
     });
 

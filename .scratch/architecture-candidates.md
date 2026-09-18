@@ -1,5 +1,23 @@
 # Architecture candidates — backlog index
 
+## Canonical folder onto `main` then Q11 isolate — 2026-09-18
+
+| Work | Status | Record |
+|---|---|---|
+| Check out GitHub `main` in the `zantap` folder, then commit Q11 phones on a new branch from `main` | DONE · GitHub `main` `5db897c` · Production phones `dpl_AbmSN4zVWPhhi8VuhddoQPvjKErY` | `.scratch/repository-continuity/issue-02-canonical-main-then-q11.md`; ADR-0093 |
+
+## Candidate #29 international Lead phones — 2026-09-18
+
+| Work | Status | Record |
+|---|---|---|
+| Searchable all-country phone selector and country-aware Lead validation | DONE · on `main` `5db897c` (`f32fca8`) · live picker on `zantap.app` | `.scratch/kds-storefront-ops-improvements/issue-00-discovery.md` Question 11; ADR-0093 |
+
+## KDS translation port onto current `main` — 2026-09-18
+
+| Work | Status | Record |
+|---|---|---|
+| Port c29 KDS translation (commits + language-availability working tree) onto `5db897c` | LOCAL on `feat/kds-translation-on-main` · owner liked c29 · **not pushed / not deployed** · migration unapplied | ADR-0089, ADR-0094; `.scratch/kds-translation-control/issues/01-ops-kds-translations.md` |
+
 Source: `/improve-codebase-architecture` review (recovered from session transcript
 `5e22d701-4923-4f9b-80ba-5c1a99150bea`, which rendered the five candidates as an
 HTML report). This file is the durable, session-independent record so the backlog
@@ -409,7 +427,7 @@ If a session ends without doing both, the handoff is incomplete.
 | 25 | Real supply Inventory + KDS/storefront 10-item pagination | Owner-approved grill 2026-08-20 | Store + KDS + storefront | ✅ DONE · MERGED · LIVE 2026-08-21 — `main` fast-forwarded/pushed to `7028e5b`; Production `dpl_874DQNUcV2fG7eXsbtLeFTqdeJJd` is Ready on `zantap.app`; root, storefront, KDS and Inventory returned 200 and the initial exact-deployment error scan was clean. Migration `20260820183000_real_vendor_inventory` was not reapplied and the harness was not rerun. Release docs: `1c36437` on `codex/inventory-pagination`; earlier full harness evidence remains 27/27 PASS. ADR-0061–0063. | `.scratch/inventory-pagination/` |
 | 26 | Single installed customer app + saved restaurants + menu-update status tray | Owner-approved grill 2026-08-21 | Customer PWA + Store + KDS menu controls + analytics | 🚧 IN PROGRESS · ISSUES 01–03 DEPLOYED + PROD-SMOKED — owner-reference composition shipped at exact commit `5672cdf` as Production `dpl_5erYVZ7RYDhy5DyQVk2o9GdA1Qu4` (`READY`) on `zantap.app`. Production `/restaurants` smoke passed at 390×844 and 1440×1000 with HTTP 200, saved Vendor identity/menu action, exact viewport width and zero failed responses, overlays or browser errors. No active Inka update batch was available for the live row; approved production-mode fixture evidence plus 397 passed / 114 skipped covers that state. Exact-deployment error/fatal/warning/5xx scans were empty. Existing migration `20260821220000_vendor_update_batches` was not rerun. Issue 04 remains deferred and was not started. | `.scratch/customer-restaurant-hub/PRD.md` |
 | 29 | KDS wording/education + menu intake follow-ups | Owner approved · implementation authorized 2026-08-29 | KDS + customer + Vendor menu intake + Ops | ◐ PARTIAL SHIP · BASELINE REPAIRED — Candidate 29 tip `3037217` is now GitHub `main`; live product SHA `3337db5` is its parent. Menu intake and KDS readiness Stages 1–2 are shipped. Remaining original slices stay separately scoped. ADR-0082–0084, ADR-0090. | `.scratch/kds-storefront-ops-improvements/`; `.scratch/repository-continuity/issue-01.md` |
-| Ops | KDS translation control | Owner request 2026-09-10 | Ops translation editor + KDS UI | ◐ READY FOR RELEASE DECISION — base `6079447` + closeout `ac93913` on `codex/kds-translation-control-c29`; owner-approved follow-up fixes expense machine-token persistence and registers ReadinessGuideModal, Help readiness CTA, SetupDrawer guided/status/error copy, and VendorUpdatesPanel metrics for Ops editing. Focused 8/8, full 488/117, TypeScript, scoped lint, build, and diff check pass. Not pushed/deployed. ADR-0089. | `.scratch/kds-translation-control/issues/01-ops-kds-translations.md` |
+| Ops | KDS translation control | Owner request 2026-09-10 | Ops translation editor + KDS UI | ◐ PORTED LOCALLY 2026-09-18 — `feat/kds-translation-on-main` on `5db897c` (Q11 phones kept). Cherry-picked `6079447`/`ac93913`/`be28a09` and overlaid c29 language-availability work. ADR-0093 remains Q11 isolate; language-availability is ADR-0094. Migration `20260916120000_kds_language_availability` unapplied. Owner liked c29 locally. Do not mix leftover KDS from the 2026-09-18 stash. **Not pushed / not deployed.** | `.scratch/kds-translation-control/issues/01-ops-kds-translations.md` |
 
 **#22 closed 2026-07-06** — code shipped `e734387` (live on `zantap-psi.vercel.app`
 since #17 deploy); migration `20260705180000_order_driver_assignment` applied.

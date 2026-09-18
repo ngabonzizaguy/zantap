@@ -1,6 +1,10 @@
 "use client";
 
-import { translateKdsLabel, translateKdsStatus } from "@/lib/i18n/kds-labels";
+import {
+  translateKdsLabel,
+  translateKdsStageFilter,
+  translateKdsStatus,
+} from "@/lib/i18n/kds-labels";
 import { formatKdsRelativeTime } from "@/lib/i18n/kds-time";
 
 import { useKdsTranslation } from "@/components/vendor/KdsLanguageProvider";
@@ -571,7 +575,7 @@ export function OrdersList({
         className="zt-hidescroll -mx-1 flex flex-nowrap gap-2 overflow-x-auto px-1 pb-0.5 snap-x snap-mandatory"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        {KDS_STAGE_FILTERS.map(({ id, label }) => {
+        {KDS_STAGE_FILTERS.map(({ id }) => {
           const active = stageFilter === id;
           const count = filterCounts[id];
           const chip = filterChipStyle(id);
@@ -586,7 +590,7 @@ export function OrdersList({
                 active ? chip.activeBg : cn(chip.bg, "hover:opacity-90")
               )}
             >
-              {translateKdsLabel(t, label)}
+              {translateKdsStageFilter(t, id)}
               <span className="opacity-60">({count})</span>
             </button>
           );

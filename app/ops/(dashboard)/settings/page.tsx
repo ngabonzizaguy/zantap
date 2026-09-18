@@ -1,4 +1,5 @@
 import { LeadRoutingSettingsForm } from "@/components/ops/LeadRoutingSettingsForm";
+import { KdsLanguageSettingsForm } from "@/components/ops/KdsLanguageSettingsForm";
 import { MarketingSiteSettingsForm } from "@/components/ops/MarketingSiteSettingsForm";
 import { SiteTranslationsEditor } from "@/components/ops/SiteTranslationsEditor";
 import {
@@ -30,6 +31,7 @@ export default async function OpsSettingsPage() {
       </div>
       <LeadRoutingSettingsForm recipients={recipients} />
       <MarketingSiteSettingsForm settings={marketingSettings} />
+      <KdsLanguageSettingsForm settings={marketingSettings} />
       <SiteTranslationsEditor
         surface="kds"
         englishSource={KDS_COPY}

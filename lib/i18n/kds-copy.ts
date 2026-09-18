@@ -153,6 +153,7 @@ export const KDS_COPY = {
   "kds.kds-dashboard.tap-here-to-create-a-menu-item-customers-can-order-from-your-sto": "Tap here to create a menu item customers can order from your storefront.",
   "kds.kds-dashboard.assign-a-driver": "Assign a driver",
   "kds.kds-dashboard.when-an-order-is-ready-expand-the-ticket-and-assign-a-driver-to": "When an order is ready, expand the ticket and assign a driver to keep delivery records.",
+  "kds.language.soon": "Soon",
   "kds.menu-image-gallery.photos": "Photos",
   "kds.menu-image-gallery.primary-photo": "Primary photo",
   "kds.menu-image-gallery.set-as-primary": "Set as primary",

@@ -15,6 +15,10 @@ import { cn } from "@/lib/cn";
 export interface SelectOption<T extends string = string> {
   value: T;
   label: string;
+  /** Listed for context but not choosable. */
+  disabled?: boolean;
+  /** Short badge explaining a listed option, e.g. "Soon". */
+  note?: string;
 }
 
 interface SelectProps<T extends string = string> {
@@ -31,6 +35,8 @@ interface SelectProps<T extends string = string> {
   align?: "start" | "end";
   ariaLabel?: string;
   prefix?: ReactNode;
+  /** Shorter trigger text when the full option label would crowd the control. */
+  triggerLabel?: string;
 }
 
 function Chevron({ open }: { open: boolean }) {
@@ -66,6 +72,7 @@ export function Select<T extends string = string>({
   align = "start",
   ariaLabel,
   prefix,
+  triggerLabel,
 }: SelectProps<T>) {
   const generatedId = useId();
   const selectId = id ?? (label ? label.toLowerCase().replace(/\s+/g, "-") : generatedId);
@@ -86,16 +93,30 @@ export function Select<T extends string = string>({
     setActiveIndex(-1);
   }, []);
 
+  const choosableIndex = useCallback(
+    (from: number, step: number) => {
+      for (let index = from; index >= 0 && index < options.length; index += step) {
+        if (!options[index].disabled) return index;
+      }
+      return -1;
+    },
+    [options]
+  );
+
   const openList = useCallback(() => {
     if (disabled) return;
     setOpen(true);
-    setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
-  }, [disabled, selectedIndex]);
+    setActiveIndex(
+      selectedIndex >= 0 && !options[selectedIndex].disabled
+        ? selectedIndex
+        : choosableIndex(0, 1)
+    );
+  }, [choosableIndex, disabled, options, selectedIndex]);
 
   const selectOption = useCallback(
     (index: number) => {
       const option = options[index];
-      if (!option) return;
+      if (!option || option.disabled) return;
       onChange(option.value);
       close();
     },
@@ -150,24 +171,24 @@ export function Select<T extends string = string>({
       case "ArrowDown":
         event.preventDefault();
         setActiveIndex((prev) => {
-          const next = prev < 0 ? 0 : Math.min(prev + 1, options.length - 1);
-          return next;
+          const next = choosableIndex(prev < 0 ? 0 : prev + 1, 1);
+          return next >= 0 ? next : prev;
         });
         break;
       case "ArrowUp":
         event.preventDefault();
         setActiveIndex((prev) => {
-          const next = prev < 0 ? options.length - 1 : Math.max(prev - 1, 0);
-          return next;
+          const next = choosableIndex(prev < 0 ? options.length - 1 : prev - 1, -1);
+          return next >= 0 ? next : prev;
         });
         break;
       case "Home":
         event.preventDefault();
-        setActiveIndex(0);
+        setActiveIndex(choosableIndex(0, 1));
         break;
       case "End":
         event.preventDefault();
-        setActiveIndex(options.length - 1);
+        setActiveIndex(choosableIndex(options.length - 1, -1));
         break;
       case "Enter":
       case " ":
@@ -209,7 +230,7 @@ export function Select<T extends string = string>({
     >
       <span className="flex min-w-0 items-center gap-1.5 truncate">
         {prefix}
-        <span className="truncate">{selectedLabel}</span>
+        <span className="truncate">{triggerLabel ?? selectedLabel}</span>
       </span>
       <Chevron open={open} />
     </button>
@@ -241,17 +262,28 @@ export function Select<T extends string = string>({
             type="button"
             role="option"
             aria-selected={selected}
+            aria-disabled={option.disabled}
             tabIndex={-1}
-            onMouseEnter={() => setActiveIndex(index)}
+            onMouseEnter={() => {
+              if (!option.disabled) setActiveIndex(index);
+            }}
             onClick={() => selectOption(index)}
             className={cn(
-              "flex w-full items-center justify-between px-3.5 py-2.5 text-left font-body text-body-sm transition-colors",
-              active || selected ? "bg-surface-strong" : "hover:bg-surface-strong",
-              selected ? "text-primary" : "text-ink"
+              "flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left font-body text-body-sm transition-colors",
+              option.disabled
+                ? "cursor-not-allowed text-muted-soft"
+                : cn(
+                    active || selected ? "bg-surface-strong" : "hover:bg-surface-strong",
+                    selected ? "text-primary" : "text-ink"
+                  )
             )}
           >
             {option.label}
-            {selected ? (
+            {option.note ? (
+              <span className="rounded-pill border border-hairline px-2 py-0.5 font-body text-caption-uppercase text-muted">
+                {option.note}
+              </span>
+            ) : selected ? (
               <Icon name="check" size={14} className="text-primary" strokeWidth={2.6} />
             ) : (
               <span className="w-3.5" aria-hidden />

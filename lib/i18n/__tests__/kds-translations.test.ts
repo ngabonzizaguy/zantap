@@ -6,11 +6,18 @@ import { createInMemoryStore } from "@/lib/store/in-memory";
 import { getStore } from "@/lib/store";
 import { getKdsTranslations } from "@/lib/i18n/get-kds-translations";
 import { createKdsTranslator, selectKdsTranslations } from "@/lib/i18n/kds-localize";
-import { KdsLanguageProvider } from "@/components/vendor/KdsLanguageProvider";
+import type { Locale } from "@/lib/i18n/config";
+import { KdsLanguageProvider, KdsLanguageSelector } from "@/components/vendor/KdsLanguageProvider";
 import { Tabs } from "@/components/vendor/Tabs";
+import {
+  resolveKdsLanguageAvailability,
+  resolveKdsLocale,
+  type KdsLanguageAvailability,
+} from "@/lib/i18n/kds-language-availability";
 import {
   getKdsExpenseCategoryOptions,
   translateKdsLabel,
+  translateKdsStageFilter,
   translateKdsStatus,
 } from "@/lib/i18n/kds-labels";
 import { formatKdsRelativeTime } from "@/lib/i18n/kds-time";
@@ -124,4 +131,62 @@ describe("KDS translations", () => {
       label: "Ingrédients",
     });
   });
+
+  it("uses stage-status translations for filter chips when available", () => {
+    const t = createKdsTranslator({
+      "kds.labels.all": "Byose",
+      "kds.status.new": "Bishya",
+      "kds.status.preparing": "Bitegurwa",
+      "kds.status.ready": "Byiteguye",
+      "kds.status.completed": "Byarangiye",
+    });
+
+    expect(translateKdsStageFilter(t, "all")).toBe("Byose");
+    expect(translateKdsStageFilter(t, "new")).toBe("Bishya");
+    expect(translateKdsStageFilter(t, "preparing")).toBe("Bitegurwa");
+    expect(translateKdsStageFilter(t, "ready")).toBe("Byiteguye");
+    expect(translateKdsStageFilter(t, "completed")).toBe("Byarangiye");
+  });
+
+  it("lists Ops-disabled languages as coming soon and keeps English selectable", () => {
+    const availability = resolveKdsLanguageAvailability({
+      showKdsLanguageSelector: true,
+      kdsLanguageRw: true,
+      kdsLanguageFr: false,
+      kdsLanguageSw: false,
+    });
+
+    expect(availability.enabled).toEqual(["en", "rw"]);
+    expect(availability.comingSoon).toEqual(["fr", "sw"]);
+    expect(resolveKdsLocale("rw", availability)).toBe("rw");
+    // A device left on a language Ops switched off falls back to English.
+    expect(resolveKdsLocale("fr", availability)).toBe("en");
+    expect(resolveKdsLocale("de", availability)).toBe("en");
+  });
+
+  it("hides the selector and pins the kitchen to English when Ops switches it off", () => {
+    const off = resolveKdsLanguageAvailability({
+      showKdsLanguageSelector: false,
+      kdsLanguageRw: true,
+      kdsLanguageFr: true,
+      kdsLanguageSw: true,
+    });
+
+    expect(resolveKdsLocale("rw", off)).toBe("en");
+    expect(renderSelector(off)).not.toContain("KDS language");
+
+    const visible = renderSelector({ ...off, selectorVisible: true }, "rw");
+    expect(visible).toContain("KDS language");
+    expect(visible).toContain("KN");
+  });
 });
+
+function renderSelector(languages: KdsLanguageAvailability, initialLocale: Locale = "en") {
+  return renderToStaticMarkup(
+    createElement(
+      TestKdsLanguageProvider,
+      { initialLocale, translations: {}, languages },
+      createElement(KdsLanguageSelector)
+    )
+  );
+}

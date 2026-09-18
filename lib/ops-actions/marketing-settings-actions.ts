@@ -12,5 +12,6 @@ export async function patchMarketingSiteSettingsAction(
   revalidatePath("/ops/settings");
   revalidatePath("/");
   revalidatePath("/menu-intake");
+  revalidatePath("/vendor/[slug]", "page");
   return settings;
 }

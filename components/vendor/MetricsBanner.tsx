@@ -118,9 +118,7 @@ export function MetricsBanner({
         </div>
       </div>
 
-      <div className="flex justify-end px-4 pb-3 sm:px-[18px]">
-        <KdsLanguageSelector />
-      </div>
+      <KdsLanguageSelector />
       <div className="grid grid-cols-2 gap-2.5 px-4 pb-4 sm:px-[18px]">
         <Card padding="sm" className="border-l-2 border-l-primary shadow-none">
           <div className="flex items-center justify-between">

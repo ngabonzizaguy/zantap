@@ -158,6 +158,34 @@ export function translateKdsLabel(t: KdsTranslate, label: string): string {
   return key ? t(key) : label;
 }
 
+export type KdsStageFilterLabel = "all" | "new" | "preparing" | "ready" | "completed";
+
+/**
+ * Stage-filter chips should follow status translations when present, while still
+ * supporting the title-case label overrides used elsewhere.
+ */
+export function translateKdsStageFilter(
+  t: KdsTranslate,
+  filter: KdsStageFilterLabel
+): string {
+  if (filter === "all") return t("kds.labels.all");
+  const statusByFilter = {
+    new: "NEW",
+    preparing: "PREPARING",
+    ready: "READY",
+    completed: "COMPLETED",
+  } as const;
+  const labelKeyByFilter = {
+    new: "kds.labels.new",
+    preparing: "kds.labels.preparing",
+    ready: "kds.labels.ready",
+    completed: "kds.labels.completed",
+  } as const;
+  const status = statusByFilter[filter];
+  const translatedStatus = translateKdsStatus(t, status);
+  return translatedStatus === status ? t(labelKeyByFilter[filter]) : translatedStatus;
+}
+
 export const KDS_EXPENSE_CATEGORY_VALUES = [
   "Ingredients",
   "Packaging",
