@@ -1,7 +1,7 @@
 # ADR 0094 — Ops controls which KDS languages are available
 
 Date: 2026-09-16
-Status: Accepted · ported onto `feat/kds-translation-on-main` 2026-09-18
+Status: Accepted · merged to `main` `f6c3932` · Production `dpl_SPtBgijdcTpfb63jGKZ3L1ePT1Nd` · migration applied 2026-09-18
 
 Numbered 0094 because ADR-0093 is already the Q11 canonical-folder isolate (`docs/adr/0093-canonical-folder-on-main-q11-isolated.md`). The c29 draft used 0093 before that ADR existed.
 

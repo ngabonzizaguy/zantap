@@ -1,10 +1,10 @@
 # KDS translation control in Ops
 
-Status: ready-for-human — owner liked c29 locally 2026-09-18; ported onto `feat/kds-translation-on-main` (base `5db897c`); push/deploy still pending
+Status: DONE · MERGED TO MAIN `f6c3932` · Production `dpl_SPtBgijdcTpfb63jGKZ3L1ePT1Nd` (`zantap-gjreeypto`) READY on `zantap.app` · 2026-09-18
 
 Owner request (2026-09-10): "on a separate branch; work on kds translation control in ops".
 
-Source: `zantap-kds-translation-c29` (`be28a09` + language-availability working tree). Ported onto this folder's `feat/kds-translation-on-main` from GitHub `main` `5db897c` (Q11 phones included). Leftover KDS from this folder's 2026-09-18 stash was not mixed. No push, deploy, or database mutation.
+Source: `zantap-kds-translation-c29` (`be28a09` + language-availability working tree). Ported onto `feat/kds-translation-on-main`, fast-forwarded to `main` at `f6c3932`. Migration `20260916120000_kds_language_availability` applied to Production before deploy. Leftover KDS from this folder's 2026-09-18 stash was not mixed. Owner has not been asked to toggle languages live.
 
 ## Progress
 

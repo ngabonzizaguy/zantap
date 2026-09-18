@@ -1,5 +1,9 @@
 # Codex ↔ Cursor shared continuity prompt
 
+### 2026-09-18 — Cursor — KDS translation shipped on `main` / Production
+
+Owner liked the c29 local KDS translation. Ported onto `feat/kds-translation-on-main`, fast-forwarded `origin/main` to `f6c3932`. Production `dpl_SPtBgijdcTpfb63jGKZ3L1ePT1Nd` (`zantap-gjreeypto`) READY, aliased `zantap.app`. Migration `20260916120000_kds_language_availability` applied first (defaults true). Curl: `/` 200 with phone picker; `/vendor/inka-steakhouse` 200 `kds-dark` + KDS language bundle; storefront has no `kds-dark`. Stash `2026-09-18 tracked dirty on 6510df6 before canonical main` kept and not mixed. Do not toggle live language flags unless the owner asks. ADR-0094.
+
 ### 2026-09-18 — Cursor — KDS translation ported onto `feat/kds-translation-on-main`
 
 Owner liked the c29 local KDS translation. Ported onto this folder from `zantap-kds-translation-c29` (`be28a09` + language-availability working tree) onto GitHub `main` `5db897c` (Q11 phones kept). Branch `feat/kds-translation-on-main`. Cherry-picks: `5edc595` / `52cd57e` / `1167a24`. Language-availability overlay uses ADR-0094 (ADR-0093 stays the Q11 isolate). Stash `2026-09-18 tracked dirty on 6510df6 before canonical main` was not dropped and leftover KDS from this folder was not mixed. **Not pushed. Not deployed. Migration `20260916120000_kds_language_availability` not applied.** Store seam: flags on `MarketingSiteSettings` in both adapters.
