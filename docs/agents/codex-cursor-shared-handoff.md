@@ -1,5 +1,17 @@
 # Codex ↔ Cursor shared continuity prompt
 
+### 2026-09-22 — Cursor — KDS rw/fr/sw wording loaded into the Ops editor (local only)
+
+Owner translated `locales/kds.en.json` into `locales/kds.{rw,fr,sw}.json` (861 keys each, order + placeholder parity) and asked for those translations to fill the **existing** Ops KDS copy editor so they can be reviewed/edited there. Generated in-repo baselines `lib/i18n/kds-translations/{rw,fr,sw}.ts` (684 registered keys each, `satisfies KdsDictionary`) aggregated by `lib/i18n/kds-baselines.ts`, and passed them as `baselines` to the `surface="kds"` editor in `app/ops/(dashboard)/settings/page.tsx` (was `{}`). Ops → Settings → Languages (KDS copy) now shows `0 overrides saved · 0 untranslated` per locale with real wording in every field; only owner edits become DB overrides. Key mapping is by **section + exact English value** (camelCase↔kebab is not reversible); regenerate via `node .scratch/kds-translation-baselines/generate-baselines.mjs`.
+
+**Runtime fallback added the same day.** The owner reported that switching the KDS language did nothing: the selector worked (locale state, cookie, chip, `lang`) but `getKdsTranslations()` read only `SiteTranslation` rows, and with 0 overrides every dictionary was empty, so everything fell back to `KDS_COPY`. Owner approved the fallback: `getKdsTranslations()` now merges baselines under overrides (override → baseline → English) and `pickKdsLocales()` serializes only Ops-enabled locales. Keep the merge in that **server-only** module — client components import `createKdsTranslator` from `lib/i18n/kds-localize.ts`, so baselines there would land in the KDS client bundle. A store failure now keeps baselines rather than English. Also: **Kinyarwanda is flagged "Soon" in Ops**, so that option is disabled and `resolveKdsLocale` pins those devices to English (ADR-0094 gate, owner-controlled). Owner asked to **re-include** preserved `.scratch/repository-continuity/preserved-*` tests as agent documentation (synced KDS translations contract + README); `vitest.config.ts` clears leaked `VERCEL` from `.env.production.local` so menu-intake unit tests stay green.
+
+**Deliberately not done:** no DB override seeding, no registration of the 177 `notYetRegistered` strings, no English wording change, no schema or language-flag change. Local gate: full **535 passed / 117 skipped**, `tsc` clean, scoped ESLint clean, `next build` clean, Ops harness 8/8, KDS switch harness 9/9. ADR-0095; `.scratch/kds-translation-baselines/issue-01.md`.
+
+### 2026-09-18 — Cursor — KDS English catalog extracted (no wiring)
+
+Owner asked for an English-only KDS string catalog before any further translation/integration. Wrote `locales/kds.en.json` (861 leaf keys: 684 from live `KDS_COPY` + 177 hardcoded leftovers) and `locales/KDS_LANGUAGE_EXTRACTION.md`. No i18n integration, no translations, no application behavior change. Owner must approve the English JSON before rw/fr/sw or wiring. Tracking: `.scratch/kds-english-catalog/issue-01.md`.
+
 ### 2026-09-18 — Cursor — owner self-serves KDS Soon flags in Ops
 
 KDS translation is already live. Owner will mark languages Soon / hide the selector from Ops → Settings → **KDS languages** (authenticated `patchMarketingSiteSettingsAction`). Agent will not toggle Production flags. Next session waits for a new scoped card. ADR-0094.

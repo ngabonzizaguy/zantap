@@ -5,7 +5,7 @@ import {
   resolveKdsLanguageAvailability,
   resolveKdsLocale,
 } from "@/lib/i18n/kds-language-availability";
-import { getKdsTranslations } from "@/lib/i18n/get-kds-translations";
+import { getKdsTranslations, pickKdsLocales } from "@/lib/i18n/get-kds-translations";
 import { KdsLanguageProvider } from "@/components/vendor/KdsLanguageProvider";
 import { getStore } from "@/lib/store";
 import { fetchKdsSnapshot } from "@/lib/kds/snapshot";
@@ -79,7 +79,7 @@ export default async function VendorKdsPage({ params, searchParams }: PageProps)
   return (
     <KdsLanguageProvider
       initialLocale={resolveKdsLocale(cookieJar.get(KDS_LOCALE_COOKIE)?.value, languages)}
-      translations={translations}
+      translations={pickKdsLocales(translations, languages.enabled)}
       languages={languages}
     >
     <KdsDashboard

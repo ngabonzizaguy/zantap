@@ -10,6 +10,7 @@ import {
 import { MARKETING_COPY } from "@/lib/marketing/copy";
 import { flattenCopy } from "@/lib/i18n/localize";
 import { BASELINE_TRANSLATIONS } from "@/lib/i18n/baselines";
+import { KDS_BASELINE_TRANSLATIONS } from "@/lib/i18n/kds-baselines";
 import { KDS_COPY } from "@/lib/i18n/kds-copy";
 
 export default async function OpsSettingsPage() {
@@ -35,7 +36,7 @@ export default async function OpsSettingsPage() {
       <SiteTranslationsEditor
         surface="kds"
         englishSource={KDS_COPY}
-        baselines={{}}
+        baselines={KDS_BASELINE_TRANSLATIONS}
         overrides={translations}
       />
       <SiteTranslationsEditor

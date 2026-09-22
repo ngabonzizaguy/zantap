@@ -4,7 +4,7 @@ import type { ComponentProps, ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createInMemoryStore } from "@/lib/store/in-memory";
 import { getStore } from "@/lib/store";
-import { getKdsTranslations } from "@/lib/i18n/get-kds-translations";
+import { getKdsTranslations, pickKdsLocales } from "@/lib/i18n/get-kds-translations";
 import { createKdsTranslator, selectKdsTranslations } from "@/lib/i18n/kds-localize";
 import type { Locale } from "@/lib/i18n/config";
 import { KdsLanguageProvider, KdsLanguageSelector } from "@/components/vendor/KdsLanguageProvider";
@@ -33,11 +33,12 @@ const TestKdsLanguageProvider = KdsLanguageProvider as (
 describe("KDS translations", () => {
   beforeEach(() => { globalForStore.__zantapStore = createInMemoryStore(); });
 
-  it("renders a saved override in KDS and restores English after reset", async () => {
-    await upsertOperatorSiteTranslation("fr", "kds.tabs.orders", "Commandes");
+  it("renders a saved override in KDS and restores the baseline after reset", async () => {
+    await upsertOperatorSiteTranslation("fr", "kds.tabs.orders", "Mes commandes");
     await upsertOperatorSiteTranslation("fr", "hero.headline", "Marketing only");
     const dictionaries = await getKdsTranslations();
-    expect(Object.keys(dictionaries.fr!)).toEqual(["kds.tabs.orders"]);
+    expect(dictionaries.fr!["kds.tabs.orders"]).toBe("Mes commandes");
+    expect(Object.keys(dictionaries.fr!)).not.toContain("hero.headline");
     const markup = renderToStaticMarkup(
       createElement(
         TestKdsLanguageProvider,
@@ -52,12 +53,34 @@ describe("KDS translations", () => {
       )
     );
     expect(markup).toContain('lang="fr"');
-    expect(markup).toContain("Commandes");
-    expect(markup).toContain("Inventory");
+    expect(markup).toContain("Mes commandes");
+    // Untouched tabs still render, from the in-repo French baseline.
+    expect(markup).toContain("Inventaire");
     expect(markup).not.toContain("Marketing only");
     await deleteOperatorSiteTranslation("fr", "kds.tabs.orders");
-    expect(createKdsTranslator((await getKdsTranslations()).fr)("kds.tabs.orders")).toBe("Orders");
+    expect(createKdsTranslator((await getKdsTranslations()).fr)("kds.tabs.orders")).toBe("Commandes");
     expect((await getStore().listSiteTranslations("fr"))[0].key).toBe("hero.headline");
+  });
+
+  it("translates the kitchen from baselines with no overrides saved", async () => {
+    const dictionaries = await getKdsTranslations();
+    expect(Object.keys(dictionaries).sort()).toEqual(["fr", "rw", "sw"]);
+    for (const [locale, orders] of [["rw", "Komande"], ["fr", "Commandes"], ["sw", "Maagizo"]] as const) {
+      expect(createKdsTranslator(dictionaries[locale])("kds.tabs.orders")).toBe(orders);
+    }
+    // English has no dictionary: KDS_COPY is the source.
+    expect(createKdsTranslator(dictionaries.en)("kds.tabs.orders")).toBe("Orders");
+  });
+
+  it("serializes only the languages Ops enables", async () => {
+    const availability = resolveKdsLanguageAvailability({
+      showKdsLanguageSelector: true,
+      kdsLanguageRw: true,
+      kdsLanguageFr: false,
+      kdsLanguageSw: false,
+    });
+    const picked = pickKdsLocales(await getKdsTranslations(), availability.enabled);
+    expect(Object.keys(picked)).toEqual(["rw"]);
   });
 
   it("rejects missing or invented placeholders but allows reordered sentences", async () => {
@@ -83,9 +106,11 @@ describe("KDS translations", () => {
     expect(createKdsTranslator(dictionaries.rw)("kds.counts.page", { page: 1, pages: 3 })).toBe("Page 1 of 3");
   });
 
-  it("falls back when copy storage fails and translates display stages without changing values", async () => {
+  it("keeps baselines when copy storage fails and translates display stages without changing values", async () => {
     vi.spyOn(getStore(), "listSiteTranslations").mockRejectedValueOnce(new Error("Storage unavailable"));
-    expect(await getKdsTranslations()).toEqual({});
+    const dictionaries = await getKdsTranslations();
+    expect(dictionaries.en).toBeUndefined();
+    expect(createKdsTranslator(dictionaries.rw)("kds.tabs.orders")).toBe("Komande");
     const t = createKdsTranslator({ "kds.status.preparing": "En préparation", "kds.time.minutes": "Il y a {count} min" });
     expect(translateKdsStatus(t, "PREPARING")).toBe("En préparation");
     expect(formatKdsRelativeTime(t, new Date("2026-09-10T10:00:00Z"), new Date("2026-09-10T10:05:00Z"))).toBe("Il y a 5 min");

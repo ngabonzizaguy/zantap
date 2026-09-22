@@ -12,11 +12,23 @@
 |---|---|---|
 | Searchable all-country phone selector and country-aware Lead validation | DONE · on `main` `5db897c` (`f32fca8`) · live picker on `zantap.app` | `.scratch/kds-storefront-ops-improvements/issue-00-discovery.md` Question 11; ADR-0093 |
 
+## KDS English catalog extraction — 2026-09-18
+
+| Work | Status | Record |
+|---|---|---|
+| Extract KDS user-facing English to JSON for owner review (no translate, no wiring) | DONE · local `locales/kds.en.json` (861 keys) · no app behavior change | `.scratch/kds-english-catalog/issue-01.md`; `locales/KDS_LANGUAGE_EXTRACTION.md` |
+
 ## KDS translation port onto current `main` — 2026-09-18
 
 | Work | Status | Record |
 |---|---|---|
 | Port c29 KDS translation (commits + language-availability working tree) onto `5db897c` | DONE · `main` `f6c3932` · Production `dpl_SPtBgijdcTpfb63jGKZ3L1ePT1Nd` · migration applied · owner self-serves Soon flags in Ops | ADR-0089, ADR-0094; `.scratch/kds-translation-control/issues/01-ops-kds-translations.md` |
+
+## KDS rw/fr/sw wording loaded into Ops — 2026-09-22
+
+| Work | Status | Record |
+|---|---|---|
+| Translate `locales/kds.en.json` to rw/fr/sw, pre-fill the Ops KDS copy editor, and serve the baselines to kitchens | DONE · shipping · 684/684 keys per locale · Ops `0 overrides saved · 0 untranslated` · KDS switch translates (FR/SW; rw Ops-"Soon") · preserved continuity tests re-included | ADR-0095; `.scratch/kds-translation-baselines/issue-01.md` |
 
 Source: `/improve-codebase-architecture` review (recovered from session transcript
 `5e22d701-4923-4f9b-80ba-5c1a99150bea`, which rendered the five candidates as an
