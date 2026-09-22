@@ -28,7 +28,7 @@
 
 | Work | Status | Record |
 |---|---|---|
-| Translate `locales/kds.en.json` to rw/fr/sw, pre-fill the Ops KDS copy editor, and serve the baselines to kitchens | DONE · shipping · 684/684 keys per locale · Ops `0 overrides saved · 0 untranslated` · KDS switch translates (FR/SW; rw Ops-"Soon") · preserved continuity tests re-included | ADR-0095; `.scratch/kds-translation-baselines/issue-01.md` |
+| Translate `locales/kds.en.json` to rw/fr/sw, pre-fill the Ops KDS copy editor, and serve the baselines to kitchens | ✅ DONE · DEPLOYED · `b0289f9` → `dpl_Hn2FAFCjHxNLL4ky8onYp6Bsx1vn` READY on `zantap.app` · 684/684 · Ops editor pre-filled · KDS switch translates (FR/SW; rw Ops-"Soon") · preserved continuity tests included | ADR-0095; `.scratch/kds-translation-baselines/issue-01.md` |
 
 Source: `/improve-codebase-architecture` review (recovered from session transcript
 `5e22d701-4923-4f9b-80ba-5c1a99150bea`, which rendered the five candidates as an

@@ -1,8 +1,9 @@
 # Issue 01 — Fill the Ops KDS copy editor from the reviewed rw/fr/sw JSON
 
-Status: DONE (local) · not committed · not deployed  
-Owner decision: 2026-09-22 — pre-fill the existing Ops editor; do NOT bulk-seed DB overrides.  
-Record: ADR-0095. Related: ADR-0089, ADR-0094, `.scratch/kds-english-catalog/issue-01.md`.
+Status: ✅ DONE · DEPLOYED · PROD CURL-SMOKED 2026-09-22  
+Owner decision: 2026-09-22 — pre-fill the existing Ops editor; do NOT bulk-seed DB overrides; then baseline fallback into kitchen runtime; re-include preserved continuity tests as agent documentation.  
+Record: ADR-0095. Related: ADR-0089, ADR-0094, `.scratch/kds-english-catalog/issue-01.md`.  
+Ship: `b0289f9` → Production `dpl_Hn2FAFCjHxNLL4ky8onYp6Bsx1vn` READY on `zantap.app`.
 
 ## Goal
 

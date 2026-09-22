@@ -1,5 +1,9 @@
 # Codex ↔ Cursor shared continuity prompt
 
+### 2026-09-22 — Cursor — KDS rw/fr/sw baselines SHIPPED to Production
+
+`b0289f9` on `main` → Production `dpl_Hn2FAFCjHxNLL4ky8onYp6Bsx1vn` READY, aliased `zantap.app` (+ `zantap-psi.vercel.app`). Curl: `/vendor/inka-steakhouse` 200 (`kds-dark` + language selector); `/ops/settings` 307 (auth). No migration. Owner still self-serves Kinyarwanda "Soon" in Ops → Settings → KDS languages. Preserved continuity tests stay in the vitest suite as agent documentation.
+
 ### 2026-09-22 — Cursor — KDS rw/fr/sw wording loaded into the Ops editor (local only)
 
 Owner translated `locales/kds.en.json` into `locales/kds.{rw,fr,sw}.json` (861 keys each, order + placeholder parity) and asked for those translations to fill the **existing** Ops KDS copy editor so they can be reviewed/edited there. Generated in-repo baselines `lib/i18n/kds-translations/{rw,fr,sw}.ts` (684 registered keys each, `satisfies KdsDictionary`) aggregated by `lib/i18n/kds-baselines.ts`, and passed them as `baselines` to the `surface="kds"` editor in `app/ops/(dashboard)/settings/page.tsx` (was `{}`). Ops → Settings → Languages (KDS copy) now shows `0 overrides saved · 0 untranslated` per locale with real wording in every field; only owner edits become DB overrides. Key mapping is by **section + exact English value** (camelCase↔kebab is not reversible); regenerate via `node .scratch/kds-translation-baselines/generate-baselines.mjs`.
