@@ -41,6 +41,10 @@ export interface Vendor {
   featureWhatsappNotify: boolean;
   featureStockTracking: boolean;
   featureProfitInsights: boolean;
+  /** ADR-0096 Commission fields */
+  commissionEnabled: boolean;
+  commissionPercent?: number | null;
+  feeReminderEnabled: boolean;
   createdAt: Date;
   // NOTE: ownerTokenHash is intentionally NOT on the domain Vendor — it is a
   // server-only secret hash and must never be serialized to the browser. Read it
@@ -77,6 +81,10 @@ export interface UpdateVendorInput {
   logoUrl?: string;
   coverImageUrl?: string;
   description?: string;
+  // ADR-0096 Commission fields
+  commissionEnabled?: boolean;
+  commissionPercent?: number | null;
+  feeReminderEnabled?: boolean;
 }
 
 /**
@@ -147,6 +155,8 @@ export interface OperatorVendorDetail {
   activeOrderCount: number;
   recoveryEventCount: number;
   recentOrders: Order[];
+  /** PAID+ orders with latest Vendor payout attempt (Ops retry UI — ADR-0096 Slice 2). */
+  payoutRows: VendorPayoutOpsRow[];
   /** Present when stock tracking is meaningful for Ops visibility. */
   stockTrackedItemCount?: number;
   stockLowItemCount?: number;
@@ -162,6 +172,10 @@ export interface OperatorUpdateVendorInput extends UpdateVendorInput {
   featureWhatsappNotify?: boolean;
   featureStockTracking?: boolean;
   featureProfitInsights?: boolean;
+  // ADR-0096 Commission fields
+  commissionEnabled?: boolean;
+  commissionPercent?: number | null;
+  feeReminderEnabled?: boolean;
 }
 
 export interface OperatorOrderPatch {
@@ -334,6 +348,64 @@ export interface Payment {
   createdAt: Date;
 }
 
+/** One MoMo Transfer attempt (Vendor payout). Separate from Collection Payment. */
+export interface VendorPayout {
+  id: string;
+  orderId: string;
+  vendorId: string;
+  amount: number;
+  referenceId: string;
+  status: "PENDING" | "SUCCESS" | "FAILED";
+  payeeType: "MSISDN" | "PARTY_CODE";
+  payeeId: string;
+  lastError?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/** Ops vendor-detail row: paid Order + latest payout attempt status. */
+export interface VendorPayoutOpsRow {
+  orderId: string;
+  orderStatus: OrderStatus;
+  orderTotalAmount: number;
+  orderCreatedAt: Date;
+  customerPhone: string;
+  landmark: string;
+  latestPayout: VendorPayout | null;
+  /** True when no SUCCESS and no in-flight PENDING — Ops may start a new Transfer. */
+  canRetry: boolean;
+  /** True when latest attempt is PENDING — Ops may poll MoMo status. */
+  canSync: boolean;
+}
+
+export interface CreateVendorPayoutInput {
+  orderId: string;
+  vendorId: string;
+  amount: number;
+  referenceId: string;
+  payeeType: VendorPayout["payeeType"];
+  payeeId: string;
+  /** When MoMo rejects immediately, create as FAILED with this error. */
+  initialStatus?: VendorPayout["status"];
+  lastError?: string;
+}
+
+export type CreateVendorPayoutResult =
+  | { ok: true; payout: VendorPayout }
+  | {
+      ok: false;
+      code: "ORDER_NOT_FOUND" | "ORDER_NOT_PAID" | "PAYOUT_IN_FLIGHT" | "ALREADY_PAID_OUT";
+      payout?: VendorPayout;
+    };
+
+export type ApplyVendorPayoutResult =
+  | { ok: true; payout: VendorPayout }
+  | {
+      ok: false;
+      code: "NOT_FOUND" | "TERMINAL";
+      payout?: VendorPayout;
+    };
+
 export interface OrderHistoryFilters {
   datePreset?: "today" | "yesterday" | "last7" | "last30" | "custom";
   dateFrom?: Date;
@@ -393,6 +465,17 @@ export type ConfirmPaymentResult =
       payment?: Payment;
     };
 
+/** Open API / webhook result — no Customer PIN (ADR-0096). */
+export type ProviderPaymentResult = "SUCCESS" | "FAILED";
+
+export type ApplyProviderPaymentResult =
+  | { ok: true; payment: Payment; order: Order }
+  | {
+      ok: false;
+      code: "NOT_FOUND" | "PAYMENT_TERMINALLY_FAILED" | "ORDER_NOT_PENDING";
+      payment?: Payment;
+    };
+
 export type ConfirmManualPaymentResult =
   | { ok: true; payment: Payment; order: Order }
   | {
@@ -442,9 +525,16 @@ export type CheckoutStage =
   | "ussd"
   | "momo_dial"
   | "awaiting_confirmation"
+  /** Open API Collection: waiting for Customer to approve the MoMo prompt. */
+  | "awaiting_prompt"
   | "success";
 
-export type MomoMode = "simulate" | "manual";
+/** Client poll of Collection Payment status (no secrets). */
+export type CollectionPaymentStatusResponse = {
+  status: "PENDING" | "SUCCESS" | "FAILED" | "NOT_FOUND";
+};
+
+export type MomoMode = "simulate" | "manual" | "openapi";
 
 export const KIGALI_SECTORS = [
   "Kicukiro",

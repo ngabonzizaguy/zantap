@@ -1,6 +1,7 @@
 import { normalizePhone } from "@/lib/format";
 import { paymentWindowExpiresAt } from "@/lib/momo/payment-window";
 import { buildMomoUssdDial, validateVendorPayout } from "@/lib/momo/ussd-dial";
+import { vendorPayeeFromPayout } from "@/lib/momo/vendor-payee";
 import type { CreateOrderInput, MomoMode, Order, Vendor } from "@/lib/types";
 import type { MomoClient } from "./momo-client";
 import type { CheckoutLine } from "./types";
@@ -35,8 +36,25 @@ export type PayResult =
       orderCreatedAt: Date;
       expiresAt: number;
     }
+  | {
+      kind: "openapi_success";
+      orderId: string;
+      referenceId: string;
+      paymentStatus: "PENDING" | "SUCCESS";
+    }
   | { kind: "payout_invalid" }
-  | { kind: "failed" };
+  | { kind: "failed"; message?: string };
+
+function openApiPayeeOk(
+  vendor: Pick<Vendor, "payoutMethod" | "momoCode">
+): boolean {
+  return (
+    vendorPayeeFromPayout({
+      payoutMethod: vendor.payoutMethod,
+      momoCode: vendor.momoCode ?? "",
+    }) !== null
+  );
+}
 
 export async function executePay(
   input: PayInput,
@@ -68,6 +86,12 @@ export async function executePay(
     }
   }
 
+  if (momoMode === "openapi") {
+    if (!openApiPayeeOk(vendor)) {
+      return { kind: "payout_invalid" };
+    }
+  }
+
   try {
     const order = await deps.placeOrder({
       vendorSlug,
@@ -78,7 +102,9 @@ export async function executePay(
         menuItemId: line.menuItemId,
         quantity: line.qty,
         ...(line.sizeOptionId ? { sizeOptionId: line.sizeOptionId } : {}),
-        ...(line.addOnChoiceIds?.length ? { addOnChoiceIds: line.addOnChoiceIds } : {}),
+        ...(line.addOnChoiceIds?.length
+          ? { addOnChoiceIds: line.addOnChoiceIds }
+          : {}),
         ...(line.notes ? { notes: line.notes } : {}),
       })),
     });
@@ -110,6 +136,32 @@ export async function executePay(
       };
     }
 
+    if (momoMode === "openapi") {
+      const data = await deps.momoClient.initiateCollection({
+        orderId: order.id,
+        phone: normalizePhone(phone),
+        amount: order.totalAmount,
+        vendorName,
+      });
+
+      if (data.status === "FAILED") {
+        return {
+          kind: "failed",
+          message: data.message || "MoMo Collection failed",
+        };
+      }
+
+      const paymentStatus =
+        data.status === "SUCCESS" ? ("SUCCESS" as const) : ("PENDING" as const);
+
+      return {
+        kind: "openapi_success",
+        orderId: order.id,
+        referenceId: data.token,
+        paymentStatus,
+      };
+    }
+
     const data = await deps.momoClient.initiateStkPush({
       orderId: order.id,
       phone: normalizePhone(phone),
@@ -118,7 +170,10 @@ export async function executePay(
     });
 
     if (data.status === "FAILED") {
-      return { kind: "failed" };
+      return {
+        kind: "failed",
+        message: data.message || "Payment failed",
+      };
     }
 
     return { kind: "success", orderId: order.id, stkToken: data.token };

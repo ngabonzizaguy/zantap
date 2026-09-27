@@ -34,6 +34,12 @@ import { transition } from "./stages";
 import { computeLines } from "./totals";
 import { canProceedToPay } from "./validation";
 
+const OPENAPI_POLL_MS = 2000;
+/** Keep the awaiting sheet readable even when sandbox auto-approves instantly. */
+const OPENAPI_MIN_AWAIT_MS = 2800;
+/** Let the sheet slide up before the first status poll. */
+const OPENAPI_FIRST_POLL_DELAY_MS = 900;
+
 const initialCheckoutFields = {
   stage: "menu" as CheckoutStage,
   phone: "",
@@ -100,6 +106,7 @@ export function useCheckout(
   const [payError, setPayError] = useState<string | null>(null);
   const [manualError, setManualError] = useState<string | null>(null);
   const [manualBusy, setManualBusy] = useState(false);
+  const [openapiError, setOpenapiError] = useState<string | null>(null);
   const [remainingMs, setRemainingMs] = useState(0);
   const resumePromptDismissed = useRef(false);
 
@@ -117,6 +124,8 @@ export function useCheckout(
   );
   const canPay = canProceedToPay(count, phone, sector, landmark);
   const isManualFlow = momoMode === "manual";
+  const isOpenApiFlow = momoMode === "openapi";
+  const isSimulateFlow = momoMode === "simulate";
 
   const applyStage = useCallback((event: Parameters<typeof transition>[1]) => {
     setStage((current) => transition(current, event) ?? current);
@@ -251,11 +260,69 @@ export function useCheckout(
     vendor.slug,
   ]);
 
+  // Open API: poll Collection status until webhook/MoMo marks SUCCESS/FAILED.
+  useEffect(() => {
+    if (!isOpenApiFlow || stage !== "awaiting_prompt" || !orderId) {
+      return;
+    }
+
+    let cancelled = false;
+    let settled = false;
+    const shownAt = Date.now();
+    const timeoutIds: number[] = [];
+
+    const goSuccess = () => {
+      if (settled || cancelled) return;
+      settled = true;
+      const elapsed = Date.now() - shownAt;
+      const waitMore = Math.max(0, OPENAPI_MIN_AWAIT_MS - elapsed);
+      const id = window.setTimeout(() => {
+        if (!cancelled) applyStage("openapi_paid");
+      }, waitMore);
+      timeoutIds.push(id);
+    };
+
+    const poll = async () => {
+      if (cancelled || settled) return;
+      try {
+        const data = await momoClient.getCollectionStatus(orderId);
+        if (cancelled || settled) return;
+        if (data.status === "SUCCESS") {
+          goSuccess();
+          return;
+        }
+        if (data.status === "FAILED") {
+          settled = true;
+          setOpenapiError("Payment was declined or timed out. Try again.");
+          setPayError("Payment was declined or timed out. Try again.");
+          applyStage("openapi_failed");
+        }
+      } catch {
+        // Transient network errors — keep polling.
+      }
+    };
+
+    const firstPollId = window.setTimeout(() => {
+      void poll();
+    }, OPENAPI_FIRST_POLL_DELAY_MS);
+    timeoutIds.push(firstPollId);
+    const intervalId = window.setInterval(() => {
+      void poll();
+    }, OPENAPI_POLL_MS);
+
+    return () => {
+      cancelled = true;
+      for (const id of timeoutIds) window.clearTimeout(id);
+      window.clearInterval(intervalId);
+    };
+  }, [applyStage, isOpenApiFlow, momoClient, orderId, stage]);
+
   const pay = useCallback(async () => {
     if (!canPay) return;
 
     setPayError(null);
     setManualError(null);
+    setOpenapiError(null);
     setStage("loading");
 
     const result = await executePay(
@@ -300,6 +367,17 @@ export function useCheckout(
       return;
     }
 
+    if (result.kind === "openapi_success") {
+      setOrderId(result.orderId);
+      setStkToken(result.referenceId);
+      if (result.paymentStatus === "SUCCESS") {
+        setStage("success");
+        return;
+      }
+      setStage("awaiting_prompt");
+      return;
+    }
+
     if (result.kind === "success") {
       setOrderId(result.orderId);
       setStkToken(result.stkToken);
@@ -314,6 +392,7 @@ export function useCheckout(
     }
 
     if (result.kind === "failed") {
+      setPayError(result.message ?? "Payment failed. Try again.");
       setStage("cart");
     }
   }, [
@@ -394,6 +473,11 @@ export function useCheckout(
     applyStage("manual_abandon");
   }, [abandonManualPaymentFn, applyStage, orderId, phone, vendor.slug]);
 
+  const cancelOpenApiPrompt = useCallback(() => {
+    setOpenapiError(null);
+    applyStage("openapi_cancel");
+  }, [applyStage]);
+
   const reset = useCallback(() => {
     clearPendingCheckout(vendor.slug);
     setStage(initialCheckoutFields.stage);
@@ -408,6 +492,7 @@ export function useCheckout(
     setExpiresAt(initialCheckoutFields.expiresAt);
     setPayError(null);
     setManualError(null);
+    setOpenapiError(null);
     setManualBusy(false);
     setRemainingMs(0);
     resumePromptDismissed.current = false;
@@ -442,13 +527,17 @@ export function useCheckout(
     canPay,
     payError,
     manualError,
+    openapiError,
     manualBusy,
     countdownLabel,
     isManualFlow,
+    isOpenApiFlow,
+    isSimulateFlow,
     pay,
     confirmPin,
     confirmManualPaid,
     abandonManual,
+    cancelOpenApiPrompt,
     openMomoDialer,
     reset,
     applyStage,

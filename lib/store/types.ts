@@ -1,6 +1,8 @@
 import type {
   AbandonManualPaymentResult,
   AddMenuImageInput,
+  ApplyProviderPaymentResult,
+  ApplyVendorPayoutResult,
   ConfirmManualPaymentResult,
   ConfirmPaymentResult,
   CreateMenuItemInput,
@@ -8,6 +10,8 @@ import type {
   CreatePaymentInput,
   CreatePaymentResult,
   CreateVendorInput,
+  CreateVendorPayoutInput,
+  CreateVendorPayoutResult,
   CreateDriverInput,
   Driver,
   KitchenStage,
@@ -19,6 +23,7 @@ import type {
   PaginatedOrders,
   Pagination,
   Payment,
+  ProviderPaymentResult,
   RecordRecoveryEventInput,
   RecordOperatorActionInput,
   OperatorAction,
@@ -34,8 +39,14 @@ import type {
   UpdateDriverInput,
   UpdateVendorInput,
   Vendor,
+  VendorPayout,
+  VendorPayoutOpsRow,
   VendorRecoveryEvent,
 } from "@/lib/types";
+import type {
+  CommissionSettings,
+  UpdateCommissionSettingsInput,
+} from "@/lib/momo/commission";
 import type {
   CreateLeadRoutingRecipientInput,
   CreateLeadInput,
@@ -482,10 +493,37 @@ export interface Store {
     orderId: string,
     customerPhone: string,
   ): Promise<AbandonManualPaymentResult>;
+  /**
+   * MoMo Open API callback seam (ADR-0096): mark Collection SUCCESS → Order PAID,
+   * or FAILED → Payment FAILED + Order CANCELLED. Idempotent on repeat callbacks.
+   */
+  applyProviderPaymentResult(
+    ref: string,
+    result: ProviderPaymentResult,
+  ): Promise<ApplyProviderPaymentResult>;
   findResumableManualOrder(
     vendorSlug: string,
     customerPhone: string,
   ): Promise<ResumableManualOrder | null>;
+
+  // Vendor payout (MoMo Transfer — ADR-0096 Slice 2)
+  createVendorPayout(
+    input: CreateVendorPayoutInput,
+  ): Promise<CreateVendorPayoutResult>;
+  getVendorPayoutByRef(ref: string): Promise<VendorPayout | null>;
+  getLatestVendorPayoutForOrder(orderId: string): Promise<VendorPayout | null>;
+  listVendorPayoutOpsRows(vendorSlug: string): Promise<VendorPayoutOpsRow[]>;
+  applyVendorPayoutResult(
+    ref: string,
+    result: ProviderPaymentResult,
+    lastError?: string,
+  ): Promise<ApplyVendorPayoutResult>;
+
+  // Commission settings (ADR-0096 Slice 3)
+  getCommissionSettings(): Promise<CommissionSettings>;
+  updateCommissionSettings(
+    input: UpdateCommissionSettingsInput,
+  ): Promise<CommissionSettings>;
 }
 
 /**

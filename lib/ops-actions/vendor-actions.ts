@@ -11,6 +11,7 @@ import {
   patchMenuItem,
   archiveMenuItem,
   toggleMenuAvailability,
+  vendorPayoutAction,
 } from "@/lib/operator-client";
 import type {
   OperatorOrderPatch,
@@ -87,4 +88,14 @@ export async function toggleMenuAvailabilityAction(slug: string, itemId: string)
   const item = await toggleMenuAvailability(slug, itemId);
   revalidatePath(`/ops/vendors/${slug}`);
   return item;
+}
+
+export async function vendorPayoutActionForOrder(
+  slug: string,
+  orderId: string,
+  action: "retry" | "sync",
+) {
+  const result = await vendorPayoutAction(orderId, action);
+  revalidatePath(`/ops/vendors/${slug}`);
+  return result;
 }

@@ -32,12 +32,19 @@ model Vendor {
   featureProfitInsights Boolean               @default(false)
   /// Candidate #26: automatic public restaurant updates default on.
   updatesEnabled        Boolean               @default(true)
+  /// ADR-0096 Commission: when global master is on, this Vendor can still opt out.
+  commissionEnabled     Boolean               @default(true)
+  /// Optional override % (0–100). Null → use CommissionSettings.globalDefaultPercent.
+  commissionPercent     Decimal?              @db.Decimal(5, 2)
+  /// Optional KDS fee reminder (UI deferred; Ops flag only in Slice 3).
+  feeReminderEnabled    Boolean               @default(false)
   updateBatches         VendorUpdateBatch[]
   menuItems             MenuItem[]
   inventoryItems        InventoryItem[]
   orders                Order[]
   drivers               Driver[]
   expenses              VendorExpense[]
+  vendorPayouts         VendorPayout[]
   recoveryEvents        VendorRecoveryEvent[]
   operatorActions       OperatorAction[]
   menuIntakes           MenuIntake[]          @relation("MenuIntakeDestinationVendor")
@@ -409,24 +416,36 @@ model ProspectInteraction {
 }
 
 model MarketingSiteSettings {
-  id              String   @id
-  publicPhone     String?
-  publicEmail     String?
-  socialX         String?
-  socialTiktok    String?
-  socialInstagram String?
-  socialFacebook  String?
-  socialLinkedin  String?
-  socialYoutube   String?
-  socialWhatsapp  String?
-  showMenuIntakeLanguageChoices Boolean @default(false)
+  id                            String   @id
+  publicPhone                   String?
+  publicEmail                   String?
+  socialX                       String?
+  socialTiktok                  String?
+  socialInstagram               String?
+  socialFacebook                String?
+  socialLinkedin                String?
+  socialYoutube                 String?
+  socialWhatsapp                String?
+  showMenuIntakeLanguageChoices Boolean  @default(false)
   /// KDS interface language availability (Ops → Settings → KDS languages).
   /// English is always available and is the fallback, so it has no flag.
-  showKdsLanguageSelector Boolean @default(true)
-  kdsLanguageRw   Boolean  @default(true)
-  kdsLanguageFr   Boolean  @default(true)
-  kdsLanguageSw   Boolean  @default(true)
-  updatedAt       DateTime @updatedAt
+  showKdsLanguageSelector       Boolean  @default(true)
+  kdsLanguageRw                 Boolean  @default(true)
+  kdsLanguageFr                 Boolean  @default(true)
+  kdsLanguageSw                 Boolean  @default(true)
+  updatedAt                     DateTime @updatedAt
+}
+
+/// Singleton Ops Commission controls (ADR-0096). Row id is always "default".
+model CommissionSettings {
+  id                   String   @id
+  /// Master kill: off → 0% everywhere regardless of per-Vendor flags.
+  globalEnabled        Boolean  @default(false)
+  /// Default % (0–100) when a Vendor has Commission on and no custom %.
+  globalDefaultPercent Decimal  @default(0) @db.Decimal(5, 2)
+  /// Smallest Customer cart (RWF) allowed at checkout.
+  minimumOrderTotalRwf Int      @default(1000)
+  updatedAt            DateTime @updatedAt
 }
 
 /// Owner-editable word-for-word overrides for the marketing-site copy
@@ -589,22 +608,27 @@ model InventoryAdjustment {
 }
 
 model Order {
-  id             String        @id @default(cuid())
-  vendorId       String
-  vendor         Vendor        @relation(fields: [vendorId], references: [id])
-  customerPhone  String
-  deliverySector String
-  landmark       String
-  totalAmount    Int
-  status         OrderStatus   @default(PENDING)
-  kitchenStage   KitchenStage?
-  driverId       String?
-  driver         Driver?       @relation(fields: [driverId], references: [id], onDelete: SetNull)
-  paidAt         DateTime?
-  orderItems     OrderItem[]
-  payment        Payment?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                       String         @id @default(cuid())
+  vendorId                 String
+  vendor                   Vendor         @relation(fields: [vendorId], references: [id])
+  customerPhone            String
+  deliverySector           String
+  landmark                 String
+  totalAmount              Int
+  status                   OrderStatus    @default(PENDING)
+  kitchenStage             KitchenStage?
+  driverId                 String?
+  driver                   Driver?        @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  paidAt                   DateTime?
+  /// ADR-0096: frozen at first PAID. Null on legacy / unpaid Orders.
+  commissionFeeRwf         Int?
+  vendorPayoutAmountRwf    Int?
+  commissionPercentApplied Decimal?       @db.Decimal(5, 2)
+  orderItems               OrderItem[]
+  payment                  Payment?
+  vendorPayouts            VendorPayout[]
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
 
   @@index([vendorId, status])
 }
@@ -652,6 +676,30 @@ model Payment {
   updatedAt      DateTime        @updatedAt
 }
 
+/// One MoMo Disbursement Transfer attempt per row (ADR-0096 Slice 2).
+/// Collection stays on Payment; retries append new rows. Order stays PAID on FAIL.
+model VendorPayout {
+  id          String             @id @default(cuid())
+  orderId     String
+  order       Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  vendorId    String
+  vendor      Vendor             @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  amount      Int
+  /// MoMo X-Reference-Id for this Transfer attempt.
+  referenceId String             @unique
+  status      VendorPayoutStatus @default(PENDING)
+  /// MSISDN | PARTY_CODE snapshot at attempt time.
+  payeeType   String
+  payeeId     String
+  lastError   String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([orderId, createdAt])
+  @@index([vendorId, status])
+  @@index([status])
+}
+
 enum OrderStatus {
   PENDING
   PAID
@@ -680,6 +728,12 @@ enum PaymentProvider {
 }
 
 enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum VendorPayoutStatus {
   PENDING
   SUCCESS
   FAILED

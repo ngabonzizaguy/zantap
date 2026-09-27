@@ -31,6 +31,10 @@ import type {
 } from "@/lib/vendor/feature-and-profit-types";
 import type { SiteTranslation } from "@/lib/i18n/site-translation-types";
 import type { MarketingInsights } from "@/lib/analytics/types";
+import type {
+  CommissionSettings,
+  UpdateCommissionSettingsInput,
+} from "@/lib/momo/commission";
 
 export async function getMarketingInsights(days = 30): Promise<MarketingInsights> {
   const data = await operatorFetch<{ insights: MarketingInsights }>(
@@ -359,6 +363,27 @@ export async function patchOrder(
   return data.order;
 }
 
+export type VendorPayoutActionResponse = {
+  ok: boolean;
+  code?: string;
+  message: string;
+  payout: import("@/lib/types").VendorPayout | null;
+  started: boolean;
+};
+
+export async function vendorPayoutAction(
+  orderId: string,
+  action: "retry" | "sync",
+): Promise<VendorPayoutActionResponse> {
+  return operatorFetch<VendorPayoutActionResponse>(
+    `/orders/${encodeURIComponent(orderId)}/payout`,
+    {
+      method: "POST",
+      body: JSON.stringify({ action }),
+    },
+  );
+}
+
 // --- Prospects ---
 
 export async function listProspects(filters?: {
@@ -494,4 +519,26 @@ export async function deleteSiteTranslation(
     body: JSON.stringify({ locale, key }),
   });
   return data.deleted;
+}
+
+// --- Commission settings (ADR-0096 Slice 3) ---
+
+export async function getCommissionSettings(): Promise<CommissionSettings> {
+  const data = await operatorFetch<{ settings: CommissionSettings }>(
+    "/commission-settings"
+  );
+  return data.settings;
+}
+
+export async function patchCommissionSettings(
+  input: UpdateCommissionSettingsInput
+): Promise<CommissionSettings> {
+  const data = await operatorFetch<{ settings: CommissionSettings }>(
+    "/commission-settings",
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }
+  );
+  return data.settings;
 }

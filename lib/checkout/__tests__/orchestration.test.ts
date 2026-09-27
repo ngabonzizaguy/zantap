@@ -52,6 +52,12 @@ function createMomoClient(
       status: "SUCCESS",
       message: "Payment successful",
     }),
+    initiateCollection: vi.fn().mockResolvedValue({
+      token: "col_ref",
+      status: "PENDING",
+      message: "MoMo prompt sent",
+    }),
+    getCollectionStatus: vi.fn().mockResolvedValue({ status: "PENDING" }),
     ...overrides,
   };
 }
@@ -122,7 +128,7 @@ describe("executePay", () => {
 
     const result = await executePay(validPayInput, { placeOrder, momoClient });
 
-    expect(result).toEqual({ kind: "failed" });
+    expect(result).toEqual({ kind: "failed", message: "Declined" });
   });
 
   it("network error on placeOrder returns failed", async () => {
@@ -181,6 +187,69 @@ describe("executePay", () => {
 
     expect(result).toEqual({ kind: "payout_invalid" });
     expect(placeOrder).not.toHaveBeenCalled();
+  });
+
+  it("openapi mode starts Collection and returns openapi_success", async () => {
+    const placeOrder = vi.fn().mockResolvedValue(mockOrder);
+    const momoClient = createMomoClient();
+
+    const result = await executePay(
+      { ...validPayInput, momoMode: "openapi" },
+      { placeOrder, momoClient }
+    );
+
+    expect(result).toEqual({
+      kind: "openapi_success",
+      orderId: "order-1",
+      referenceId: "col_ref",
+      paymentStatus: "PENDING",
+    });
+    expect(momoClient.initiateCollection).toHaveBeenCalledWith({
+      orderId: "order-1",
+      phone: "0788123456",
+      amount: 4000,
+      vendorName: "Simba Grill",
+    });
+    expect(momoClient.initiateStkPush).not.toHaveBeenCalled();
+  });
+
+  it("openapi mode blocks invalid vendor payee before placeOrder", async () => {
+    const placeOrder = vi.fn();
+    const momoClient = createMomoClient();
+
+    const result = await executePay(
+      {
+        ...validPayInput,
+        momoMode: "openapi",
+        vendor: { payoutMethod: "PHONE", momoCode: "12" },
+      },
+      { placeOrder, momoClient }
+    );
+
+    expect(result).toEqual({ kind: "payout_invalid" });
+    expect(placeOrder).not.toHaveBeenCalled();
+    expect(momoClient.initiateCollection).not.toHaveBeenCalled();
+  });
+
+  it("openapi Collection FAILED returns failed", async () => {
+    const placeOrder = vi.fn().mockResolvedValue(mockOrder);
+    const momoClient = createMomoClient({
+      initiateCollection: vi.fn().mockResolvedValue({
+        token: "",
+        status: "FAILED",
+        message: "Rejected",
+      }),
+    });
+
+    const result = await executePay(
+      { ...validPayInput, momoMode: "openapi" },
+      { placeOrder, momoClient }
+    );
+
+    expect(result).toEqual({
+      kind: "failed",
+      message: "Rejected",
+    });
   });
 });
 

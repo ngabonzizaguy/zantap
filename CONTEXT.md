@@ -17,27 +17,55 @@ The vendor-facing screen at `/vendor/[slug]` for accepting, preparing, and dispa
 _Avoid_: dashboard, admin, backend UI
 
 **Order**:
-A Customer's basket committed for a Vendor. **Payment/dispatch lifecycle** moves through `PENDING → PAID → DISPATCHED → COMPLETED`, or `PENDING → CANCELLED` when checkout is abandoned (customer declined payment or the payment window expired). **Kitchen progress** (`kitchenStage`) is tracked separately once paid: `NEW → ACCEPTED → PREPARING → READY → OUT FOR DELIVERY → COMPLETED`. See ADR-0013.
+A Customer's basket committed for a Vendor. **Payment/dispatch lifecycle** moves through `PENDING → PAID → DISPATCHED → COMPLETED`, or `PENDING → CANCELLED` when checkout is abandoned, or `PAID → REFUNDED` when Ops returns a successful Customer payment. **Kitchen progress** (`kitchenStage`) is tracked separately once paid: `NEW → ACCEPTED → PREPARING → READY → OUT FOR DELIVERY → COMPLETED`. See ADR-0013.
 _Avoid_: cart, basket, purchase
 
 **Cancelled order**:
-An Order whose checkout was abandoned before MoMo payment succeeded — either the Customer tapped "Didn't pay" or the ten-minute payment window expired. `Payment` is `FAILED`; the Order is `CANCELLED`. It never reaches the KDS queue but appears in vendor History and exports; it is excluded from gross and metrics.
-_Avoid_: expired order, abandoned cart
+An Order whose checkout was abandoned before MoMo payment succeeded — Customer declined, the provider prompt expired, or (today's manual path) the payment window ended. `Payment` is `FAILED`; the Order is `CANCELLED`. It never reaches the KDS queue but appears in vendor History and exports; it is excluded from gross and metrics. Not the same as a **Refunded order**.
+_Avoid_: expired order, abandoned cart, refunded order
+
+**Refunded order**:
+An Order that reached `PAID` (Customer money was captured) and was later returned to the Customer by an Operator. It leaves the live KDS queue and appears in History as Refunded. Distinct from Cancelled (never successfully paid).
+_Avoid_: cancelled order, void, chargeback (unless that is the real rail event)
 
 **Kitchen stage**:
 Where an Order sits in the vendor's prep-and-handoff workflow on the KDS, independent of whether MoMo payment succeeded. The KDS surfaces kitchen stage as the primary status; payment remains visible but secondary.
 _Avoid_: order status (when you mean kitchen progress), workflow step
 
 **MoMo** (MTN Mobile Money):
-The mobile-money payment rail. In production, checkout hands off to MTN USSD (*182# dial strings) and the Customer self-confirms payment; locally, checkout simulates an STK push and PIN confirmation. A real MTN API callback integration is future work.
+The mobile-money payment rail. Today production uses **Manual MoMo payment**; the agreed future path is MTN MoMo Open API where the Customer pays **ZanTap** (collection) and ZanTap pays the **Vendor** (vendor payout). Locally, checkout can still simulate an STK push and PIN confirmation.
 _Avoid_: mobile money, payment provider (when you specifically mean MTN MoMo)
 
 **Manual MoMo payment**:
-The interim production checkout path where the Customer dials a prefilled MTN USSD string, returns to the storefront, and self-declares whether payment succeeded (honor system until API access exists). A ten-minute **payment window** applies from order creation; after that, or if the Customer taps "Didn't pay", the Order is **Cancelled**. An in-window order can be resumed via stored checkout state or by re-entering the same phone at checkout. Confirming payment after the window closes is rejected — the Customer must start again.
-_Avoid_: STK push (when you mean the real or simulated prompt flow), fake payment
+The interim production checkout path where the Customer dials a prefilled MTN USSD string paying the Vendor directly, returns to the storefront, and self-declares whether payment succeeded (honor system). A ten-minute **payment window** applies from order creation; after that, or if the Customer taps "Didn't pay", the Order is **Cancelled**. Replaced by a **global** Open API cutover when live collection ships (no long-term mix of manual and API in production).
+_Avoid_: STK push (when you mean the real or simulated prompt flow), fake payment, collection
+
+**Collection**:
+The Customer-to-ZanTap MoMo capture for an Order’s menu total. Success marks the Order `PAID` for the kitchen. The Customer does not pay a separate platform fee on top.
+_Avoid_: charge (vague), vendor payout, commission
+
+**Vendor payout**:
+ZanTap sending the Vendor their share of a paid Order to the Vendor’s chosen payee — a MoMo phone (**MSISDN**) or merchant code (**PARTY_CODE**), matching the Vendor’s payout method. Starts as soon as Collection succeeds; if it fails, the Order stays `PAID` and Ops/auto-retry repairs the payout. Each MoMo Transfer attempt is a durable **VendorPayout** row (PENDING → SUCCESS/FAILED); retries append new rows. Checkout must not start Collection when the chosen payee is missing or clearly invalid.
+_Avoid_: disbursement (API jargon in product language), withdrawal, settlement (when you mean this per-order send)
+
+**Commission**:
+ZanTap’s percentage cut of an Order’s menu total, paid by the Vendor (Customer still sees/pays the menu total). When Commission applies, Vendor payout = total − fee; fee rounds **up** to whole RWF. Effective rate is a snapshot at payment time (later Ops % changes do not rewrite old Orders). When Commission is off, Vendor payout = full total; money still flows through ZanTap.
+_Avoid_: platform fee (synonym ok in UI copy), subscription, tax
+
+**Commission settings**:
+Ops controls for Commission: a **global** on/off master switch, a **per-Vendor** on/off, a **global default %**, and an optional **per-Vendor %**. Global off forces 0% everywhere; when global is on, each Vendor uses their own on/off and their % (or the global default). Not the same as the optional KDS fee reminder.
+_Avoid_: feature flag (those hide KDS surfaces), subscription plan
+
+**Fee reminder**:
+An optional per-Vendor Ops switch that shows a KDS notice about Commission while that Vendor’s Commission is on. Off by default; used only when a Vendor needs an on-screen reminder after offline consent.
+_Avoid_: commission settings, terms acceptance, contract
+
+**Minimum order total**:
+The smallest Customer cart (RWF) allowed at checkout so tiny Orders cannot produce a zero Vendor payout after fee rounding. Default agreed for planning: 1,000 RWF, intended as an Ops-editable global number.
+_Avoid_: delivery fee, commission
 
 **STK push**:
-The prompt sent to a Customer's phone to authorize a MoMo payment, confirmed with a PIN.
+The prompt sent to a Customer's phone to authorize a MoMo payment, confirmed with a PIN. On Open API, prompt lifetime follows the provider; expiry yields a **Cancelled order**.
 _Avoid_: push notification, payment prompt
 
 **Store**:
@@ -83,8 +111,8 @@ compute period profit on Know Your Profit.
 _Avoid_: cost price (per-dish), fee, payout
 
 **Payment**:
-A durable record of money moving for an Order, keyed by a stable `transactionRef` (the STK token in sandbox mode; `manual-{orderId}` in production manual MoMo). Moves through `PENDING → SUCCESS` on valid confirm (which also marks the Order `PAID`), or `PENDING → FAILED` on abandonment. `FAILED` is terminal — not a typoed PIN (sandbox wrong PIN keeps `PENDING`). Manual confirm requires the Customer's phone to match the Order.
-_Avoid_: transaction, charge, txn
+A durable record of Customer **Collection** for an Order, keyed by a stable `transactionRef` (the STK token in sandbox mode; `manual-{orderId}` in production manual MoMo). Moves through `PENDING → SUCCESS` on valid confirm (which also marks the Order `PAID`), or `PENDING → FAILED` on abandonment. `FAILED` is terminal — not a typoed PIN (sandbox wrong PIN keeps `PENDING`). Manual confirm requires the Customer's phone to match the Order. Vendor payout is a separate money movement, not a second meaning of Payment.
+_Avoid_: transaction, charge, txn, vendor payout
 
 **Checkout**:
 The client-side module (`lib/checkout/`) that owns checkout validation, cart line/total computation, the stage machine, and place-order / MoMo orchestration for the Customer view. Distinct from an Order (which is the server-side commitment) and from the menu **cart** (item quantities only).

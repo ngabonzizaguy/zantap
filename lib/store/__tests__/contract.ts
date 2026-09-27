@@ -2391,6 +2391,171 @@ export function runPaymentContract(
       });
     });
 
+    describe("applyProviderPaymentResult (Open API webhook)", () => {
+      it("SUCCESS marks Payment SUCCESS and Order PAID without a PIN", async () => {
+        const order = await placeOrderFromMenu();
+        const ref = uniqueRef();
+        await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: ref,
+        });
+
+        const first = await store.applyProviderPaymentResult(ref, "SUCCESS");
+        expect(first.ok).toBe(true);
+        if (!first.ok) return;
+        expect(first.payment.status).toBe("SUCCESS");
+        expect(first.order.status).toBe("PAID");
+
+        const second = await store.applyProviderPaymentResult(ref, "SUCCESS");
+        expect(second.ok).toBe(true);
+      });
+
+      it("FAILED marks Payment FAILED and Order CANCELLED", async () => {
+        const order = await placeOrderFromMenu();
+        const ref = uniqueRef();
+        await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: ref,
+        });
+
+        const result = await store.applyProviderPaymentResult(ref, "FAILED");
+        expect(result.ok).toBe(true);
+        if (!result.ok) return;
+        expect(result.payment.status).toBe("FAILED");
+        expect(result.order.status).toBe("CANCELLED");
+      });
+    });
+
+    describe("VendorPayout (Open API Transfer — ADR-0096 Slice 2)", () => {
+      async function paidOrder() {
+        const order = await placeOrderFromMenu();
+        const ref = uniqueRef();
+        await store.createPayment({
+          orderId: order.id,
+          amount: order.totalAmount,
+          transactionRef: ref,
+        });
+        const paid = await store.applyProviderPaymentResult(ref, "SUCCESS");
+        expect(paid.ok).toBe(true);
+        if (!paid.ok) throw new Error("expected PAID");
+        return paid.order;
+      }
+
+      it("createVendorPayout persists PENDING and blocks a second in-flight", async () => {
+        const order = await paidOrder();
+        const first = await store.createVendorPayout({
+          orderId: order.id,
+          vendorId: order.vendorId,
+          amount: order.totalAmount,
+          referenceId: uniqueRef(),
+          payeeType: "MSISDN",
+          payeeId: "56733123453",
+        });
+        expect(first.ok).toBe(true);
+        if (!first.ok) return;
+
+        const second = await store.createVendorPayout({
+          orderId: order.id,
+          vendorId: order.vendorId,
+          amount: order.totalAmount,
+          referenceId: uniqueRef(),
+          payeeType: "MSISDN",
+          payeeId: "56733123453",
+        });
+        expect(second.ok).toBe(false);
+        if (second.ok) return;
+        expect(second.code).toBe("PAYOUT_IN_FLIGHT");
+      });
+
+      it("FAILED payout allows retry; SUCCESS does not; Order stays PAID", async () => {
+        const order = await paidOrder();
+        const ref1 = uniqueRef();
+        const created = await store.createVendorPayout({
+          orderId: order.id,
+          vendorId: order.vendorId,
+          amount: order.totalAmount,
+          referenceId: ref1,
+          payeeType: "MSISDN",
+          payeeId: "56733123453",
+        });
+        expect(created.ok).toBe(true);
+        if (!created.ok) return;
+
+        const failed = await store.applyVendorPayoutResult(
+          ref1,
+          "FAILED",
+          "rejected",
+        );
+        expect(failed.ok).toBe(true);
+        if (!failed.ok) return;
+        expect(failed.payout.status).toBe("FAILED");
+        expect(failed.payout.lastError).toBe("rejected");
+
+        const stillPaid = await store.getOrder(order.id);
+        expect(stillPaid?.status).toBe("PAID");
+
+        const retry = await store.createVendorPayout({
+          orderId: order.id,
+          vendorId: order.vendorId,
+          amount: order.totalAmount,
+          referenceId: uniqueRef(),
+          payeeType: "MSISDN",
+          payeeId: "56733123453",
+        });
+        expect(retry.ok).toBe(true);
+        if (!retry.ok) return;
+
+        const success = await store.applyVendorPayoutResult(
+          retry.payout.referenceId,
+          "SUCCESS",
+        );
+        expect(success.ok).toBe(true);
+        if (!success.ok) return;
+        expect(success.payout.status).toBe("SUCCESS");
+
+        const blocked = await store.createVendorPayout({
+          orderId: order.id,
+          vendorId: order.vendorId,
+          amount: order.totalAmount,
+          referenceId: uniqueRef(),
+          payeeType: "MSISDN",
+          payeeId: "56733123453",
+        });
+        expect(blocked.ok).toBe(false);
+        if (blocked.ok) return;
+        expect(blocked.code).toBe("ALREADY_PAID_OUT");
+      });
+
+      it("listVendorPayoutOpsRows marks canRetry when missing or FAILED", async () => {
+        const order = await paidOrder();
+        const vendors = await store.listVendors();
+        const vendor = vendors.find((v) => v.id === order.vendorId);
+        expect(vendor).toBeTruthy();
+        if (!vendor) return;
+
+        const before = await store.listVendorPayoutOpsRows(vendor.slug);
+        const row = before.find((r) => r.orderId === order.id);
+        expect(row?.canRetry).toBe(true);
+        expect(row?.canSync).toBe(false);
+
+        const ref = uniqueRef();
+        await store.createVendorPayout({
+          orderId: order.id,
+          vendorId: order.vendorId,
+          amount: order.totalAmount,
+          referenceId: ref,
+          payeeType: "MSISDN",
+          payeeId: "56733123453",
+        });
+        const pendingRows = await store.listVendorPayoutOpsRows(vendor.slug);
+        const pending = pendingRows.find((r) => r.orderId === order.id);
+        expect(pending?.canSync).toBe(true);
+        expect(pending?.canRetry).toBe(false);
+      });
+    });
+
     describe("manual MoMo payment (ADR-0033)", () => {
       it("confirmManualPayment marks order PAID with matching phone", async () => {
         const order = await placeOrderFromMenu();

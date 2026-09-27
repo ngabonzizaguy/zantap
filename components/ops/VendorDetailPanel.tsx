@@ -8,6 +8,7 @@ import type {
   OperatorAction,
   OperatorVendorDetail,
   Order,
+  VendorPayoutOpsRow,
 } from "@/lib/types";
 import { Badge, Button, Card, Input, Modal } from "@/components/ui/primitives";
 import {
@@ -19,10 +20,18 @@ import {
   revokeOwnerTokenAction,
   suspendVendorAction,
   toggleMenuAvailabilityAction,
+  vendorPayoutActionForOrder,
 } from "@/lib/ops-actions/vendor-actions";
 import { getBaseUrl } from "@/lib/base-url";
 
-type DetailTab = "overview" | "profile" | "flags" | "menu" | "orders" | "audit";
+type DetailTab =
+  | "overview"
+  | "profile"
+  | "flags"
+  | "menu"
+  | "orders"
+  | "payouts"
+  | "audit";
 
 interface VendorDetailPanelProps {
   detail: OperatorVendorDetail;
@@ -41,6 +50,7 @@ export function VendorDetailPanel({
   const [menu, setMenu] = useState(initialMenu);
   const [pending, startTransition] = useTransition();
   const [tokenModal, setTokenModal] = useState<string | null>(null);
+  const [payoutNotice, setPayoutNotice] = useState<string | null>(null);
   const [profile, setProfile] = useState({
     name: initialDetail.vendor.name,
     slug: initialDetail.vendor.slug,
@@ -64,14 +74,25 @@ export function VendorDetailPanel({
     featureWhatsappNotify: initialDetail.vendor.featureWhatsappNotify,
   });
 
+  const [commission, setCommission] = useState({
+    commissionEnabled: initialDetail.vendor.commissionEnabled,
+    commissionPercent: initialDetail.vendor.commissionPercent,
+    feeReminderEnabled: initialDetail.vendor.feeReminderEnabled,
+  });
+
   const tabs: { id: DetailTab; label: string }[] = [
     { id: "overview", label: "Overview" },
     { id: "profile", label: "Profile" },
     { id: "flags", label: "Flags" },
     { id: "menu", label: "Menu" },
     { id: "orders", label: "Orders" },
+    { id: "payouts", label: "Payouts" },
     { id: "audit", label: "Audit" },
   ];
+
+  const needsPayoutAttention = (detail.payoutRows ?? []).filter(
+    (row) => row.canRetry || row.canSync,
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -106,6 +127,9 @@ export function VendorDetailPanel({
             }`}
           >
             {t.label}
+            {t.id === "payouts" && needsPayoutAttention > 0
+              ? ` (${needsPayoutAttention})`
+              : ""}
           </button>
         ))}
       </div>
@@ -123,6 +147,9 @@ export function VendorDetailPanel({
             }`}
           >
             {t.label}
+            {t.id === "payouts" && needsPayoutAttention > 0
+              ? ` (${needsPayoutAttention})`
+              : ""}
           </button>
         ))}
       </div>
@@ -263,56 +290,167 @@ export function VendorDetailPanel({
       ) : null}
 
       {tab === "profile" ? (
-        <Card className="space-y-4 p-6">
-          <Input
-            label="Business name"
-            value={profile.name}
-            onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
-          />
-          <Input
-            label="Slug"
-            value={profile.slug}
-            onChange={(e) => setProfile((p) => ({ ...p, slug: e.target.value }))}
-          />
-          <Input
-            label="Phone"
-            value={profile.phoneNumber}
-            onChange={(e) =>
-              setProfile((p) => ({ ...p, phoneNumber: e.target.value }))
-            }
-          />
-          <Input
-            label="MoMo code"
-            value={profile.momoCode}
-            onChange={(e) => setProfile((p) => ({ ...p, momoCode: e.target.value }))}
-          />
-          <Input
-            label="Tagline"
-            value={profile.tagline}
-            onChange={(e) => setProfile((p) => ({ ...p, tagline: e.target.value }))}
-          />
-          <Input
-            label="Description"
-            value={profile.description}
-            onChange={(e) =>
-              setProfile((p) => ({ ...p, description: e.target.value }))
-            }
-          />
-          <Button
-            type="button"
-            variant="primary"
-            className="min-h-11"
-            disabled={pending}
-            onClick={() =>
-              run(async () => {
-                const updated = await patchVendorAction(vendor.slug, profile);
-                setDetail((d) => ({ ...d, vendor: updated }));
-              })
-            }
-          >
-            Save profile
-          </Button>
-        </Card>
+        <div className="space-y-6">
+          <Card className="space-y-4 p-6">
+            <Input
+              label="Business name"
+              value={profile.name}
+              onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
+            />
+            <Input
+              label="Slug"
+              value={profile.slug}
+              onChange={(e) => setProfile((p) => ({ ...p, slug: e.target.value }))}
+            />
+            <Input
+              label="Phone"
+              value={profile.phoneNumber}
+              onChange={(e) =>
+                setProfile((p) => ({ ...p, phoneNumber: e.target.value }))
+              }
+            />
+            <Input
+              label="MoMo code"
+              value={profile.momoCode}
+              onChange={(e) => setProfile((p) => ({ ...p, momoCode: e.target.value }))}
+            />
+            <Input
+              label="Tagline"
+              value={profile.tagline}
+              onChange={(e) => setProfile((p) => ({ ...p, tagline: e.target.value }))}
+            />
+            <Input
+              label="Description"
+              value={profile.description}
+              onChange={(e) =>
+                setProfile((p) => ({ ...p, description: e.target.value }))
+              }
+            />
+            <Button
+              type="button"
+              variant="primary"
+              className="min-h-11"
+              disabled={pending}
+              onClick={() =>
+                run(async () => {
+                  const updated = await patchVendorAction(vendor.slug, profile);
+                  setDetail((d) => ({ ...d, vendor: updated }));
+                })
+              }
+            >
+              Save profile
+            </Button>
+          </Card>
+
+          <Card className="space-y-6 p-6">
+            <p className="text-sm font-medium text-ink">Commission settings</p>
+            <p className="text-xs text-muted">
+              Vendor-level commission controls (when global commission is enabled).
+            </p>
+
+            <label className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-ink">Enable commission</p>
+                <p className="text-xs text-muted">
+                  When on, this Vendor pays commission according to settings
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={commission.commissionEnabled}
+                disabled={pending}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                  commission.commissionEnabled ? "bg-ink" : "bg-surface-strong"
+                }`}
+                onClick={() =>
+                  run(async () => {
+                    const newVal = !commission.commissionEnabled;
+                    const updated = await patchVendorAction(vendor.slug, {
+                      commissionEnabled: newVal,
+                    });
+                    setDetail((d) => ({ ...d, vendor: updated }));
+                    setCommission((c) => ({ ...c, commissionEnabled: newVal }));
+                  })
+                }
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                    commission.commissionEnabled ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </label>
+
+            <Input
+              label="Custom commission percent (leave blank for global default)"
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              value={commission.commissionPercent === null ? "" : commission.commissionPercent}
+              placeholder="Use global default"
+              disabled={pending}
+              onChange={(e) =>
+                setCommission((c) => ({
+                  ...c,
+                  commissionPercent: e.target.value ? parseFloat(e.target.value) : null,
+                }))
+              }
+            />
+
+            <label className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-ink">Fee reminder</p>
+                <p className="text-xs text-muted">
+                  Show commission reminder on KDS (deferred UI)
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={commission.feeReminderEnabled}
+                disabled={pending}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                  commission.feeReminderEnabled ? "bg-ink" : "bg-surface-strong"
+                }`}
+                onClick={() =>
+                  run(async () => {
+                    const newVal = !commission.feeReminderEnabled;
+                    const updated = await patchVendorAction(vendor.slug, {
+                      feeReminderEnabled: newVal,
+                    });
+                    setDetail((d) => ({ ...d, vendor: updated }));
+                    setCommission((c) => ({ ...c, feeReminderEnabled: newVal }));
+                  })
+                }
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                    commission.feeReminderEnabled ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </label>
+
+            <Button
+              type="button"
+              variant="primary"
+              className="min-h-11"
+              disabled={pending}
+              onClick={() =>
+                run(async () => {
+                  const updated = await patchVendorAction(vendor.slug, {
+                    commissionPercent: commission.commissionPercent || null,
+                  });
+                  setDetail((d) => ({ ...d, vendor: updated }));
+                })
+              }
+            >
+              Save commission settings
+            </Button>
+          </Card>
+        </div>
       ) : null}
 
       {tab === "flags" ? (
@@ -425,6 +563,37 @@ export function VendorDetailPanel({
         />
       ) : null}
 
+      {tab === "payouts" ? (
+        <VendorPayoutPanel
+          rows={detail.payoutRows ?? []}
+          pending={pending}
+          notice={payoutNotice}
+          onAction={(orderId, action) =>
+            run(async () => {
+              const result = await vendorPayoutActionForOrder(
+                vendor.slug,
+                orderId,
+                action,
+              );
+              setPayoutNotice(result.message);
+              setDetail((d) => ({
+                ...d,
+                payoutRows: (d.payoutRows ?? []).map((row) => {
+                  if (row.orderId !== orderId || !result.payout) return row;
+                  const status = result.payout.status;
+                  return {
+                    ...row,
+                    latestPayout: result.payout,
+                    canRetry: status !== "SUCCESS" && status !== "PENDING",
+                    canSync: status === "PENDING",
+                  };
+                }),
+              }));
+            })
+          }
+        />
+      ) : null}
+
       {tab === "audit" ? (
         <div className="overflow-hidden rounded-2xl border border-hairline bg-canvas-soft">
           <ul className="divide-y divide-hairline-soft">
@@ -519,6 +688,112 @@ function OrderOverrides({
       ))}
       {orders.length === 0 ? (
         <p className="text-sm text-muted">No recent orders.</p>
+      ) : null}
+    </div>
+  );
+}
+
+function VendorPayoutPanel({
+  rows,
+  pending,
+  notice,
+  onAction,
+}: {
+  rows: VendorPayoutOpsRow[];
+  pending: boolean;
+  notice: string | null;
+  onAction: (orderId: string, action: "retry" | "sync") => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted">
+        Vendor payouts after Customer Collection. Failed or missing Transfers
+        stay on a PAID order — Retry sends again; Sync checks MoMo for a pending
+        Transfer.
+      </p>
+      {notice ? (
+        <p className="rounded-xl border border-hairline bg-canvas-soft px-4 py-3 text-sm text-body">
+          {notice}
+        </p>
+      ) : null}
+      {rows.map((row) => {
+        const status = row.latestPayout?.status ?? "NONE";
+        const badgeVariant =
+          status === "SUCCESS"
+            ? "success"
+            : status === "FAILED"
+              ? "default"
+              : "default";
+        return (
+          <Card key={row.orderId} className="space-y-3 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <p className="font-medium">#{row.orderId.slice(-6)}</p>
+                <p className="text-sm text-muted">
+                  {row.orderStatus} · {row.orderTotalAmount.toLocaleString()} RWF ·{" "}
+                  {row.customerPhone} · {row.landmark}
+                </p>
+                {row.latestPayout ? (
+                  <p className="mt-1 font-mono text-xs text-muted">
+                    ref {row.latestPayout.referenceId.slice(0, 8)}… ·{" "}
+                    {row.latestPayout.payeeType}:{row.latestPayout.payeeId}
+                    {row.latestPayout.lastError
+                      ? ` · ${row.latestPayout.lastError}`
+                      : ""}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-muted">
+                    No Transfer attempt yet
+                  </p>
+                )}
+              </div>
+              <Badge
+                variant={badgeVariant}
+                className={
+                  status === "FAILED" || status === "NONE"
+                    ? "bg-red-50 text-red-700"
+                    : status === "PENDING"
+                      ? "bg-amber-50 text-amber-800"
+                      : undefined
+                }
+              >
+                {status}
+              </Badge>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {row.canSync ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11"
+                  disabled={pending}
+                  onClick={() => onAction(row.orderId, "sync")}
+                >
+                  Sync status
+                </Button>
+              ) : null}
+              {row.canRetry ? (
+                <Button
+                  type="button"
+                  variant="primary"
+                  className="min-h-11"
+                  disabled={pending}
+                  onClick={() => onAction(row.orderId, "retry")}
+                >
+                  Retry payout
+                </Button>
+              ) : null}
+              {!row.canRetry && !row.canSync ? (
+                <p className="text-sm text-muted">Paid out</p>
+              ) : null}
+            </div>
+          </Card>
+        );
+      })}
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted">
+          No paid orders to payout yet.
+        </p>
       ) : null}
     </div>
   );

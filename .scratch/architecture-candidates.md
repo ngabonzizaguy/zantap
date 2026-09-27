@@ -1,5 +1,17 @@
 # Architecture candidates — backlog index
 
+## Candidate #11 MoMo Open API — grilled 2026-09-22
+
+| Work | Status | Record |
+|---|---|---|
+| Grill Collection → Vendor payout, Commission Ops controls, refunds | ✅ GRILLED · glossary + ADR · subscriptions deferred | ADR-0096; `.scratch/momo-open-api/grill-decisions-2026-09-22.md`; `CONTEXT.md` |
+| Step 1–2 env + `npm run momo:setup` API-user provisioning | ✅ Owner confirmed sandbox users/keys in `.env` | `scripts/momo-setup.ts` |
+| Step 3–4 Open API client + webhook + Store provider result | ✅ LOCAL · client/webhook/tests | `lib/momo/open-api-*.ts`; `app/api/momo/{webhook,collection}`; ADR-0096 |
+| Slice 1 storefront checkout when `MOMO_MODE=openapi` | ✅ LOCAL · Test A owner PASS 2026-09-22 · awaiting sheet + MoMo status poll · prod mode untouched | `lib/checkout/*`; `OpenApiAwaitSheet`; grill-decisions Slice 1 |
+| Slice 2 Transfer refs + Ops retry | ✅ LOCAL · VendorPayout table + webhook/sync + Ops Payouts tab · Order stays PAID on fail · not committed/deployed | ADR-0096; migration `20260922170000_vendor_payout_transfer_refs` |
+| Slice 3 Commission settings + fee snapshot | ✅ LOCAL · settings + snapshot + Ops UI + tests · migration drafted · not committed/deployed | ADR-0096; migration `20260927230000_commission_settings_and_order_snapshot`; issue-03-commission.md |
+| Test B real phone ~1000 RWF / prod cutover | ⏸ Owner gate | Ask before `mtnrwanda` or Production `MOMO_MODE=openapi` |
+
 ## Canonical folder onto `main` then Q11 isolate — 2026-09-18
 
 | Work | Status | Record |

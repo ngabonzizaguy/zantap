@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 
 import type {
+  CommissionSettings as PrismaCommissionSettings,
   Driver as PrismaDriver,
   InventoryAdjustment as PrismaInventoryAdjustment,
   InventoryItem as PrismaInventoryItem,
@@ -23,6 +24,7 @@ import type {
   Payment as PrismaPayment,
   PrismaClient,
   Vendor as PrismaVendor,
+  VendorPayout as PrismaVendorPayout,
   VendorRecoveryEvent as PrismaVendorRecoveryEvent,
   VendorUpdateBatch as PrismaVendorUpdateBatch,
   VendorUpdateEntry as PrismaVendorUpdateEntry,
@@ -112,6 +114,8 @@ import { normalizeLeadRoutingRecipient } from "@/lib/leads/routing";
 import type {
   AbandonManualPaymentResult,
   AddMenuImageInput,
+  ApplyProviderPaymentResult,
+  ApplyVendorPayoutResult,
   ConfirmManualPaymentResult,
   ConfirmPaymentResult,
   CreateMenuItemInput,
@@ -119,6 +123,8 @@ import type {
   CreatePaymentInput,
   CreatePaymentResult,
   CreateVendorInput,
+  CreateVendorPayoutInput,
+  CreateVendorPayoutResult,
   CreateDriverInput,
   Driver,
   KitchenStage,
@@ -131,6 +137,7 @@ import type {
   Pagination,
   Payment,
   PayoutMethod,
+  ProviderPaymentResult,
   RecordRecoveryEventInput,
   RecordOperatorActionInput,
   OperatorAction,
@@ -146,8 +153,14 @@ import type {
   UpdateDriverInput,
   UpdateVendorInput,
   Vendor,
+  VendorPayout,
+  VendorPayoutOpsRow,
   VendorRecoveryEvent,
 } from "@/lib/types";
+import type {
+  CommissionSettings,
+  UpdateCommissionSettingsInput,
+} from "@/lib/momo/commission";
 import { isReservedVendorSlug, normalizeVendorSlug } from "@/lib/vendor/slug";
 import { mintOwnerToken } from "@/lib/vendor/owner-token";
 import { thumbGradientForId } from "@/lib/menu/gradients";
@@ -310,6 +323,12 @@ function mapVendor(vendor: PrismaVendor): Vendor {
     featureWhatsappNotify: vendor.featureWhatsappNotify,
     featureStockTracking: vendor.featureStockTracking,
     featureProfitInsights: vendor.featureProfitInsights,
+    // ADR-0096 Commission fields
+    commissionEnabled: vendor.commissionEnabled,
+    commissionPercent: vendor.commissionPercent
+      ? Number(vendor.commissionPercent)
+      : null,
+    feeReminderEnabled: vendor.feeReminderEnabled,
     createdAt: vendor.createdAt,
     // ownerTokenHash deliberately omitted — server-only (ADR-0022).
   };
@@ -639,6 +658,42 @@ function mapPayment(payment: PrismaPayment): Payment {
     createdAt: payment.createdAt,
   };
 }
+
+function mapVendorPayout(row: PrismaVendorPayout): VendorPayout {
+  return {
+    id: row.id,
+    orderId: row.orderId,
+    vendorId: row.vendorId,
+    amount: row.amount,
+    referenceId: row.referenceId,
+    status: row.status as VendorPayout["status"],
+    payeeType: row.payeeType as VendorPayout["payeeType"],
+    payeeId: row.payeeId,
+    lastError: row.lastError ?? undefined,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+function buildPayoutOpsRow(
+  order: Order,
+  latest: VendorPayout | null,
+): VendorPayoutOpsRow {
+  const status = latest?.status;
+  return {
+    orderId: order.id,
+    orderStatus: order.status,
+    orderTotalAmount: order.totalAmount,
+    orderCreatedAt: order.createdAt,
+    customerPhone: order.customerPhone,
+    landmark: order.landmark,
+    latestPayout: latest,
+    canRetry: status !== "SUCCESS" && status !== "PENDING",
+    canSync: status === "PENDING",
+  };
+}
+
+const PAID_LIKE_STATUSES: OrderStatus[] = ["PAID", "DISPATCHED", "COMPLETED"];
 
 function mapOrder(order: PrismaOrderWithItems): Order {
   return {
@@ -2168,6 +2223,7 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       activeOrderCount,
       recoveryEventCount,
       recentOrders: recentOrders.map(mapOrder),
+      payoutRows: await listVendorPayoutOpsRows(vendorSlug),
       stockTrackedItemCount: tracked.length,
       stockLowItemCount: low.length,
       todayGrossRwf,
@@ -2206,6 +2262,9 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       featureWhatsappNotify,
       featureStockTracking,
       featureProfitInsights,
+      commissionEnabled,
+      commissionPercent,
+      feeReminderEnabled,
       ...rest
     } = input;
     const updated = await updateVendor(vendorSlug, rest);
@@ -2219,11 +2278,20 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     if (featureProfitInsights !== undefined)
       featureFlagData.featureProfitInsights = featureProfitInsights;
 
-    if (Object.keys(featureFlagData).length > 0) {
+    // ADR-0096 Commission fields
+    const commissionData: Record<string, boolean | number | null> = {};
+    if (commissionEnabled !== undefined)
+      commissionData.commissionEnabled = commissionEnabled;
+    if (commissionPercent !== undefined)
+      commissionData.commissionPercent = commissionPercent;
+    if (feeReminderEnabled !== undefined)
+      commissionData.feeReminderEnabled = feeReminderEnabled;
+
+    if (Object.keys(featureFlagData).length > 0 || Object.keys(commissionData).length > 0) {
       try {
         await client.vendor.update({
           where: { slug: normalizeVendorSlug(vendorSlug) },
-          data: featureFlagData,
+          data: { ...featureFlagData, ...commissionData },
         });
       } catch (error) {
         if (isNotFoundError(error)) return null;
@@ -3331,6 +3399,14 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
       0,
     );
 
+    // ADR-0096: enforce minimum order total
+    const settings = await getCommissionSettings();
+    if (totalAmount < settings.minimumOrderTotalRwf) {
+      throw new Error(
+        `Minimum order total is ${settings.minimumOrderTotalRwf} RWF`,
+      );
+    }
+
     const order = await client.order.create({
       data: {
         vendorId: vendor.id,
@@ -3910,6 +3986,124 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     };
   }
 
+  async function applyProviderPaymentResult(
+    ref: string,
+    result: ProviderPaymentResult,
+  ): Promise<ApplyProviderPaymentResult> {
+    const paymentRow = await client.payment.findUnique({
+      where: { transactionRef: ref },
+    });
+    if (!paymentRow) {
+      return { ok: false, code: "NOT_FOUND" };
+    }
+
+    const orderRow = await client.order.findUnique({
+      where: { id: paymentRow.orderId },
+      include: orderInclude,
+    });
+    if (!orderRow) {
+      return { ok: false, code: "NOT_FOUND" };
+    }
+
+    const payment = mapPayment(paymentRow);
+    const order = mapOrder(orderRow);
+
+    if (result === "SUCCESS") {
+      if (payment.status === "SUCCESS" && order.status === "PAID") {
+        return { ok: true, payment, order };
+      }
+      if (payment.status === "FAILED" || order.status === "CANCELLED") {
+        return {
+          ok: false,
+          code: "PAYMENT_TERMINALLY_FAILED",
+          payment,
+        };
+      }
+      if (order.status !== "PENDING" && order.status !== "PAID") {
+        return { ok: false, code: "ORDER_NOT_PENDING" };
+      }
+
+      const updated = await client.$transaction(async (tx) => {
+        const current = await tx.payment.findUnique({
+          where: { transactionRef: ref },
+        });
+        if (!current) {
+          throw new Error("Payment not found during provider confirm");
+        }
+        if (current.status === "SUCCESS") {
+          const paidOrder = await tx.order.findUniqueOrThrow({
+            where: { id: current.orderId },
+            include: orderInclude,
+          });
+          return { paymentRow: current, orderRow: paidOrder, firstPaid: false };
+        }
+
+        const [paymentUpdated, orderUpdated] = await Promise.all([
+          tx.payment.update({
+            where: { id: current.id },
+            data: { status: "SUCCESS" },
+          }),
+          tx.order.update({
+            where: { id: current.orderId },
+            data: {
+              status: "PAID",
+              kitchenStage: "NEW",
+              paidAt: new Date(),
+            },
+            include: orderInclude,
+          }),
+        ]);
+        return {
+          paymentRow: paymentUpdated,
+          orderRow: orderUpdated,
+          firstPaid: true,
+        };
+      });
+
+      if (updated.firstPaid) {
+        await decrementStockOnPaid(payment.orderId);
+      }
+
+      return {
+        ok: true,
+        payment: mapPayment(updated.paymentRow),
+        order: mapOrder(updated.orderRow),
+      };
+    }
+
+    if (payment.status === "FAILED" && order.status === "CANCELLED") {
+      return { ok: true, payment, order };
+    }
+    if (payment.status === "SUCCESS" || order.status === "PAID") {
+      return {
+        ok: false,
+        code: "PAYMENT_TERMINALLY_FAILED",
+        payment,
+      };
+    }
+
+    const updated = await client.$transaction(async (tx) => {
+      const [paymentUpdated, orderUpdated] = await Promise.all([
+        tx.payment.update({
+          where: { id: payment.id },
+          data: { status: "FAILED" },
+        }),
+        tx.order.update({
+          where: { id: payment.orderId },
+          data: { status: "CANCELLED" },
+          include: orderInclude,
+        }),
+      ]);
+      return { paymentUpdated, orderUpdated };
+    });
+
+    return {
+      ok: true,
+      payment: mapPayment(updated.paymentUpdated),
+      order: mapOrder(updated.orderUpdated),
+    };
+  }
+
   async function findResumableManualOrder(
     vendorSlug: string,
     customerPhone: string,
@@ -3954,6 +4148,227 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     }
 
     return null;
+  }
+
+  async function createVendorPayout(
+    input: CreateVendorPayoutInput,
+  ): Promise<CreateVendorPayoutResult> {
+    const orderRow = await client.order.findUnique({
+      where: { id: input.orderId },
+    });
+    if (!orderRow) {
+      return { ok: false, code: "ORDER_NOT_FOUND" };
+    }
+    if (!PAID_LIKE_STATUSES.includes(orderRow.status as OrderStatus)) {
+      return { ok: false, code: "ORDER_NOT_PAID" };
+    }
+
+    const latestRow = await client.vendorPayout.findFirst({
+      where: { orderId: input.orderId },
+      orderBy: { createdAt: "desc" },
+    });
+    if (latestRow?.status === "SUCCESS") {
+      return {
+        ok: false,
+        code: "ALREADY_PAID_OUT",
+        payout: mapVendorPayout(latestRow),
+      };
+    }
+    if (latestRow?.status === "PENDING") {
+      return {
+        ok: false,
+        code: "PAYOUT_IN_FLIGHT",
+        payout: mapVendorPayout(latestRow),
+      };
+    }
+
+    // ADR-0096: also block if any payout (not just latest) has succeeded
+    const anySuccess = await client.vendorPayout.findFirst({
+      where: { orderId: input.orderId, status: "SUCCESS" },
+    });
+    if (anySuccess) {
+      return {
+        ok: false,
+        code: "ALREADY_PAID_OUT",
+        payout: mapVendorPayout(anySuccess),
+      };
+    }
+
+    const created = await client.vendorPayout.create({
+      data: {
+        orderId: input.orderId,
+        vendorId: input.vendorId,
+        amount: input.amount,
+        referenceId: input.referenceId,
+        status: input.initialStatus ?? "PENDING",
+        payeeType: input.payeeType,
+        payeeId: input.payeeId,
+        lastError: input.lastError,
+      },
+    });
+    return { ok: true, payout: mapVendorPayout(created) };
+  }
+
+  async function getVendorPayoutByRef(
+    ref: string,
+  ): Promise<VendorPayout | null> {
+    const row = await client.vendorPayout.findUnique({
+      where: { referenceId: ref },
+    });
+    return row ? mapVendorPayout(row) : null;
+  }
+
+  async function getLatestVendorPayoutForOrder(
+    orderId: string,
+  ): Promise<VendorPayout | null> {
+    const row = await client.vendorPayout.findFirst({
+      where: { orderId },
+      orderBy: { createdAt: "desc" },
+    });
+    return row ? mapVendorPayout(row) : null;
+  }
+
+  async function listVendorPayoutOpsRows(
+    vendorSlug: string,
+  ): Promise<VendorPayoutOpsRow[]> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return [];
+
+    const paidOrders = await client.order.findMany({
+      where: {
+        vendorId: vendor.id,
+        status: { in: ["PAID", "DISPATCHED", "COMPLETED"] },
+      },
+      include: orderInclude,
+      orderBy: { createdAt: "desc" },
+      take: 30,
+    });
+
+    const orderIds = paidOrders.map((o) => o.id);
+    const payouts =
+      orderIds.length === 0
+        ? []
+        : await client.vendorPayout.findMany({
+            where: { orderId: { in: orderIds } },
+            orderBy: { createdAt: "desc" },
+          });
+
+    const latestByOrder = new Map<string, VendorPayout>();
+    for (const row of payouts) {
+      if (!latestByOrder.has(row.orderId)) {
+        latestByOrder.set(row.orderId, mapVendorPayout(row));
+      }
+    }
+
+    return paidOrders.map((row) =>
+      buildPayoutOpsRow(mapOrder(row), latestByOrder.get(row.id) ?? null),
+    );
+  }
+
+  async function applyVendorPayoutResult(
+    ref: string,
+    result: ProviderPaymentResult,
+    lastError?: string,
+  ): Promise<ApplyVendorPayoutResult> {
+    const current = await client.vendorPayout.findUnique({
+      where: { referenceId: ref },
+    });
+    if (!current) {
+      return { ok: false, code: "NOT_FOUND" };
+    }
+
+    if (current.status === "SUCCESS") {
+      if (result === "SUCCESS") {
+        return { ok: true, payout: mapVendorPayout(current) };
+      }
+      return {
+        ok: false,
+        code: "TERMINAL",
+        payout: mapVendorPayout(current),
+      };
+    }
+    if (current.status === "FAILED" && result === "FAILED") {
+      return { ok: true, payout: mapVendorPayout(current) };
+    }
+    if (current.status === "FAILED" && result === "SUCCESS") {
+      // allow late SUCCESS upgrade
+    } else if (current.status !== "PENDING") {
+      return {
+        ok: false,
+        code: "TERMINAL",
+        payout: mapVendorPayout(current),
+      };
+    }
+
+    const updated = await client.vendorPayout.update({
+      where: { id: current.id },
+      data: {
+        status: result === "SUCCESS" ? "SUCCESS" : "FAILED",
+        lastError:
+          result === "FAILED" ? lastError ?? current.lastError : null,
+      },
+    });
+    return { ok: true, payout: mapVendorPayout(updated) };
+  }
+
+  // ─── Commission Settings (ADR-0096 Slice 3) ───────────────────────────────────
+  async function getCommissionSettings(): Promise<CommissionSettings> {
+    const row = await client.commissionSettings.findUnique({
+      where: { id: "default" },
+    });
+    if (!row) {
+      // Should never happen after migration, but provide safe fallback
+      return {
+        id: "default",
+        globalEnabled: false,
+        globalDefaultPercent: 0,
+        minimumOrderTotalRwf: 1000,
+        updatedAt: new Date(),
+      };
+    }
+    return {
+      id: row.id,
+      globalEnabled: row.globalEnabled,
+      globalDefaultPercent: Number(row.globalDefaultPercent),
+      minimumOrderTotalRwf: row.minimumOrderTotalRwf,
+      updatedAt: row.updatedAt,
+    };
+  }
+
+  async function updateCommissionSettings(
+    input: UpdateCommissionSettingsInput,
+  ): Promise<CommissionSettings> {
+    const { normalizeCommissionPercent, normalizeMinimumOrderTotalRwf } =
+      await import("@/lib/momo/commission");
+
+    // Build update data with normalized values
+    const updateData: Prisma.CommissionSettingsUpdateInput = {};
+    if (input.globalEnabled !== undefined) {
+      updateData.globalEnabled = input.globalEnabled;
+    }
+    if (input.globalDefaultPercent !== undefined) {
+      updateData.globalDefaultPercent = normalizeCommissionPercent(
+        input.globalDefaultPercent,
+      );
+    }
+    if (input.minimumOrderTotalRwf !== undefined) {
+      updateData.minimumOrderTotalRwf = normalizeMinimumOrderTotalRwf(
+        input.minimumOrderTotalRwf,
+      );
+    }
+
+    const updated = await client.commissionSettings.update({
+      where: { id: "default" },
+      data: updateData,
+    });
+
+    return {
+      id: updated.id,
+      globalEnabled: updated.globalEnabled,
+      globalDefaultPercent: Number(updated.globalDefaultPercent),
+      minimumOrderTotalRwf: updated.minimumOrderTotalRwf,
+      updatedAt: updated.updatedAt,
+    };
   }
 
   // ─── Prospects (ADR-0054) ───────────────────────────────────────────────────
@@ -4660,6 +5075,14 @@ export function createPrismaStore(client: PrismaClient = defaultPrisma): Store {
     confirmPayment,
     confirmManualPayment,
     abandonManualPayment,
+    applyProviderPaymentResult,
     findResumableManualOrder,
+    createVendorPayout,
+    getVendorPayoutByRef,
+    getLatestVendorPayoutForOrder,
+    listVendorPayoutOpsRows,
+    applyVendorPayoutResult,
+    getCommissionSettings,
+    updateCommissionSettings,
   };
 }

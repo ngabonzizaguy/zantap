@@ -1,6 +1,8 @@
 import type {
   AbandonManualPaymentResult,
   AddMenuImageInput,
+  ApplyProviderPaymentResult,
+  ApplyVendorPayoutResult,
   ConfirmManualPaymentResult,
   ConfirmPaymentResult,
   CreateMenuItemInput,
@@ -8,6 +10,8 @@ import type {
   CreatePaymentInput,
   CreatePaymentResult,
   CreateVendorInput,
+  CreateVendorPayoutInput,
+  CreateVendorPayoutResult,
   CreateDriverInput,
   Driver,
   KitchenStage,
@@ -18,6 +22,7 @@ import type {
   OrderStatus,
   Pagination,
   Payment,
+  ProviderPaymentResult,
   RecordRecoveryEventInput,
   RecordOperatorActionInput,
   OperatorAction,
@@ -33,9 +38,15 @@ import type {
   UpdateDriverInput,
   UpdateVendorInput,
   Vendor,
+  VendorPayout,
+  VendorPayoutOpsRow,
   VendorRecoveryEvent,
 } from "@/lib/types";
 import type { ResettableStore } from "@/lib/store/types";
+import type {
+  CommissionSettings,
+  UpdateCommissionSettingsInput,
+} from "@/lib/momo/commission";
 import type {
   CreateMarketingFunnelEventInput,
   MarketingFunnelEvent,
@@ -231,6 +242,34 @@ function clonePayment(payment: Payment): Payment {
   return { ...payment, createdAt: new Date(payment.createdAt) };
 }
 
+function cloneVendorPayout(payout: VendorPayout): VendorPayout {
+  return {
+    ...payout,
+    createdAt: new Date(payout.createdAt),
+    updatedAt: new Date(payout.updatedAt),
+  };
+}
+
+const PAID_LIKE: OrderStatus[] = ["PAID", "DISPATCHED", "COMPLETED"];
+
+function buildPayoutOpsRow(
+  order: Order,
+  latest: VendorPayout | null,
+): VendorPayoutOpsRow {
+  const status = latest?.status;
+  return {
+    orderId: order.id,
+    orderStatus: order.status,
+    orderTotalAmount: order.totalAmount,
+    orderCreatedAt: new Date(order.createdAt),
+    customerPhone: order.customerPhone,
+    landmark: order.landmark,
+    latestPayout: latest ? cloneVendorPayout(latest) : null,
+    canRetry: status !== "SUCCESS" && status !== "PENDING",
+    canSync: status === "PENDING",
+  };
+}
+
 /**
  * In-memory adapter: the demo dataset promoted to a real Store implementation.
  * State lives in this closure (one instance per process) so a single dev
@@ -245,6 +284,7 @@ export function createInMemoryStore(): ResettableStore {
   let menuImages: MenuImage[] = [];
   let orders: Order[] = [];
   let payments: Payment[] = [];
+  let vendorPayouts: VendorPayout[] = [];
   let vendors: StoredVendor[] = [];
   let leads: Lead[] = [];
   let menuIntakes: MenuIntake[] = [];
@@ -283,6 +323,7 @@ export function createInMemoryStore(): ResettableStore {
   let orderCounter = 0;
   let orderItemCounter = 0;
   let paymentCounter = 0;
+  let vendorPayoutCounter = 0;
   let menuItemCounter = 0;
   let inventoryItemCounter = 0;
   let inventoryAdjustmentCounter = 0;
@@ -448,6 +489,7 @@ export function createInMemoryStore(): ResettableStore {
     menuImages = [];
     orders = seedOrders.map(cloneOrder);
     payments = [];
+    vendorPayouts = [];
     vendors = [{ ...seedVendor, ownerTokenHash: DEMO_OWNER_TOKEN_HASH }];
     recoveryEvents = [];
     operatorActions = [];
@@ -482,6 +524,7 @@ export function createInMemoryStore(): ResettableStore {
     orderCounter = 0;
     orderItemCounter = 0;
     paymentCounter = 0;
+    vendorPayoutCounter = 0;
     inventoryItemCounter = 0;
     inventoryAdjustmentCounter = 0;
     vendorCounter = 0;
@@ -541,6 +584,10 @@ export function createInMemoryStore(): ResettableStore {
       featureWhatsappNotify: false,
       featureStockTracking: false,
       featureProfitInsights: false,
+      // ADR-0096 Commission defaults
+      commissionEnabled: true,
+      commissionPercent: null,
+      feeReminderEnabled: false,
       ownerTokenHash: input.ownerTokenHash,
       createdAt: new Date(),
     };
@@ -593,6 +640,16 @@ export function createInMemoryStore(): ResettableStore {
         : {}),
       ...(input.description !== undefined
         ? { description: input.description }
+        : {}),
+      // ADR-0096 Commission fields
+      ...(input.commissionEnabled !== undefined
+        ? { commissionEnabled: input.commissionEnabled }
+        : {}),
+      ...(input.commissionPercent !== undefined
+        ? { commissionPercent: input.commissionPercent }
+        : {}),
+      ...(input.feeReminderEnabled !== undefined
+        ? { feeReminderEnabled: input.feeReminderEnabled }
         : {}),
     };
     vendors[index] = updated;
@@ -1657,6 +1714,7 @@ export function createInMemoryStore(): ResettableStore {
       activeOrderCount,
       recoveryEventCount: vendorRecovery.length,
       recentOrders,
+      payoutRows: await listVendorPayoutOpsRows(vendorSlug),
       stockTrackedItemCount: tracked.length,
       stockLowItemCount: low.length,
       todayGrossRwf,
@@ -2545,6 +2603,14 @@ export function createInMemoryStore(): ResettableStore {
       0,
     );
 
+    // ADR-0096: enforce minimum order total
+    const settings = await getCommissionSettings();
+    if (totalAmount < settings.minimumOrderTotalRwf) {
+      throw new Error(
+        `Minimum order total is ${settings.minimumOrderTotalRwf} RWF`,
+      );
+    }
+
     const order: Order = {
       id,
       vendorId: vendor.id,
@@ -3046,6 +3112,76 @@ export function createInMemoryStore(): ResettableStore {
     };
   }
 
+  async function applyProviderPaymentResult(
+    ref: string,
+    result: ProviderPaymentResult,
+  ): Promise<ApplyProviderPaymentResult> {
+    const paymentIndex = payments.findIndex((p) => p.transactionRef === ref);
+    if (paymentIndex === -1) {
+      return { ok: false, code: "NOT_FOUND" };
+    }
+
+    const payment = payments[paymentIndex];
+    const order = orders.find((o) => o.id === payment.orderId);
+    if (!order) {
+      return { ok: false, code: "NOT_FOUND" };
+    }
+
+    if (result === "SUCCESS") {
+      if (payment.status === "SUCCESS" && order.status === "PAID") {
+        return {
+          ok: true,
+          payment: clonePayment(payment),
+          order: cloneOrder(order),
+        };
+      }
+      if (payment.status === "FAILED" || order.status === "CANCELLED") {
+        return {
+          ok: false,
+          code: "PAYMENT_TERMINALLY_FAILED",
+          payment: clonePayment(payment),
+        };
+      }
+      if (order.status !== "PENDING" && order.status !== "PAID") {
+        return { ok: false, code: "ORDER_NOT_PENDING" };
+      }
+
+      payments[paymentIndex] = { ...payment, status: "SUCCESS" };
+      await updateOrderStatus(payment.orderId, "PAID");
+      decrementStockForOrder(payment.orderId);
+      const updatedOrder = orders.find((o) => o.id === payment.orderId);
+      return {
+        ok: true,
+        payment: clonePayment(payments[paymentIndex]),
+        order: cloneOrder(updatedOrder ?? order),
+      };
+    }
+
+    if (payment.status === "FAILED" && order.status === "CANCELLED") {
+      return {
+        ok: true,
+        payment: clonePayment(payment),
+        order: cloneOrder(order),
+      };
+    }
+    if (payment.status === "SUCCESS" || order.status === "PAID") {
+      return {
+        ok: false,
+        code: "PAYMENT_TERMINALLY_FAILED",
+        payment: clonePayment(payment),
+      };
+    }
+
+    payments[paymentIndex] = { ...payment, status: "FAILED" };
+    await updateOrderStatus(payment.orderId, "CANCELLED");
+    const updatedOrder = orders.find((o) => o.id === payment.orderId);
+    return {
+      ok: true,
+      payment: clonePayment(payments[paymentIndex]),
+      order: cloneOrder(updatedOrder ?? order),
+    };
+  }
+
   async function findResumableManualOrder(
     vendorSlug: string,
     customerPhone: string,
@@ -3074,6 +3210,167 @@ export function createInMemoryStore(): ResettableStore {
     }
 
     return null;
+  }
+
+  async function createVendorPayout(
+    input: CreateVendorPayoutInput,
+  ): Promise<CreateVendorPayoutResult> {
+    const order = orders.find((o) => o.id === input.orderId);
+    if (!order) {
+      return { ok: false, code: "ORDER_NOT_FOUND" };
+    }
+    if (!PAID_LIKE.includes(order.status)) {
+      return { ok: false, code: "ORDER_NOT_PAID" };
+    }
+
+    const latest = latestVendorPayout(input.orderId);
+    if (latest?.status === "SUCCESS") {
+      return { ok: false, code: "ALREADY_PAID_OUT", payout: cloneVendorPayout(latest) };
+    }
+    if (latest?.status === "PENDING") {
+      return { ok: false, code: "PAYOUT_IN_FLIGHT", payout: cloneVendorPayout(latest) };
+    }
+
+    // ADR-0096: also block if any payout (not just latest) has succeeded
+    const anySuccess = vendorPayouts.some(
+      (p) => p.orderId === input.orderId && p.status === "SUCCESS"
+    );
+    if (anySuccess) {
+      return { ok: false, code: "ALREADY_PAID_OUT" };
+    }
+
+    const now = new Date();
+    const payout: VendorPayout = {
+      id: `vp_${++vendorPayoutCounter}_${Date.now()}`,
+      orderId: input.orderId,
+      vendorId: input.vendorId,
+      amount: input.amount,
+      referenceId: input.referenceId,
+      status: input.initialStatus ?? "PENDING",
+      payeeType: input.payeeType,
+      payeeId: input.payeeId,
+      lastError: input.lastError,
+      createdAt: now,
+      updatedAt: now,
+    };
+    vendorPayouts = [...vendorPayouts, payout];
+    return { ok: true, payout: cloneVendorPayout(payout) };
+  }
+
+  function latestVendorPayout(orderId: string): VendorPayout | undefined {
+    return vendorPayouts
+      .filter((p) => p.orderId === orderId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+  }
+
+  async function getVendorPayoutByRef(ref: string): Promise<VendorPayout | null> {
+    const payout = vendorPayouts.find((p) => p.referenceId === ref);
+    return payout ? cloneVendorPayout(payout) : null;
+  }
+
+  async function getLatestVendorPayoutForOrder(
+    orderId: string,
+  ): Promise<VendorPayout | null> {
+    const latest = latestVendorPayout(orderId);
+    return latest ? cloneVendorPayout(latest) : null;
+  }
+
+  async function listVendorPayoutOpsRows(
+    vendorSlug: string,
+  ): Promise<VendorPayoutOpsRow[]> {
+    const vendor = await getVendorBySlug(vendorSlug);
+    if (!vendor) return [];
+
+    const paidOrders = orders
+      .filter((o) => o.vendorId === vendor.id && PAID_LIKE.includes(o.status))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, 30);
+
+    return paidOrders.map((order) =>
+      buildPayoutOpsRow(order, latestVendorPayout(order.id) ?? null),
+    );
+  }
+
+  async function applyVendorPayoutResult(
+    ref: string,
+    result: ProviderPaymentResult,
+    lastError?: string,
+  ): Promise<ApplyVendorPayoutResult> {
+    const index = vendorPayouts.findIndex((p) => p.referenceId === ref);
+    if (index === -1) {
+      return { ok: false, code: "NOT_FOUND" };
+    }
+
+    const current = vendorPayouts[index];
+    if (current.status === "SUCCESS") {
+      if (result === "SUCCESS") {
+        return { ok: true, payout: cloneVendorPayout(current) };
+      }
+      return { ok: false, code: "TERMINAL", payout: cloneVendorPayout(current) };
+    }
+    if (current.status === "FAILED" && result === "FAILED") {
+      return { ok: true, payout: cloneVendorPayout(current) };
+    }
+    if (current.status === "FAILED" && result === "SUCCESS") {
+      // Late SUCCESS after we marked FAILED (rare) — allow upgrade.
+    } else if (current.status !== "PENDING") {
+      return { ok: false, code: "TERMINAL", payout: cloneVendorPayout(current) };
+    }
+
+    const updated: VendorPayout = {
+      ...current,
+      status: result === "SUCCESS" ? "SUCCESS" : "FAILED",
+      lastError:
+        result === "FAILED"
+          ? lastError ?? current.lastError
+          : undefined,
+      updatedAt: new Date(),
+    };
+    vendorPayouts = [
+      ...vendorPayouts.slice(0, index),
+      updated,
+      ...vendorPayouts.slice(index + 1),
+    ];
+    return { ok: true, payout: cloneVendorPayout(updated) };
+  }
+
+  // ─── Commission Settings (ADR-0096 Slice 3) ───────────────────────────────────
+  let commissionSettings: CommissionSettings = {
+    id: "default",
+    globalEnabled: false,
+    globalDefaultPercent: 0,
+    minimumOrderTotalRwf: 1000,
+    updatedAt: new Date(),
+  };
+
+  async function getCommissionSettings(): Promise<CommissionSettings> {
+    return { ...commissionSettings };
+  }
+
+  async function updateCommissionSettings(
+    input: UpdateCommissionSettingsInput,
+  ): Promise<CommissionSettings> {
+    const { normalizeCommissionPercent, normalizeMinimumOrderTotalRwf } =
+      await import("@/lib/momo/commission");
+
+    commissionSettings = {
+      ...commissionSettings,
+      ...input,
+      updatedAt: new Date(),
+    };
+
+    // Normalize values through pure math helpers
+    if (input.globalDefaultPercent !== undefined) {
+      commissionSettings.globalDefaultPercent = normalizeCommissionPercent(
+        input.globalDefaultPercent,
+      );
+    }
+    if (input.minimumOrderTotalRwf !== undefined) {
+      commissionSettings.minimumOrderTotalRwf =
+        normalizeMinimumOrderTotalRwf(input.minimumOrderTotalRwf);
+    }
+
+    return { ...commissionSettings };
   }
 
   // ─── Prospects ──────────────────────────────────────────────────────────────
@@ -3618,7 +3915,15 @@ export function createInMemoryStore(): ResettableStore {
     confirmPayment,
     confirmManualPayment,
     abandonManualPayment,
+    applyProviderPaymentResult,
     findResumableManualOrder,
+    createVendorPayout,
+    getVendorPayoutByRef,
+    getLatestVendorPayoutForOrder,
+    listVendorPayoutOpsRows,
+    applyVendorPayoutResult,
+    getCommissionSettings,
+    updateCommissionSettings,
     reset,
   };
 }

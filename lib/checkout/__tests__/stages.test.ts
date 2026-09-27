@@ -18,6 +18,16 @@ describe("checkout stage transitions", () => {
     expect(transition("loading", "manual_pay_success")).toBe("momo_dial");
   });
 
+  it("loading → awaiting_prompt on openapi_prompt_sent", () => {
+    expect(transition("loading", "openapi_prompt_sent")).toBe(
+      "awaiting_prompt"
+    );
+  });
+
+  it("loading → success on openapi_paid (already SUCCESS)", () => {
+    expect(transition("loading", "openapi_paid")).toBe("success");
+  });
+
   it("loading → cart on stk_failed", () => {
     expect(transition("loading", "stk_failed")).toBe("cart");
   });
@@ -36,6 +46,18 @@ describe("checkout stage transitions", () => {
 
   it("awaiting_confirmation → cart on manual_abandon", () => {
     expect(transition("awaiting_confirmation", "manual_abandon")).toBe("cart");
+  });
+
+  it("awaiting_prompt → success on openapi_paid", () => {
+    expect(transition("awaiting_prompt", "openapi_paid")).toBe("success");
+  });
+
+  it("awaiting_prompt → cart on openapi_failed", () => {
+    expect(transition("awaiting_prompt", "openapi_failed")).toBe("cart");
+  });
+
+  it("awaiting_prompt → cart on openapi_cancel", () => {
+    expect(transition("awaiting_prompt", "openapi_cancel")).toBe("cart");
   });
 
   it("ussd → success on pin_success", () => {
@@ -62,6 +84,7 @@ describe("checkout stage transitions", () => {
       "ussd",
       "momo_dial",
       "awaiting_confirmation",
+      "awaiting_prompt",
       "success",
     ] as const) {
       expect(transition(stage, "reset")).toBe("menu");

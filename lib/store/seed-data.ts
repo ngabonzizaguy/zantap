@@ -29,6 +29,10 @@ export const seedVendor: Vendor = {
   featureWhatsappNotify: false,
   featureStockTracking: false,
   featureProfitInsights: false,
+  // ADR-0096 Commission defaults
+  commissionEnabled: true,
+  commissionPercent: null,
+  feeReminderEnabled: false,
   createdAt: new Date("2025-01-01"),
 };
 
