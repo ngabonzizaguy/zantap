@@ -6,10 +6,10 @@
 |---|---|---|
 | Grill Collection → Vendor payout, Commission Ops controls, refunds | ✅ GRILLED · glossary + ADR · subscriptions deferred | ADR-0096; `.scratch/momo-open-api/grill-decisions-2026-09-22.md`; `CONTEXT.md` |
 | Step 1–2 env + `npm run momo:setup` API-user provisioning | ✅ Owner confirmed sandbox users/keys in `.env` | `scripts/momo-setup.ts` |
-| Step 3–4 Open API client + webhook + Store provider result | ✅ LOCAL · client/webhook/tests | `lib/momo/open-api-*.ts`; `app/api/momo/{webhook,collection}`; ADR-0096 |
-| Slice 1 storefront checkout when `MOMO_MODE=openapi` | ✅ LOCAL · Test A owner PASS 2026-09-22 · awaiting sheet + MoMo status poll · prod mode untouched | `lib/checkout/*`; `OpenApiAwaitSheet`; grill-decisions Slice 1 |
-| Slice 2 Transfer refs + Ops retry | ✅ COMMITTED & DEPLOYED · VendorPayout table + webhook/sync + Ops Payouts tab · Order stays PAID on fail | ADR-0096; migration `20260922170000_vendor_payout_transfer_refs`; commit `9329ddf` |
-| Slice 3 Commission settings + fee snapshot | ✅ COMMITTED & DEPLOYED · settings + snapshot + Ops UI + tests · migration applied | ADR-0096; migration `20260927210722_commission_settings_and_vendor_payout`; issue-03-commission.md; commit `9329ddf` |
+| Step 3–4 Open API client + webhook + Store provider result | ✅ ON `main` `9329ddf` · client/webhook/tests | `lib/momo/open-api-*.ts`; `app/api/momo/{webhook,collection}`; ADR-0096 |
+| Slice 1 storefront checkout when `MOMO_MODE=openapi` | ✅ ON `main` `9329ddf` · Test A owner PASS 2026-09-22 (local) · awaiting sheet + MoMo status poll · prod mode untouched (code default `manual`) | `lib/checkout/*`; `OpenApiAwaitSheet`; grill-decisions Slice 1 |
+| Slice 2 Transfer refs + Ops retry | ✅ ON `main` `9329ddf` · VendorPayout table + webhook/sync + Ops Payouts tab · Order stays PAID on fail · Production deploy + migration apply claimed by `2f0d673` but no `dpl_` ID or smoke recorded | ADR-0096; migration `20260922170000_vendor_payout_transfer_refs`; commit `9329ddf` |
+| Slice 3 Commission settings + fee snapshot | ◐ ON `main` `9329ddf` · settings + minimum order total + Ops UI + fee math tests · **fee snapshot not yet written on PAID and payout still transfers full `payment.amount`** · Production deploy + migration apply claimed by `2f0d673`/ADR-0097, no `dpl_` ID or smoke recorded | ADR-0096; migration `20260927210722_commission_settings_and_vendor_payout`; issue-03-commission.md; commit `9329ddf` |
 | Test B real phone ~1000 RWF / prod cutover | ⏸ Owner gate | Ask before `mtnrwanda` or Production `MOMO_MODE=openapi` |
 
 ## Canonical folder onto `main` then Q11 isolate — 2026-09-18

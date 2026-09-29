@@ -1,5 +1,9 @@
 # Codex ↔ Cursor shared continuity prompt
 
+### 2026-09-28 — Candidate #11 MoMo Open API gateway + Slices 1–3 on `main` (recorded by 2026-09-29 reconcile)
+
+`9329ddf` (feat) + `2f0d673` (docs) on `main`: Open API client/webhook/collection, `VendorPayout` + Ops Payouts retry, Commission settings + per-Vendor controls, minimum order total. `2f0d673`/ADR-0097 state Slices 2–3 are deployed and migration `20260927210722_commission_settings_and_vendor_payout` is applied to Production; no `dpl_` ID or smoke is recorded, and `20260922170000_vendor_payout_transfer_refs` Production status is unrecorded. Production `MOMO_MODE` stays code-default `manual`; Test B / cutover is an owner gate. Still open on `main`: Order fee snapshot write and snapshot-based Vendor payout (currently full `payment.amount`); webhook trust model (ADR-0098 proposed). Tracking: `.scratch/architecture-candidates.md` Candidate #11; `.scratch/momo-open-api/issue-03-commission.md`.
+
 ### 2026-09-22 — Cursor — KDS rw/fr/sw baselines SHIPPED to Production
 
 `b0289f9` on `main` → Production `dpl_Hn2FAFCjHxNLL4ky8onYp6Bsx1vn` READY, aliased `zantap.app` (+ `zantap-psi.vercel.app`). Curl: `/vendor/inka-steakhouse` 200 (`kds-dark` + language selector); `/ops/settings` 307 (auth). No migration. Owner still self-serves Kinyarwanda "Soon" in Ops → Settings → KDS languages. Preserved continuity tests stay in the vitest suite as agent documentation.
@@ -32,7 +36,7 @@ Owner liked the c29 local KDS translation. Ported onto this folder from `zantap-
 
 Do **not** re-run the 2026-09-12 fast-forward. Owner approved push + merge + Production. GitHub `origin/main` is `5db897c` (`f32fca8` phones + docs). Live `zantap.app` is Production `dpl_AbmSN4zVWPhhi8VuhddoQPvjKErY` (`zantap-jqur1qppf`), aliased. Browser smoke: lead form defaults Rwanda `+250`, search `+44` lists United Kingdom, selecting it sets `GB +44`. Did not submit a Lead. KDS translation now lives locally on `feat/kds-translation-on-main`. ADR-0093 is the Q11 isolate ADR. Tracking: `.scratch/repository-continuity/issue-02-canonical-main-then-q11.md`.
 
-Last reconciled: **2026-09-18 (Africa/Kigali)** — Git/Q11 isolate; Candidate #29 product truth below still starts 2026-09-08.
+Last reconciled: **2026-09-29** — weekly continuity reconcile against `origin/main` `2f0d673` (Candidate #11 entry above). Previous: 2026-09-18 (Africa/Kigali) — Git/Q11 isolate; Candidate #29 product truth below still starts 2026-09-08.
 
 ### 2026-09-12 — Cursor — owner-approved KDS translation coverage complete locally
 

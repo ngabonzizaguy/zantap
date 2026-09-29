@@ -8,4 +8,6 @@
 
 **Consequences:** Commission infrastructure ready for production but remains inactive (globalEnabled defaults false). Production still uses MOMO_MODE=manual until owner approves Test B and cutover. Migration `20260927210722_commission_settings_and_vendor_payout` applied to production. All 573 tests passing.
 
+**As-built on `main` (reconcile 2026-09-29):** `9329ddf` ships the settings, Vendor flags, Ops UI, minimum order total check and pure `computeCommissionSnapshot`; the Order snapshot columns exist but no Store path writes them yet, and `initiateVendorPayoutForOrder` still transfers the full `payment.amount`. The migration also drops `MenuIntakeImportRun_intakeId_startedAt_idx` and `Order_driverId_idx`. Callback trust model: ADR-0098 (proposed).
+
 **Related:** ADR-0096 (MoMo Open API Collection and Vendor payout), issue-03-commission.md
