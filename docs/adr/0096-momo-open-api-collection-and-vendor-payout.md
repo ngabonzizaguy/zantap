@@ -1,6 +1,6 @@
 # MoMo Open API: Collection through ZanTap, then Vendor payout
 
-Status: accepted (grilled 2026-09-22; Slice 1 storefront checkout + Slice 2 Vendor Transfer persistence / Ops retry wired locally; Commission settings and production cutover still open)
+Status: accepted (grilled 2026-09-22; gateway Steps 1–4, Slice 1 storefront checkout, Slice 2 Vendor Transfer persistence / Ops retry and Slice 3 Commission settings on `main` `9329ddf` 2026-09-28 — see ADR-0097; fee snapshot write and production cutover still open)
 
 **Context:** Candidate #11 — replace manual USSD “I’ve paid” with MTN MoMo Open API. Owner wants Commission (Ops global + per-Vendor), Vendors paid to their chosen phone or merchant code, subscriptions deferred.
 
@@ -12,4 +12,4 @@ Status: accepted (grilled 2026-09-22; Slice 1 storefront checkout + Slice 2 Vend
 
 **Glossary:** `CONTEXT.md` (Collection, Vendor payout, Commission, Commission settings, Fee reminder, Refunded order, Minimum order total).
 
-**Progress:** Gateway Steps 1–4 + Slice 1 checkout + Slice 2 Transfer persist / Ops retry are local. Production remains `MOMO_MODE` default `manual` until owner approves Test B / cutover. Migration `20260922170000_vendor_payout_transfer_refs` not yet applied to prod.
+**Progress:** Gateway Steps 1–4 + Slice 1 checkout + Slice 2 Transfer persist / Ops retry + Slice 3 Commission settings are on `main` (`9329ddf`, 2026-09-28). Production remains `MOMO_MODE` default `manual` (code default in `lib/momo/mode.ts`) until owner approves Test B / cutover. `2f0d673` records Slices 2–3 as deployed and ADR-0097 records `20260927210722_commission_settings_and_vendor_payout` as applied to Production; no record states whether `20260922170000_vendor_payout_transfer_refs` was applied, and no `dpl_` deployment ID is recorded.
