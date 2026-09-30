@@ -57,6 +57,412 @@ Stock five-role vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `re
 
 Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
+## AI Agent Working Protocol
+
+When working on this repository, AI agents must follow this protocol:
+
+### 1. Read the context first
+
+Before making any changes:
+- Read `AGENTS.md` (this file)
+- Read `README.md` for current system overview
+- Read `docs/architecture.md` for architectural details
+- Read `CONTEXT.md` for domain terminology
+- Read relevant ADRs from `docs/adr/` for the area being modified
+
+### 2. Inspect the current implementation
+
+Never assume documentation is current:
+- Search for existing abstractions before creating new ones
+- Read the actual implementation files
+- Verify that documented features actually exist
+- Check whether a feature is implemented, partially implemented, or deferred
+
+### 3. Respect the Store seam
+
+Critical invariant:
+- The browser never imports the Store
+- All persistence must pass through the Store interface
+- Never add a competing data path
+- Never bypass the Store seam with direct Prisma calls in business logic
+
+### 4. Follow Server Action conventions
+
+For `"use server"` files:
+- Export ONLY async server actions
+- Never export types from these files
+- Never re-export non-async values
+- Import types from their source module instead
+- Run `npm run build` after editing to verify (dev ≠ prod)
+
+### 5. Check payment mode before changing checkout
+
+- Check current MOMO_MODE (simulate, manual, openapi)
+- Manual mode is production default
+- Open API is local only, awaiting owner approval
+- Do not change production payment mode without explicit instruction
+
+### 6. Respect owner token authorization
+
+- Owner tokens are per-vendor capability tokens
+- Guarded writes require owner token validation (assertOwnerToken)
+- Owner token is cached by slug, never typed
+- Phone-based recovery is available (recoverOwnerToken)
+- Do not bypass owner token guard without operator override
+
+### 7. Use existing design system tokens
+
+- Follow `DESIGN.md` for UI components
+- KDS uses scoped `.kds-dark` remap
+- Storefront uses editorial tokens
+- Do not add new legacy palettes (zt-*, zk-* are deprecated)
+
+### 8. Avoid duplicate implementations
+
+- Search for existing code before implementing
+- Reuse existing domain modules
+- Follow established patterns
+- Do not create competing data paths
+
+### 9. Run verification before declaring completion
+
+Always run:
+- `npm test` (tests)
+- `npm run lint` (linting)
+- `npm run build` (type check and build)
+
+Fix any failures before considering the task complete.
+
+### 10. Update documentation when architecture changes
+
+- Create/update ADR for significant architectural decisions
+- Update relevant sections in AGENTS.md
+- Update README.md if user-facing behavior changes
+- Update docs/architecture.md if data flow changes
+- Keep CONTEXT.md current with new terminology
+
+### 11. Never claim something is implemented unless it exists
+
+- Document actual state, not intended state
+- Mark deferred/experimental features clearly
+- Use "Unknown / requires verification" when uncertain
+- Do not invent features or capabilities
+
+### 12. Never silently remove existing functionality
+
+- Check usage before removing code
+- Update documentation when deprecating
+- Provide migration path when breaking changes are necessary
+- Do not remove features without explicit instruction
+
+### 13. Never expose secrets or credentials
+
+- Never write real credentials to documentation
+- Never log secrets or tokens
+- Never commit secrets to git
+- Use environment variables for secrets
+
+### 14. Prefer small, reversible changes
+
+- Make incremental changes
+- Keep changes focused on one task
+- Test after each change
+- Easy to revert if something goes wrong
+
+### 15. Preserve existing UX/design-system conventions
+
+- Match existing component patterns
+- Follow established interaction patterns
+- Respect existing terminology
+- Do not introduce inconsistent UX
+
+### 16. Check feature flags before assuming behavior
+
+- Check per-vendor feature flags (featureWhatsappNotify, featureStockTracking, featureProfitInsights)
+- Check global settings (CommissionSettings.globalEnabled)
+- Check PROVISION_KILL_SWITCH before assuming signup is open
+- Do not assume a feature is available for all vendors
+
+### 17. Verify KDS behavior in production context
+
+- KDS orders are status-gated (PAID/DISPATCHED/COMPLETED only)
+- PENDING orders do not appear on KDS
+- Kitchen stage is separate from payment status
+- SSE stream self-closes at 250s with client reconnect
+
+### 18. Test payment flows carefully
+
+- Manual mode: USSD dial + self-confirm
+- Simulate mode: PIN 12345
+- Open API mode: Collection → webhook → payout (local only)
+- Do not assume all payment modes work the same
+
+### 19. Handle database connection correctly
+
+- Use DATABASE_URL for pooled connection (port 6543)
+- Use DIRECT_URL for migrations (port 5432)
+- TEST_DATABASE_URL uses direct connection (not pooler)
+- Prisma CLI auto-loads .env, but vitest does not
+
+### 20. Know when to ask for clarification
+
+If you encounter:
+- Conflicting documentation
+- Unclear requirements
+- Ambiguous architectural decisions
+- Potential security implications
+
+Stop and ask for clarification rather than guessing.
+
+## Current Feature Status
+
+This section provides a quick reference for agents to understand what is implemented, partially implemented, or deferred.
+
+### Core Platform
+
+| Feature | Status | Notes |
+|---|---|---|
+| Store seam (in-memory + Prisma) | Implemented | Single data seam, factory pattern |
+| Next.js App Router | Implemented | All surfaces use App Router |
+| TypeScript | Implemented | Full codebase typed |
+| Tailwind CSS | Implemented | DESIGN.md tokens + custom KDS dark theme |
+| Prisma ORM | Implemented | PostgreSQL schema management |
+| Vercel deployment | Implemented | Production on zantap.app |
+
+### Customer Experience
+
+| Feature | Status | Notes |
+|---|---|---|
+| Storefront (`/[slug]`) | Implemented | Editorial hero, menu, cart |
+| Menu browsing | Implemented | Categories, search, filters |
+| Cart management | Implemented | Add/remove items, quantity |
+| Item customization | Implemented | Add-ons, size options, notes |
+| Checkout flow | Implemented | Validation, delivery fields |
+| Manual MoMo payment | Implemented | USSD dial + self-confirm (production) |
+| Simulate MoMo payment | Implemented | PIN 12345 (local dev) |
+| Open API payment | Local only | Collection + payout implemented, awaiting owner approval |
+| Restaurant hub | Implemented | PWA install, saved restaurants, updates |
+| PWA customer app | Implemented | Per-storefront manifest |
+
+### Vendor Experience
+
+| Feature | Status | Notes |
+|---|---|---|
+| KDS (`/vendor/[slug]`) | Implemented | Orders, menu, history, drivers, setup |
+| Kitchen stages | Implemented | NEW → ACCEPTED → PREPARING → READY → OUT FOR DELIVERY → COMPLETED |
+| Order management | Implemented | View, filter, sort, bulk actions |
+| Menu CRUD | Implemented | Create, update, archive, restore |
+| Menu media | Implemented | Multi-image gallery, primary image |
+| Add-ons | Implemented | Item-specific add-on groups, server-priced |
+| Size options | Implemented | Dynamic size options with price variants |
+| Drivers | Implemented | CRUD, assignment, dispatch modal |
+| Order history | Implemented | Filters, pagination, CSV/XLSX export |
+| Profit insights | Implemented | Expenses, period profit, cost prices |
+| Stock tracking | Implemented | Dish-level stock, low-stock thresholds |
+| Vendor updates | Implemented | Automatic public catalog feed |
+| KDS translations | Implemented | en/rw/fr/sw with Ops-controlled availability |
+| KDS readiness guide | Implemented | Replayable onboarding education |
+| KDS dark theme | Implemented | Scoped .kds-dark CSS remap |
+| PWA KDS app | Implemented | Per-vendor manifest |
+
+### Onboarding
+
+| Feature | Status | Notes |
+|---|---|---|
+| Self-serve onboarding | Implemented | Gate-free wizard, owner token |
+| Business essentials | Implemented | Slug availability, country, category |
+| Payments setup | Implemented | Payout method (phone/merchant code) |
+| Quick menu | Implemented | First dish, category, optional photo |
+| Review step | Implemented | Editable cards before submission |
+| You're Live | Implemented | Confetti, storefront URL, QR code |
+| Owner token | Implemented | Per-vendor capability token, cached by slug |
+| Phone-based recovery | Implemented | Non-halting recovery + recovery event |
+| Recovery event logging | Implemented | Server-side log for Ops review |
+
+### Operator Console
+
+| Feature | Status | Notes |
+|---|---|---|
+| Ops login | Implemented | OPERATOR_UI_SECRET |
+| Vendor directory | Implemented | List, filter, search vendors |
+| Vendor detail | Implemented | Full vendor info, audit log |
+| Vendor suspension | Implemented | Suspend/reactive vendors |
+| Owner token management | Implemented | Revoke/reissue owner tokens |
+| Lead inbox | Implemented | View, update status, assign routing |
+| Lead routing settings | Implemented | Multi-recipient WhatsApp routing |
+| Recovery inbox | Implemented | View recovery events, review notes |
+| Prospect inbox | Implemented | Outbound prospect tracking |
+| Menu intake review | Implemented | Review, edit, import, delete |
+| KDS language settings | Implemented | Ops-controlled availability (en/rw/fr/sw) |
+| Marketing settings | Implemented | Social links, contact info |
+| Site translations | Implemented | Ops-edited marketing copy |
+| Commission settings | Implemented | Global + per-Vendor controls (inactive until Open API) |
+| Briefing management | Implemented | Access grants, versions, interests |
+| Marketing insights | Implemented | Privacy-minimal funnel analytics |
+
+### Marketing
+
+| Feature | Status | Notes |
+|---|---|
+| Marketing homepage (`/`) | Implemented | Cinematic hero, scroll-world preview |
+| Lead capture form | Implemented | Durable, Rwanda E.164 phone |
+| Scroll-world preview | Implemented | Zero-credit still crossfade preview |
+| Language switcher | Implemented | en/rw/fr/sw selector |
+| Lead routing | Implemented | Multi-recipient WhatsApp routing |
+| Privacy-minimal analytics | Implemented | Funnel events, no PII |
+
+### Private Briefing
+
+| Feature | Status | Notes |
+|---|---|---|
+| Access grants | Implemented | Recipient-specific, 4-digit PIN |
+| Viewing sessions | Implemented | Max 2 sessions per grant |
+| Session expiry | Implemented | Authoritative even during active session |
+| Watermarking | Implemented | Abstract fingerprint + recipient mark |
+| Viewer acknowledgement | Implemented | One-time confidentiality notice |
+| Briefing versioning | Implemented | Immutable pinned versions |
+| Evidence management | Implemented | Curated snapshots, not live data |
+| Activity tracking | Implemented | Privacy-limited engagement history |
+| Interest submission | Implemented | Ops inbox for follow-up |
+
+### Menu Intake
+
+| Feature | Status | Notes |
+|---|---|---|
+| Public intake page | Implemented | Self-build or assisted paths |
+| Structured dishes | Implemented | Mirror KDS catalog fields |
+| Source media upload | Implemented | Private Blob storage |
+| Drafts autosave | Implemented | Local persistence before submission |
+| Resume access | Implemented | Credential-based, expires in 30 days |
+| Ops review | Implemented | Edit, answer questions, select destination |
+| Import to KDS | Implemented | Create/update vendor menu |
+| Private source storage | Implemented | Separate Blob store |
+| Ops trash/restore | Implemented | Soft delete with 30-day purge |
+| Language support | Implemented | en/rw/fr/sw form |
+
+### Infrastructure
+
+| Feature | Status | Notes |
+|---|---|---|
+| Supabase PostgreSQL | Implemented | Production database |
+| Vercel Blob | Implemented | Menu media + private intake storage |
+| SSE live updates | Implemented | KDS stream with self-close + reconnect |
+| KDS order pagination | Implemented | Realtime boundary, later-page stability |
+| Pooler egress optimization | Implemented | Revision-first polling (ADR-0023) |
+| Test infrastructure | Implemented | Vitest, contract tests, Prisma suite opt-in |
+
+### Deferred
+
+| Feature | Notes |
+|---|---|
+| Real authentication system | Owner tokens only (candidate #12) |
+| Vendor/ops auth beyond owner tokens | Candidate #12 |
+| Live MTN MoMo Open API in production | Implemented locally, awaiting owner approval |
+| Automatic WhatsApp Business API delivery | Manual handoff only |
+| KDS fee reminder UI | Flag only implemented |
+| Offline KDS queue and chime | PWA baseline shipped, offline queue deferred |
+| Per-Vendor Open API mix long-term | Global cutover planned (ADR-0096) |
+| Auto Vendor clawback | Manual retry only in v1 |
+| On-ticket fee split for every Vendor | Commission is backend calculation only |
+
+## Current State Snapshot
+
+**Last audited:** 2026-09-30
+
+**Repository state:**
+- Main branch: Clean, recent commits include Commission settings (Slice 3), KDS translations, onboarding redesign
+- All major surfaces implemented and deployed to production (zantap.app)
+- 97 ADRs documenting architectural decisions
+- Test suite: ~573 tests passing (with Prisma suite opt-in by default)
+- Build: Clean (npm run build passes)
+- Lint: Clean (npm run lint passes)
+
+**Implemented:**
+- Store seam (in-memory + Prisma adapters)
+- Manual MoMo USSD checkout (production)
+- Simulate MoMo checkout (local dev)
+- Open API Collection + Vendor payout (local only, awaiting owner approval)
+- Commission settings and fee snapshot (implemented but inactive)
+- KDS SSE live updates with self-close and reconnect backoff
+- Kitchen stages (6-stage workflow)
+- Menu CRUD with multi-image gallery
+- Order history with filters, pagination, export
+- Self-serve onboarding (gate-free, owner token, phone-based recovery)
+- Drivers and assignment
+- Operator console (full vendor management, leads, recovery, routing, translations, briefing, menu intake)
+- Marketing funnel with durable lead capture
+- Multi-recipient WhatsApp routing
+- KDS translations (en/rw/fr/sw)
+- KDS dark operational theme
+- Vendor menu intake (self-build/assisted, private storage, Ops review/import)
+- Private stakeholder briefing (access grants, viewing sessions, evidence)
+- Stock tracking (dish-level)
+- Profit insights (expenses, period profit, cost prices)
+- Add-ons (item-specific, server-priced)
+- Size options (dynamic menu)
+- Vendor updates (automatic public catalog feed)
+- Restaurant hub (PWA install, saved restaurants, updates)
+- PWA manifests (root, per-vendor KDS, per-storefront customer app)
+- KDS readiness guide (replayable education)
+
+**Partially implemented:**
+- Open API MoMo payment (local implementation complete, awaiting owner approval for production cutover)
+- Commission (infrastructure complete, globalEnabled defaults false until Open API production)
+
+**Deferred:**
+- Real authentication system (owner tokens only, candidate #12)
+- Vendor/ops auth beyond owner tokens
+- Live MTN MoMo Open API in production
+- Automatic WhatsApp Business API delivery
+- KDS fee reminder UI (flag only)
+- Offline KDS queue and chime (PWA baseline shipped, queue deferred)
+
+**Known limitations:**
+- No real authentication (owner tokens are capability tokens, not sessions)
+- Manual MoMo relies on honor system (customer self-confirms payment)
+- Open API payment not yet in production (manual USSD is interim)
+- No automatic WhatsApp delivery (manual handoff only)
+- KDS fee reminder UI not implemented (flag only)
+- Offline KDS queue not implemented (PWA baseline shipped)
+- Commission inactive until Open API production cutover
+
+**Important architectural decisions:**
+- Store seam is single data path (in-memory + Prisma adapters)
+- Browser never imports Store (server-only)
+- Owner tokens are per-vendor capability tokens (cached by slug, never typed)
+- KDS uses scoped .kds-dark CSS remap for dark theme
+- DESIGN.md is single source of truth for UI tokens
+- Commission freezes fee at payment time (order-level snapshot)
+- KDS SSE self-closes at 250s with client reconnect backoff
+- KDS orders are status-gated (PAID/DISPATCHED/COMPLETED only)
+- Manual MoMo uses 10-minute payment window
+- Menu intake uses private Blob storage (separate from public menu media)
+- Private briefing uses recipient-specific access grants with 4-digit PIN
+- KDS translations are Ops-controlled (en/rw/fr/sw availability)
+- Vendor updates are automatic public catalog feed with engagement tracking
+
+**Currently active integrations:**
+- Supabase PostgreSQL (production database)
+- Vercel Blob (menu media + private intake storage)
+- Vercel (hosting platform)
+- MTN MoMo (manual USSD in production, Open API implemented locally)
+- Vitest (test runner)
+- Prisma (ORM)
+- Next.js (framework)
+- React (UI library)
+- TypeScript (type system)
+- Tailwind CSS (styling)
+- GSAP (animation library)
+- Three.js (3D graphics for marketing hero)
+
+**Future work explicitly mentioned by the repository:**
+- Candidate #11: Open API production cutover (awaiting owner approval for Test B)
+- Candidate #12: Real authentication system (vendor/ops auth beyond owner tokens)
+- KDS fee reminder UI implementation
+- Offline KDS queue and chime
+- Automatic WhatsApp Business API delivery
+- Native partner footage for scroll-world (still crossfade preview is interim)
+
 ## Operational notes (read before DB / deploy work — avoid known mistakes)
 
 ### Data layer architecture (do not violate)
@@ -106,23 +512,34 @@ path rather than retrying blindly (saves tokens). Recurring gotchas seen on this
 - The Supabase DB password was exposed in chat once and should be rotated (Settings → Database → Reset password), then update `.env` and the Vercel synced var.
 
 ### Status
-- Issue 01 (Store seam, in-memory) and Issue 02 (Prisma adapter, migration, seed) are committed and verified (30/30 contract tests green against real Supabase Postgres). Issue 03 (wire MoMo through Store, delete Map) is done — 53/53 tests green including simulate integration tests.
-- Known-issue 0002 fixed & deployed 2026-06-23: KDS action buttons 500 in prod (a `"use server"` type re-export — see Lessons learned) and orders showing "PAID via MoMo" before payment.
-- Known-issue 0002 Symptom C **fixed, deployed & verified in prod 2026-06-23**: the KDS SSE stream timed out every ~5min on Vercel. Fix = the route self-closes at `MAX_STREAM_MS = 250_000` (clean `controller.close()` so the function returns ~50s before Vercel's kill → no "Task timed out" logged) with `export const maxDuration = 300`, plus client reconnect backoff in `lib/kds/useKdsLiveSnapshot.ts`. Transport-only, behind the Store seam. Prod verification: held connections self-closed cleanly at ~252–257s (curl exit 0) across two reconnect cycles; `vercel logs` shows only `200`/`info` on `kds-stream` (zero "Task timed out"); two-tab smoke passed (paid order #4513 appeared on KDS, gated to PAID). This **closes out candidate #4** (feature + prod hardening). See `docs/adr/0004-kds-sse-self-close-and-reconnect-backoff.md` and `docs/known-issues/0002`.
-- Polish: `app/error.tsx` + `app/not-found.tsx` on DESIGN.md tokens (editorial error surfaces; carried from known-issue 0001).
-- **Candidate #6 deployed 2026-06-23** (`d0f3220` → `zantap-qbm2gqvsy`): KDS Vendor Suite (menu CRUD, media gallery, history filters, export/receipts, onboarding guides). Prisma migrations `archived_at` + `MenuImage` applied via `db:deploy`.
-- **Candidate #6 prod smoke complete 2026-06-24** (`zantap-psi.vercel.app`): human walkthrough steps 0–7 PASS — write secret, kitchen open, Setup checklist, coachmarks, menu + Blob upload, History export/receipt, live PAID order on KDS, hard refresh OK. `VENDOR_WRITE_SECRET` + `BLOB_READ_WRITE_TOKEN` in Production (Sensitive; staff enter secret in KDS Setup drawer). **Receipt Back polish deployed 2026-06-24** (`8b34a2f`): same-tab receipt links, Back button, `?tab=history` deep link — prod curl smoke PASS. Rotate `VENDOR_WRITE_SECRET` after smoke if it was shared in chat.
-- **Known-issue 0001 closed 2026-06-24** — KDS reload crash (`createdAt` string after SSE) verified fixed in prod; hard refresh `200` in smoke. Error surfaces polished + **deployed 2026-06-24** (`dpl_8rxYizP4NRiiW8oi3vBv327rFviG` → `zantap-psi.vercel.app`): curl 404 on `/vendor/inka-steakhouse/kds-stream` shows "Page not found" (no "Vendor not found").
-- **Candidate #7 deployed & prod smoke complete 2026-06-24** (`88fc62e` → `zantap-psi.vercel.app`): KDS workflow UI — `kitchenStage` badges, `formatRelativeTime` aging/urgency, queue sort, stage chips, bulk bar, dispatch → `OUT_FOR_DELIVERY`, mark completed. Smoke: pay (MoMo PIN 12345) → NEW → ACCEPTED → PREPARING → READY → dispatch modal → OUT FOR DELIVERY → COMPLETED; bulk select → Mark Preparing. ADR-0013, ADR-0014.
-- **KDS Orders → DESIGN.md deployed & prod smoke complete 2026-06-24** (`dpl_G4kS89FBo71KhZLn43hvuSGZD4Wg` → `zantap-psi.vercel.app`): Orders tab + shell migrated off `zk-*` — light `bg-canvas` shell, `GradientOrbs`, ink tabs/tickets/bulk/dispatch. Local + prod curl: HTTP 200, no `zk-*`, tabs consistent.
-- **Delivery slip → DESIGN.md deployed & prod smoke complete 2026-06-24** (`b08a3ca` → `dpl_2p7RSEAgq5WbQevuuaJokFpL6uDL` → `zantap-psi.vercel.app`): last vendor-adjacent `zk-*` surface migrated — light `bg-canvas` shell, mono slip on `bg-canvas-soft`. Prod curl `/slip/cmqscttnw0001l404wewwr7nu`: HTTP 200, zero `zk-*`. ADR-0016. Post-backlog KDS design migration complete (Orders + slip).
-- **Dead `zk-*` palette removed, committed & deployed 2026-06-24** (`4553388` → `dpl_8Q52wTnGTXU57RB7yiEDLc9jX3BU` → `zantap-psi.vercel.app`): `zk` color block + `zkpulse` animation deleted from `tailwind.config.ts`; zero `zk-` in TS/TSX. Prod curl `/vendor/inka-steakhouse` + `/slip/cmqscttnw0001l404wewwr7nu`: HTTP 200, zero `zk-*`.
-- **KDS dark operational theme restored 2026-06-27 — committed, deployed & prod-smoked** (`4440d2d` → `dpl_6VfQnfy66KGdoJxYNbourWgvJBoD` → `zantap-psi.vercel.app`) — ADR-0017 (supersedes ADR-0015's light-KDS visual decision). Scoped `.kds-dark` CSS remaps editorial tokens to dark charcoal + momo orange (`#F5A623`); all four KDS tabs dark, storefront stays light. Filter chips (subtle status tints, no borders), sort dropdown, 2 stat cards + Live. Prod curl: HTTP 200, `kds-dark` present, zero `zk-*`, storefront has no `kds-dark`. Live MoMo smoke: PENDING order hidden from stream → PIN `12345` → PAID → appears on KDS (`cmqwhj1a40001e79onqhvws29`, landmark `prod-smoke-dark-kds`).
-- **Candidate #8 storefront menu image carousel — shipped 2026-06-27** (`b243c81` → `dpl_fKu6ie9FfMy552GTYBCwkAYuJy7c` → `zantap-psi.vercel.app`) — swipeable scroll-snap thumb on `MenuItemCard` when `images.length >= 2`; `getMenuItemGalleryUrls` + `MenuItemImageCarousel`; keeps `zt-*` blush-glass (not DESIGN.md customer migration). Prod curl: HTTP 200, `zt-brown` present, zero `kds-dark`, carousel bundle contains `snap-mandatory`; prod DB has 0 multi-image items (swipe path needs KDS upload). ADR-0018.
-- **Candidate #15 vendor onboarding — shipped & prod-smoked 2026-06-30** (`7ca82ff` → `dpl_FzEoVe8J9KTcDqXfqp8KsWT4AR4q` → `zantap-psi.vercel.app`): `/onboard` wizard (Layer A) + KDS Setup storefront profile (Layer B); `Store.createVendor` / `updateVendor`, `provisionVendor` + `PROVISION_SECRET`, `updateVendorProfile` (write-secret). Prod acceptance: provision → storefront → tagline → MoMo PIN `12345` → PAID on KDS; `PROVISION_SECRET` in Vercel Production. ADR-0020, ADR-0021. Re-run: `RUN_PROD_SMOKE=1 npx vitest run scripts/prod-onboard-acceptance.test.ts`.
-- **Pooler egress hotfix 2026-07-01** — Supabase Free ~1.1 GB/day audit: KDS SSE was loading full order history + menu every 1s/tab via pooler. Fix = revision-first poll (`getKdsSnapshotRevision`), scoped `listKdsOrders`, narrow includes, seed remote guard (`SEED_ALLOW_REMOTE`). ADR-0023. `#prisma` tests stay opt-in on `TEST_DATABASE_URL` (direct 5432, not pooler).
-- **Candidate #16 (onboarding redesign) Issues 1–2 done 2026-07-01** on branch `feat/onboarding-redesign` (not yet deployed). Issue 1 = data layer (owner-token helper + Store verbs + `VendorRecoveryEvent` + migration `20260701150531_onboarding_redesign_vendor_fields`). Issue 2 = server surface: `provisionVendor` is now **gate-free** (no provision-secret arg; optional `PROVISION_KILL_SWITCH` env brake + rate limit; mints owner token, returns plaintext once), new `recoverOwnerToken(slug, phone)` (non-halting recovery + recovery event), and the shared write-secret is **retired** — guarded writes use a per-vendor **owner token** via `lib/vendor/owner-token-guard.ts` (`assertOwnerToken`, slug-bound). `VENDOR_WRITE_SECRET` / `assertWriteSecret` / `WriteSecretPrompt` / `useWriteSecret` deleted; client uses `useOwnerToken` (cache by slug, never prompt). ADR-0022 (policy) + ADR-0024 (server impl). **Kill-switch is a dedicated `PROVISION_KILL_SWITCH`**, NOT `PROVISION_SECRET` (which still gates the pre-migration `/onboard` page until Issue 3). Issue 3 (dark wizard UI) removes that page gate + the Setup owner-token paste bridge, replacing them with auto-cache + a recovery UI. **Prod cutover (Issue 3/4):** leave `PROVISION_KILL_SWITCH` unset to keep signup open; `VENDOR_WRITE_SECRET` can be removed from Vercel (no code reads it).
-- **Candidate #16 Issue 3 done 2026-07-01** (dark wizard UI, still branch `feat/onboarding-redesign`, not deployed). `/onboard` rebuilt as the `.kds-dark`, mobile-first, self-serve wizard: splash (role wheel) → business essentials (live slug availability via `checkSlugAvailable` + country picker + `businessCategory`) → payments (`payoutMethod` radio; PHONE stores the payout phone in `momoCode`) → quick menu (first dish + category + optional photo + live preview) → review (editable cards) → You're Live (CSS confetti, storefront URL + copy, QR via `qrcode.react`, Share/Copy, Open Kitchen Dashboard). `OnboardWizard` step machine + `WizardProgress` + `components/onboard/steps/*`; options in `lib/vendor/onboard-options.ts`. **Page gate removed** — `app/onboard/page.tsx` renders the wizard unconditionally; `PROVISION_SECRET` now has NO code path (remove it from Vercel on deploy), signup closes only via `PROVISION_KILL_SWITCH`. Deleted `GateStep`, `OperatorContact`, `is-provision-enabled.ts`, `useProvisionSecret.ts`, `FirstDishStep`, `SuccessStep`. On Go Live: `cacheOwnerToken` then category + optional photo persisted **post-provision** via existing `updateMenuItem`/`uploadMenuImage` (decision 7 — no `provisionVendor` change). **Recovery UI** = `RecoverAccessDialog` (slug + signup phone → `recoverOwnerToken`, auto-caches token) from the splash + deep link `/onboard?recover=1`; the interim manual owner-token paste field in `SetupDrawer` is gone (lock chip + Recover link). `useOwnerToken` never prompts. ADR-0025. `npm run build` clean; `npm test` 174 passed / 64 skipped.
+- Store seam (Prisma + in-memory) fully implemented and verified (contract tests green against real Supabase Postgres)
+- Manual & simulate MoMo checkout shipped. Open API Collection + Vendor payout implemented locally (Slices 1-3 complete) — awaiting owner approval for Test B and production cutover (ADR-0096, ADR-0097)
+- Known-issue 0002 fixed & deployed 2026-06-23: KDS action buttons 500 in prod (a `"use server"` type re-export) and orders showing "PAID via MoMo" before payment
+- Known-issue 0002 Symptom C fixed & deployed 2026-06-23: KDS SSE stream self-close at 250s with client reconnect backoff (ADR-0004)
+- KDS Vendor Suite (menu CRUD, media gallery, history filters, export/receipts, onboarding guides) deployed 2026-06-23
+- KDS workflow UI (kitchen stages, bulk actions, dispatch modal) deployed 2026-06-24 (ADR-0013, ADR-0014)
+- KDS Orders + delivery slip migrated to DESIGN.md tokens, dead `zk-*` palette removed 2026-06-24
+- KDS dark operational theme restored 2026-06-27 (ADR-0017)
+- Storefront menu image carousel shipped 2026-06-27 (ADR-0018)
+- Vendor onboarding (gate-free wizard with owner token, phone-based recovery) deployed 2026-06-30 (ADR-0020, ADR-0021, ADR-0022, ADR-0024, ADR-0025)
+- Pooler egress hotfix 2026-07-01: KDS SSE revision-first poll to reduce Supabase Free egress (ADR-0023)
+- KDS order pagination with realtime boundary deployed 2026-08-20 (ADR-0062)
+- PWA baseline (manifests, install hints, offline fallback) deployed 2026-08-15 (ADR-0051, ADR-0059)
+- Marketing funnel (cinematic hero, scroll-world preview, durable lead capture) deployed 2026-08-06 (ADR-0049, ADR-0050)
+- Multi-recipient lead routing deployed 2026-08-12 (ADR-0053)
+- Vendor menu intake (self-build/assisted, private storage, Ops review/import) deployed 2026-08-30 (ADR-0082)
+- Private briefing (recipient-specific access grants, viewing sessions) deployed 2026-09-01 (ADR-0072)
+- KDS translations (en/rw/fr/sw with Ops-controlled availability) deployed 2026-09-22 (ADR-0089, ADR-0094, ADR-0095)
+- KDS readiness guide (replayable onboarding education) deployed 2026-09-22 (ADR-0083)
+- Stock tracking (dish-level stock count, low-stock thresholds) implemented
+- Profit insights (expenses, period profit, cost prices) implemented
+- Add-ons (item-specific add-on groups, server-priced snapshots) implemented (ADR-0071)
+- Size options (dynamic menu size options) implemented (ADR-0069)
+- Vendor updates (automatic public catalog feed) implemented (ADR-0062, ADR-0063, ADR-0068)
+- Restaurant hub (PWA install, saved restaurants, updates) implemented (ADR-0064, ADR-0066)
+- Commission settings (global + per-Vendor, fee snapshot) implemented but inactive until Open API production cutover (ADR-0096, ADR-0097)
+- Candidate #29 (international lead phones) deployed 2026-09-18 (ADR-0093)
+- All retired secrets removed from code: `PROVISION_SECRET`, `VENDOR_WRITE_SECRET` — replaced by per-vendor owner tokens
 - **Candidate #16 Issue 4 done 2026-07-01 — candidate #16 now FEATURE-COMPLETE** (still branch `feat/onboarding-redesign`, not deployed). Post-launch OPTIONAL "keep improving your storefront" checklist wired into the KDS Setup drawer. New pure module `lib/vendor/optional-checklist.ts` (`OPTIONAL_CHECKLIST_ITEMS` = 9 rows in mockup order + `deriveOptionalChecklist(vendor, menu)` + `countOptionalCompleted`). `SetupDrawer` gains (a) the checklist section ("X of 4 completed" — the counter reflects **actionable rows only**; the 5 deferred rows render disabled with a "Soon" badge) and (b) Logo URL / Cover image URL inputs + a Business Description textarea in the profile editor. `updateVendorProfile` now forwards `logoUrl`/`coverImageUrl`/`description` (schema fields already existed since Issue 1 — trim → undefined; still a single async `"use server"` export). `KdsDashboard` seeds those three from `vendor.*`, passes the new required `menu` prop, and round-trips them via `onProfileSaved` so the checklist ticks after save. **Actionable** = Logo, Cover, Menu Photos (existing MenuImage gallery), Business Description. **Deferred `comingSoon`** (no schema, no editor this pass) = Business Hours, Ingredients, Delivery Zones, Estimated Prep Time, Social Links. Owner-token guarded via `useOwnerToken` (never prompts). Deliberate deviation from the mockup's literal "0 of 8": count only completable items so 100% is reachable (ADR-0026). No new schema/migration, no Blob upload action, no wizard/server-signature change. 6 new unit tests (`lib/vendor/__tests__/optional-checklist.test.ts`); `npm run build` clean; `npm test` **180 passed / 64 skipped**. **Next: build → deploy → prod smoke** for the whole candidate #16 — prod cutover = remove `PROVISION_SECRET` from Vercel, leave `PROVISION_KILL_SWITCH` unset, `VENDOR_WRITE_SECRET` already dead.
 - **Candidate #16 DEPLOYED 2026-07-01** (`26ef33d` → `dpl_J2iPHqJ1u2g1iW8pXf3k8oCSwWwX` → alias `zantap-psi.vercel.app`). Issue 4 committed (`26ef33d`); branch `feat/onboarding-redesign` is 3 commits ahead of `origin/main` (Issues 2/3/4), 0 behind — cleanly on the pooler hotfix. Local `npm run build` clean + `npm test` 180/64; Vercel remote build clean. **Prod cutover DONE**: `PROVISION_SECRET` and `VENDOR_WRITE_SECRET` **removed** from Production (`vercel env rm … production --yes`); `PROVISION_KILL_SWITCH` left **unset** (signup open); migration `20260701150531_onboarding_redesign_vendor_fields` confirmed applied (`prisma migrate status` → "up to date"). **Curl smoke PASS**: `/onboard` 200 with `kds-dark` + "Get Started" + "Recover access", provision gate strings gone; `/onboard?recover=1` 200; storefront `/inka-steakhouse` 200 (no `kds-dark`) + KDS `/vendor/inka-steakhouse` 200 (`kds-dark`); Issue 4 bundle ships checklist strings ("Keep improving", "Logo", "Cover image", "Soon"); KDS SSE stream live (held 12s, healthy snapshot). No secret was shared in chat this session (nothing to rotate; owner tokens are per-vendor, minted at provision, never shared). **STILL PENDING — human two-tab interactive walkthrough** (headless Server Action calls are unreliable, X-Nextjs-Action-Not-Found): run the wizard → Go Live (provision new vendor) → You're Live QR + owner-token auto-cache → open KDS Setup → optional checklist "X of 4" + Soon badges → set Logo/Cover/Description + save (owner-token guarded, no prompt) → checklist ticks → MoMo sim PIN `12345` → PAID on KDS; and `/onboard?recover=1` (slug + signup phone → re-issues token). On human PASS, flip #16 to ✅ DONE · deployed · prod-smoked in this file + `.scratch/architecture-candidates.md`.
 - **Candidate #16 dark-wizard light-render fix + redeploy 2026-07-01** (`c5a7048` → `dpl_Gc27AbbG7dCA11HAzAaPurBjHcCZ` → `zantap-psi.vercel.app`, supersedes `dpl_J2iP…`). Symptom: the `/onboard` splash rendered on the **light** editorial canvas with only the role cards/CTA dark. Root cause: the `.kds-dark` token remap in `globals.css` uses a **descendant** combinator (`.kds-dark .bg-canvas`), so it never recolors an element that carries BOTH `.kds-dark` and the token on the **same node** — and the wizard root is `<div class="kds-dark bg-canvas">` (child cards are real descendants, hence dark; the root stayed light `#f5f5f5`). KDS only "got away with it" because its inner `max-w-kds` div also carries `bg-canvas` (a descendant) that fills the screen. Fix = paint the `.kds-dark` root itself (`background-color:#0e0e10; color:#f4f4f3`) so the dark surface covers the full viewport regardless of where the token sits (also fixes any KDS ultrawide light margin). Verified: deployed CSS contains `.kds-dark{…color:#f4f4f3;background-color:#0e0e10}`. **Lesson: `.kds-dark` recolors DESCENDANTS only — put the token on a child, or rely on the root paint; never assume `class="kds-dark bg-canvas"` on one node goes dark.**
