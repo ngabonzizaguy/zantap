@@ -405,14 +405,18 @@ This section provides a quick reference for agents to understand what is impleme
 - PWA manifests (root, per-vendor KDS, per-storefront customer app)
 - KDS readiness guide (replayable education)
 
-**Partially implemented:**
-- Open API MoMo payment (local implementation complete, awaiting owner approval for production cutover)
-- Commission (infrastructure complete, globalEnabled defaults false until Open API production)
+**Implemented but inactive in production:**
+- Open API MoMo payment (code deployed, awaiting owner approval for production cutover - business decision, not technical limitation)
+- Commission (code deployed, globalEnabled defaults false until Open API is active - technical dependency)
 
-**Deferred:**
+**Why inactive:**
+- Open API payment requires owner approval for Test B and production cutover (ADR-0096)
+- Commission is tied to Open API payment flow (ADR-0097)
+- Both can be activated via configuration without additional code deployment
+
+**Deferred (not yet implemented):**
 - Real authentication system (owner tokens only, candidate #12)
 - Vendor/ops auth beyond owner tokens
-- Live MTN MoMo Open API in production
 - Automatic WhatsApp Business API delivery
 - KDS fee reminder UI (flag only)
 - Offline KDS queue and chime (PWA baseline shipped, queue deferred)

@@ -536,3 +536,69 @@ SKIP_PRISMA_TESTS=0 npm test  # Opt in to Prisma suite
 - Hook timeout: 90000ms (Prisma suite is slow)
 - Test timeout: 30000ms
 - Test database: TEST_DATABASE_URL (direct connection, not pooler)
+
+## Implementation vs Production Activation
+
+This section clarifies the distinction between technical implementation and production activation.
+
+### Terminology
+
+**Implemented:**
+- Code exists in the repository
+- Code is deployed to production
+- Feature can be tested locally
+- Feature may or may not be active in production
+
+**Implemented but inactive:**
+- Code exists and is deployed to production
+- Feature is turned off via configuration (environment variable, database setting, feature flag)
+- Feature can be activated without additional code deployment
+- Activation is blocked by business decision, operational constraint, or dependency
+
+**Partially implemented:**
+- Core functionality exists
+- Some aspects are incomplete
+- Feature is not production-ready
+
+**Deferred:**
+- Feature is not yet implemented
+- Feature may be planned but not started
+- No code exists for this feature
+
+### Current Examples
+
+**Open API Payment (Implemented but inactive):**
+- Status: Code fully implemented and deployed
+- Local: Can test by setting `MOMO_MODE=openapi`
+- Production: Inactive because `MOMO_MODE` defaults to `manual`
+- Reason: Awaiting owner approval for Test B and production cutover (ADR-0096)
+- Activation: Change `MOMO_MODE` environment variable (no code change needed)
+
+**Commission (Implemented but inactive):**
+- Status: Code fully implemented and deployed
+- Local: Commission settings available in Ops console
+- Production: Inactive because `CommissionSettings.globalEnabled` defaults to false
+- Reason: Commission is tied to Open API payment flow; inactive until Open API is active
+- Activation: Change `globalEnabled` to true via Ops console (no code change needed)
+
+**Manual MoMo Payment (Implemented and active):**
+- Status: Code fully implemented and deployed
+- Production: Active (production default)
+- Reason: Interim solution while Open API awaits approval
+
+**Real Authentication (Deferred):**
+- Status: Not implemented
+- Reason: Owner tokens are interim solution (candidate #12)
+- Activation: Requires full implementation
+
+### Decision Process
+
+Some features require business approval before production activation:
+- Open API payment cutover requires owner approval (business decision, not technical)
+- Commission activation follows Open API (technical dependency)
+- Feature flags allow gradual rollout without code deployment
+
+This is intentional:
+- Technical implementation can be complete while business approval is pending
+- Configuration switches allow activation without additional deployment
+- This is not a documentation gap; it's a deliberate separation of concerns

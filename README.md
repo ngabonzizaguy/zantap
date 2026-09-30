@@ -175,11 +175,12 @@ Prototypes and early product notes (historical; live UI follows `DESIGN.md`):
 - `ZanTap Vendor KDS.dc.html` — early KDS reference
 - `zantap.txt` / `zantap-brand-identity.txt` — product / brand notes
 
-## Status / deferred
+## Status
 
-**Shipped:**
+**Shipped (implemented and active in production):**
 - Store seam (Prisma + in-memory adapters)
-- Manual & simulate MoMo checkout (Open API Collection + Vendor payout implemented locally, awaiting owner approval for production cutover)
+- Manual MoMo USSD checkout (production default)
+- Simulate MoMo checkout (local dev)
 - KDS SSE live updates with self-close and reconnect backoff
 - Kitchen stages (NEW → ACCEPTED → PREPARING → READY → OUT FOR DELIVERY → COMPLETED)
 - Menu CRUD + Blob gallery + multi-image carousel
@@ -199,51 +200,56 @@ Prototypes and early product notes (historical; live UI follows `DESIGN.md`):
 - Size options (dynamic menu size options with price variants)
 - PWA manifests (root, per-vendor KDS, per-storefront customer app)
 - Restaurant hub (PWA install, saved restaurants, vendor update feed, engagement)
-- Commission settings (global + per-Vendor controls, fee snapshot at payment time - implemented but inactive until Open API production cutover)
 - KDS readiness guide (replayable onboarding education)
 
-**In Production:** Manual MoMo USSD checkout. Commission infrastructure is deployed but inactive (globalEnabled defaults false). Open API Collection + Vendor payout is implemented locally and awaiting owner approval for Test B and production cutover.
+**Implemented but inactive in production:**
+- Open API Collection + Vendor payout (code deployed, awaiting owner approval for production cutover - ADR-0096)
+- Commission settings (code deployed, globalEnabled defaults false until Open API is active - ADR-0097)
 
-**Deferred:**
+**Why inactive:**
+- Open API payment requires owner approval for Test B and production cutover (business decision, not technical limitation)
+- Commission is tied to Open API payment flow (technical dependency)
+- Both can be activated via configuration without additional code deployment
+
+**Deferred (not yet implemented):**
 - Vendor/ops auth beyond owner tokens + ops secret (candidate #12)
-- Live MTN MoMo Open API in production (awaiting owner approval)
 - Automatic WhatsApp Business API delivery
 - KDS fee reminder UI (flag only implemented)
 - Offline KDS queue and chime (PWA baseline shipped, offline queue deferred)
 
 ## Feature Status Matrix
 
-| Area | Status | Source / Implementation | Notes |
-|---|---|---|---|
-| Customer storefront | Implemented | `app/[slug]/page.tsx`, `components/customer/` | Editorial hero, menu with categories, cart, checkout |
-| Vendor KDS | Implemented | `app/vendor/[slug]/page.tsx`, `components/vendor/` | Orders, menu CRUD, history, drivers, setup, profit, stock |
-| Payments (manual) | Implemented | `lib/momo/`, `lib/checkout/` | Manual USSD checkout in production |
-| Payments (Open API) | Local only | `lib/momo/open-api-*.ts`, ADR-0096 | Collection + Vendor payout implemented locally, awaiting owner approval for production cutover |
-| Commission | Implemented but inactive | `lib/momo/commission.ts`, ADR-0097 | Settings and fee snapshot implemented, globalEnabled defaults false |
-| Store seam | Implemented | `lib/store/` | In-memory + Prisma adapters, factory pattern |
-| KDS SSE live updates | Implemented | `lib/kds/`, `/api/vendor/[slug]/kds-stream` | Self-close at 250s, client reconnect backoff (ADR-0004, ADR-0023) |
-| Kitchen stages | Implemented | `lib/kds/kitchen-stage.ts`, ADR-0013 | NEW → ACCEPTED → PREPARING → READY → OUT FOR DELIVERY → COMPLETED |
-| Menu CRUD | Implemented | `lib/actions/vendor-menu.ts` | Create, update, archive, restore, availability toggle |
-| Menu media | Implemented | `lib/menu/`, Vercel Blob | Multi-image gallery, primary image, local fallback |
-| Order history | Implemented | `lib/actions/vendor-history.ts` | Filters, pagination, CSV/XLSX export |
-| Self-serve onboarding | Implemented | `app/onboard/`, ADR-0020-0025 | Gate-free wizard, owner token, phone-based recovery |
-| Owner token | Implemented | `lib/vendor/owner-token.ts`, ADR-0022 | Per-vendor capability token, replaces shared write-secret |
-| Drivers | Implemented | `lib/actions/vendor-drivers.ts` | CRUD, assignment, dispatch modal |
-| Operator console | Implemented | `app/ops/`, `lib/operator-control/` | Vendors, leads, recovery, routing, audit, translations, briefing, menu intake |
-| Lead capture | Implemented | `lib/leads/`, ADR-0050 | Durable marketing lead capture, Rwanda E.164 phone |
-| Lead routing | Implemented | `lib/leads/routing.ts`, ADR-0053 | Multi-recipient WhatsApp routing, concurrency-safe round-robin |
-| Prospects | Implemented | `lib/prospects/`, ADR-0054 | Outbound prospect tracking, interactions |
-| Private briefing | Implemented | `lib/briefing/`, ADR-0072-0079 | Recipient-specific access grants, viewing sessions, evidence, activity |
-| Menu intake | Implemented | `lib/menu-intake/`, ADR-0082 | Self-build/assisted vendor menu intake, private storage, Ops review/import |
-| KDS translations | Implemented | `lib/i18n/`, ADR-0089-0095 | en/rw/fr/sw with Ops-controlled availability |
-| Stock tracking | Implemented | `lib/inventory/`, ADR-0055 | Dish-level stock count, low-stock thresholds, sold-out marking |
-| Profit insights | Implemented | `lib/vendor/profit.ts` | Expenses, period profit, weekday averages, cost prices |
-| Add-ons | Implemented | `lib/menu/add-ons.ts`, ADR-0071 | Item-specific add-on groups and choices, server-priced order snapshots |
-| Size options | Implemented | `lib/menu/sizes.ts`, ADR-0069 | Dynamic menu size options with price variants |
-| Vendor updates | Implemented | `lib/vendor-updates/`, ADR-0062-0068 | Automatic public catalog feed, batches, engagement tracking |
-| Restaurant hub | Implemented | `lib/customer-restaurants/`, ADR-0064-0066 | PWA install, saved restaurants, vendor update feed |
-| PWA | Implemented | `lib/pwa/`, ADR-0051, ADR-0059 | Root, per-vendor KDS, per-storefront customer app manifests |
-| KDS readiness guide | Implemented | `components/vendor/ReadinessGuideModal.tsx`, ADR-0083 | Replayable onboarding education |
-| Authentication | Deferred | ADR-0022 mentions candidate #12 | Owner tokens only, real auth deferred |
-| WhatsApp Business API | Deferred | ADR-0053 | Manual handoff only, automatic delivery deferred |
-| Offline KDS queue | Deferred | ADR-0051 | PWA baseline shipped, offline queue deferred |
+| Area | Implementation Status | Production Activation Status | Source / Implementation | Notes |
+|---|---|---|---|---|
+| Customer storefront | Implemented | Active | `app/[slug]/page.tsx`, `components/customer/` | Editorial hero, menu with categories, cart, checkout |
+| Vendor KDS | Implemented | Active | `app/vendor/[slug]/page.tsx`, `components/vendor/` | Orders, menu CRUD, history, drivers, setup, profit, stock |
+| Payments (manual) | Implemented | Active | `lib/momo/`, `lib/checkout/` | Manual USSD checkout in production |
+| Payments (Open API) | Implemented | Inactive | `lib/momo/open-api-*.ts`, ADR-0096 | Collection + Vendor payout deployed, awaiting owner approval for production cutover |
+| Commission | Implemented | Inactive | `lib/momo/commission.ts`, ADR-0097 | Settings and fee snapshot deployed, globalEnabled defaults false until Open API active |
+| Store seam | Implemented | Active | `lib/store/` | In-memory + Prisma adapters, factory pattern |
+| KDS SSE live updates | Implemented | Active | `lib/kds/`, `/api/vendor/[slug]/kds-stream` | Self-close at 250s, client reconnect backoff (ADR-0004, ADR-0023) |
+| Kitchen stages | Implemented | Active | `lib/kds/kitchen-stage.ts`, ADR-0013 | NEW → ACCEPTED → PREPARING → READY → OUT FOR DELIVERY → COMPLETED |
+| Menu CRUD | Implemented | Active | `lib/actions/vendor-menu.ts` | Create, update, archive, restore, availability toggle |
+| Menu media | Implemented | Active | `lib/menu/`, Vercel Blob | Multi-image gallery, primary image, local fallback |
+| Order history | Implemented | Active | `lib/actions/vendor-history.ts` | Filters, pagination, CSV/XLSX export |
+| Self-serve onboarding | Implemented | Active | `app/onboard/`, ADR-0020-0025 | Gate-free wizard, owner token, phone-based recovery |
+| Owner token | Implemented | Active | `lib/vendor/owner-token.ts`, ADR-0022 | Per-vendor capability token, replaces shared write-secret |
+| Drivers | Implemented | Active | `lib/actions/vendor-drivers.ts` | CRUD, assignment, dispatch modal |
+| Operator console | Implemented | Active | `app/ops/`, `lib/operator-control/` | Vendors, leads, recovery, routing, audit, translations, briefing, menu intake |
+| Lead capture | Implemented | Active | `lib/leads/`, ADR-0050 | Durable marketing lead capture, Rwanda E.164 phone |
+| Lead routing | Implemented | Active | `lib/leads/routing.ts`, ADR-0053 | Multi-recipient WhatsApp routing, concurrency-safe round-robin |
+| Prospects | Implemented | Active | `lib/prospects/`, ADR-0054 | Outbound prospect tracking, interactions |
+| Private briefing | Implemented | Active | `lib/briefing/`, ADR-0072-0079 | Recipient-specific access grants, viewing sessions, evidence, activity |
+| Menu intake | Implemented | Active | `lib/menu-intake/`, ADR-0082 | Self-build/assisted vendor menu intake, private storage, Ops review/import |
+| KDS translations | Implemented | Active | `lib/i18n/`, ADR-0089-0095 | en/rw/fr/sw with Ops-controlled availability |
+| Stock tracking | Implemented | Active | `lib/inventory/`, ADR-0055 | Dish-level stock count, low-stock thresholds, sold-out marking |
+| Profit insights | Implemented | Active | `lib/vendor/profit.ts` | Expenses, period profit, weekday averages, cost prices |
+| Add-ons | Implemented | Active | `lib/menu/add-ons.ts`, ADR-0071 | Item-specific add-on groups and choices, server-priced order snapshots |
+| Size options | Implemented | Active | `lib/menu/sizes.ts`, ADR-0069 | Dynamic menu size options with price variants |
+| Vendor updates | Implemented | Active | `lib/vendor-updates/`, ADR-0062-0068 | Automatic public catalog feed, batches, engagement tracking |
+| Restaurant hub | Implemented | Active | `lib/customer-restaurants/`, ADR-0064-0066 | PWA install, saved restaurants, vendor update feed |
+| PWA | Implemented | Active | `lib/pwa/`, ADR-0051, ADR-0059 | Root, per-vendor KDS, per-storefront customer app manifests |
+| KDS readiness guide | Implemented | Active | `components/vendor/ReadinessGuideModal.tsx`, ADR-0083 | Replayable onboarding education |
+| Authentication | Deferred | N/A | ADR-0022 mentions candidate #12 | Owner tokens only, real auth deferred |
+| WhatsApp Business API | Deferred | N/A | ADR-0053 | Manual handoff only, automatic delivery deferred |
+| Offline KDS queue | Deferred | N/A | ADR-0051 | PWA baseline shipped, offline queue deferred |
